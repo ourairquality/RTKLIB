@@ -833,13 +833,13 @@ static int decode_eph(raw_t *raw, int sat)
     if (!decode_frame(raw->subfrm[sat-1],&eph,NULL,NULL,NULL)) return 0;
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (eph.iode==raw->nav.eph[sat-1].iode&&
-            eph.iodc==raw->nav.eph[sat-1].iodc&&
-            timediff(eph.toe,raw->nav.eph[sat-1].toe)==0.0&&
-            timediff(eph.toc,raw->nav.eph[sat-1].toc)==0.0) return 0;
+        if (eph.iode==raw->nav.eph[sat-1][0].iode&&
+            eph.iodc==raw->nav.eph[sat-1][0].iodc&&
+            timediff(eph.toe,raw->nav.eph[sat-1][0].toe)==0.0&&
+            timediff(eph.toc,raw->nav.eph[sat-1][0].toc)==0.0) return 0;
     }
     eph.sat=sat;
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -957,11 +957,11 @@ static int decode_enav(raw_t *raw, int sat, int off)
     matcpy(raw->nav.utc_gal,utc,8,1);
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (eph.iode==raw->nav.eph[sat-1].iode&&
-            timediff(eph.toe,raw->nav.eph[sat-1].toe)==0.0&&
-            timediff(eph.toc,raw->nav.eph[sat-1].toc)==0.0) return 0;
+        if (eph.iode==raw->nav.eph[sat-1][0].iode&&
+            timediff(eph.toe,raw->nav.eph[sat-1][0].toe)==0.0&&
+            timediff(eph.toc,raw->nav.eph[sat-1][0].toc)==0.0) return 0;
     }
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0; /* 0:I/NAV */
     return 2;
@@ -1019,10 +1019,10 @@ static int decode_cnav(raw_t *raw, int sat, int off)
         else return 0;
     }
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (timediff(eph.toe,raw->nav.eph[sat-1].toe)==0.0) return 0;
+        if (timediff(eph.toe,raw->nav.eph[sat-1][0].toe)==0.0) return 0;
     }
     eph.sat=sat;
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -1071,9 +1071,9 @@ static int decode_gnav(raw_t *raw, int sat, int off, int frq)
         geph.frq=frq-7;
         
         if (!strstr(raw->opt,"-EPHALL")) {
-            if (geph.iode==raw->nav.geph[prn-1].iode) return 0;
+            if (geph.iode==raw->nav.geph[prn-1][0].iode) return 0;
         }
-        raw->nav.geph[prn-1]=geph;
+        raw->nav.geph[prn-1][0]=geph;
         raw->ephsat=sat;
         raw->ephset=0;
         return 2;

@@ -636,7 +636,7 @@ static void readpreceph(char **infile, int n, const prcopt_t *prcopt,
                         nav_t *nav, sbs_t *sbs)
 {
     seph_t seph0={0};
-    int i;
+    int i,j;
     char *ext;
     
     trace(2,"readpreceph: n=%d\n",n);
@@ -661,14 +661,16 @@ static void readpreceph(char **infile, int n, const prcopt_t *prcopt,
         sbsreadmsg(infile[i],prcopt->sbassatsel,sbs);
     }
     /* allocate sbas ephemeris */
-    nav->ns=nav->nsmax=NSATSBS*2;
-    if (!(nav->seph=(seph_t *)malloc(sizeof(seph_t)*nav->ns))) {
-         showmsg("error : sbas ephem memory allocation");
-         trace(1,"error : sbas ephem memory allocation");
-         return;
+    for (i=0;i<NSATSBS;i++) {
+        nav->ns[i]=nav->nsmax[i]=2;
+        if (!(nav->seph[i]=(seph_t *)malloc(sizeof(seph_t)*nav->ns[i]))) {
+            showmsg("error : sbas ephem memory allocation");
+            trace(1,"error : sbas ephem memory allocation");
+            return;
+        }
+        for (j=0;j<nav->ns[i];j++) nav->seph[i][j]=seph0;
     }
-    for (i=0;i<nav->ns;i++) nav->seph[i]=seph0;
-    
+
     /* set rtcm file and initialize rtcm struct */
     rtcm_file[0]=rtcm_path[0]='\0'; fp_rtcm=NULL;
     
@@ -690,7 +692,11 @@ static void freepreceph(nav_t *nav, sbs_t *sbs)
     
     free(nav->peph); nav->peph=NULL; nav->ne=nav->nemax=0;
     free(nav->pclk); nav->pclk=NULL; nav->nc=nav->ncmax=0;
-    free(nav->seph); nav->seph=NULL; nav->ns=nav->nsmax=0;
+    for (i=0;i<NSATSBS;i++) {
+        free(nav->seph[i]);
+        nav->seph[i]=NULL;
+        nav->ns[i]=nav->nsmax[i]=0;
+    }
     free(sbs->msgs); sbs->msgs=NULL; sbs->n =sbs->nmax =0;
     for (i=0;i<nav->nt;i++) {
         free(nav->tec[i].data);
@@ -711,10 +717,9 @@ static int readobsnav(gtime_t ts, gtime_t te, double ti, char **infile,
     trace(3,"readobsnav: ts=%s n=%d\n",time_str(ts,0),n);
     
     obs->data=NULL; obs->n =obs->nmax =0;
-    nav->eph =NULL; nav->n =nav->nmax =0;
-    nav->geph=NULL; nav->ng=nav->ngmax=0;
-    /* free(nav->seph); */ /* is this needed to avoid memory leak??? */
-    nav->seph=NULL; nav->ns=nav->nsmax=0;
+    for (i=0;i<MAXSAT;i++) { nav->eph[i]=NULL; nav->n[i]=nav->nmax[i]=0; }
+    for (i=0;i<NSATGLO;i++) { nav->geph[i]=NULL; nav->ng[i]=nav->ngmax[i]=0; }
+    for (i=0;i<NSATSBS;i++) { nav->seph[i]=NULL; nav->ns[i]=nav->nsmax[i]=0; }
     nepoch=0;
     
     for (i=0;i<n;i++) {
@@ -737,7 +742,7 @@ static int readobsnav(gtime_t ts, gtime_t te, double ti, char **infile,
         trace(1,"\n");
         return 0;
     }
-    if (nav->n<=0&&nav->ng<=0&&nav->ns<=0) {
+    if (navncnt(nav)<=0&&navngcnt(nav)<=0&&navnscnt(nav)<=0) {
         checkbrk("error : no nav data");
         trace(1,"\n");
         return 0;
@@ -763,12 +768,25 @@ static int readobsnav(gtime_t ts, gtime_t te, double ti, char **infile,
 /* free obs and nav data -----------------------------------------------------*/
 static void freeobsnav(obs_t *obs, nav_t *nav)
 {
+    int i;
     trace(3,"freeobsnav:\n");
     
     free(obs->data); obs->data=NULL; obs->n =obs->nmax =0;
-    free(nav->eph ); nav->eph =NULL; nav->n =nav->nmax =0;
-    free(nav->geph); nav->geph=NULL; nav->ng=nav->ngmax=0;
-    free(nav->seph); nav->seph=NULL; nav->ns=nav->nsmax=0;
+    for (i=0;i<MAXSAT;i++) {
+        free(nav->eph[i]);
+        nav->eph[i]=NULL;
+        nav->n[i]=nav->nmax[i]=0;
+    }
+    for (i=0;i<NSATGLO;i++) {
+        free(nav->geph[i]);
+        nav->geph[i]=NULL;
+        nav->ng[i]=nav->ngmax[i]=0;
+    }
+    for (i=0;i<NSATSBS;i++) {
+        free(nav->seph[i]);
+        nav->seph[i]=NULL;
+        nav->ns[i]=nav->nsmax[i]=0;
+    }
 }
 /* average of single position ------------------------------------------------*/
 static int avepos(double *ra, int rcv, const obs_t *obs, const nav_t *nav,

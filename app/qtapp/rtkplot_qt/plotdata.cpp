@@ -228,7 +228,7 @@ int Plot::ReadObsRnx(const QStringList &files, obs_t *obs, nav_t *nav,
             strcpy(p, ".inav"); readrnxt(navfile, 1, ts, te, tint, opt, NULL, nav, NULL);
         } else if (!strcmp(p + 3, "o") || !strcmp(p + 3, "d") ||
                !strcmp(p + 3, "O") || !strcmp(p + 3, "D")) {
-            n = nav->n;
+            n = navncnt(nav);
 
             strcpy(p + 3, "N"); readrnxt(navfile, 1, ts, te, tint, opt, NULL, nav, NULL);
             strcpy(p + 3, "G"); readrnxt(navfile, 1, ts, te, tint, opt, NULL, nav, NULL);
@@ -239,7 +239,7 @@ int Plot::ReadObsRnx(const QStringList &files, obs_t *obs, nav_t *nav,
             strcpy(p + 3, "I"); readrnxt(navfile, 1, ts, te, tint, opt, NULL, nav, NULL);
             strcpy(p + 3, "P"); readrnxt(navfile, 1, ts, te, tint, opt, NULL, nav, NULL);
 
-            if (nav->n > n || !(q = strrchr(navfile, '\\'))) continue;
+            if (navncnt(nav) > n || !(q = strrchr(navfile, '\\'))) continue;
 
             // read brdc navigation data
             memcpy(q + 1, "BRDC", 4);
@@ -251,10 +251,10 @@ int Plot::ReadObsRnx(const QStringList &files, obs_t *obs, nav_t *nav,
             if (!(p=strrchr(navfile,'_'))) continue;
             strcpy(p,"_*_*N.rnx");
 
-            n=nav->n;
+            n=navncnt(nav);
             readrnxt(navfile,1,ts,te,tint,opt,NULL,nav,NULL);
 
-            if (nav->n>n||!(q=strrchr(navfile,'\\'))) continue;
+            if (navncnt(nav)>n||!(q=strrchr(navfile,'\\'))) continue;
 
             // read brdc navigation data
             memcpy(q+1,"BRDC",4);
@@ -303,7 +303,7 @@ void Plot::ReadNav(const QStringList &files)
     }
     uniqnav(&Nav);
 
-    if (Nav.n <= 0 && Nav.ng <= 0 && Nav.ns <= 0) {
+    if (navncnt(&Nav) <= 0 && navngcnt(&Nav) <= 0 && navnscnt(&Nav) <= 0) {
         ShowMsg(QString(tr("no nav message: %1...")).arg(QDir::toNativeSeparators(files.at(i))));
         ReadWaitEnd();
         return;

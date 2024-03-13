@@ -1054,7 +1054,7 @@ void MonitorDialog::ShowNav()
 	gtime_t time;
     QString s;
     char tstr[64], id[32];
-    int i, k, n, prn, off = SelEph->currentIndex() ? MAXSAT : 0;
+    int i, k, n, prn, off = SelEph->currentIndex();
     bool valid;
     int sys=sys_tbl[SelSys2->currentIndex()+1];
 
@@ -1072,7 +1072,7 @@ void MonitorDialog::ShowNav()
 
     rtksvrlock(&rtksvr);
     time = rtksvr.rtk.sol.time;
-    for (i = 0; i < MAXSAT; i++) eph[i] = rtksvr.nav.eph[i + off];
+    for (i = 0; i < MAXSAT; i++) eph[i] = rtksvr.nav.eph[i][off];
     rtksvrunlock(&rtksvr);
 
     if (sys==SYS_GAL) {
@@ -1167,11 +1167,11 @@ void MonitorDialog::ShowGnav(void)
 	gtime_t time;
     QString s;
     char tstr[64], id[32];
-    int i, n, valid, prn, off = SelEph->currentIndex() ? NSATGLO : 0;
+    int i, n, valid, prn, off = SelEph->currentIndex();
 
 	rtksvrlock(&rtksvr);
     time = rtksvr.rtk.sol.time;
-    for (i = 0; i < NSATGLO; i++) geph[i] = rtksvr.nav.geph[i + off];
+    for (i = 0; i < NSATGLO; i++) geph[i] = rtksvr.nav.geph[i][off];
 	rtksvrunlock(&rtksvr);
 
     Label->setText("");
@@ -1244,7 +1244,7 @@ void MonitorDialog::ShowSbsNav(void)
 {
     seph_t seph[MAXPRNSBS - MINPRNSBS + 1];
 	gtime_t time;
-    int i, n, valid, prn, off = SelEph->currentIndex() ? NSATSBS : 0;
+    int i, n, valid, prn, off = SelEph->currentIndex();
     char tstr[64], id[32];
 
     for (int i = 0; i < MAXPRNSBS - MINPRNSBS + 1; i++) {
@@ -1256,7 +1256,7 @@ void MonitorDialog::ShowSbsNav(void)
 
 	rtksvrlock(&rtksvr); // lock
     time = rtksvr.rtk.sol.time;
-    for (int i = 0; i < NSATSBS; i++) seph[i] = rtksvr.nav.seph[i + off];
+    for (int i = 0; i < NSATSBS; i++) seph[i] = rtksvr.nav.seph[i][off];
 	rtksvrunlock(&rtksvr); // unlock
 
     Label->setText("");

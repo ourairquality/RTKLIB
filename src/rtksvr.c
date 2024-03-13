@@ -122,15 +122,15 @@ static void update_glofcn(rtksvr_t *svr)
         sat=satno(SYS_GLO,i+1);
         
         for (j=0,frq=-999;j<3;j++) {
-            if (svr->raw[j].nav.geph[i].sat!=sat) continue;
-            frq=svr->raw[j].nav.geph[i].frq;
+            if (svr->raw[j].nav.geph[i][0].sat!=sat) continue;
+            frq=svr->raw[j].nav.geph[i][0].frq;
         }
         if (frq<-7||frq>6) continue;
         
         for (j=0;j<3;j++) {
-            if (svr->raw[j].nav.geph[i].sat==sat) continue;
-            svr->raw[j].nav.geph[i].sat=sat;
-            svr->raw[j].nav.geph[i].frq=frq;
+            if (svr->raw[j].nav.geph[i][0].sat==sat) continue;
+            svr->raw[j].nav.geph[i][0].sat=sat;
+            svr->raw[j].nav.geph[i][0].frq=frq;
         }
     }
 }
@@ -165,9 +165,9 @@ static void update_eph(rtksvr_t *svr, nav_t *nav, int ephsat, int ephset,
     if (satsys(ephsat,&prn)!=SYS_GLO) {
             if (!svr->navsel||svr->navsel==index+1) {
             /* svr->nav.eph={current_set1,current_set2,prev_set1,prev_set2} */
-            eph1=nav->eph+ephsat-1+MAXSAT*ephset;         /* received */
-            eph2=svr->nav.eph+ephsat-1+MAXSAT*ephset;     /* current */
-            eph3=svr->nav.eph+ephsat-1+MAXSAT*(2+ephset); /* previous */
+            eph1=nav->eph[ephsat-1]+ephset;         /* received */
+            eph2=svr->nav.eph[ephsat-1]+ephset;     /* current */
+            eph3=svr->nav.eph[ephsat-1]+2+ephset;   /* previous */
                 if (eph2->ttr.time==0||
                     (eph1->iode!=eph3->iode&&eph1->iode!=eph2->iode)||
                     (timediff(eph1->toe,eph3->toe)!=0.0&&
@@ -182,9 +182,9 @@ static void update_eph(rtksvr_t *svr, nav_t *nav, int ephsat, int ephset,
         }
         else {
            if (!svr->navsel||svr->navsel==index+1) {
-               geph1=nav->geph+prn-1;
-               geph2=svr->nav.geph+prn-1;
-               geph3=svr->nav.geph+prn-1+MAXPRNGLO;
+               geph1=nav->geph[prn-1];
+               geph2=svr->nav.geph[prn-1];
+               geph3=svr->nav.geph[prn-1]+1;
                if (geph2->tof.time==0||
                    (geph1->iode!=geph3->iode&&geph1->iode!=geph2->iode)) {
                    *geph3=*geph2;
@@ -286,15 +286,16 @@ static void update_ssr(rtksvr_t *svr, int index)
             sys=satsys(i+1,&prn);
             
             /* check corresponding ephemeris exists */
+            // CCMP??
             if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS) {
-                if (svr->nav.eph[i       ].iode!=iode&&
-                    svr->nav.eph[i+MAXSAT].iode!=iode) {
+                if (svr->nav.eph[i][0].iode!=iode&&
+                    svr->nav.eph[i][1].iode!=iode) {
                     continue;
                 }
             }
             else if (sys==SYS_GLO) {
-                if (svr->nav.geph[prn-1          ].iode!=iode&&
-                    svr->nav.geph[prn-1+MAXPRNGLO].iode!=iode) {
+                if (svr->nav.geph[prn-1          ][0].iode!=iode&&
+                    svr->nav.geph[prn-1+MAXPRNGLO][0].iode!=iode) {
                     continue;
                 }
             }
@@ -730,18 +731,35 @@ extern int rtksvrinit(rtksvr_t *svr)
     for (i=0;i<3;i++) svr->rb_ave[i]=0.0;
     
     memset(&svr->nav,0,sizeof(nav_t));
-    if (!(svr->nav.eph =(eph_t  *)malloc(sizeof(eph_t )*MAXSAT*4 ))||
-        !(svr->nav.geph=(geph_t *)malloc(sizeof(geph_t)*NSATGLO*2))||
-        !(svr->nav.seph=(seph_t *)malloc(sizeof(seph_t)*NSATSBS*2))) {
-        tracet(1,"rtksvrinit: malloc error\n");
-        return 0;
+    for (i=0;i<MAXSAT;i++) {
+        if (!(svr->nav.eph[i]=(eph_t *)malloc(sizeof(eph_t )*4))) {
+            tracet(1,"rtksvrinit: malloc error\n");
+            return 0;
+        }
+        svr->nav.eph[i][0]=eph0;
+        svr->nav.eph[i][1]=eph0;
+        svr->nav.eph[i][2]=eph0;
+        svr->nav.eph[i][3]=eph0;
+        svr->nav.n[i]=svr->nav.nmax[i]=4;
     }
-    for (i=0;i<MAXSAT*4 ;i++) svr->nav.eph [i]=eph0;
-    for (i=0;i<NSATGLO*2;i++) svr->nav.geph[i]=geph0;
-    for (i=0;i<NSATSBS*2;i++) svr->nav.seph[i]=seph0;
-    svr->nav.n =MAXSAT *2;
-    svr->nav.ng=NSATGLO*2;
-    svr->nav.ns=NSATSBS*2;
+    for (i=0;i<NSATGLO;i++) {
+        if (!(svr->nav.geph[i]=(geph_t *)malloc(sizeof(geph_t )*2))) {
+            tracet(1,"rtksvrinit: malloc error\n");
+            return 0;
+        }
+        svr->nav.geph[i][0]=geph0;
+        svr->nav.geph[i][1]=geph0;
+        svr->nav.ng[i]=svr->nav.ngmax[i]=2;
+    }
+    for (i=0;i<NSATSBS;i++) {
+        if (!(svr->nav.seph[i]=(seph_t *)malloc(sizeof(seph_t )*2))) {
+            tracet(1,"rtksvrinit: malloc error\n");
+            return 0;
+        }
+        svr->nav.seph[i][0]=seph0;
+        svr->nav.seph[i][1]=seph0;
+        svr->nav.ns[i]=svr->nav.nsmax[i]=2;
+    }
     
     for (i=0;i<3;i++) for (j=0;j<MAXOBSBUF;j++) {
         if (!(svr->obs[i][j].data=(obsd_t *)malloc(sizeof(obsd_t)*MAXOBS))) {
@@ -770,10 +788,10 @@ extern int rtksvrinit(rtksvr_t *svr)
 extern void rtksvrfree(rtksvr_t *svr)
 {
     int i,j;
-    
-    free(svr->nav.eph );
-    free(svr->nav.geph);
-    free(svr->nav.seph);
+
+    for (i=0;i<MAXSAT;i++) free(svr->nav.eph[i]);
+    for (i=0;i<NSATGLO;i++) free(svr->nav.geph[i]);
+    for (i=0;i<NSATSBS;i++) free(svr->nav.seph[i]);
     for (i=0;i<3;i++) for (j=0;j<MAXOBSBUF;j++) {
         free(svr->obs[i][j].data);
     }
@@ -907,9 +925,9 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
         }
     }
     /* update navigation data */
-    for (i=0;i<MAXSAT*4 ;i++) svr->nav.eph [i].ttr=time0;
-    for (i=0;i<NSATGLO*2;i++) svr->nav.geph[i].tof=time0;
-    for (i=0;i<NSATSBS*2;i++) svr->nav.seph[i].tof=time0;
+    for (i=0;i<MAXSAT;i++) for (j=0;j<4;j++) svr->nav.eph[i][j].ttr=time0;
+    for (i=0;i<NSATGLO;i++) for (j=0;j<2;j++) svr->nav.geph[i][j].tof=time0;
+    for (i=0;i<NSATSBS;i++) for (j=0;j<2;j++) svr->nav.seph[i][j].tof=time0;
     
     /* set monitor stream */
     svr->moni=moni;

@@ -2230,54 +2230,56 @@ void MainWindow::LoadNav(nav_t *nav)
     eph_t eph0;
     char buff[2049], *p;
     long toe_time,toc_time,ttr_time;
-    int i;
+    int i,j;
 
     trace(3, "LoadNav\n");
 
     memset(&eph0, 0, sizeof(eph_t));
 
-    for (i = 0; i < 2*MAXSAT; i++) {
-        if ((str = settings.value(QString("navi/eph_%1").arg(i, 2)).toString()).isEmpty()) continue;
-        nav->eph[i] = eph0;
-        strcpy(buff, qPrintable(str));
-        if (!(p = strchr(buff, ','))) continue;
-        *p = '\0';
-        if (!(nav->eph[i].sat = satid2no(buff))) continue;
-        sscanf(p + 1, "%d,%d,%d,%d,%ld,%ld,%ld,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d,%lf",
-               &nav->eph[i].iode,
-               &nav->eph[i].iodc,
-               &nav->eph[i].sva,
-               &nav->eph[i].svh,
-               &toe_time,
-               &toc_time,
-               &ttr_time,
-               &nav->eph[i].A,
-               &nav->eph[i].e,
-               &nav->eph[i].i0,
-               &nav->eph[i].OMG0,
-               &nav->eph[i].omg,
-               &nav->eph[i].M0,
-               &nav->eph[i].deln,
-               &nav->eph[i].OMGd,
-               &nav->eph[i].idot,
-               &nav->eph[i].crc,
-               &nav->eph[i].crs,
-               &nav->eph[i].cuc,
-               &nav->eph[i].cus,
-               &nav->eph[i].cic,
-               &nav->eph[i].cis,
-               &nav->eph[i].toes,
-               &nav->eph[i].fit,
-               &nav->eph[i].f0,
-               &nav->eph[i].f1,
-               &nav->eph[i].f2,
-               &nav->eph[i].tgd[0],
-               &nav->eph[i].code,
-               &nav->eph[i].flag,
-               &nav->eph[i].tgd[1]);
-        nav->eph[i].toe.time = toe_time;
-        nav->eph[i].toc.time = toc_time;
-        nav->eph[i].ttr.time = ttr_time;
+    for (i = 0; i < MAXSAT; i++) {
+        for (j = 0; j < 2; j++) {
+            if ((str = settings.value(QString("navi/eph_%1_%2").arg(i, 2).arg(j)).toString()).isEmpty()) continue;
+            nav->eph[i][j] = eph0;
+            strcpy(buff, qPrintable(str));
+            if (!(p = strchr(buff, ','))) continue;
+            *p = '\0';
+            if (!(nav->eph[i][j].sat = satid2no(buff))) continue;
+            sscanf(p + 1, "%d,%d,%d,%d,%ld,%ld,%ld,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d,%lf",
+                   &nav->eph[i][j].iode,
+                   &nav->eph[i][j].iodc,
+                   &nav->eph[i][j].sva,
+                   &nav->eph[i][j].svh,
+                   &toe_time,
+                   &toc_time,
+                   &ttr_time,
+                   &nav->eph[i][j].A,
+                   &nav->eph[i][j].e,
+                   &nav->eph[i][j].i0,
+                   &nav->eph[i][j].OMG0,
+                   &nav->eph[i][j].omg,
+                   &nav->eph[i][j].M0,
+                   &nav->eph[i][j].deln,
+                   &nav->eph[i][j].OMGd,
+                   &nav->eph[i][j].idot,
+                   &nav->eph[i][j].crc,
+                   &nav->eph[i][j].crs,
+                   &nav->eph[i][j].cuc,
+                   &nav->eph[i][j].cus,
+                   &nav->eph[i][j].cic,
+                   &nav->eph[i][j].cis,
+                   &nav->eph[i][j].toes,
+                   &nav->eph[i][j].fit,
+                   &nav->eph[i][j].f0,
+                   &nav->eph[i][j].f1,
+                   &nav->eph[i][j].f2,
+                   &nav->eph[i][j].tgd[0],
+                   &nav->eph[i][j].code,
+                   &nav->eph[i][j].flag,
+                   &nav->eph[i][j].tgd[1]);
+            nav->eph[i][j].toe.time = toe_time;
+            nav->eph[i][j].toc.time = toc_time;
+            nav->eph[i][j].ttr.time = ttr_time;
+        }
     }
     str = settings.value("navi/ion", "").toString();
     QStringList tokens = str.split(",");
@@ -2296,49 +2298,51 @@ void MainWindow::SaveNav(nav_t *nav)
     QSettings settings(IniFile, QSettings::IniFormat);
     QString str;
     char id[32];
-    int i;
+    int i,j;
 
     trace(3, "SaveNav\n");
 
     if (nav == NULL) return;
 
-    for (i = 0; i < MAXSAT*2; i++) {
-        if (nav->eph[i].ttr.time == 0) continue;
-        str = "";
-        satno2id(nav->eph[i].sat, id);
-        str = str + id + ",";
-        str = str + QString("%1,").arg(nav->eph[i].iode);
-        str = str + QString("%1,").arg(nav->eph[i].iodc);
-        str = str + QString("%1,").arg(nav->eph[i].sva);
-        str = str + QString("%1,").arg(nav->eph[i].svh);
-        str = str + QString("%1,").arg(static_cast<int>(nav->eph[i].toe.time));
-        str = str + QString("%1,").arg(static_cast<int>(nav->eph[i].toc.time));
-        str = str + QString("%1,").arg(static_cast<int>(nav->eph[i].ttr.time));
-        str = str + QString("%1,").arg(nav->eph[i].A, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].e, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].i0, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].OMG0, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].omg, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].M0, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].deln, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].OMGd, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].idot, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].crc, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].crs, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].cuc, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].cus, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].cic, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].cis, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].toes, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].fit, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].f0, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].f1, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].f2, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].tgd[0], 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].code);
-        str = str + QString("%1,").arg(nav->eph[i].flag);
-        str = str + QString("%1,").arg(nav->eph[i].tgd[1],0,'E',14);
-        settings.setValue(QString("navi/eph_%1").arg(i, 2), str);
+    for (i = 0; i < MAXSAT; i++) {
+        for (j = 0; j < nav->n[i]; j++) {
+            if (nav->eph[i][j].ttr.time == 0) continue;
+            str = "";
+            satno2id(nav->eph[i][j].sat, id);
+            str = str + id + ",";
+            str = str + QString("%1,").arg(nav->eph[i][j].iode);
+            str = str + QString("%1,").arg(nav->eph[i][j].iodc);
+            str = str + QString("%1,").arg(nav->eph[i][j].sva);
+            str = str + QString("%1,").arg(nav->eph[i][j].svh);
+            str = str + QString("%1,").arg(static_cast<int>(nav->eph[i][j].toe.time));
+            str = str + QString("%1,").arg(static_cast<int>(nav->eph[i][j].toc.time));
+            str = str + QString("%1,").arg(static_cast<int>(nav->eph[i][j].ttr.time));
+            str = str + QString("%1,").arg(nav->eph[i][j].A, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].e, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].i0, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].OMG0, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].omg, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].M0, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].deln, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].OMGd, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].idot, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].crc, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].crs, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].cuc, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].cus, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].cic, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].cis, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].toes, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].fit, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].f0, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].f1, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].f2, 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].tgd[0], 0, 'E', 14);
+            str = str + QString("%1,").arg(nav->eph[i][j].code);
+            str = str + QString("%1,").arg(nav->eph[i][j].flag);
+            str = str + QString("%1,").arg(nav->eph[i][j].tgd[1],0,'E',14);
+            settings.setValue(QString("navi/eph_%1_%2").arg(i, 2).arg(j), str);
+        }
     }
     str = "";
     for (i = 0; i < 8; i++) str = str + QString("%1,").arg(nav->ion_gps[i], 0, 'E', 14);

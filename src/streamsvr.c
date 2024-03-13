@@ -150,13 +150,13 @@ static void raw2rtcm(rtcm_t *out, const raw_t *raw, int ret)
         set=raw->ephset;
         sys=satsys(sat,&prn);
         if (sys==SYS_GLO) {
-            out->nav.geph[prn-1]=raw->nav.geph[prn-1];
+            out->nav.geph[prn-1][0]=raw->nav.geph[prn-1][0];
             out->ephsat=sat;
             out->ephset=set;
         }
         else if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_CMP||
                  sys==SYS_IRN) {
-            out->nav.eph[sat-1+MAXSAT*set]=raw->nav.eph[sat-1+MAXSAT*set];
+            out->nav.eph[sat-1][set]=raw->nav.eph[sat-1][set];
             out->ephsat=sat;
             out->ephset=set;
         }
@@ -204,13 +204,13 @@ static void rtcm2rtcm(rtcm_t *out, const rtcm_t *rtcm, int ret, int stasel)
         set=rtcm->ephset;
         sys=satsys(sat,&prn);
         if (sys==SYS_GLO) {
-            out->nav.geph[prn-1]=rtcm->nav.geph[prn-1];
+            out->nav.geph[prn-1][0]=rtcm->nav.geph[prn-1][0];
             out->ephsat=sat;
             out->ephset=set;
         }
         else if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_CMP||
                  sys==SYS_IRN) {
-            out->nav.eph[sat-1+MAXSAT*set]=rtcm->nav.eph[sat-1+MAXSAT*set];
+            out->nav.eph[sat-1][set]=rtcm->nav.eph[sat-1][set];
             out->ephsat=sat;
             out->ephset=set;
         }
@@ -349,11 +349,11 @@ static int nextsat(nav_t *nav, int sat, int msg)
         
         if (sys==SYS_GLO) {
             sat=satno(sys,p);
-            if (nav->geph[p-1].sat==sat) return sat;
+            if (nav->geph[p-1][0].sat==sat) return sat;
         }
         else {
             sat=satno(sys,p);
-            if (nav->eph[sat-1+MAXSAT*set].sat==sat) return sat;
+            if (nav->eph[sat-1][set].sat==sat) return sat;
         }
     }
     return 0;

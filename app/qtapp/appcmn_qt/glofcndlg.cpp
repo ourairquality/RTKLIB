@@ -67,12 +67,14 @@ void GloFcnDialog::BtnReadClick()
     file=QFileDialog::getOpenFileName(this);
     
     if (!readrnx(qPrintable(file),0,"",NULL,&nav,NULL)) return;
-	
-	for (int i=0;i<nav.ng;i++) {
-		if (satsys(nav.geph[i].sat,&prn)!=SYS_GLO) continue;
-        GetFcn(prn)->setText(QString::number(nav.geph[i].frq));
-	}
-	freenav(&nav,0xFF);
+
+    for (int i=0;i<NSATGLO;i++) {
+        for (int j=0;j<nav.ng[i];j++) {
+            if (satsys(nav.geph[i][j].sat,&prn)!=SYS_GLO) continue;
+                GetFcn(prn)->setText(QString::number(nav.geph[i][j].frq));
+        }
+    }
+    freenav(&nav,0xFF);
 }
 //---------------------------------------------------------------------------
 void GloFcnDialog::BtnClearClick()

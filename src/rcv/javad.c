@@ -565,12 +565,12 @@ static int decode_eph(raw_t *raw, int sys)
     else return 0;
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (timediff(raw->nav.eph[sat-1+MAXSAT*set].toe,eph.toe)==0.0&&
-            raw->nav.eph[sat-1+MAXSAT*set].iode==eph.iode&&
-            raw->nav.eph[sat-1+MAXSAT*set].iodc==eph.iodc) return 0; /* unchanged */
+        if (timediff(raw->nav.eph[sat-1][set].toe,eph.toe)==0.0&&
+            raw->nav.eph[sat-1][set].iode==eph.iode&&
+            raw->nav.eph[sat-1][set].iodc==eph.iodc) return 0; /* unchanged */
     }
     eph.sat=sat;
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][set]=eph;
     raw->ephsat=sat;
     raw->ephset=set;
     return 2;
@@ -648,17 +648,18 @@ static int decode_NE(raw_t *raw)
         return 0;
     }
     /* check illegal ephemeris by frequency number consistency */
-    if (raw->nav.geph[prn-1].toe.time&&geph.frq!=raw->nav.geph[prn-1].frq) {
+    if (raw->nav.geph[prn-1][0].toe.time&&geph.frq!=raw->nav.geph[prn-1][0].frq) {
         trace(2,"javad NE glonass fcn changed: prn=%2d fcn=%2d->%2d\n",prn,
-              raw->nav.geph[prn-1].frq,geph.frq);
+              raw->nav.geph[prn-1][0].frq,geph.frq);
         return -1;
     }
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (fabs(timediff(geph.toe,raw->nav.geph[prn-1].toe))<1.0&&
-            geph.svh==raw->nav.geph[prn-1].svh) return 0; /* unchanged */
+        if (fabs(timediff(geph.toe,raw->nav.geph[prn-1][0].toe))<1.0&&
+            geph.svh==raw->nav.geph[prn-1][0].svh) return 0; /* unchanged */
     }
-    raw->nav.geph[prn-1]=geph;
+    raw->nav.geph[prn-1][0]=geph;
     raw->ephsat=geph.sat;
+    raw->ephset=0;
     return 2;
 }
 /* decode [EN] Galileo ephemeris ---------------------------------------------*/
@@ -714,11 +715,12 @@ static int decode_WE(raw_t *raw)
     seph.t0=adjday(seph.tof,tod);
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (fabs(timediff(seph.t0,raw->nav.seph[prn-MINPRNSBS].t0))<1.0&&
-            seph.sva==raw->nav.seph[prn-MINPRNSBS].sva) return 0; /* unchanged */
+        if (fabs(timediff(seph.t0,raw->nav.seph[prn-MINPRNSBS][0].t0))<1.0&&
+            seph.sva==raw->nav.seph[prn-MINPRNSBS][0].sva) return 0; /* unchanged */
     }
-    raw->nav.seph[prn-MINPRNSBS]=seph;
+    raw->nav.seph[prn-MINPRNSBS][0]=seph;
     raw->ephsat=seph.sat;
+    raw->ephset=0;
     return 2;
 }
 /* decode [QE] QZSS ephemeris ------------------------------------------------*/
@@ -836,11 +838,11 @@ static int decode_L1eph(int sat, raw_t *raw)
     if (!decode_frame(raw->subfrm[sat-1],&eph,NULL,NULL,NULL)) return 0;
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (eph.iode==raw->nav.eph[sat-1].iode&&
-            eph.iodc==raw->nav.eph[sat-1].iodc) return 0;
+        if (eph.iode==raw->nav.eph[sat-1][0].iode&&
+            eph.iodc==raw->nav.eph[sat-1][0].iodc) return 0;
     }
     eph.sat=sat;
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -1096,10 +1098,11 @@ static int decode_lD(raw_t *raw)
     geph.frq=frq;
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (geph.iode==raw->nav.geph[prn-1].iode) return 0; /* unchanged */
+        if (geph.iode==raw->nav.geph[prn-1][0].iode) return 0; /* unchanged */
     }
-    raw->nav.geph[prn-1]=geph;
+    raw->nav.geph[prn-1][0]=geph;
     raw->ephsat=sat;
+    raw->ephset=0;
     return 2;
 }
 /* decode [ED] Galileo raw navigation data -----------------------------------*/

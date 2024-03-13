@@ -332,7 +332,7 @@ static int decode_stqrawx(raw_t *raw)
         }
         /* set glonass freq channel number */
         if (sys==SYS_GLO) {
-            raw->nav.geph[prn-1].frq=(int)(U1(p+2)&0xF)-7;
+            raw->nav.geph[prn-1][0].frq=(int)(U1(p+2)&0xF)-7;
         }
         ind=U2(p+27);
         pr1=!(ind&1)?0.0:R8(p+ 4);
@@ -451,11 +451,11 @@ static int decode_stqgene(raw_t *raw)
     matcpy(raw->nav.utc_gal,utc,8,1);
 
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (eph.iode==raw->nav.eph[sat-1].iode&&
-            timediff(eph.toe,raw->nav.eph[sat-1].toe)==0.0&&
-            timediff(eph.toc,raw->nav.eph[sat-1].toc)==0.0) return 0;
+        if (eph.iode==raw->nav.eph[sat-1][0].iode&&
+            timediff(eph.toe,raw->nav.eph[sat-1][0].toe)==0.0&&
+            timediff(eph.toc,raw->nav.eph[sat-1][0].toc)==0.0) return 0;
     }
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0; /* 0:I/NAV */
     return 2;
@@ -496,11 +496,11 @@ static int decode_ephem(int sat, raw_t *raw)
     if (!decode_frame(raw->subfrm[sat-1],&eph,NULL,NULL,NULL)) return 0;
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (eph.iode==raw->nav.eph[sat-1].iode&&
-            eph.iodc==raw->nav.eph[sat-1].iodc) return 0; /* unchanged */
+        if (eph.iode==raw->nav.eph[sat-1][0].iode&&
+            eph.iodc==raw->nav.eph[sat-1][0].iodc) return 0; /* unchanged */
     }
     eph.sat=sat;
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -605,11 +605,11 @@ static int decode_stqglo(raw_t *raw)
     if (!decode_glostr(raw->subfrm[sat-1],&geph,NULL)||geph.sat!=sat) return 0;
 
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (geph.iode==raw->nav.geph[prn-1].iode) return 0; /* unchanged */
+        if (geph.iode==raw->nav.geph[prn-1][0].iode) return 0; /* unchanged */
     }
     /* keep freq channel number */
-    geph.frq=raw->nav.geph[prn-1].frq;
-    raw->nav.geph[prn-1]=geph;
+    geph.frq=raw->nav.geph[prn-1][0].frq;
+    raw->nav.geph[prn-1][0]=geph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -632,7 +632,7 @@ static int decode_stqgloe(raw_t *raw)
         return -1;
     }
     /* set frequency channel number */
-    raw->nav.geph[prn-1].frq=I1(p+2);
+    raw->nav.geph[prn-1][0].frq=I1(p+2);
     
     return 0;
 }
@@ -694,10 +694,10 @@ static int decode_stqbds(raw_t *raw)
         if (!decode_bds_d2(raw->subfrm[sat-1],&eph,NULL)) return 0;
     }
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (timediff(eph.toe,raw->nav.eph[sat-1].toe)==0.0) return 0; /* unchanged */
+        if (timediff(eph.toe,raw->nav.eph[sat-1][0].toe)==0.0) return 0; /* unchanged */
     }
     eph.sat=sat;
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;

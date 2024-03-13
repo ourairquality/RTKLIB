@@ -312,7 +312,7 @@ void __fastcall TPlot::ReadNav(TStrings *files)
     }
     uniqnav(&Nav);
     
-    if (Nav.n<=0&&Nav.ng<=0&&Nav.ns<=0) {
+    if (navncnt(&Nav)<=0&&navngcnt(&Nav)<=0&&navnscnt(&Nav)<=0)) {
         ShowMsg(s.sprintf("no nav message: %s...",files->Strings[0].c_str()));
         ReadWaitEnd();
         return;
