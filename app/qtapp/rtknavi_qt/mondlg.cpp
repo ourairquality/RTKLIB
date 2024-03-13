@@ -1132,8 +1132,8 @@ void MonitorDialog::showNavigationsGPS()
     rtksvrlock(rtksvr);
     time = rtksvr->rtk.sol.time;
     for (i = 0; i < MAXSAT; i++) {
-        if (i + off * MAXSAT < rtksvr->nav.n)
-            eph[i] = rtksvr->nav.eph[i + off * MAXSAT];
+        if (off < rtksvr->nav.n[i])
+            eph[i] = rtksvr->nav.eph[i][off];
         else
             eph[i] = eph0;
     }
@@ -1244,8 +1244,8 @@ void MonitorDialog::showGlonassNavigations()
     rtksvrlock(rtksvr);
     time = rtksvr->rtk.sol.time;
     for (i = 0; i < NSATGLO; i++) {
-        if (i + off * NSATGLO < rtksvr->nav.ng)
-            geph[i] = rtksvr->nav.geph[i + off * NSATGLO];
+        if (off < rtksvr->nav.ng[i])
+            geph[i] = rtksvr->nav.geph[i][off];
         else
             geph[i] = geph0;
     }
@@ -1338,8 +1338,8 @@ void MonitorDialog::showSbsNavigations()
     rtksvrlock(rtksvr); // lock
     time = rtksvr->rtk.sol.time;
     for (int i = 0; i < NSATSBS; i++) {
-        if (i + off * NSATSBS < rtksvr->nav.ns)
-            seph[i] = rtksvr->nav.seph[i + off * NSATSBS];
+        if (off < rtksvr->nav.ns[i])
+            seph[i] = rtksvr->nav.seph[i][off];
         else
             seph[i] = seph0;
     }

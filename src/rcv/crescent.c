@@ -302,10 +302,10 @@ static int decode_creseph(raw_t *raw)
         return -1;
     }
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (eph.iode==raw->nav.eph[sat-1].iode) return 0; /* unchanged */
+        if (eph.iode==raw->nav.eph[sat-1][0].iode) return 0; /* unchanged */
     }
     eph.sat=sat;
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -514,9 +514,9 @@ static int decode_cresgloeph(raw_t *raw)
     geph.frq=frq;
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (geph.iode==raw->nav.geph[prn-1].iode) return 0; /* unchanged */
+        if (geph.iode==raw->nav.geph[prn-1][0].iode) return 0; /* unchanged */
     }
-    raw->nav.geph[prn-1]=geph;
+    raw->nav.geph[prn-1][0]=geph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;

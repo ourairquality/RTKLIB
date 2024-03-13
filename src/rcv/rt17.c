@@ -919,12 +919,13 @@ static int DecodeBeidouEphemeris(raw_t *Raw)
     tracet(3, "RT17: DecodeBeidouEphemeris(); SAT=%d, IODC=%d, IODE=%d, WEEK=%d.\n", sat, eph.iodc, eph.iode, eph.week);
     if (!strstr(Raw->opt,"-EPHALL"))
     {
-        if (eph.iode == Raw->nav.eph[sat-1].iode)
+        if (eph.iode == Raw->nav.eph[sat-1][0].iode)
             return 0; /* unchanged */
     }
     eph.sat = sat;
-    Raw->nav.eph[sat-1] = eph;
+    Raw->nav.eph[sat-1][0] = eph;
     Raw->ephsat = sat;
+    Raw->ephset = 0;
     return 2;
 #endif
 }
@@ -1024,12 +1025,13 @@ static int DecodeGalileoEphemeris(raw_t *Raw)
     tracet(3, "RT17: DecodeGalileoEphemeris(); SAT=%d, IODC=%d, IODE=%d, WEEK=%d.\n", sat, eph.iodc, eph.iode, eph.week);
     if (!strstr(Raw->opt,"-EPHALL"))
     {
-        if (eph.iode == Raw->nav.eph[sat-1].iode)
+        if (eph.iode == Raw->nav.eph[sat-1][0].iode)
             return 0; /* unchanged */
     }
     eph.sat = sat;
-    Raw->nav.eph[sat-1] = eph;
+    Raw->nav.eph[sat-1][0] = eph;
     Raw->ephsat = sat;
+    Raw->ephset = 0;
     return 2;
 #endif
 }
@@ -1200,13 +1202,14 @@ static int DecodeGPSEphemeris(raw_t *Raw)
  
     if (!strstr(Raw->opt,"-EPHALL"))
     {
-        if (eph.iode == Raw->nav.eph[sat-1].iode)
+        if (eph.iode == Raw->nav.eph[sat-1][0].iode)
             return 0; /* unchanged */
     }
 
     eph.sat = sat;
-    Raw->nav.eph[sat-1] = eph;
+    Raw->nav.eph[sat-1][0] = eph;
     Raw->ephsat = sat;
+    Raw->ephset = 0;
 
     return 2;
 }
@@ -1531,12 +1534,13 @@ static int DecodeQZSSEphemeris(raw_t *Raw)
     tracet(3, "RT17: DecodeQZSSEphemeris(); SAT=%d, IODC=%d, IODE=%d, WEEK=%d.\n", sat, eph.iodc, eph.iode, eph.week);
     if (!strstr(Raw->opt,"-EPHALL"))
     {
-        if (eph.iode == Raw->nav.eph[sat-1].iode)
+        if (eph.iode == Raw->nav.eph[sat-1][0].iode)
             return 0; /* unchanged */
     }
     eph.sat = sat;
-    Raw->nav.eph[sat-1] = eph;
+    Raw->nav.eph[sat-1][0] = eph;
     Raw->ephsat = sat;
+    Raw->ephset = 0;
     return 2;
 #endif
 }

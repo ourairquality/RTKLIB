@@ -443,21 +443,22 @@ static eph_t *seleph(gtime_t time, int sat, int iode, const nav_t *nav)
     }
     tmin=tmax+1.0;
 
-    for (i=0;i<nav->n;i++) {
-        if (nav->eph[i].sat!=sat) continue;
-        if (iode>=0&&nav->eph[i].iode!=iode) continue;
+    for (i=0;i<nav->n[sat-1];i++) {
+        /* Skip empty entries for which the sat is zero. */
+        if (nav->eph[sat-1][i].sat!=sat) continue;
+        if (iode>=0&&nav->eph[sat-1][i].iode!=iode) continue;
         if (sys==SYS_GAL) {
             sel=getseleph(SYS_GAL);
             /* this code is from 2.4.3 b34 but does not seem to be fully supported,
                so for now I have dropped back to the b33 code */
             /* if (sel==0&&!(nav->eph[i].code&(1<<9))) continue; */ /* I/NAV */
             /*if (sel==1&&!(nav->eph[i].code&(1<<8))) continue; */ /* F/NAV */
-            if (sel==1&&!(nav->eph[i].code&(1<<9))) continue; /* I/NAV */
-            if (sel==2&&!(nav->eph[i].code&(1<<8))) continue; /* F/NAV */
-            if (timediff(nav->eph[i].toe,time)>=0.0) continue; /* AOD<=0 */
+            if (sel==1&&!(nav->eph[sat-1][i].code&(1<<9))) continue; /* I/NAV */
+            if (sel==2&&!(nav->eph[sat-1][i].code&(1<<8))) continue; /* F/NAV */
+            if (timediff(nav->eph[sat-1][i].toe,time)>=0.0) continue; /* AOD<=0 */
         }
-        if ((t=fabs(timediff(nav->eph[i].toe,time)))>tmax) continue;
-        if (iode>=0) return nav->eph+i;
+        if ((t=fabs(timediff(nav->eph[sat-1][i].toe,time)))>tmax) continue;
+        if (iode>=0) return nav->eph[sat-1]+i;
         if (t<=tmin) {j=i; tmin=t;} /* toe closest to time */
     }
     if (iode>=0||j<0) {
@@ -466,21 +467,24 @@ static eph_t *seleph(gtime_t time, int sat, int iode, const nav_t *nav)
         return NULL;
     }
     trace(4,"seleph: sat=%d dt=%.0f\n",sat,tmin);
-    return nav->eph+j;
+    return nav->eph[sat-1]+j;
 }
 /* select glonass ephemeris --------------------------------------------------*/
 static geph_t *selgeph(gtime_t time, int sat, int iode, const nav_t *nav)
 {
     double t,tmax=MAXDTOE_GLO,tmin=tmax+1.0;
-    int i,j=-1;
+    int i,j=-1,prn;
 
     trace(4,"selgeph : time=%s sat=%2d iode=%2d\n",time_str(time,3),sat,iode);
 
-    for (i=0;i<nav->ng;i++) {
-        if (nav->geph[i].sat!=sat) continue;
-        if (iode>=0&&nav->geph[i].iode!=iode) continue;
-        if ((t=fabs(timediff(nav->geph[i].toe,time)))>tmax) continue;
-        if (iode>=0) return nav->geph+i;
+    if (satsys(sat,&prn)!=SYS_GLO)
+        return NULL;
+
+    for (i=0;i<nav->ng[prn-1];i++) {
+        if (nav->geph[prn-1][i].sat!=sat) continue;
+        if (iode>=0&&nav->geph[prn-1][i].iode!=iode) continue;
+        if ((t=fabs(timediff(nav->geph[prn-1][i].toe,time)))>tmax) continue;
+        if (iode>=0) return nav->geph[prn-1]+i;
         if (t<=tmin) {j=i; tmin=t;} /* toe closest to time */
     }
     if (iode>=0||j<0) {
@@ -489,26 +493,30 @@ static geph_t *selgeph(gtime_t time, int sat, int iode, const nav_t *nav)
         return NULL;
     }
     trace(4,"selgeph: sat=%d dt=%.0f\n",sat,tmin);
-    return nav->geph+j;
+    return nav->geph[prn-1]+j;
 }
 /* select sbas ephemeris -----------------------------------------------------*/
 static seph_t *selseph(gtime_t time, int sat, const nav_t *nav)
 {
     double t,tmax=MAXDTOE_SBS,tmin=tmax+1.0;
-    int i,j=-1;
+    int i,j=-1,prn,k;
 
     trace(4,"selseph : time=%s sat=%2d\n",time_str(time,3),sat);
 
-    for (i=0;i<nav->ns;i++) {
-        if (nav->seph[i].sat!=sat) continue;
-        if ((t=fabs(timediff(nav->seph[i].t0,time)))>tmax) continue;
+    if (satsys(sat,&prn)!=SYS_SBS)
+        return NULL;
+    k=prn-MINPRNSBS;
+
+    for (i=0;i<nav->ns[k];i++) {
+        if (nav->seph[k][i].sat!=sat) continue;
+        if ((t=fabs(timediff(nav->seph[k][i].t0,time)))>tmax) continue;
         if (t<=tmin) {j=i; tmin=t;} /* toe closest to time */
     }
     if (j<0) {
         trace(3,"no sbas ephemeris     : %s sat=%2d\n",time_str(time,0),sat);
         return NULL;
     }
-    return nav->seph+j;
+    return nav->seph[k]+j;
 }
 /* satellite clock with broadcast ephemeris ----------------------------------*/
 static int ephclk(gtime_t time, gtime_t teph, int sat, const nav_t *nav,

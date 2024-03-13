@@ -290,10 +290,10 @@ static int decode_bnx_01_01(raw_t *raw, uint8_t *buff, int len)
     eph.sva=uraindex(ura);
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (raw->nav.eph[eph.sat-1].iode==eph.iode&&
-            raw->nav.eph[eph.sat-1].iodc==eph.iodc) return 0; /* unchanged */
+        if (raw->nav.eph[eph.sat-1][0].iode==eph.iode&&
+            raw->nav.eph[eph.sat-1][0].iodc==eph.iodc) return 0; /* unchanged */
     }
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -346,10 +346,10 @@ static int decode_bnx_01_02(raw_t *raw, uint8_t *buff, int len)
     geph.iode=(int)(fmod(tod,86400.0)/900.0+0.5);
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (fabs(timediff(geph.toe,raw->nav.geph[prn-MINPRNGLO].toe))<1.0&&
-            geph.svh==raw->nav.geph[prn-MINPRNGLO].svh) return 0;
+        if (fabs(timediff(geph.toe,raw->nav.geph[prn-MINPRNGLO][0].toe))<1.0&&
+            geph.svh==raw->nav.geph[prn-MINPRNGLO][0].svh) return 0;
     }
-    raw->nav.geph[prn-1]=geph;
+    raw->nav.geph[prn-1][0]=geph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -397,10 +397,10 @@ static int decode_bnx_01_03(raw_t *raw, uint8_t *buff, int len)
     seph.tof=adjweek(seph.t0,tof);
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (fabs(timediff(seph.t0,raw->nav.seph[prn-MINPRNSBS].t0))<1.0&&
-            seph.sva==raw->nav.seph[prn-MINPRNSBS].sva) return 0;
+        if (fabs(timediff(seph.t0,raw->nav.seph[prn-MINPRNSBS][0].t0))<1.0&&
+            seph.sva==raw->nav.seph[prn-MINPRNSBS][0].sva) return 0;
     }
-    raw->nav.seph[prn-MINPRNSBS]=seph;
+    raw->nav.seph[prn-MINPRNSBS][0]=seph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -468,13 +468,13 @@ static int decode_bnx_01_04(raw_t *raw, uint8_t *buff, int len)
     eph.ttr=adjweek(eph.toe,tow);
     eph.sva=ura<0.0?(int)(-ura)-1:sisaindex(ura); /* SISA index */
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (raw->nav.eph[sat-1+MAXSAT*set].iode==eph.iode&&
-            fabs(timediff(raw->nav.eph[sat-1+MAXSAT*set].toe,eph.toe))<1.0&&
-            fabs(timediff(raw->nav.eph[sat-1+MAXSAT*set].toc,eph.toc))<1.0) {
+        if (raw->nav.eph[sat-1][set].iode==eph.iode&&
+            fabs(timediff(raw->nav.eph[sat-1][set].toe,eph.toe))<1.0&&
+            fabs(timediff(raw->nav.eph[sat-1][set].toc,eph.toc))<1.0) {
             return 0;
         }
     }
-    raw->nav.eph[sat-1+MAXSAT*set]=eph;
+    raw->nav.eph[sat-1][set]=eph;
     raw->ephsat=sat;
     raw->ephset=set;
     return 2;
@@ -546,9 +546,9 @@ static int decode_bnx_01_05(raw_t *raw, uint8_t *buff, int len)
         /* message source (0:unknown,1:B1I,2:B1Q,3:B2I,4:B2Q,5:B3I,6:B3Q)*/
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (fabs(timediff(raw->nav.eph[sat-1].toe,eph.toe))<1.0) return 0;
+        if (fabs(timediff(raw->nav.eph[sat-1][0].toe,eph.toe))<1.0) return 0;
     }
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -611,10 +611,10 @@ static int decode_bnx_01_06(raw_t *raw, uint8_t *buff, int len)
     eph.code=2; /* codes on L2 channel */
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (raw->nav.eph[sat-1].iode==eph.iode&&
-            raw->nav.eph[sat-1].iodc==eph.iodc) return 0;
+        if (raw->nav.eph[sat-1][0].iode==eph.iode&&
+            raw->nav.eph[sat-1][0].iodc==eph.iodc) return 0;
     }
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -675,11 +675,11 @@ static int decode_bnx_01_07(raw_t *raw, uint8_t *buff, int len)
     eph.tgd[0]=(int8_t)(iodec>>8)*P2_31;
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (raw->nav.eph[sat-1].iode==eph.iode&&
-            fabs(timediff(raw->nav.eph[sat-1].toe,eph.toe))<1.0&&
-            fabs(timediff(raw->nav.eph[sat-1].toc,eph.toc))<1.0) return 0;
+        if (raw->nav.eph[sat-1][0].iode==eph.iode&&
+            fabs(timediff(raw->nav.eph[sat-1][0].toe,eph.toe))<1.0&&
+            fabs(timediff(raw->nav.eph[sat-1][0].toc,eph.toc))<1.0) return 0;
     }
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -748,13 +748,13 @@ static int decode_bnx_01_14(raw_t *raw, uint8_t *buff, int len)
     eph.ttr=adjweek(eph.toe,tow);
     eph.sva=ura<0.0?(int)(-ura)-1:sisaindex(ura); /* SISA index */
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (raw->nav.eph[sat-1+MAXSAT*set].iode==eph.iode&&
-            fabs(timediff(raw->nav.eph[sat-1+MAXSAT*set].toe,eph.toe))<1.0&&
-            fabs(timediff(raw->nav.eph[sat-1+MAXSAT*set].toc,eph.toc))<1.0) {
+        if (raw->nav.eph[sat-1][set].iode==eph.iode&&
+            fabs(timediff(raw->nav.eph[sat-1][set].toe,eph.toe))<1.0&&
+            fabs(timediff(raw->nav.eph[sat-1][set].toc,eph.toc))<1.0) {
             return 0;
         }
     }
-    raw->nav.eph[sat-1+MAXSAT*set]=eph;
+    raw->nav.eph[sat-1][set]=eph;
     raw->ephsat=sat;
     raw->ephset=set;
     return 2;

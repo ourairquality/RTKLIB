@@ -118,8 +118,8 @@ static int fcn_glo(int sat, rtcm_t *rtcm)
     if (satsys(sat,&prn)!=SYS_GLO) {
         return -1;
     }
-    if (rtcm->nav.geph[prn-1].sat==sat) {
-        return rtcm->nav.geph[prn-1].frq+7;
+    if (rtcm->nav.geph[prn-1][0].sat==sat) {
+        return rtcm->nav.geph[prn-1][0].frq+7;
     }
     if (rtcm->nav.glo_fcn[prn-1]>0) { /* fcn+8 (0: no data) */
         return rtcm->nav.glo_fcn[prn-1]-8+7;
@@ -781,7 +781,7 @@ static int encode_type1019(rtcm_t *rtcm, int sync)
     trace(3,"encode_type1019: sync=%d\n",sync);
     
     if (satsys(rtcm->ephsat,&prn)!=SYS_GPS) return 0;
-    eph=rtcm->nav.eph+rtcm->ephsat-1;
+    eph=rtcm->nav.eph[rtcm->ephsat-1];
     if (eph->sat!=rtcm->ephsat) return 0;
     week=eph->week%1024;
     toe  =ROUND(eph->toes/16.0);
@@ -852,7 +852,7 @@ static int encode_type1020(rtcm_t *rtcm, int sync)
     trace(3,"encode_type1020: sync=%d\n",sync);
     
     if (satsys(rtcm->ephsat,&prn)!=SYS_GLO) return 0;
-    geph=rtcm->nav.geph+prn-1;
+    geph=rtcm->nav.geph[prn-1];
     if (geph->sat!=rtcm->ephsat) return 0;
     fcn=geph->frq+7;
     
@@ -972,7 +972,7 @@ static int encode_type1041(rtcm_t *rtcm, int sync)
     trace(3,"encode_type1041: sync=%d\n",sync);
     
     if (satsys(rtcm->ephsat,&prn)!=SYS_IRN) return 0;
-    eph=rtcm->nav.eph+rtcm->ephsat-1;
+    eph=rtcm->nav.eph[rtcm->ephsat-1];
     if (eph->sat!=rtcm->ephsat) return 0;
     week=eph->week%1024;
     toe  =ROUND(eph->toes/16.0);
@@ -1038,7 +1038,7 @@ static int encode_type1044(rtcm_t *rtcm, int sync)
     trace(3,"encode_type1044: sync=%d\n",sync);
     
     if (satsys(rtcm->ephsat,&prn)!=SYS_QZS) return 0;
-    eph=rtcm->nav.eph+rtcm->ephsat-1;
+    eph=rtcm->nav.eph[rtcm->ephsat-1];
     if (eph->sat!=rtcm->ephsat) return 0;
     week=eph->week%1024;
     toe  =ROUND(eph->toes/16.0);
@@ -1107,7 +1107,7 @@ static int encode_type1045(rtcm_t *rtcm, int sync)
     trace(3,"encode_type1045: sync=%d\n",sync);
     
     if (satsys(rtcm->ephsat,&prn)!=SYS_GAL) return 0;
-    eph=rtcm->nav.eph+rtcm->ephsat-1+MAXSAT; /* F/NAV */
+    eph=rtcm->nav.eph[rtcm->ephsat-1]+1; /* F/NAV */
     if (eph->sat!=rtcm->ephsat) return 0;
     week=(eph->week-1024)%4096; /* gst-week = gal-week - 1024 */
     toe  =ROUND(eph->toes/60.0);
@@ -1177,7 +1177,7 @@ static int encode_type1046(rtcm_t *rtcm, int sync)
     trace(3,"encode_type1046: sync=%d\n",sync);
     
     if (satsys(rtcm->ephsat,&prn)!=SYS_GAL) return 0;
-    eph=rtcm->nav.eph+rtcm->ephsat-1; /* I/NAV */
+    eph=rtcm->nav.eph[rtcm->ephsat-1]; /* I/NAV */
     if (eph->sat!=rtcm->ephsat) return 0;
     week=(eph->week-1024)%4096; /* gst-week = gal-week - 1024 */
     toe  =ROUND(eph->toes/60.0);
@@ -1251,7 +1251,7 @@ static int encode_type1042(rtcm_t *rtcm, int sync)
     trace(3,"encode_type1042: sync=%d\n",sync);
     
     if (satsys(rtcm->ephsat,&prn)!=SYS_CMP) return 0;
-    eph=rtcm->nav.eph+rtcm->ephsat-1;
+    eph=rtcm->nav.eph[rtcm->ephsat-1];
     if (eph->sat!=rtcm->ephsat) return 0;
     week =eph->week%8192;
     toe  =ROUND(eph->toes/8.0);
@@ -1320,7 +1320,7 @@ static int encode_type63(rtcm_t *rtcm, int sync)
     trace(3,"encode_type63: sync=%d\n",sync);
     
     if (satsys(rtcm->ephsat,&prn)!=SYS_CMP) return 0;
-    eph=rtcm->nav.eph+rtcm->ephsat-1;
+    eph=rtcm->nav.eph[rtcm->ephsat-1];
     if (eph->sat!=rtcm->ephsat) return 0;
     week =eph->week%8192;
     toe  =ROUND(eph->toes/8.0);

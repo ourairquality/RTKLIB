@@ -317,11 +317,11 @@ static int decode_gpsephb(raw_t* raw)
     eph.ttr = raw->time;
 
     if (!strstr(raw->opt, "-EPHALL")) {
-        if (timediff(raw->nav.eph[sat - 1].toe, eph.toe) == 0.0 &&
-            timediff(raw->nav.eph[sat - 1].toc, eph.toc) == 0.0) return 0;
+        if (timediff(raw->nav.eph[sat - 1][0].toe, eph.toe) == 0.0 &&
+            timediff(raw->nav.eph[sat - 1][0].toc, eph.toc) == 0.0) return 0;
     }
 
-    raw->nav.eph[sat - 1] = eph;
+    raw->nav.eph[sat - 1][0] = eph;
     raw->ephsat = sat;
     raw->ephset = 0;
     return 2;
@@ -381,11 +381,11 @@ static int decode_gloephb(raw_t* raw)
     geph.tof = gpst2time(week, tof);
 
     if (!strstr(raw->opt, "-EPHALL")) {
-        if (fabs(timediff(geph.toe, raw->nav.geph[prn - 1].toe)) < 1.0 &&
-            geph.svh == raw->nav.geph[prn - 1].svh) return 0; /* unchanged */
+        if (fabs(timediff(geph.toe, raw->nav.geph[prn - 1][0].toe)) < 1.0 &&
+            geph.svh == raw->nav.geph[prn - 1][0].svh) return 0; /* unchanged */
     }
     geph.sat = sat;
-    raw->nav.geph[prn - 1] = geph;
+    raw->nav.geph[prn - 1][0] = geph;
     raw->ephsat = sat;
     raw->ephset = 0;
     return 2;
@@ -475,13 +475,13 @@ static int decode_galephb(raw_t* raw) {
     eph.ttr = raw->time;
 
     if (!strstr(raw->opt, "-EPHALL")) {
-        if (eph.iode == raw->nav.eph[sat - 1 + MAXSAT * set].iode &&
-            timediff(eph.toe, raw->nav.eph[sat - 1 + MAXSAT * set].toe) == 0.0 &&
-            timediff(eph.toc, raw->nav.eph[sat - 1 + MAXSAT * set].toc) == 0.0) {
+        if (eph.iode == raw->nav.eph[sat - 1][set].iode &&
+            timediff(eph.toe, raw->nav.eph[sat - 1][set].toe) == 0.0 &&
+            timediff(eph.toc, raw->nav.eph[sat - 1][set].toc) == 0.0) {
             return 0; /* unchanged */
         }
     }
-    raw->nav.eph[sat - 1 + MAXSAT * set] = eph;
+    raw->nav.eph[sat - 1][set] = eph;
     raw->ephsat = sat;
     raw->ephset = set;
     return 2;
@@ -551,10 +551,10 @@ static int decode_bdsephb(raw_t* raw)
     eph.ttr = raw->time;
 
     if (!strstr(raw->opt, "-EPHALL")) {
-        if (timediff(raw->nav.eph[sat - 1].toe, eph.toe) == 0.0 &&
-            timediff(raw->nav.eph[sat - 1].toc, eph.toc) == 0.0) return 0;
+        if (timediff(raw->nav.eph[sat - 1][0].toe, eph.toe) == 0.0 &&
+            timediff(raw->nav.eph[sat - 1][0].toc, eph.toc) == 0.0) return 0;
     }
-    raw->nav.eph[sat - 1] = eph;
+    raw->nav.eph[sat - 1][0] = eph;
     raw->ephsat = sat;
     raw->ephset = 0;
     return 2;
@@ -630,11 +630,11 @@ static int decode_qzssephb(raw_t* raw) {
     eph.ttr = raw->time;
 
     if (!strstr(raw->opt, "-EPHALL")) {
-        if (timediff(raw->nav.eph[sat - 1].toe, eph.toe) == 0.0 &&
-            timediff(raw->nav.eph[sat - 1].toc, eph.toc) == 0.0) return 0;
+        if (timediff(raw->nav.eph[sat - 1][0].toe, eph.toe) == 0.0 &&
+            timediff(raw->nav.eph[sat - 1][0].toc, eph.toc) == 0.0) return 0;
     }
 
-    raw->nav.eph[sat - 1] = eph;
+    raw->nav.eph[sat - 1][0] = eph;
     raw->ephsat = sat;
     raw->ephset = 0;
     return 2;
@@ -709,10 +709,10 @@ static int decode_irnssephb(raw_t* raw) {
     eph.tgd[1] = 0.0;
 
     if (!strstr(raw->opt, "-EPHALL")) {
-        if (timediff(raw->nav.eph[sat - 1].toe, eph.toe) == 0.0 &&
-            raw->nav.eph[sat - 1].iode == eph.iode) return 0; /* unchanged */
+        if (timediff(raw->nav.eph[sat - 1][0].toe, eph.toe) == 0.0 &&
+            raw->nav.eph[sat - 1][0].iode == eph.iode) return 0; /* unchanged */
     }
-    raw->nav.eph[sat - 1] = eph;
+    raw->nav.eph[sat - 1][0] = eph;
     raw->ephsat = sat;
     raw->ephset = 0;
     return 2;

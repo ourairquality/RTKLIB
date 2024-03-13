@@ -775,22 +775,22 @@ static int decode_gpsnav_dep_e(raw_t *raw) {
   }
 
   if (!strstr(raw->opt, "EPHALL")) {
-    if ((eph.iode == raw->nav.eph[sat - 1].iode) &&
-        (eph.iodc == raw->nav.eph[sat - 1].iodc)) {
+    if ((eph.iode == raw->nav.eph[sat - 1][0].iode) &&
+        (eph.iodc == raw->nav.eph[sat - 1][0].iodc)) {
       trace(3,
             "decode_gpsnav_dep_e: eph.iode %d raw->nav.eph[sat - 1].iode %d\n",
             eph.iode,
-            raw->nav.eph[sat - 1].iode);
+            raw->nav.eph[sat - 1][0].iode);
       trace(3,
             "%decode_gpsnav_dep_e: eph.iodc %d raw->nav.eph[sat - 1].iodc %d\n",
             eph.iode,
-            raw->nav.eph[sat - 1].iode);
+            raw->nav.eph[sat - 1][0].iode);
       return 0;
     }
   }
 
   eph.sat = sat;
-  raw->nav.eph[sat - 1] = eph;
+  raw->nav.eph[sat - 1][0] = eph;
   raw->ephsat = sat;
   raw->ephset=0;
   return 2;
@@ -836,8 +836,8 @@ static int decode_gpsnav_dep_f(raw_t *raw) {
   }
 
   if (!strstr(raw->opt, "EPHALL")) {
-    if ((eph.iode == raw->nav.eph[sat - 1].iode) &&
-        (eph.iodc == raw->nav.eph[sat - 1].iodc)) {
+    if ((eph.iode == raw->nav.eph[sat - 1][0].iode) &&
+        (eph.iodc == raw->nav.eph[sat - 1][0].iodc)) {
       return 0;
   }
   }
@@ -845,8 +845,9 @@ static int decode_gpsnav_dep_f(raw_t *raw) {
   trace(3, "decode_gpsnav_dep_f: decoded eph for G%02d\n", prn);
 
   eph.sat = sat;
-  raw->nav.eph[sat - 1] = eph;
+  raw->nav.eph[sat - 1][0] = eph;
   raw->ephsat = sat;
+  raw->ephset = 0;
   return 2;
 }
 
@@ -891,16 +892,16 @@ static int decode_gpsnav(raw_t *raw) {
   }
 
   if (!strstr(raw->opt, "EPHALL")) {
-    if ((eph.iode == raw->nav.eph[sat - 1].iode) &&
-        (eph.iodc == raw->nav.eph[sat - 1].iodc)) {
+    if ((eph.iode == raw->nav.eph[sat - 1][0].iode) &&
+        (eph.iodc == raw->nav.eph[sat - 1][0].iodc)) {
       trace(3,
             "eph.iode %d raw->nav.eph[sat - 1].iode %d\n",
             eph.iode,
-            raw->nav.eph[sat - 1].iode);
+            raw->nav.eph[sat - 1][0].iode);
       trace(3,
             "eph.iodc %d raw->nav.eph[sat - 1].iodc %d\n",
             eph.iode,
-            raw->nav.eph[sat - 1].iode);
+            raw->nav.eph[sat - 1][0].iode);
       return 0;
     }
   }
@@ -908,8 +909,9 @@ static int decode_gpsnav(raw_t *raw) {
   trace(3, "decode_gpsnav: decoded eph for G%02d\n", prn);
 
   eph.sat = sat;
-  raw->nav.eph[sat - 1] = eph;
+  raw->nav.eph[sat - 1][0] = eph;
   raw->ephsat = sat;
+  raw->ephset = 0;
   return 2;
 }
 
@@ -954,16 +956,16 @@ static int decode_qzssnav(raw_t *raw) {
   }
 
   if (!strstr(raw->opt, "EPHALL")) {
-    if ((eph.iode == raw->nav.eph[sat - 1].iode) &&
-        (eph.iodc == raw->nav.eph[sat - 1].iodc)) {
+    if ((eph.iode == raw->nav.eph[sat - 1][0].iode) &&
+        (eph.iodc == raw->nav.eph[sat - 1][0].iodc)) {
       trace(3,
-            "eph.iode %d raw->nav.eph[sat - 1].iode %d\n",
+            "eph.iode %d raw->nav.eph[sat - 1][0].iode %d\n",
             eph.iode,
-            raw->nav.eph[sat - 1].iode);
+            raw->nav.eph[sat - 1][0].iode);
       trace(3,
-            "eph.iodc %d raw->nav.eph[sat - 1].iodc %d\n",
+            "eph.iodc %d raw->nav.eph[sat - 1][0].iodc %d\n",
             eph.iode,
-            raw->nav.eph[sat - 1].iode);
+            raw->nav.eph[sat - 1][0].iode);
       return 0;
     }
   }
@@ -971,8 +973,9 @@ static int decode_qzssnav(raw_t *raw) {
   trace(3, "decode_qzssnav: decoded eph for J%02d\n", prn);
 
   eph.sat = sat;
-  raw->nav.eph[sat - 1] = eph;
+  raw->nav.eph[sat - 1][0] = eph;
   raw->ephsat = sat;
+  raw->ephset = 0;
   return 2;
 }
 
@@ -1013,8 +1016,8 @@ static int decode_bdsnav(raw_t *raw) {
   eph.ttr = raw->time;
 
   if (!strstr(raw->opt, "EPHALL")) {
-    if ((eph.iode == raw->nav.eph[sat - 1].iode) &&
-        (eph.iodc == raw->nav.eph[sat - 1].iodc)) {
+    if ((eph.iode == raw->nav.eph[sat - 1][0].iode) &&
+        (eph.iodc == raw->nav.eph[sat - 1][0].iodc)) {
       return 0;
     }
   }
@@ -1022,8 +1025,9 @@ static int decode_bdsnav(raw_t *raw) {
   trace(3, "decode_bdsnav: decoded eph for C%02d\n", prn);
 
   eph.sat = sat;
-  raw->nav.eph[sat - 1] = eph;
+  raw->nav.eph[sat - 1][0] = eph;
   raw->ephsat = sat;
+  raw->ephset = 0;
   return 2;
 }
 
@@ -1065,8 +1069,8 @@ static int decode_galnav_dep_a(raw_t *raw) {
   eph.ttr = raw->time;
 
   if (!strstr(raw->opt, "EPHALL")) {
-    if ((eph.iode == raw->nav.eph[sat - 1].iode) &&
-        (eph.iodc == raw->nav.eph[sat - 1].iodc)) {
+    if ((eph.iode == raw->nav.eph[sat - 1][0].iode) &&
+        (eph.iodc == raw->nav.eph[sat - 1][0].iodc)) {
       return 0;
     }
   }
@@ -1074,8 +1078,9 @@ static int decode_galnav_dep_a(raw_t *raw) {
   trace(3, "decode_galnav_dep_a: decoded eph for E%02d\n", prn);
 
   eph.sat = sat;
-  raw->nav.eph[sat - 1] = eph;
+  raw->nav.eph[sat - 1][0] = eph;
   raw->ephsat = sat;
+  raw->ephset = 0;
   return 2;
 }
 
@@ -1117,8 +1122,8 @@ static int decode_galnav(raw_t *raw) {
   eph.ttr = raw->time;
 
   if (!strstr(raw->opt, "EPHALL")) {
-    if ((eph.iode == raw->nav.eph[sat - 1].iode) &&
-        (eph.iodc == raw->nav.eph[sat - 1].iodc)) {
+    if ((eph.iode == raw->nav.eph[sat - 1][0].iode) &&
+        (eph.iodc == raw->nav.eph[sat - 1][0].iodc)) {
       return 0;
     }
   }
@@ -1129,8 +1134,9 @@ static int decode_galnav(raw_t *raw) {
   trace(3, "decode_galnav: decoded eph for E%02d\n", prn);
 
   eph.sat = sat;
-  raw->nav.eph[sat - 1] = eph;
+  raw->nav.eph[sat - 1][0] = eph;
   raw->ephsat = sat;
+  raw->ephset = 0;
   return 2;
 }
 
@@ -1196,13 +1202,14 @@ static int decode_glonav_dep_d(raw_t *raw) {
   geph.frq = (int)puiTmp[118] - 8;
 
   if (!strstr(raw->opt, "EPHALL")) {
-    if (geph.iode == raw->nav.geph[prn - 1].iode) return 0; /* unchanged */
+    if (geph.iode == raw->nav.geph[prn - 1][0].iode) return 0; /* unchanged */
   }
 
   trace(3, "decode_glonav_dep_d: decoded eph for R%02d\n", prn);
 
-  raw->nav.geph[prn - 1] = geph;
+  raw->nav.geph[prn - 1][0] = geph;
   raw->ephsat = sat;
+  raw->ephset = 0;
   return 2;
 }
 
@@ -1270,13 +1277,14 @@ static int decode_glonav(raw_t *raw) {
   geph.frq = (int)puiTmp[90] - 8;
 
   if (!strstr(raw->opt, "EPHALL")) {
-    if (geph.iode == raw->nav.geph[prn - 1].iode) return 0; /* unchanged */
+    if (geph.iode == raw->nav.geph[prn - 1][0].iode) return 0; /* unchanged */
   }
 
   trace(3, "decode_glonav: decoded eph for R%02d\n", prn);
 
-  raw->nav.geph[prn - 1] = geph;
+  raw->nav.geph[prn - 1][0] = geph;
   raw->ephsat = sat;
+  raw->ephset = 0;
   return 2;
 }
 

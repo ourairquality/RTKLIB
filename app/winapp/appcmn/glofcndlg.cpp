@@ -61,9 +61,11 @@ void __fastcall TGloFcnDialog::BtnReadClick(TObject *Sender)
     
 	if (!readrnx(file.c_str(),0,"",NULL,&nav,NULL)) return;
 	
-	for (int i=0;i<nav.ng;i++) {
-		if (satsys(nav.geph[i].sat,&prn)!=SYS_GLO) continue;
-        GetFcn(prn)->Text=text.sprintf("%d",nav.geph[i].frq);
+	for (int i=0;i<NSATGLO;i++) {
+		for (int j=0;j<nav.ng[i];j++) {
+			if (satsys(nav.geph[i][j].sat,&prn)!=SYS_GLO) continue;
+	        GetFcn(prn)->Text=text.sprintf("%d",nav.geph[i][j].frq);
+		}
 	}
 	freenav(&nav,0xFF);
 }

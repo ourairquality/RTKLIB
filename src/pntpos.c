@@ -139,19 +139,20 @@ static double varerr(int sat, int sys, double el, double snr_rover,
 /* get group delay parameter (m) ---------------------------------------------*/
 static double gettgd(int sat, const nav_t *nav, int type)
 {
-    int i,sys=satsys(sat,NULL);
+    int i,prn,sys=satsys(sat,&prn);
     
     if (sys==SYS_GLO) {
-        for (i=0;i<nav->ng;i++) {
-            if (nav->geph[i].sat==sat) break;
+        /* Search for the first non-empty entry */
+        for (i=0;i<nav->ng[prn-1];i++) {
+            if (nav->geph[prn-1][i].sat==sat) break;
         }
-        return (i>=nav->ng)?0.0:-nav->geph[i].dtaun*CLIGHT;
+        return (i>=nav->ng[prn-1])?0.0:-nav->geph[prn-1][i].dtaun*CLIGHT;
     }
     else {
-        for (i=0;i<nav->n;i++) {
-            if (nav->eph[i].sat==sat) break;
+        for (i=0;i<nav->n[sat-1];i++) {
+            if (nav->eph[sat-1][i].sat==sat) break;
         }
-        return (i>=nav->n)?0.0:nav->eph[i].tgd[type]*CLIGHT;
+        return (i>=nav->n[sat-1])?0.0:nav->eph[sat-1][i].tgd[type]*CLIGHT;
     }
 }
 /* test SNR mask -------------------------------------------------------------*/
