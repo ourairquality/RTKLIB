@@ -1061,7 +1061,7 @@ void MonitorDialog::showNavigations()
 	gtime_t time;
     QString s;
     char tstr[64], id[32];
-    int i, k, n, prn, off = ui->cBSelectEphemeris->currentIndex() ? MAXSAT : 0;
+    int i, k, n, prn, off = ui->cBSelectEphemeris->currentIndex();
     bool valid;
     int sys = sys_tbl[ui->cBSelectSingleNavigationSystem->currentIndex() + 1];
 
@@ -1083,7 +1083,7 @@ void MonitorDialog::showNavigations()
         return;
     }
     time = rtksvr->rtk.sol.time;
-    for (i = 0; i < MAXSAT; i++) eph[i] = rtksvr->nav.eph[i + off];
+    for (i = 0; i < MAXSAT; i++) eph[i] = rtksvr->nav.eph[i][off];
     rtksvrunlock(rtksvr);
 
     if (sys == SYS_GAL) {
@@ -1178,7 +1178,7 @@ void MonitorDialog::showGlonassNavigations()
 	gtime_t time;
     QString s;
     char tstr[64], id[32];
-    int i, n, valid, prn, off = ui->cBSelectEphemeris->currentIndex() ? NSATGLO : 0;
+    int i, n, valid, prn, off = ui->cBSelectEphemeris->currentIndex();
 
     rtksvrlock(rtksvr);
     if (!rtksvr->nav.geph) {
@@ -1186,7 +1186,7 @@ void MonitorDialog::showGlonassNavigations()
         return;
     }
     time = rtksvr->rtk.sol.time;
-    for (i = 0; i < NSATGLO; i++) geph[i] = rtksvr->nav.geph[i + off];
+    for (i = 0; i < NSATGLO; i++) geph[i] = rtksvr->nav.geph[i][off];
     rtksvrunlock(rtksvr);
 
     ui->lblInformation->setText("");
@@ -1262,7 +1262,7 @@ void MonitorDialog::showSbsNavigations()
 {
     seph_t seph[MAXPRNSBS - MINPRNSBS + 1];
 	gtime_t time;
-    int i, n, valid, prn, off = ui->cBSelectEphemeris->currentIndex() ? NSATSBS : 0;
+    int i, n, valid, prn, off = ui->cBSelectEphemeris->currentIndex();
     char tstr[64], id[32];
 
     rtksvrlock(rtksvr); // lock
@@ -1271,7 +1271,7 @@ void MonitorDialog::showSbsNavigations()
         return;
     }
     time = rtksvr->rtk.sol.time;
-    for (int i = 0; i < NSATSBS; i++) seph[i] = rtksvr->nav.seph[i + off];
+    for (int i = 0; i < NSATSBS; i++) seph[i] = rtksvr->nav.seph[i][off];
     rtksvrunlock(rtksvr); // unlock
 
     ui->lblInformation->setText("");

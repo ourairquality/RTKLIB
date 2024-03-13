@@ -129,9 +129,21 @@ Plot::Plot(QWidget *parent) : QMainWindow(parent), ui(new Ui::Plot)
     }
 
     obs0.data = NULL; obs0.n = obs0.nmax = 0;
-    nav0.eph = NULL; nav0.n = nav0.nmax = 0;
-    nav0.geph = NULL; nav0.ng = nav0.ngmax = 0;
-    nav0.seph = NULL; nav0.ns = nav0.nsmax = 0;
+    for (int i = 0; i < MAXSAT; i++) {
+        nav0.eph[i] = NULL;
+        nav0.n[i] = 0;
+        nav0.nmax[i] = 0;
+    }
+    for (int i = 0; i < NSATGLO; i++) {
+        nav0.geph[i] = NULL;
+        nav0.ng[i] = 0;
+        nav0.ngmax[i] = 0;
+    }
+    for (int i = 0; i < NSATSBS; i++) {
+      nav0.seph[i] = NULL;
+      nav0.ns[i] = 0;
+      nav0.nsmax[i] = 0;
+    }
 
     observationIndex = 0;
     observation = obs0;

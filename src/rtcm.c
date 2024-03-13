@@ -102,22 +102,34 @@ extern int init_rtcm(rtcm_t *rtcm)
     for (i=0;i<400;i++) rtcm->nmsg3[i]=0;
     
     rtcm->obs.data=NULL;
-    rtcm->nav.eph =NULL;
-    rtcm->nav.geph=NULL;
+    for (i=0;i<MAXSAT;i++) rtcm->nav.eph[i]=NULL;
+    for (i=0;i<NSATGLO;i++) rtcm->nav.geph[i]=NULL;
     
     /* reallocate memory for observation and ephemeris buffer */
-    if (!(rtcm->obs.data=(obsd_t *)malloc(sizeof(obsd_t)*MAXOBS))||
-        !(rtcm->nav.eph =(eph_t  *)malloc(sizeof(eph_t )*MAXSAT*2))||
-        !(rtcm->nav.geph=(geph_t *)malloc(sizeof(geph_t)*MAXPRNGLO))) {
+    if (!(rtcm->obs.data=(obsd_t *)malloc(sizeof(obsd_t)*MAXOBS))) {
         free_rtcm(rtcm);
         return 0;
     }
     rtcm->obs.n=0;
-    rtcm->nav.n=MAXSAT*2;
-    rtcm->nav.ng=MAXPRNGLO;
-    for (i=0;i<MAXOBS   ;i++) rtcm->obs.data[i]=data0;
-    for (i=0;i<MAXSAT*2 ;i++) rtcm->nav.eph [i]=eph0;
-    for (i=0;i<MAXPRNGLO;i++) rtcm->nav.geph[i]=geph0;
+    for (i=0;i<MAXOBS ;i++) rtcm->obs.data[i]=data0;
+
+    for (i=0;i<MAXSAT;i++) {
+        if (!(rtcm->nav.eph[i]=(eph_t *)malloc(sizeof(eph_t)*2))) {
+            free_rtcm(rtcm);
+            return 0;
+        }
+        rtcm->nav.eph[i][0]=eph0;
+        rtcm->nav.eph[i][1]=eph0;
+        rtcm->nav.n[i]=rtcm->nav.nmax[i]=2;
+    }
+    for (i=0;i<NSATGLO;i++) {
+        if (!(rtcm->nav.geph[i]=(geph_t *)malloc(sizeof(geph_t)))) {
+            free_rtcm(rtcm);
+            return 0;
+        }
+        rtcm->nav.geph[i][0]=geph0;
+        rtcm->nav.ng[i]=rtcm->nav.ngmax[i]=1;
+    }
     return 1;
 }
 /* free rtcm control ----------------------------------------------------------
@@ -131,8 +143,16 @@ extern void free_rtcm(rtcm_t *rtcm)
     
     /* free memory for observation and ephemeris buffer */
     free(rtcm->obs.data); rtcm->obs.data=NULL; rtcm->obs.n=0;
-    free(rtcm->nav.eph ); rtcm->nav.eph =NULL; rtcm->nav.n=0;
-    free(rtcm->nav.geph); rtcm->nav.geph=NULL; rtcm->nav.ng=0;
+    for (int i=0;i<MAXSAT;i++) {
+        free(rtcm->nav.eph[i]);
+        rtcm->nav.eph[i]=NULL;
+        rtcm->nav.n[i]=rtcm->nav.nmax[i]=0;
+    }
+    for (int i=0;i<NSATGLO;i++) {
+        free(rtcm->nav.geph[i]);
+        rtcm->nav.geph[i]=NULL;
+        rtcm->nav.ng[i]=rtcm->nav.ngmax[i]=0;
+    }
 }
 /* input RTCM 2 message from stream --------------------------------------------
 * fetch next RTCM 2 message and input a message from byte stream

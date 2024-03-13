@@ -1051,7 +1051,7 @@ void __fastcall TMonitorDialog::ShowNav(void)
 	gtime_t time;
 	AnsiString s;
 	char tstr[64],id[32];
-	int i,j,k,n,valid,prn,off=SelEph->ItemIndex*MAXSAT;
+	int i,j,k,n,valid,prn,off=SelEph->ItemIndex;
 	int sys=sys_tbl[SelSys2->ItemIndex+1];
 	
 	if (sys==SYS_GLO) {
@@ -1068,7 +1068,7 @@ void __fastcall TMonitorDialog::ShowNav(void)
 	
 	rtksvrlock(&rtksvr);
 	time=rtksvr.rtk.sol.time;
-	for (i=0;i<MAXSAT;i++) eph[i]=rtksvr.nav.eph[i+off];
+	for (i=0;i<MAXSAT;i++) eph[i]=rtksvr.nav.eph[i][off];
 	rtksvrunlock(&rtksvr);
 
 	if (sys==SYS_GAL) {
@@ -1164,11 +1164,11 @@ void __fastcall TMonitorDialog::ShowGnav(void)
 	gtime_t time;
 	AnsiString s;
 	char tstr[64],id[32];
-	int i,j,n,valid,prn,off=SelEph->ItemIndex?NSATGLO:0;
+	int i,j,n,valid,prn,off=SelEph->ItemIndex;
 	
 	rtksvrlock(&rtksvr);
 	time=rtksvr.rtk.sol.time;
-	for (i=0;i<NSATGLO;i++) geph[i]=rtksvr.nav.geph[i+off];
+	for (i=0;i<NSATGLO;i++) geph[i]=rtksvr.nav.geph[i][off];
 	rtksvrunlock(&rtksvr);
 	
 	Label->Caption="";
@@ -1244,13 +1244,13 @@ void __fastcall TMonitorDialog::ShowSbsNav(void)
 	AnsiString s,s0="-";
 	seph_t seph[MAXPRNSBS-MINPRNSBS+1]={0};
 	gtime_t time;
-	int i,j,n,valid,prn,off=SelEph->ItemIndex?NSATSBS:0;
+	int i,j,n,valid,prn,off=SelEph->ItemIndex;
 	char tstr[64],id[32];
 	
 	rtksvrlock(&rtksvr); // lock
 	time=rtksvr.rtk.sol.time;
 	for (int i=0;i<NSATSBS;i++) {
-		seph[i]=rtksvr.nav.seph[i+off];
+		seph[i]=rtksvr.nav.seph[i][off];
 	}
 	rtksvrunlock(&rtksvr); // unlock
 	

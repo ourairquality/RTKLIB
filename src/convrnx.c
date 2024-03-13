@@ -828,16 +828,22 @@ static int scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str,
         setopt_phshift(opt);
     }
     /* set GLONASS FCN and clear ephemeris */
-    for (i=0;i<str->nav->n;i++) {
-        str->nav->eph[i]=eph0;
+    for (i=0;i<MAXSAT;i++) {
+        for (j=0;j<str->nav->n[i];j++) {
+            str->nav->eph[i][j]=eph0;
+        }
     }
-    for (i=0;i<str->nav->ng;i++) {
-        if (satsys(str->nav->geph[i].sat,&prn)!=SYS_GLO) continue;
-        str->nav->glo_fcn[prn-1]=str->nav->geph[i].frq+8;
-        str->nav->geph[i]=geph0;
+    for (k=0;k<NSATGLO;k++) {
+        for (i=0;i<str->nav->ng[k];i++) {
+            if (satsys(str->nav->geph[k][i].sat,&prn)!=SYS_GLO) continue;
+            str->nav->glo_fcn[prn-1]=str->nav->geph[k][i].frq+8;
+            str->nav->geph[k][i]=geph0;
+        }
     }
-    for (i=0;i<str->nav->ns;i++) {
-        str->nav->seph[i]=seph0;
+    for (k=0;k<NSATSBS;k++) {
+        for (i=0;i<str->nav->ns[k];i++) {
+            str->nav->seph[k][i]=seph0;
+        }
     }
     dump_stas(str);
     dump_halfc(str);
@@ -1089,67 +1095,67 @@ static void convnav(FILE **ofp, rnxopt_t *opt, strfile_t *str, int *n)
 
     if (sys==SYS_GPS) {
         if (ofp[1]) {
-            outrnxnavb(ofp[1],opt,str->nav->eph+sat-1+MAXSAT*set);
+            outrnxnavb(ofp[1],opt,str->nav->eph[sat-1]+set);
             n[1]++;
         }
     }
     else if (sys==SYS_GLO) {
         if (ofp[1]&&!sep_nav) {
-            outrnxgnavb(ofp[1],opt,str->nav->geph+prn-1);
+            outrnxgnavb(ofp[1],opt,str->nav->geph[prn-1]);
             n[1]++;
         }
         else if (ofp[2]&&sep_nav) {
-            outrnxgnavb(ofp[2],opt,str->nav->geph+prn-1);
+            outrnxgnavb(ofp[2],opt,str->nav->geph[prn-1]);
             n[2]++;
         }
     }
     else if (sys==SYS_SBS) {
         if (ofp[1]&&!sep_nav) {
-            outrnxhnavb(ofp[1],opt,str->nav->seph+prn-MINPRNSBS);
+            outrnxhnavb(ofp[1],opt,str->nav->seph[prn-MINPRNSBS]);
             n[1]++;
         }
         else if (ofp[3]&&sep_nav) {
-            outrnxhnavb(ofp[3],opt,str->nav->seph+prn-MINPRNSBS);
+            outrnxhnavb(ofp[3],opt,str->nav->seph[prn-MINPRNSBS]);
             n[3]++;
         }
     }
     else if (sys==SYS_QZS) {
         if (ofp[1]&&!sep_nav) {
-            outrnxnavb(ofp[1],opt,str->nav->eph+sat-1+MAXSAT*set);
+            outrnxnavb(ofp[1],opt,str->nav->eph[sat-1]+set);
             n[1]++;
         }
         else if (ofp[4]&&sep_nav) {
-            outrnxnavb(ofp[4],opt,str->nav->eph+sat-1+MAXSAT*set);
+            outrnxnavb(ofp[4],opt,str->nav->eph[sat-1]+set);
             n[4]++;
         }
     }
     else if (sys==SYS_GAL) {
         if (ofp[1]&&!sep_nav) {
-            outrnxnavb(ofp[1],opt,str->nav->eph+sat-1+MAXSAT*set);
+            outrnxnavb(ofp[1],opt,str->nav->eph[sat-1]+set);
             n[1]++;
         }
         else if (ofp[5]&&sep_nav) {
-            outrnxnavb(ofp[5],opt,str->nav->eph+sat-1+MAXSAT*set);
+            outrnxnavb(ofp[5],opt,str->nav->eph[sat-1]+set);
             n[5]++;
         }
     }
     else if (sys==SYS_CMP) {
         if (ofp[1]&&!sep_nav) {
-            outrnxnavb(ofp[1],opt,str->nav->eph+sat-1+MAXSAT*set);
+            outrnxnavb(ofp[1],opt,str->nav->eph[sat-1]+set);
             n[1]++;
         }
         else if (ofp[6]&&sep_nav) {
-            outrnxnavb(ofp[6],opt,str->nav->eph+sat-1+MAXSAT*set);
+            outrnxnavb(ofp[6],opt,str->nav->eph[sat-1]+set);
             n[6]++;
         }
     }
     else if (sys==SYS_IRN) {
         if (ofp[1]&&!sep_nav) {
-            outrnxnavb(ofp[1],opt,str->nav->eph+sat-1+MAXSAT*set);
+            outrnxnavb(ofp[1],opt,str->nav->eph[sat-1]+set);
             n[1]++;
         }
         else if (ofp[7]&&sep_nav) {
-            outrnxnavb(ofp[7],opt,str->nav->eph+sat-1+MAXSAT*set);
+            outrnxnavb(ofp[7],opt,str->nav->eph[sat-1]+set);
             n[7]++;
         }
     }
@@ -1194,11 +1200,11 @@ static void convsbs(FILE **ofp, rnxopt_t *opt, strfile_t *str, int *n,
     if ((opt->navsys&SYS_SBS)&&sbsupdatecorr(&str->raw.sbsmsg,str->nav)==9) {
         
         if (ofp[1]&&!sep_nav) {
-            outrnxhnavb(ofp[1],opt,str->nav->seph+prn-MINPRNSBS);
+            outrnxhnavb(ofp[1],opt,str->nav->seph[prn-MINPRNSBS]);
             n[1]++;
         }
         else if (ofp[3]&&sep_nav) {
-            outrnxhnavb(ofp[3],opt,str->nav->seph+prn-MINPRNSBS);
+            outrnxhnavb(ofp[3],opt,str->nav->seph[prn-MINPRNSBS]);
             n[3]++;
         }
     }

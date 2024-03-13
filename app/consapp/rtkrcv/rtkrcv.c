@@ -874,8 +874,8 @@ static void prnavidata(vt_t *vt)
     
     rtksvrlock(&svr);
     time=svr.rtk.sol.time;
-    for (i=0;i<MAXSAT;i++) eph[i]=svr.nav.eph[i];
-    for (i=0;i<MAXPRNGLO;i++) geph[i]=svr.nav.geph[i];
+    for (i=0;i<MAXSAT;i++) eph[i]=svr.nav.eph[i][0];
+    for (i=0;i<MAXPRNGLO;i++) geph[i]=svr.nav.geph[i][0];
     for (i=0;i<8;i++) ion[i]=svr.nav.ion_gps[i];
     for (i=0;i<8;i++) utc[i]=svr.nav.utc_gps[i];
     rtksvrunlock(&svr);

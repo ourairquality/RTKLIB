@@ -113,15 +113,17 @@ extern void traceobs_impl(int level, const obsd_t *obs, int n)
 extern void tracenav_impl(int level, const nav_t *nav)
 {
     char s1[64], s2[64], id[16];
-    int i;
+    int i,j;
 
     if (!fp_trace || level > level_trace) return;
-    for (i = 0; i < nav->n; i++) {
-        time2str(nav->eph[i].toe, s1, 0);
-        time2str(nav->eph[i].ttr, s2, 0);
-        satno2id(nav->eph[i].sat, id);
-        fprintf(fp_trace, "(%3d) %-3s : %s %s %3d %3d %02x\n", i + 1, id, s1,
-                s2, nav->eph[i].iode, nav->eph[i].iodc, nav->eph[i].svh);
+    for (i = 0; i < MAXSAT; i++) {
+        for (j = 0; j < nav->n[i]; j++) {
+            time2str(nav->eph[i][j].toe, s1, 0);
+            time2str(nav->eph[i][j].ttr, s2, 0);
+            satno2id(nav->eph[i][j].sat, id);
+            fprintf(fp_trace, "(%3d) %-3s : %s %s %3d %3d %02x\n", i + 1, id, s1,
+                    s2, nav->eph[i][j].iode, nav->eph[i][j].iodc, nav->eph[i][j].svh);
+        }
     }
     fprintf(fp_trace, "(ion) %9.4e %9.4e %9.4e %9.4e\n", nav->ion_gps[0],
             nav->ion_gps[1], nav->ion_gps[2], nav->ion_gps[3]);
@@ -133,30 +135,34 @@ extern void tracenav_impl(int level, const nav_t *nav)
 extern void tracegnav_impl(int level, const nav_t *nav)
 {
     char s1[64], s2[64], id[16];
-    int i;
+    int i,j;
 
     if (!fp_trace || level > level_trace) return;
-    for (i = 0; i < nav->ng; i++) {
-        time2str(nav->geph[i].toe, s1, 0);
-        time2str(nav->geph[i].tof, s2, 0);
-        satno2id(nav->geph[i].sat, id);
-        fprintf(fp_trace, "(%3d) %-3s : %s %s %2d %2d %8.3f\n", i + 1, id, s1,
-                s2, nav->geph[i].frq, nav->geph[i].svh,
-                nav->geph[i].taun * 1E6);
+    for (i = 0; i < NSATGLO; i++) {
+        for (j = 0; j < nav->ng[i]; j++) {
+            time2str(nav->geph[i][j].toe, s1, 0);
+            time2str(nav->geph[i][j].tof, s2, 0);
+            satno2id(nav->geph[i][j].sat, id);
+            fprintf(fp_trace, "(%3d) %-3s : %s %s %2d %2d %8.3f\n", i + 1, id, s1,
+                    s2, nav->geph[i][j].frq, nav->geph[i][j].svh,
+                    nav->geph[i][j].taun * 1E6);
+        }
     }
 }
 extern void tracehnav_impl(int level, const nav_t *nav)
 {
     char s1[64], s2[64], id[16];
-    int i;
+    int i,j;
 
     if (!fp_trace || level > level_trace) return;
-    for (i = 0; i < nav->ns; i++) {
-        time2str(nav->seph[i].t0, s1, 0);
-        time2str(nav->seph[i].tof, s2, 0);
-        satno2id(nav->seph[i].sat, id);
-        fprintf(fp_trace, "(%3d) %-3s : %s %s %2d %2d\n", i + 1, id, s1, s2,
-                nav->seph[i].svh, nav->seph[i].sva);
+    for (i = 0; i < NSATSBS; i++) {
+        for (j = 0; j < nav->ns[i]; j++) {
+            time2str(nav->seph[i][j].t0, s1, 0);
+            time2str(nav->seph[i][j].tof, s2, 0);
+            satno2id(nav->seph[i][j].sat, id);
+            fprintf(fp_trace, "(%3d) %-3s : %s %s %2d %2d\n", i + 1, id, s1, s2,
+                    nav->seph[i][j].svh, nav->seph[i][j].sva);
+        }
     }
 }
 extern void tracepeph_impl(int level, const nav_t *nav)

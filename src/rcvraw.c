@@ -1330,33 +1330,50 @@ extern int init_raw(raw_t *raw, int format)
     
     raw->obs.data =NULL;
     raw->obuf.data=NULL;
-    raw->nav.eph  =NULL;
+    for (i=0;i<MAXSAT;i++) raw->nav.eph[i]=NULL;
+    for (i=0;i<NSATGLO;i++) raw->nav.geph[i]=NULL;
+    for (i=0;i<NSATSBS;i++) raw->nav.seph[i]=NULL;
     raw->nav.alm  =NULL;
-    raw->nav.geph =NULL;
-    raw->nav.seph =NULL;
     raw->rcv_data =NULL;
-    
+
+    for (i=0;i<MAXSAT;i++) {
+        if (!(raw->nav.eph[i]=(eph_t *)malloc(sizeof(eph_t )*2))) {
+            free_raw(raw);
+            return 0;
+        }
+        raw->nav.n[i]=raw->nav.nmax[i]=2;
+        raw->nav.eph[i][0]=eph0;
+        raw->nav.eph[i][1]=eph0;
+    }
+    for (i=0;i<NSATGLO;i++) {
+        if (!(raw->nav.geph[i]=(geph_t *)malloc(sizeof(geph_t )))) {
+            free_raw(raw);
+            return 0;
+        }
+        raw->nav.ng[i]=raw->nav.ngmax[i]=1;
+        raw->nav.geph[i][0]=geph0;
+    }
+    for (i=0;i<NSATSBS;i++) {
+        if (!(raw->nav.seph[i]=(seph_t *)malloc(sizeof(seph_t )*2))) {
+            free_raw(raw);
+            return 0;
+        }
+        raw->nav.ns[i]=raw->nav.nsmax[i]=2;
+        raw->nav.seph[i][0]=seph0;
+        raw->nav.seph[i][1]=seph0;
+    }
     if (!(raw->obs.data =(obsd_t *)malloc(sizeof(obsd_t)*MAXOBS))||
         !(raw->obuf.data=(obsd_t *)malloc(sizeof(obsd_t)*MAXOBS))||
-        !(raw->nav.eph  =(eph_t  *)malloc(sizeof(eph_t )*MAXSAT*2))||
-        !(raw->nav.alm  =(alm_t  *)malloc(sizeof(alm_t )*MAXSAT))||
-        !(raw->nav.geph =(geph_t *)malloc(sizeof(geph_t)*NSATGLO))||
-        !(raw->nav.seph =(seph_t *)malloc(sizeof(seph_t)*NSATSBS*2))) {
+        !(raw->nav.alm  =(alm_t  *)malloc(sizeof(alm_t )*MAXSAT))) {
         free_raw(raw);
         return 0;
     }
     raw->obs.n =0;
     raw->obuf.n=0;
-    raw->nav.n =MAXSAT*2;
     raw->nav.na=MAXSAT;
-    raw->nav.ng=NSATGLO;
-    raw->nav.ns=NSATSBS*2;
     for (i=0;i<MAXOBS   ;i++) raw->obs.data [i]=data0;
     for (i=0;i<MAXOBS   ;i++) raw->obuf.data[i]=data0;
-    for (i=0;i<MAXSAT*2 ;i++) raw->nav.eph  [i]=eph0;
     for (i=0;i<MAXSAT   ;i++) raw->nav.alm  [i]=alm0;
-    for (i=0;i<NSATGLO  ;i++) raw->nav.geph [i]=geph0;
-    for (i=0;i<NSATSBS*2;i++) raw->nav.seph [i]=seph0;
     raw->sta.name[0]=raw->sta.marker[0]='\0';
     raw->sta.antdes[0]=raw->sta.antsno[0]='\0';
     raw->sta.rectype[0]=raw->sta.recver[0]=raw->sta.recsno[0]='\0';
@@ -1388,10 +1405,22 @@ extern void free_raw(raw_t *raw)
     
     free(raw->obs.data ); raw->obs.data =NULL; raw->obs.n =0;
     free(raw->obuf.data); raw->obuf.data=NULL; raw->obuf.n=0;
-    free(raw->nav.eph  ); raw->nav.eph  =NULL; raw->nav.n =0;
+    for (int i=0;i<MAXSAT;i++) {
+        free(raw->nav.eph[i]);
+        raw->nav.eph[i]=NULL;
+        raw->nav.n[i]=raw->nav.nmax[i]=0;
+    }
+    for (int i=0;i<NSATGLO;i++) {
+        free(raw->nav.geph[i]);
+        raw->nav.geph[i]=NULL;
+        raw->nav.ng[i]=raw->nav.ngmax[i]=0;
+    }
+    for (int i=0;i<NSATSBS;i++) {
+        free(raw->nav.seph[i]);
+        raw->nav.seph[i]=NULL;
+        raw->nav.ns[i]=raw->nav.nsmax[i]=0;
+    }
     free(raw->nav.alm  ); raw->nav.alm  =NULL; raw->nav.na=0;
-    free(raw->nav.geph ); raw->nav.geph =NULL; raw->nav.ng=0;
-    free(raw->nav.seph ); raw->nav.seph =NULL; raw->nav.ns=0;
     
     /* free receiver dependent data */
     switch (raw->format) {

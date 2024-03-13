@@ -248,7 +248,7 @@ int Plot::readObservationRinex(const QStringList &files, obs_t *obs, nav_t *nav,
             strncpy(p, ".cnav", 6); readrnxt(navfile, 1, ts, te, tint, opt, NULL, nav, NULL);
             strncpy(p, ".inav", 6); readrnxt(navfile, 1, ts, te, tint, opt, NULL, nav, NULL);
         } else if (!strcmp(p + 3, "o") || !strcmp(p + 3, "d") || !strcmp(p + 3, "O") || !strcmp(p + 3, "D")) {
-            n = nav->n;
+            n = navncnt(nav);
 
             strncpy(p + 3, "N", 2); readrnxt(navfile, 1, ts, te, tint, opt, NULL, nav, NULL);
             strncpy(p + 3, "G", 2); readrnxt(navfile, 1, ts, te, tint, opt, NULL, nav, NULL);
@@ -259,7 +259,7 @@ int Plot::readObservationRinex(const QStringList &files, obs_t *obs, nav_t *nav,
             strncpy(p + 3, "I", 2); readrnxt(navfile, 1, ts, te, tint, opt, NULL, nav, NULL);
             strncpy(p + 3, "P", 2); readrnxt(navfile, 1, ts, te, tint, opt, NULL, nav, NULL);
 
-            if (nav->n > n || !(q = strrchr(navfile, '\\'))) continue;
+            if (navncnt(nav) > n || !(q = strrchr(navfile, '\\'))) continue;
 
             // read brdc navigation data
             memcpy(q + 1, "BRDC", 4);
@@ -272,10 +272,10 @@ int Plot::readObservationRinex(const QStringList &files, obs_t *obs, nav_t *nav,
             if (!(p = strrchr(navfile, '_'))) continue;
             strncpy(p, "_*_*N.rnx", 10);
 
-            n = nav->n;
+            n=navncnt(nav);
             readrnxt(navfile, 1, ts, te, tint, opt, NULL, nav, NULL);
 
-            if (nav->n > n || !(q = strrchr(navfile, '\\'))) continue;
+            if (navncnt(nav) > n || !(q = strrchr(navfile, '\\'))) continue;
 
             // read brdc navigation data
             memcpy(q + 1, "BRDC", 4);
@@ -322,7 +322,7 @@ void Plot::readNavigation(const QStringList &files)
     }
     uniqnav(&navigation);
 
-    if (navigation.n <= 0 && navigation.ng <= 0 && navigation.ns <= 0) {
+    if (navncnt(&navigation) <= 0 && navngcnt(&navigation) <= 0 && navnscnt(&navigation) <= 0) {
         showMessage(tr("No navigation message: %1...").arg(QDir::toNativeSeparators(files.at(i))));
         readWaitEnd();
         return;

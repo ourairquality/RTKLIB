@@ -1436,50 +1436,64 @@ static int readrnxnavb(FILE *fp, const char *opt, double ver, int sys,
 /* add ephemeris to navigation data ------------------------------------------*/
 static int add_eph(nav_t *nav, const eph_t *eph)
 {
+    int sat=eph->sat;
     eph_t *nav_eph;
 
-    if (nav->nmax<=nav->n) {
-        nav->nmax+=1024;
-        if (!(nav_eph=(eph_t *)realloc(nav->eph,sizeof(eph_t)*nav->nmax))) {
-            trace(1,"decode_eph malloc error: n=%d\n",nav->nmax);
-            free(nav->eph); nav->eph=NULL; nav->n=nav->nmax=0;
+    if (nav->nmax[sat-1]<=nav->n[sat-1]) {
+        nav->nmax[sat-1]+=16;
+        if (!(nav_eph=(eph_t *)realloc(nav->eph[sat-1],sizeof(eph_t)*nav->nmax[sat-1]))) {
+            trace(1,"decode_eph malloc error: n=%d\n",nav->nmax[sat-1]);
+            free(nav->eph[sat-1]); nav->eph[sat-1]=NULL; nav->n[sat-1]=nav->nmax[sat-1]=0;
             return 0;
         }
-        nav->eph=nav_eph;
+        nav->eph[sat-1]=nav_eph;
     }
-    nav->eph[nav->n++]=*eph;
+    nav->eph[sat-1][nav->n[sat-1]++]=*eph;
     return 1;
 }
 static int add_geph(nav_t *nav, const geph_t *geph)
 {
+    int prn;
     geph_t *nav_geph;
 
-    if (nav->ngmax<=nav->ng) {
-        nav->ngmax+=1024;
-        if (!(nav_geph=(geph_t *)realloc(nav->geph,sizeof(geph_t)*nav->ngmax))) {
-            trace(1,"decode_geph malloc error: n=%d\n",nav->ngmax);
-            free(nav->geph); nav->geph=NULL; nav->ng=nav->ngmax=0;
+    if (satsys(geph->sat,&prn)!=SYS_GLO) {
+        return 0;
+    }
+
+    if (nav->ngmax[prn-1]<=nav->ng[prn-1]) {
+        nav->ngmax[prn-1]+=16;
+        if (!(nav_geph=(geph_t *)realloc(nav->geph[prn-1],sizeof(geph_t)*nav->ngmax[prn-1]))) {
+            trace(1,"decode_geph malloc error: n=%d\n",nav->ngmax[prn-1]);
+            free(nav->geph[prn-1]); nav->geph[prn-1]=NULL; nav->ng[prn-1]=nav->ngmax[prn-1]=0;
             return 0;
         }
-        nav->geph=nav_geph;
+        nav->geph[prn-1]=nav_geph;
     }
-    nav->geph[nav->ng++]=*geph;
+    nav->geph[prn-1][nav->ng[prn-1]++]=*geph;
     return 1;
 }
 static int add_seph(nav_t *nav, const seph_t *seph)
 {
+    int prn,i;
     seph_t *nav_seph;
 
-    if (nav->nsmax<=nav->ns) {
-        nav->nsmax+=1024;
-        if (!(nav_seph=(seph_t *)realloc(nav->seph,sizeof(seph_t)*nav->nsmax))) {
-            trace(1,"decode_seph malloc error: n=%d\n",nav->nsmax);
-            free(nav->seph); nav->seph=NULL; nav->ns=nav->nsmax=0;
+    if (satsys(seph->sat,&prn)!=SYS_SBS) {
+        return 0;
+    }
+    i=prn-MINPRNSBS;
+    if (nav->nsmax[i]<=nav->ns[i]) {
+        nav->nsmax[i]+=16;
+        if (!(nav_seph=(seph_t *)realloc(nav->seph[i],
+                                         sizeof(seph_t)*nav->nsmax[i]))) {
+            trace(1,"decode_seph malloc error: n=%d\n",nav->nsmax[i]);
+            free(nav->seph[i]);
+            nav->seph[i]=NULL;
+            nav->ns[i]=nav->nsmax[i]=0;
             return 0;
         }
-        nav->seph=nav_seph;
+        nav->seph[i]=nav_seph;
     }
-    nav->seph[nav->ns++]=*seph;
+    nav->seph[i][nav->ns[i]++]=*seph;
     return 1;
 }
 /* read RINEX navigation data ------------------------------------------------*/
@@ -1508,7 +1522,10 @@ static int readrnxnav(FILE *fp, const char *opt, double ver, int sys,
             if (!stat) return 0;
         }
     }
-    return nav->n>0||nav->ng>0||nav->ns>0;
+    for (int i=0;i<MAXSAT;i++) if (nav->n[i]>0) return 1;
+    for (int i=0;i<NSATGLO;i++) if (nav->ng[i]>0) return 1;
+    for (int i=0;i<NSATSBS;i++) if (nav->ns[i]>0) return 1;
+    return 0;
 }
 /* read RINEX clock ----------------------------------------------------------*/
 static int readrnxclk(FILE *fp, const char *opt, double ver, int index, nav_t *nav)
@@ -1807,29 +1824,47 @@ extern int init_rnxctr(rnxctr_t *rnx)
     trace(3,"init_rnxctr:\n");
 
     rnx->obs.data=NULL;
-    rnx->nav.eph =NULL;
-    rnx->nav.geph=NULL;
-    rnx->nav.seph=NULL;
+    for (i=0;i<MAXSAT;i++) rnx->nav.eph[i]=NULL;
+    for (i=0;i<NSATGLO;i++) rnx->nav.geph[i]=NULL;
+    for (i=0;i<NSATSBS;i++) rnx->nav.seph[i]=NULL;
 
-    if (!(rnx->obs.data=(obsd_t *)malloc(sizeof(obsd_t)*MAXOBS   ))||
-        !(rnx->nav.eph =(eph_t  *)malloc(sizeof(eph_t )*MAXSAT*2 ))||
-        !(rnx->nav.geph=(geph_t *)malloc(sizeof(geph_t)*NSATGLO  ))||
-        !(rnx->nav.seph=(seph_t *)malloc(sizeof(seph_t)*NSATSBS*2))) {
+    if (!(rnx->obs.data=(obsd_t *)malloc(sizeof(obsd_t)*MAXOBS))) {
         free_rnxctr(rnx);
         return 0;
+    }
+
+    for (i=0;i<MAXSAT;i++) {
+        if (!(rnx->nav.eph[i]=(eph_t  *)malloc(sizeof(eph_t )*2))) {
+            free_rnxctr(rnx);
+            return 0;
+        }
+        rnx->nav.n[i]=rnx->nav.nmax[i]=2;
+        rnx->nav.eph[i][0]=eph0;
+        rnx->nav.eph[i][1]=eph0;
+    }
+    for (i=0;i<NSATGLO;i++) {
+        if (!(rnx->nav.geph[i]=(geph_t *)malloc(sizeof(geph_t)*1))) {
+            free_rnxctr(rnx);
+            return 0;
+        }
+        rnx->nav.ng[i]=1;
+        rnx->nav.geph[i][0]=geph0;
+    }
+    for (i=0;i<NSATSBS;i++) {
+        if (!(rnx->nav.seph[i]=(seph_t *)malloc(sizeof(seph_t)*2))) {
+            free_rnxctr(rnx);
+            return 0;
+        }
+        rnx->nav.ng[i]=2;
+        rnx->nav.seph[i][0]=seph0;
+        rnx->nav.seph[i][1]=seph0;
     }
     rnx->time=time0;
     rnx->ver=0.0;
     rnx->sys=rnx->tsys=0;
     for (i=0;i<RNX_NUMSYS;i++) for (j=0;j<MAXOBSTYPE;j++) rnx->tobs[i][j][0]='\0';
     rnx->obs.n=0;
-    rnx->nav.n=MAXSAT*2;
-    rnx->nav.ng=NSATGLO;
-    rnx->nav.ns=NSATSBS*2;
     for (i=0;i<MAXOBS   ;i++) rnx->obs.data[i]=data0;
-    for (i=0;i<MAXSAT*2 ;i++) rnx->nav.eph [i]=eph0;
-    for (i=0;i<NSATGLO  ;i++) rnx->nav.geph[i]=geph0;
-    for (i=0;i<NSATSBS*2;i++) rnx->nav.seph[i]=seph0;
     rnx->ephsat=rnx->ephset=0;
     rnx->opt[0]='\0';
 
@@ -1842,12 +1877,27 @@ extern int init_rnxctr(rnxctr_t *rnx)
 *-----------------------------------------------------------------------------*/
 extern void free_rnxctr(rnxctr_t *rnx)
 {
+    int i;
+
     trace(3,"free_rnxctr:\n");
 
-    free(rnx->obs.data); rnx->obs.data=NULL; rnx->obs.n =0;
-    free(rnx->nav.eph ); rnx->nav.eph =NULL; rnx->nav.n =0;
-    free(rnx->nav.geph); rnx->nav.geph=NULL; rnx->nav.ng=0;
-    free(rnx->nav.seph); rnx->nav.seph=NULL; rnx->nav.ns=0;
+    free(rnx->obs.data);
+    rnx->obs.data=NULL; rnx->obs.n =0;
+    for (i=0;i<MAXSAT;i++) {
+        free(rnx->nav.eph[i]);
+        rnx->nav.eph[i]=NULL;
+        rnx->nav.n[i]=rnx->nav.nmax[i]=0;
+    }
+    for (i=0;i<NSATGLO;i++) {
+        free(rnx->nav.geph[i]);
+        rnx->nav.geph[i]=NULL;
+        rnx->nav.ng[i]=rnx->nav.ngmax[i]=0;
+    }
+    for (i=0;i<NSATSBS;i++) {
+        free(rnx->nav.seph[i]);
+        rnx->nav.seph[i]=NULL;
+        rnx->nav.ns[i]=rnx->nav.nsmax[i]=0;
+    }
 }
 /* open RINEX data -------------------------------------------------------------
 * fetch next RINEX message and input a message from file
@@ -1898,10 +1948,10 @@ extern int open_rnxctr(rnxctr_t *rnx, FILE *fp)
 *            rnx->time      : ephemeris frame time
 *            rnx->ephsat    : sat-no of input ephemeris
 *            rnx->ephset    : set-no of input ephemeris (0:set1,1:set2)
-*            rnx->nav.geph[prn-1]        : GLOASS ephemeris (prn=slot-no)
-*            rnx->nav.seph[prn-MINPRNSBS]: SBAS ephemeris   (prn=PRN-no)
-*            rnx->nav.eph [sat-1]        : other ephemeris set1 (sat=sat-no)
-*            rnx->nav.eph [sat-1+MAXSAT] : other ephemeris set2 (sat=sat-no)
+*            rnx->nav.geph[prn-1][0]     : GLOASS ephemeris (prn=slot-no)
+*            rnx->nav.seph[prn-MINPRNSBS][0]: SBAS ephemeris   (prn=PRN-no)
+*            rnx->nav.eph [sat-1][0]     : other ephemeris set1 (sat=sat-no)
+*            rnx->nav.eph [sat-1][1]     : other ephemeris set2 (sat=sat-no)
 *-----------------------------------------------------------------------------*/
 extern int input_rnxctr(rnxctr_t *rnx, FILE *fp)
 {
@@ -1930,6 +1980,7 @@ extern int input_rnxctr(rnxctr_t *rnx, FILE *fp)
         case 'H': sys=SYS_SBS ; break;
         case 'L': sys=SYS_GAL ; break; /* extension */
         case 'J': sys=SYS_QZS ; break; /* extension */
+          // case 'C': ???
         default: return 0;
     }
     if ((stat=readrnxnavb(fp,rnx->opt,rnx->ver,sys,&type,&eph,&geph,&seph))<=0) {
@@ -1937,14 +1988,14 @@ extern int input_rnxctr(rnxctr_t *rnx, FILE *fp)
     }
     if (type==1) { /* GLONASS ephemeris */
         sys=satsys(geph.sat,&prn);
-        rnx->nav.geph[prn-1]=geph;
+        rnx->nav.geph[prn-1][0]=geph;
         rnx->time=geph.tof;
         rnx->ephsat=geph.sat;
         rnx->ephset=0;
     }
     else if (type==2) { /* SBAS ephemeris */
         sys=satsys(seph.sat,&prn);
-        rnx->nav.seph[prn-MINPRNSBS]=seph;
+        rnx->nav.seph[prn-MINPRNSBS][0]=seph;
         rnx->time=seph.tof;
         rnx->ephsat=seph.sat;
         rnx->ephset=0;
@@ -1952,7 +2003,7 @@ extern int input_rnxctr(rnxctr_t *rnx, FILE *fp)
     else { /* other ephemeris */
         sys=satsys(eph.sat,&prn);
         set=(sys==SYS_GAL&&(eph.code&(1<<9)))?1:0; /* GAL 0:I/NAV,1:F/NAV */
-        rnx->nav.eph[eph.sat-1+MAXSAT*set]=eph;
+        rnx->nav.eph[eph.sat-1][set]=eph;
         rnx->time=eph.ttr;
         rnx->ephsat=eph.sat;
         rnx->ephset=set;
@@ -2062,12 +2113,9 @@ static void outrnx_glo_fcn(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
     if (opt->navsys&SYS_GLO) {
         for (i=0;i<MAXPRNGLO;i++) {
             sat=satno(SYS_GLO,i+1);
-            for (j=0;j<nav->ng;j++) {
-                if (nav->geph[j].sat==sat) break;
-            };
-            if (j<nav->ng) {
+            if (nav->geph[i][0].sat==sat) {
                 prn[n]=i+1;
-                fcn[n++]=nav->geph[j].frq;
+                fcn[n++]=nav->geph[i][0].frq;
             }
             else if (nav->glo_fcn[i]) {
                 prn[n]=i+1;

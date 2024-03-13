@@ -760,11 +760,12 @@ extern double sat2freq(int sat, uint8_t code, const nav_t *nav)
 
     if (sys==SYS_GLO) {
         if (!nav) return 0.0;
-        for (i=0;i<nav->ng;i++) {
-            if (nav->geph[i].sat==sat) break;
+        /* First non-empty entry */
+        for (i=0;i<nav->ng[prn-1];i++) {
+            if (nav->geph[prn-1][i].sat==sat) break;
         }
-        if (i<nav->ng) {
-            fcn=nav->geph[i].frq;
+        if (i<nav->ng[prn-1]) {
+            fcn=nav->geph[prn-1][i].frq;
         }
         else if (nav->glo_fcn[prn-1]>0) {
             fcn=nav->glo_fcn[prn-1]-8;
@@ -2870,6 +2871,24 @@ extern int geterp(const erp_t *erp, gtime_t time, double *erpv)
     erpv[3]=(1.0-a)*erp->data[j].lod    +a*erp->data[j+1].lod;
     return 1;
 }
+extern int navncnt(nav_t *nav)
+{
+    int i,n=0;
+    for (i=0;i<MAXSAT;i++) n+=nav->n[i];
+    return n;
+}
+extern int navngcnt(nav_t *nav)
+{
+    int i,n=0;
+    for (i=0;i<NSATGLO;i++) n+=nav->ng[i];
+    return n;
+}
+extern int navnscnt(nav_t *nav)
+{
+    int i,n=0;
+    for (i=0;i<NSATSBS;i++) n+=nav->ns[i];
+    return n;
+}
 /* compare ephemeris ---------------------------------------------------------*/
 static int cmpeph(const void *p1, const void *p2)
 {
@@ -2881,32 +2900,34 @@ static int cmpeph(const void *p1, const void *p2)
 /* sort and unique ephemeris -------------------------------------------------*/
 static void uniqeph(nav_t *nav)
 {
-    eph_t *nav_eph;
-    int i,j;
+    int ns=0,ne=0;
 
-    trace(3,"uniqeph: n=%d\n",nav->n);
+    for (int k=0;k<MAXSAT;k++) {
+        if (nav->n[k]<=0) continue;
+        ns+=nav->n[k];
 
-    if (nav->n<=0) return;
+        qsort(nav->eph[k],nav->n[k],sizeof(eph_t),cmpeph);
 
-    qsort(nav->eph,nav->n,sizeof(eph_t),cmpeph);
-
-    for (i=1,j=0;i<nav->n;i++) {
-        if (nav->eph[i].sat!=nav->eph[j].sat||
-            nav->eph[i].iode!=nav->eph[j].iode) {
-            nav->eph[++j]=nav->eph[i];
+        int j=0;
+        for (int i=1;i<nav->n[k];i++) {
+            if (nav->eph[k][i].toe.time!=nav->eph[k][j].toe.time||
+                nav->eph[k][i].iode!=nav->eph[k][j].iode)
+                nav->eph[k][++j]=nav->eph[k][i];
         }
+        nav->n[k]=j+1;
+        ne+=j+1;
+    
+        eph_t *nav_eph;
+        if (!(nav_eph=(eph_t *)realloc(nav->eph[k],sizeof(eph_t)*nav->n[k]))) {
+            trace(1,"uniqeph malloc error n=%d\n",nav->n[k]);
+            free(nav->eph[k]); nav->eph[k]=NULL; nav->n[k]=nav->nmax[k]=0;
+            return;
+        }
+        nav->eph[k]=nav_eph;
+        nav->nmax[k]=nav->n[k];
     }
-    nav->n=j+1;
 
-    if (!(nav_eph=(eph_t *)realloc(nav->eph,sizeof(eph_t)*nav->n))) {
-        trace(1,"uniqeph malloc error n=%d\n",nav->n);
-        free(nav->eph); nav->eph=NULL; nav->n=nav->nmax=0;
-        return;
-    }
-    nav->eph=nav_eph;
-    nav->nmax=nav->n;
-
-    trace(4,"uniqeph: n=%d\n",nav->n);
+    trace(4,"uniqeph: n=%d %d\n",ns,ne);
 }
 /* compare glonass ephemeris -------------------------------------------------*/
 static int cmpgeph(const void *p1, const void *p2)
@@ -2919,33 +2940,37 @@ static int cmpgeph(const void *p1, const void *p2)
 /* sort and unique glonass ephemeris -----------------------------------------*/
 static void uniqgeph(nav_t *nav)
 {
-    geph_t *nav_geph;
-    int i,j;
+    int ns=0,ne=0;
+    
+    trace(3,"uniqgeph\n");
+    
+    for (int k=0;k<NSATGLO;k++) {
+        if (nav->ng[k]<=0) continue;
+        ns+=nav->ng[k];
+    
+        qsort(nav->geph[k],nav->ng[k],sizeof(geph_t),cmpgeph);
 
-    trace(3,"uniqgeph: ng=%d\n",nav->ng);
-
-    if (nav->ng<=0) return;
-
-    qsort(nav->geph,nav->ng,sizeof(geph_t),cmpgeph);
-
-    for (i=j=0;i<nav->ng;i++) {
-        if (nav->geph[i].sat!=nav->geph[j].sat||
-            nav->geph[i].toe.time!=nav->geph[j].toe.time||
-            nav->geph[i].svh!=nav->geph[j].svh) {
-            nav->geph[++j]=nav->geph[i];
+        int j=0;
+        for (int i=0;i<nav->ng[k];i++) {
+            if (nav->geph[k][i].toe.time!=nav->geph[k][j].toe.time||
+                nav->geph[k][i].svh!=nav->geph[k][j].svh) {
+                nav->geph[k][++j]=nav->geph[k][i];
+            }
         }
+        nav->ng[k]=j+1;
+        ne+=j+1;
+    
+        geph_t *nav_geph;
+        if (!(nav_geph=(geph_t *)realloc(nav->geph[k],sizeof(geph_t)*nav->ng[k]))) {
+            trace(1,"uniqgeph malloc error ng=%d\n",nav->ng[k]);
+            free(nav->geph[k]); nav->geph[k]=NULL; nav->ng[k]=nav->ngmax[k]=0;
+            return;
+        }
+        nav->geph[k]=nav_geph;
+        nav->ngmax[k]=nav->ng[k];
     }
-    nav->ng=j+1;
 
-    if (!(nav_geph=(geph_t *)realloc(nav->geph,sizeof(geph_t)*nav->ng))) {
-        trace(1,"uniqgeph malloc error ng=%d\n",nav->ng);
-        free(nav->geph); nav->geph=NULL; nav->ng=nav->ngmax=0;
-        return;
-    }
-    nav->geph=nav_geph;
-    nav->ngmax=nav->ng;
-
-    trace(4,"uniqgeph: ng=%d\n",nav->ng);
+    trace(4,"uniqgeph: ng=%d %d\n",ns,ne);
 }
 /* compare sbas ephemeris ----------------------------------------------------*/
 static int cmpseph(const void *p1, const void *p2)
@@ -2958,32 +2983,34 @@ static int cmpseph(const void *p1, const void *p2)
 /* sort and unique sbas ephemeris --------------------------------------------*/
 static void uniqseph(nav_t *nav)
 {
-    seph_t *nav_seph;
-    int i,j;
+    int ns=0,ne=0;
+    
+    for (int k=0;k<NSATSBS;k++) {
+        if (nav->ns[k]<=0) continue;
+        ns+=nav->ns[k];
+    
+        qsort(nav->seph[k],nav->ns[k],sizeof(seph_t),cmpseph);
 
-    trace(3,"uniqseph: ns=%d\n",nav->ns);
-
-    if (nav->ns<=0) return;
-
-    qsort(nav->seph,nav->ns,sizeof(seph_t),cmpseph);
-
-    for (i=j=0;i<nav->ns;i++) {
-        if (nav->seph[i].sat!=nav->seph[j].sat||
-            nav->seph[i].t0.time!=nav->seph[j].t0.time) {
-            nav->seph[++j]=nav->seph[i];
+        int j=0;
+        for (int i=0;i<nav->ns[k];i++) {
+            if (nav->seph[k][i].t0.time!=nav->seph[k][j].t0.time) {
+                nav->seph[k][++j]=nav->seph[k][i];
+            }
         }
+        nav->ns[k]=j+1;
+        ne+=j+1;
+    
+        seph_t *nav_seph;
+        if (!(nav_seph=(seph_t *)realloc(nav->seph[k],sizeof(seph_t)*nav->ns[k]))) {
+            trace(1,"uniqseph malloc error ns=%d\n",nav->ns[k]);
+            free(nav->seph[k]); nav->seph[k]=NULL; nav->ns[k]=nav->nsmax[k]=0;
+            return;
+        }
+        nav->seph[k]=nav_seph;
+        nav->nsmax[k]=nav->ns[k];
     }
-    nav->ns=j+1;
-
-    if (!(nav_seph=(seph_t *)realloc(nav->seph,sizeof(seph_t)*nav->ns))) {
-        trace(1,"uniqseph malloc error ns=%d\n",nav->ns);
-        free(nav->seph); nav->seph=NULL; nav->ns=nav->nsmax=0;
-        return;
-    }
-    nav->seph=nav_seph;
-    nav->nsmax=nav->ns;
-
-    trace(4,"uniqseph: ns=%d\n",nav->ns);
+    
+    trace(4,"uniqseph: ns=%d %d\n",ns,ne);
 }
 /* unique ephemerides ----------------------------------------------------------
 * unique ephemerides in navigation data and update carrier wave length
@@ -2992,8 +3019,8 @@ static void uniqseph(nav_t *nav)
 *-----------------------------------------------------------------------------*/
 extern void uniqnav(nav_t *nav)
 {
-    trace(3,"uniqnav: neph=%d ngeph=%d nseph=%d\n",nav->n,nav->ng,nav->ns);
-
+    trace(3,"uniqnav\n");
+    
     /* unique ephemeris */
     uniqeph (nav);
     uniqgeph(nav);
@@ -3087,41 +3114,41 @@ extern int readnav(const char *file, nav_t *nav)
         if ((p=strchr(buff,','))) *p='\0'; else continue;
         if (!(sat=satid2no(buff))) continue;
         if (satsys(sat,&prn)==SYS_GLO) {
-            nav->geph[prn-1]=geph0;
-            nav->geph[prn-1].sat=sat;
+            nav->geph[prn-1][0]=geph0;
+            nav->geph[prn-1][0].sat=sat;
             toe_time=tof_time=0;
             (void)sscanf(p+1,"%d,%d,%d,%d,%d,%ld,%ld,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,"
                         "%lf,%lf,%lf,%lf",
-                   &nav->geph[prn-1].iode,&nav->geph[prn-1].frq,&nav->geph[prn-1].svh,
-                   &nav->geph[prn-1].sva,&nav->geph[prn-1].age,
+                   &nav->geph[prn-1][0].iode,&nav->geph[prn-1][0].frq,&nav->geph[prn-1][0].svh,
+                   &nav->geph[prn-1][0].sva,&nav->geph[prn-1][0].age,
                    &toe_time,&tof_time,
-                   &nav->geph[prn-1].pos[0],&nav->geph[prn-1].pos[1],&nav->geph[prn-1].pos[2],
-                   &nav->geph[prn-1].vel[0],&nav->geph[prn-1].vel[1],&nav->geph[prn-1].vel[2],
-                   &nav->geph[prn-1].acc[0],&nav->geph[prn-1].acc[1],&nav->geph[prn-1].acc[2],
-                   &nav->geph[prn-1].taun  ,&nav->geph[prn-1].gamn  ,&nav->geph[prn-1].dtaun);
-            nav->geph[prn-1].toe.time=toe_time;
-            nav->geph[prn-1].tof.time=tof_time;
+                   &nav->geph[prn-1][0].pos[0],&nav->geph[prn-1][0].pos[1],&nav->geph[prn-1][0].pos[2],
+                   &nav->geph[prn-1][0].vel[0],&nav->geph[prn-1][0].vel[1],&nav->geph[prn-1][0].vel[2],
+                   &nav->geph[prn-1][0].acc[0],&nav->geph[prn-1][0].acc[1],&nav->geph[prn-1][0].acc[2],
+                   &nav->geph[prn-1][0].taun  ,&nav->geph[prn-1][0].gamn  ,&nav->geph[prn-1][0].dtaun);
+            nav->geph[prn-1][0].toe.time=toe_time;
+            nav->geph[prn-1][0].tof.time=tof_time;
         }
         else {
-            nav->eph[sat-1]=eph0;
-            nav->eph[sat-1].sat=sat;
+            nav->eph[sat-1][0]=eph0;
+            nav->eph[sat-1][0].sat=sat;
             toe_time=toc_time=ttr_time=0;
             (void)sscanf(p+1,"%d,%d,%d,%d,%ld,%ld,%ld,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,"
                         "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d",
-                   &nav->eph[sat-1].iode,&nav->eph[sat-1].iodc,&nav->eph[sat-1].sva ,
-                   &nav->eph[sat-1].svh ,
+                   &nav->eph[sat-1][0].iode,&nav->eph[sat-1][0].iodc,&nav->eph[sat-1][0].sva ,
+                   &nav->eph[sat-1][0].svh ,
                    &toe_time,&toc_time,&ttr_time,
-                   &nav->eph[sat-1].A   ,&nav->eph[sat-1].e   ,&nav->eph[sat-1].i0  ,
-                   &nav->eph[sat-1].OMG0,&nav->eph[sat-1].omg ,&nav->eph[sat-1].M0  ,
-                   &nav->eph[sat-1].deln,&nav->eph[sat-1].OMGd,&nav->eph[sat-1].idot,
-                   &nav->eph[sat-1].crc ,&nav->eph[sat-1].crs ,&nav->eph[sat-1].cuc ,
-                   &nav->eph[sat-1].cus ,&nav->eph[sat-1].cic ,&nav->eph[sat-1].cis ,
-                   &nav->eph[sat-1].toes,&nav->eph[sat-1].fit ,&nav->eph[sat-1].f0  ,
-                   &nav->eph[sat-1].f1  ,&nav->eph[sat-1].f2  ,&nav->eph[sat-1].tgd[0],
-                   &nav->eph[sat-1].code, &nav->eph[sat-1].flag);
-            nav->eph[sat-1].toe.time=toe_time;
-            nav->eph[sat-1].toc.time=toc_time;
-            nav->eph[sat-1].ttr.time=ttr_time;
+                   &nav->eph[sat-1][0].A   ,&nav->eph[sat-1][0].e   ,&nav->eph[sat-1][0].i0  ,
+                   &nav->eph[sat-1][0].OMG0,&nav->eph[sat-1][0].omg ,&nav->eph[sat-1][0].M0  ,
+                   &nav->eph[sat-1][0].deln,&nav->eph[sat-1][0].OMGd,&nav->eph[sat-1][0].idot,
+                   &nav->eph[sat-1][0].crc ,&nav->eph[sat-1][0].crs ,&nav->eph[sat-1][0].cuc ,
+                   &nav->eph[sat-1][0].cus ,&nav->eph[sat-1][0].cic ,&nav->eph[sat-1][0].cis ,
+                   &nav->eph[sat-1][0].toes,&nav->eph[sat-1][0].fit ,&nav->eph[sat-1][0].f0  ,
+                   &nav->eph[sat-1][0].f1  ,&nav->eph[sat-1][0].f2  ,&nav->eph[sat-1][0].tgd[0],
+                   &nav->eph[sat-1][0].code, &nav->eph[sat-1][0].flag);
+            nav->eph[sat-1][0].toe.time=toe_time;
+            nav->eph[sat-1][0].toc.time=toc_time;
+            nav->eph[sat-1][0].ttr.time=ttr_time;
         }
     }
     fclose(fp);
@@ -3138,33 +3165,33 @@ extern int savenav(const char *file, const nav_t *nav)
     if (!(fp=fopen(file,"w"))) return 0;
 
     for (i=0;i<MAXSAT;i++) {
-        if (nav->eph[i].ttr.time==0) continue;
-        satno2id(nav->eph[i].sat,id);
+        if (nav->eph[i][0].ttr.time==0) continue;
+        satno2id(nav->eph[i][0].sat,id);
         fprintf(fp,"%s,%d,%d,%d,%d,%d,%d,%d,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
                    "%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
                    "%.14E,%.14E,%.14E,%.14E,%.14E,%d,%d\n",
-                id,nav->eph[i].iode,nav->eph[i].iodc,nav->eph[i].sva ,
-                nav->eph[i].svh ,(int)nav->eph[i].toe.time,
-                (int)nav->eph[i].toc.time,(int)nav->eph[i].ttr.time,
-                nav->eph[i].A   ,nav->eph[i].e  ,nav->eph[i].i0  ,nav->eph[i].OMG0,
-                nav->eph[i].omg ,nav->eph[i].M0 ,nav->eph[i].deln,nav->eph[i].OMGd,
-                nav->eph[i].idot,nav->eph[i].crc,nav->eph[i].crs ,nav->eph[i].cuc ,
-                nav->eph[i].cus ,nav->eph[i].cic,nav->eph[i].cis ,nav->eph[i].toes,
-                nav->eph[i].fit ,nav->eph[i].f0 ,nav->eph[i].f1  ,nav->eph[i].f2  ,
-                nav->eph[i].tgd[0],nav->eph[i].code,nav->eph[i].flag);
+                id,nav->eph[i][0].iode,nav->eph[i][0].iodc,nav->eph[i][0].sva ,
+                nav->eph[i][0].svh ,(int)nav->eph[i][0].toe.time,
+                (int)nav->eph[i][0].toc.time,(int)nav->eph[i][0].ttr.time,
+                nav->eph[i][0].A   ,nav->eph[i][0].e  ,nav->eph[i][0].i0  ,nav->eph[i][0].OMG0,
+                nav->eph[i][0].omg ,nav->eph[i][0].M0 ,nav->eph[i][0].deln,nav->eph[i][0].OMGd,
+                nav->eph[i][0].idot,nav->eph[i][0].crc,nav->eph[i][0].crs ,nav->eph[i][0].cuc ,
+                nav->eph[i][0].cus ,nav->eph[i][0].cic,nav->eph[i][0].cis ,nav->eph[i][0].toes,
+                nav->eph[i][0].fit ,nav->eph[i][0].f0 ,nav->eph[i][0].f1  ,nav->eph[i][0].f2  ,
+                nav->eph[i][0].tgd[0],nav->eph[i][0].code,nav->eph[i][0].flag);
     }
     for (i=0;i<MAXPRNGLO;i++) {
-        if (nav->geph[i].tof.time==0) continue;
-        satno2id(nav->geph[i].sat,id);
+        if (nav->geph[i][0].tof.time==0) continue;
+        satno2id(nav->geph[i][0].sat,id);
         fprintf(fp,"%s,%d,%d,%d,%d,%d,%d,%d,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
                    "%.14E,%.14E,%.14E,%.14E,%.14E,%.14E\n",
-                id,nav->geph[i].iode,nav->geph[i].frq,nav->geph[i].svh,
-                nav->geph[i].sva,nav->geph[i].age,(int)nav->geph[i].toe.time,
-                (int)nav->geph[i].tof.time,
-                nav->geph[i].pos[0],nav->geph[i].pos[1],nav->geph[i].pos[2],
-                nav->geph[i].vel[0],nav->geph[i].vel[1],nav->geph[i].vel[2],
-                nav->geph[i].acc[0],nav->geph[i].acc[1],nav->geph[i].acc[2],
-                nav->geph[i].taun,nav->geph[i].gamn,nav->geph[i].dtaun);
+                id,nav->geph[i][0].iode,nav->geph[i][0].frq,nav->geph[i][0].svh,
+                nav->geph[i][0].sva,nav->geph[i][0].age,(int)nav->geph[i][0].toe.time,
+                (int)nav->geph[i][0].tof.time,
+                nav->geph[i][0].pos[0],nav->geph[i][0].pos[1],nav->geph[i][0].pos[2],
+                nav->geph[i][0].vel[0],nav->geph[i][0].vel[1],nav->geph[i][0].vel[2],
+                nav->geph[i][0].acc[0],nav->geph[i][0].acc[1],nav->geph[i][0].acc[2],
+                nav->geph[i][0].taun,nav->geph[i][0].gamn,nav->geph[i][0].dtaun);
     }
     /*fprintf(fp,"IONUTC,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
                "%.14E,%.14E,%.14E,%.0f",
@@ -3197,9 +3224,28 @@ extern void freeobs(obs_t *obs)
 *-----------------------------------------------------------------------------*/
 extern void freenav(nav_t *nav, int opt)
 {
-    if (opt&0x01) {free(nav->eph ); nav->eph =NULL; nav->n =nav->nmax =0;}
-    if (opt&0x02) {free(nav->geph); nav->geph=NULL; nav->ng=nav->ngmax=0;}
-    if (opt&0x04) {free(nav->seph); nav->seph=NULL; nav->ns=nav->nsmax=0;}
+    int i;
+    if (opt&0x01) {
+        for (i=0; i<MAXSAT; i++) {
+            free(nav->eph[i]);
+            nav->eph[i]=NULL;
+            nav->n[i]=nav->nmax[i]=0;
+        }
+    }
+    if (opt&0x02) {
+        for (i=0; i<NSATGLO; i++) {
+            free(nav->geph[i]);
+            nav->geph[i]=NULL;
+            nav->ng[i]=nav->ngmax[i]=0;
+        }
+    }
+    if (opt&0x04) {
+        for (i=0; i<NSATSBS; i++) {
+            free(nav->seph[i]);
+            nav->seph[i]=NULL;
+            nav->ns[i]=nav->nsmax[i]=0;
+        }
+    }
     if (opt&0x08) {free(nav->peph); nav->peph=NULL; nav->ne=nav->nemax=0;}
     if (opt&0x10) {free(nav->pclk); nav->pclk=NULL; nav->nc=nav->ncmax=0;}
     if (opt&0x20) {free(nav->alm ); nav->alm =NULL; nav->na=nav->namax=0;}

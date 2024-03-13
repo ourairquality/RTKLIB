@@ -798,9 +798,9 @@ static int decode_type1019(rtcm_t *rtcm)
     eph.ttr=rtcm->time;
     eph.A=sqrtA*sqrtA;
     if (!strstr(rtcm->opt,"-EPHALL")) {
-        if (eph.iode==rtcm->nav.eph[sat-1].iode) return 0; /* unchanged */
+        if (eph.iode==rtcm->nav.eph[sat-1][0].iode) return 0; /* unchanged */
     }
-    rtcm->nav.eph[sat-1]=eph;
+    rtcm->nav.eph[sat-1][0]=eph;
     rtcm->ephsat=sat;
     rtcm->ephset=0;
     return 2;
@@ -866,10 +866,10 @@ static int decode_type1020(rtcm_t *rtcm)
     geph.toe=utc2gpst(gpst2time(week,tow+toe)); /* utc->gpst */
     
     if (!strstr(rtcm->opt,"-EPHALL")) {
-        if (fabs(timediff(geph.toe,rtcm->nav.geph[prn-1].toe))<1.0&&
-            geph.svh==rtcm->nav.geph[prn-1].svh) return 0; /* unchanged */
+        if (fabs(timediff(geph.toe,rtcm->nav.geph[prn-1][0].toe))<1.0&&
+            geph.svh==rtcm->nav.geph[prn-1][0].svh) return 0; /* unchanged */
     }
-    rtcm->nav.geph[prn-1]=geph;
+    rtcm->nav.geph[prn-1][0]=geph;
     rtcm->ephsat=sat;
     rtcm->ephset=0;
     return 2;
@@ -1116,9 +1116,9 @@ static int decode_type1041(rtcm_t *rtcm)
     eph.A=sqrtA*sqrtA;
     eph.iodc=eph.iode;
     if (!strstr(rtcm->opt,"-EPHALL")) {
-        if (eph.iode==rtcm->nav.eph[sat-1].iode) return 0; /* unchanged */
+        if (eph.iode==rtcm->nav.eph[sat-1][0].iode) return 0; /* unchanged */
     }
-    rtcm->nav.eph[sat-1]=eph;
+    rtcm->nav.eph[sat-1][0]=eph;
     rtcm->ephsat=sat;
     rtcm->ephset=0;
     return 2;
@@ -1189,10 +1189,10 @@ static int decode_type1044(rtcm_t *rtcm)
     eph.A=sqrtA*sqrtA;
     eph.flag=1; /* fixed to 1 */
     if (!strstr(rtcm->opt,"-EPHALL")) {
-        if (eph.iode==rtcm->nav.eph[sat-1].iode&&
-            eph.iodc==rtcm->nav.eph[sat-1].iodc) return 0; /* unchanged */
+        if (eph.iode==rtcm->nav.eph[sat-1][0].iode&&
+            eph.iodc==rtcm->nav.eph[sat-1][0].iodc) return 0; /* unchanged */
     }
-    rtcm->nav.eph[sat-1]=eph;
+    rtcm->nav.eph[sat-1][0]=eph;
     rtcm->ephsat=sat;
     rtcm->ephset=0;
     return 2;
@@ -1269,9 +1269,9 @@ static int decode_type1045(rtcm_t *rtcm)
     eph.code=(1<<1)+(1<<8); /* data source = F/NAV+E5a */
     eph.iodc=eph.iode;
     if (!strstr(rtcm->opt,"-EPHALL")) {
-        if (eph.iode==rtcm->nav.eph[sat-1+MAXSAT].iode) return 0; /* unchanged */
+        if (eph.iode==rtcm->nav.eph[sat-1][1].iode) return 0; /* unchanged */
     }
-    rtcm->nav.eph[sat-1+MAXSAT]=eph;
+    rtcm->nav.eph[sat-1][1]=eph;
     rtcm->ephsat=sat;
     rtcm->ephset=1; /* F/NAV */
     return 2;
@@ -1350,9 +1350,9 @@ static int decode_type1046(rtcm_t *rtcm)
     eph.code=(1<<0)+(1<<2)+(1<<9); /* data source = I/NAV+E1+E5b */
     eph.iodc=eph.iode;
     if (!strstr(rtcm->opt,"-EPHALL")) {
-        if (eph.iode==rtcm->nav.eph[sat-1].iode) return 0; /* unchanged */
+        if (eph.iode==rtcm->nav.eph[sat-1][0].iode) return 0; /* unchanged */
     }
-    rtcm->nav.eph[sat-1]=eph;
+    rtcm->nav.eph[sat-1][0]=eph;
     rtcm->ephsat=sat;
     rtcm->ephset=0; /* I/NAV */
     return 2;
@@ -1421,11 +1421,11 @@ static int decode_type1042(rtcm_t *rtcm)
     eph.ttr=rtcm->time;
     eph.A=sqrtA*sqrtA;
     if (!strstr(rtcm->opt,"-EPHALL")) {
-        if (timediff(eph.toe,rtcm->nav.eph[sat-1].toe)==0.0&&
-            eph.iode==rtcm->nav.eph[sat-1].iode&&
-            eph.iodc==rtcm->nav.eph[sat-1].iodc) return 0; /* unchanged */
+        if (timediff(eph.toe,rtcm->nav.eph[sat-1][0].toe)==0.0&&
+            eph.iode==rtcm->nav.eph[sat-1][0].iode&&
+            eph.iodc==rtcm->nav.eph[sat-1][0].iodc) return 0; /* unchanged */
     }
-    rtcm->nav.eph[sat-1]=eph;
+    rtcm->nav.eph[sat-1][0]=eph;
     rtcm->ephset=0;
     rtcm->ephsat=sat;
     return 2;
@@ -2061,8 +2061,8 @@ static void save_msm_obs(rtcm_t *rtcm, int sys, msm_h_t *h, const double *r,
                     rtcm->nav.glo_fcn[prn-1]=fcn+8; /* fcn+8 */
                 }
             }
-            else if (rtcm->nav.geph[prn-1].sat==sat) {
-                fcn=rtcm->nav.geph[prn-1].frq;
+            else if (rtcm->nav.geph[prn-1][0].sat==sat) {
+                fcn=rtcm->nav.geph[prn-1][0].frq;
             }
             else if (rtcm->nav.glo_fcn[prn-1]>0) {
                 fcn=rtcm->nav.glo_fcn[prn-1]-8;

@@ -222,10 +222,10 @@ static int decode_gpsephem(int sat, raw_t *raw)
     eph.ttr=raw->time;
     
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (eph.iode==raw->nav.eph[sat-1].iode) return 0; /* unchanged */
+        if (eph.iode==raw->nav.eph[sat-1][0].iode) return 0; /* unchanged */
     }
     eph.sat=sat;
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -289,18 +289,18 @@ static int decode_gloephem(int sat, raw_t *raw)
 #endif
 #if 0
     /* check illegal ephemeris by frequency number consistency */
-    if (raw->nav.geph[prn-MINPRNGLO].toe.time&&
-        geph.frq!=raw->nav.geph[prn-MINPRNGLO].frq) {
+    if (raw->nav.geph[prn-MINPRNGLO][0].toe.time&&
+        geph.frq!=raw->nav.geph[prn-MINPRNGLO][0].frq) {
         trace(2,"nvs NE illegal freq change: prn=%2d frq=%2d->%2d\n",prn,
-              raw->nav.geph[prn-MINPRNGLO].frq,geph.frq);
+              raw->nav.geph[prn-MINPRNGLO][0].frq,geph.frq);
         return -1;
     }
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (fabs(timediff(geph.toe,raw->nav.geph[prn-MINPRNGLO].toe))<1.0&&
-            geph.svh==raw->nav.geph[prn-MINPRNGLO].svh) return 0;
+        if (fabs(timediff(geph.toe,raw->nav.geph[prn-MINPRNGLO][0].toe))<1.0&&
+            geph.svh==raw->nav.geph[prn-MINPRNGLO][0].svh) return 0;
     }
 #endif
-    raw->nav.geph[prn-1]=geph;
+    raw->nav.geph[prn-1][0]=geph;
     raw->ephsat=geph.sat;
     raw->ephset=0;
     

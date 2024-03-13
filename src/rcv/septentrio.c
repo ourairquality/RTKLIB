@@ -527,12 +527,12 @@ static int decode_gpsnav(raw_t *raw){
     }
 
     if (!strstr(raw->opt,"-EPHALL")) {
-        if ((eph.iode==raw->nav.eph[sat-1].iode) &&
-            (eph.iodc==raw->nav.eph[sat-1].iodc)) return 0;
+        if ((eph.iode==raw->nav.eph[sat-1][0].iode) &&
+            (eph.iodc==raw->nav.eph[sat-1][0].iodc)) return 0;
     }
 
     eph.sat=sat;
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     return 2;
 }
@@ -614,13 +614,13 @@ static int decode_galnav(raw_t *raw){
     }
 
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (eph.iode==raw->nav.eph[sat-1].iode) return 0;
+        if (eph.iode==raw->nav.eph[sat-1][0].iode) return 0;
     }
 
     if (sat == 0) return -1;
 
     eph.sat=sat;
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     return 2;
 }
@@ -677,11 +677,11 @@ static int decode_glonav(raw_t *raw){
     }
 
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (eph.iode==raw->nav.geph[prn-1].iode) return 0;
+        if (eph.iode==raw->nav.geph[prn-1][0].iode) return 0;
     }
 
     eph.sat=sat;
-    raw->nav.geph[prn-1]=eph;
+    raw->nav.geph[prn-1][0]=eph;
     raw->ephsat=sat;
     raw->nav.glo_fcn[prn-1] = eph.frq + 8; /* savbe frequency number */
 
@@ -739,13 +739,13 @@ static int decode_sbasnav(raw_t *raw){
     }
 
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (fabs(timediff(eph.t0,raw->nav.seph[prn-120].t0))<1.0&&
-            eph.sva==raw->nav.seph[prn-120].sva)
+        if (fabs(timediff(eph.t0,raw->nav.seph[prn-120][0].t0))<1.0&&
+            eph.sva==raw->nav.seph[prn-120][0].sva)
             return 0;
     }
 
     eph.sat=sat;
-    raw->nav.seph[prn-120]=eph;
+    raw->nav.seph[prn-120][0]=eph;
     raw->ephsat=eph.sat;
     return 2;
 }
@@ -996,13 +996,13 @@ static int decode_rawnav(raw_t *raw, int sys){
          decode_frame(raw->subfrm[sat-1]+60,&eph,NULL,NULL,NULL)==3) {
 
              if (!strstr(raw->opt,"-EPHALL")) {
-                 if (eph.iode==raw->nav.eph[sat-1].iode&&
-                     eph.iodc==raw->nav.eph[sat-1].iodc&&
-                     timediff(eph.toe,raw->nav.eph[sat-1].toe)==0.0&&
-                     timediff(eph.toc,raw->nav.eph[sat-1].toc)==0.0) return 0;
+                 if (eph.iode==raw->nav.eph[sat-1][0].iode&&
+                     eph.iodc==raw->nav.eph[sat-1][0].iodc&&
+                     timediff(eph.toe,raw->nav.eph[sat-1][0].toe)==0.0&&
+                     timediff(eph.toc,raw->nav.eph[sat-1][0].toc)==0.0) return 0;
              }
              eph.sat=sat;
-             raw->nav.eph[sat-1]=eph;
+             raw->nav.eph[sat-1][0]=eph;
              raw->ephsat=sat;
              raw->ephset=0;
              return 2;
@@ -1106,11 +1106,11 @@ static int decode_galrawfnav(raw_t *raw)
     matcpy(raw->nav.utc_gal,utc,8,1);
 
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (eph.iode==raw->nav.eph[sat-1+MAXSAT].iode&&
-            timediff(eph.toe,raw->nav.eph[sat-1+MAXSAT].toe)==0.0&&
-            timediff(eph.toc,raw->nav.eph[sat-1+MAXSAT].toc)==0.0) return 0;
+        if (eph.iode==raw->nav.eph[sat-1][1].iode&&
+            timediff(eph.toe,raw->nav.eph[sat-1][1].toe)==0.0&&
+            timediff(eph.toc,raw->nav.eph[sat-1][1].toc)==0.0) return 0;
     }
-    raw->nav.eph[sat-1+MAXSAT]=eph;
+    raw->nav.eph[sat-1][1]=eph;
     raw->ephsat=sat;
     raw->ephset=1; /* 1:F/NAV */
     return 2;
@@ -1187,11 +1187,11 @@ static int decode_galrawinav(raw_t *raw){
     matcpy(raw->nav.utc_gal,utc,8,1);
 
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (eph.iode==raw->nav.eph[sat-1].iode&&
-            timediff(eph.toe,raw->nav.eph[sat-1].toe)==0.0&&
-            timediff(eph.toc,raw->nav.eph[sat-1].toc)==0.0) return 0;
+        if (eph.iode==raw->nav.eph[sat-1][0].iode&&
+            timediff(eph.toe,raw->nav.eph[sat-1][0].toe)==0.0&&
+            timediff(eph.toc,raw->nav.eph[sat-1][0].toc)==0.0) return 0;
     }
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0; /* 0:I/NAV */
     return 2;
@@ -1249,10 +1249,10 @@ static int decode_glorawcanav(raw_t *raw){
     geph.frq=(int)U1(p+4)-8;
 
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (geph.iode==raw->nav.geph[prn-1].iode&&
-            timediff(geph.toe,raw->nav.geph[prn-1].toe)==0.0) return 0;
+        if (geph.iode==raw->nav.geph[prn-1][0].iode&&
+            timediff(geph.toe,raw->nav.geph[prn-1][0].toe)==0.0) return 0;
     }
-    raw->nav.geph[prn-1]=geph;
+    raw->nav.geph[prn-1][0]=geph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -1321,10 +1321,10 @@ static int decode_cmpraw(raw_t *raw){
         else return 0;
     }
     if (!strstr(raw->opt,"-EPHALL")) {
-        if (timediff(eph.toe,raw->nav.eph[sat-1].toe)==0.0) return 0;
+        if (timediff(eph.toe,raw->nav.eph[sat-1][0].toe)==0.0) return 0;
     }
     eph.sat=sat;
-    raw->nav.eph[sat-1]=eph;
+    raw->nav.eph[sat-1][0]=eph;
     raw->ephsat=sat;
     raw->ephset=0;
     return 2;
@@ -1364,13 +1364,13 @@ static int decode_navicraw(raw_t *raw)
         if (!decode_irn_nav(raw->subfrm[sat-1],&eph,NULL,NULL)) return 0;
 
         if (!strstr(raw->opt,"-EPHALL")) {
-            if (eph.iode==raw->nav.eph[sat-1].iode&&
-                timediff(eph.toe,raw->nav.eph[sat-1].toe)==0.0) {
+            if (eph.iode==raw->nav.eph[sat-1][0].iode&&
+                timediff(eph.toe,raw->nav.eph[sat-1][0].toe)==0.0) {
                 return 0;
             }
         }
         eph.sat=sat;
-        raw->nav.eph[sat-1]=eph;
+        raw->nav.eph[sat-1][0]=eph;
         raw->ephsat=sat;
         raw->ephset=0;
         return 2;

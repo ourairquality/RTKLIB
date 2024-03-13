@@ -819,16 +819,16 @@ typedef struct {        /* SSR correction type */
 } ssr_t;
 
 typedef struct {        /* navigation data type */
-    int n,nmax;         /* number of broadcast ephemeris */
-    int ng,ngmax;       /* number of glonass ephemeris */
-    int ns,nsmax;       /* number of sbas ephemeris */
+    int n[MAXSAT],nmax[MAXSAT];     /* number of broadcast ephemeris */
+    int ng[NSATGLO],ngmax[NSATGLO]; /* number of glonass ephemeris */
+    int ns[NSATSBS],nsmax[NSATSBS]; /* number of sbas ephemeris */
     int ne,nemax;       /* number of precise ephemeris */
     int nc,ncmax;       /* number of precise clock */
     int na,namax;       /* number of almanac data */
     int nt,ntmax;       /* number of tec grid data */
-    eph_t *eph;         /* GPS/QZS/GAL/BDS/IRN ephemeris */
-    geph_t *geph;       /* GLONASS ephemeris */
-    seph_t *seph;       /* SBAS ephemeris */
+    eph_t *eph[MAXSAT];    /* GPS/QZS/GAL/BDS/IRN ephemeris */
+    geph_t *geph[NSATGLO]; /* GLONASS ephemeris */
+    seph_t *seph[NSATSBS]; /* SBAS ephemeris */
     peph_t *peph;       /* precise ephemeris */
     pclk_t *pclk;       /* precise clock */
     alm_t *alm;         /* almanac data */
@@ -1456,6 +1456,9 @@ EXPORT double dms2deg(const double *dms);
 /* input and output functions ------------------------------------------------*/
 EXPORT void readpos(const char *file, const char *rcv, double *pos);
 EXPORT int  sortobs(obs_t *obs);
+EXPORT int  navncnt(nav_t *nav);
+EXPORT int  navngcnt(nav_t *nav);
+EXPORT int  navnscnt(nav_t *nav);
 EXPORT void uniqnav(nav_t *nav);
 EXPORT int  screent(gtime_t time, gtime_t ts, gtime_t te, double tint);
 EXPORT int  readnav(const char *file, nav_t *nav);

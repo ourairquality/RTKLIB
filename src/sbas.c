@@ -256,11 +256,12 @@ static int decode_sbstype9(const sbsmsg_t *msg, nav_t *nav)
     seph.af1=getbits(msg->msg,218, 8)*P2_39/2.0;
     
     i=msg->prn-MINPRNSBS;
-    if (!nav->seph||fabs(timediff(nav->seph[i].t0,seph.t0))<1E-3) { /* not change */
+    if (!nav->seph[i]||fabs(timediff(nav->seph[i][0].t0,seph.t0))<1E-3) {
+        /* not change */
         return 0;
     }
-    nav->seph[NSATSBS+i]=nav->seph[i]; /* previous */
-    nav->seph[i]=seph;                 /* current */
+    nav->seph[i][1]=nav->seph[i][0]; /* previous */
+    nav->seph[i][0]=seph;            /* current */
 
     trace(5,"decode_sbstype9: prn=%d\n",msg->prn);
     return 1;
@@ -418,9 +419,9 @@ static int decode_sbstype26(const sbsmsg_t *msg, sbsion_t *sbsion)
 * args   : sbsmg_t  *msg    I   sbas message
 *          nav_t    *nav    IO  navigation data
 * return : message type (-1: error or not supported type)
-* notes  : nav->seph must point to seph[NSATSBS*2] (array of seph_t)
-*               seph[prn-MINPRNSBS+1]          : sat prn current epehmeris 
-*               seph[prn-MINPRNSBS+1+MAXPRNSBS]: sat prn previous epehmeris 
+* notes  : nav->seph must point to seph[NSATSBS][2] (array of seph_t)
+*               seph[prn-MINPRNSBS+1][0]       : sat prn current epehmeris
+*               seph[prn-MINPRNSBS+1][1]       : sat prn previous epehmeris
 *-----------------------------------------------------------------------------*/
 extern int sbsupdatecorr(const sbsmsg_t *msg, nav_t *nav)
 {
