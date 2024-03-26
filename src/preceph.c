@@ -416,16 +416,16 @@ static int readdcbf(const char *file, nav_t *nav, const sta_t *sta)
 /* satellite system to index */
 static int sys2ix(int sys)
 {
-    switch (sys) {
-        case SYS_GPS: return 0;
-        case SYS_SBS: return 0;
-        case SYS_GLO: return 1;
-        case SYS_GAL: return 2;
-        case SYS_CMP: return 3;
-        case SYS_QZS: return 4;
-        case SYS_IRN: return 5;
-    }
-    return 0;
+    const int ix[]={0, /* Undefined */
+                    0, /* GPS */
+                    0, /* SBS */
+                    1, /* GLO */
+                    2, /* GAL */
+                    4, /* QZS */
+                    3, /* CMP */
+                    5, /* IRN */
+                    0};  /* LEO */
+    return ix[sys2no(sys)];
 }
 /* translate satellite system and code to code bias table index ----------------
 *       -1 = code not supported
