@@ -1181,18 +1181,18 @@ static double prectrop(gtime_t time, const double *pos, int r,
     return m_w*x[i];
 }
 /* test satellite system (m=0:GPS/SBS,1:GLO,2:GAL,3:BDS,4:QZS,5:IRN) ---------*/
-static int test_sys(int sys, int m)
+static inline int test_sys(int sys, int m)
 {
-    switch (sys) {
-        case SYS_GPS: return m==0;
-        case SYS_SBS: return m==0;
-        case SYS_GLO: return m==1;
-        case SYS_GAL: return m==2;
-        case SYS_CMP: return m==3;
-        case SYS_QZS: return m==4;
-        case SYS_IRN: return m==5;
-    }
-    return 0;
+    const int im[]={-1, /* Undefined */
+                     0, /* GPS */
+                     0, /* SBS */
+                     1, /* GLO */
+                     2, /* GAL */
+                     4, /* QZS */
+                     3, /* CMP */
+                     5, /* IRN */
+                    -1};  /* LEO */
+    return m==im[sys2no(sys)];
 }
 /* double-differenced residuals and partial derivatives  -----------------------------------
         O rtk->ssat[i].resp[j] = residual pseudorange error
