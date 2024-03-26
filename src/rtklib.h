@@ -1405,6 +1405,21 @@ EXPORT int  testsnr(int base, int freq, double el, double snr,
 EXPORT void setcodepri(int sys, int idx, const char *pri);
 EXPORT int  getcodepri(int sys, uint8_t code, const char *opt);
 
+/* Satellite system to index number, or zero if no match. */
+static inline int sys2no(int sys)
+{
+#ifdef __GNUC__
+    return __builtin_ffs(sys);
+#else
+    if (sys==0) return 0;
+    int i=1;
+    if (!(sys&0x0f)) { i+=4; sys>>=4; }
+    if (!(sys&0x03)) { i+=2; sys>>=2; }
+    if (!(sys&0x01)) { i+=1; }
+    return i;
+#endif
+}
+
 /* matrix and vector functions -----------------------------------------------*/
 EXPORT double *mat  (int n, int m);
 EXPORT int    *imat (int n, int m);
