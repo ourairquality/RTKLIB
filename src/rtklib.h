@@ -1503,7 +1503,7 @@ static inline gtime_t timeadd(gtime_t t, double sec)
 *-----------------------------------------------------------------------------*/
 static inline double timediff(gtime_t t1, gtime_t t2)
 {
-    return difftime(t1.time,t2.time)+t1.sec-t2.sec;
+    return (double)(t1.time-t2.time)+t1.sec-t2.sec;
 }
 EXPORT gtime_t gpst2utc (gtime_t t);
 EXPORT gtime_t utc2gpst (gtime_t t);
