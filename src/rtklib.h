@@ -1529,14 +1529,22 @@ static inline gtime_t timeadd(gtime_t t, double sec)
     t.sec+=sec; tt=floor(t.sec); t.time+=(int)tt; t.sec-=tt;
     return t;
 }
-/* time difference -------------------------------------------------------------
-* difference between gtime_t structs
-* args   : gtime_t t1,t2    I   gtime_t structs
-* return : time difference (t1-t2) (s)
+
+/* Time difference -------------------------------------------------------------
+* Difference between gtime_t structs
+* Args   : gtime_t t1,t2    I   gtime_t structs
+* Return : time difference (t1-t2) (s)
+*
+* The order of evaluation is significant for numerical precision. Add the
+* typically small 'sec' delta to the larger 'time' delta.
 *-----------------------------------------------------------------------------*/
-static inline double timediff(gtime_t t1, gtime_t t2)
+static inline
+#ifdef __GNUC__
+__attribute__((__optimize__("no-associative-math", "no-unsafe-math-optimizations", "no-fast-math")))
+#endif
+double timediff(gtime_t t1, gtime_t t2)
 {
-    return difftime(t1.time,t2.time)+t1.sec-t2.sec;
+  return (double)(t1.time - t2.time) + (t1.sec - t2.sec);
 }
 EXPORT gtime_t gpst2utc (gtime_t t);
 EXPORT gtime_t utc2gpst (gtime_t t);
