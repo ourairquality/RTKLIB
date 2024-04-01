@@ -93,7 +93,7 @@
 
 #define ERREPH_GLO 5.0            /* error of glonass ephemeris (m) */
 #define TSTEP    60.0             /* integration step glonass ephemeris (s) */
-#define RTOL_KEPLER 1E-13         /* relative tolerance for Kepler equation */
+#define RTOL_KEPLER 1E-15         /* relative tolerance for Kepler equation */
 
 #define DEFURASSR 0.15            /* default accuracy of ssr corr (m) */
 #define MAXECORSSR 10.0           /* max orbit correction of ssr (m) */
