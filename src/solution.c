@@ -1188,7 +1188,7 @@ static int outecef(uint8_t *buff, const char *s, const sol_t *sol,
     trace(4,"outecef:\n");
     
     p+=sprintf(p,"%s%s%14.4f%s%14.4f%s%14.4f%s%3d%s%3d%s%8.4f%s%8.4f%s%8.4f%s"
-               "%8.4f%s%8.4f%s%8.4f%s%6.2f%s%6.1f",
+               "%8.4f%s%8.4f%s%8.4f%s%6.3f%s%6.1f",
                s,sep,sol->rr[0],sep,sol->rr[1],sep,sol->rr[2],sep,sol->stat,sep,
                sol->ns,sep,SQRT(sol->qr[0]),sep,SQRT(sol->qr[1]),sep,
                SQRT(sol->qr[2]),sep,sqvar(sol->qr[3]),sep,sqvar(sol->qr[4]),sep,
@@ -1232,7 +1232,7 @@ static int outpos(uint8_t *buff, const char *s, const sol_t *sol,
         p+=sprintf(p,"%s%s%14.9f%s%14.9f",s,sep,pos[0]*R2D,sep,pos[1]*R2D);
     }
     p+=sprintf(p,"%s%10.4f%s%3d%s%3d%s%8.4f%s%8.4f%s%8.4f%s%8.4f%s%8.4f%s%8.4f"
-               "%s%6.2f%s%6.1f",
+               "%s%6.3f%s%6.1f",
                sep,pos[2],sep,sol->stat,sep,sol->ns,sep,SQRT(Q[4]),sep,
                SQRT(Q[0]),sep,SQRT(Q[8]),sep,sqvar(Q[1]),sep,sqvar(Q[2]),
                sep,sqvar(Q[5]),sep,sol->age,sep,sol->ratio);
@@ -1267,7 +1267,7 @@ static int outenu(uint8_t *buff, const char *s, const sol_t *sol,
     covenu(pos,P,Q);
     ecef2enu(pos,rr,enu);
     p+=sprintf(p,"%s%s%14.4f%s%14.4f%s%14.4f%s%3d%s%3d%s%8.4f%s%8.4f%s%8.4f%s"
-               "%8.4f%s%8.4f%s%8.4f%s%6.2f%s%6.1f\r\n",
+               "%8.4f%s%8.4f%s%8.4f%s%6.3f%s%6.1f\r\n",
                s,sep,enu[0],sep,enu[1],sep,enu[2],sep,sol->stat,sep,sol->ns,sep,
                SQRT(Q[0]),sep,SQRT(Q[4]),sep,SQRT(Q[8]),sep,sqvar(Q[1]),
                sep,sqvar(Q[5]),sep,sqvar(Q[2]),sep,sol->age,sep,sol->ratio);
@@ -1344,7 +1344,7 @@ extern int outnmea_gga(uint8_t *buff, const sol_t *sol)
     deg2dms(fabs(pos[0])*R2D,dms1,7);
     deg2dms(fabs(pos[1])*R2D,dms2,7);
     p+=sprintf(p,"$%sGGA,%02.0f%02.0f%05.2f,%02.0f%010.7f,%s,%03.0f%010.7f,%s,"
-               "%d,%02d,%.1f,%.3f,M,%.3f,M,%.1f,%04d",
+               "%d,%02d,%.1f,%.3f,M,%.3f,M,%.3f,%04d",
                NMEA_TID,ep[3],ep[4],ep[5],dms1[0],dms1[1]+dms1[2]/60.0,
                pos[0]>=0?"N":"S",dms2[0],dms2[1]+dms2[2]/60.0,pos[1]>=0?"E":"W",
                solq,sol->ns,dop,pos[2]-h,h,sol->age,sol->refstationid);
