@@ -311,7 +311,7 @@ extern int rtkoutstat(rtk_t *rtk, int level, char *buff)
         satno2id(i+1,id);
         for (int j=0;j<nfreq;j++) {
             int k=IB(i+1,j,&rtk->opt);
-            p+=sprintf(p,"$SAT,%d,%.3f,%s,%d,%.1f,%.1f,%.4f,%.4f,%d,%.0f,%d,%d,%d,%u,%u,%u,%.2f,%.6f,%.5f\n",
+            p+=sprintf(p,"$SAT,%d,%.3f,%s,%d,%.1f,%.1f,%.4f,%.4f,%d,%.2f,%d,%d,%d,%u,%u,%u,%.2f,%.6f,%.5f\n",
                        week,tow,id,j+1,ssat->azel[0]*R2D,ssat->azel[1]*R2D,
                        ssat->resp[j],ssat->resc[j],ssat->vsat[j],ssat->snr_rover[j],
                        ssat->fix[j],ssat->slip[j]&(LLI_SLIP|LLI_HALFC),ssat->lock[j],ssat->outc[j],
