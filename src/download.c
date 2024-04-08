@@ -95,7 +95,7 @@ static char *parse_str(char *buff, char *str, int nmax)
 {
     char *p,*q,sep[]=" \r\n";
     
-    for (p=buff;*p&&*p==' ';p++) ;
+    for (p=buff;*p==' ';p++) ;
     
     if (*p=='"') sep[0]=*p++; /* enclosed within quotation marks */
     
