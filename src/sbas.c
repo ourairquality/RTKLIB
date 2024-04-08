@@ -170,7 +170,7 @@ static int decode_sbstype2(const sbsmsg_t *msg, sbssat_t *sbssat)
         t0 =sbssat->sat[j].fcorr.t0;
         prc=sbssat->sat[j].fcorr.prc;
         sbssat->sat[j].fcorr.t0=gpst2time(msg->week,msg->tow);
-        sbssat->sat[j].fcorr.prc=getbits(msg->msg,18+i*12,12)*0.125f;
+        sbssat->sat[j].fcorr.prc=getbits(msg->msg,18+i*12,12)*0.125;
         sbssat->sat[j].fcorr.udre=udre+1;
         dt=timediff(sbssat->sat[j].fcorr.t0,t0);
         if (t0.time==0||dt<=0.0||18.0<dt||sbssat->sat[j].fcorr.ai==0) {
@@ -374,7 +374,7 @@ static int decode_sbstype24(const sbsmsg_t *msg, sbssat_t *sbssat)
         udre=getbitu(msg->msg,86+4*i,4);
         
         sbssat->sat[j].fcorr.t0  =gpst2time(msg->week,msg->tow);
-        sbssat->sat[j].fcorr.prc =getbits(msg->msg,14+i*12,12)*0.125f;
+        sbssat->sat[j].fcorr.prc =getbits(msg->msg,14+i*12,12)*0.125;
         sbssat->sat[j].fcorr.udre=udre+1;
         sbssat->sat[j].fcorr.iodf=iodf;
     }
