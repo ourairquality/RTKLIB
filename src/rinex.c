@@ -2225,8 +2225,6 @@ extern int outrnxobsh(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
     }
     if (opt->rnxver>=302) {
         outrnx_glo_fcn(fp,opt,nav); /* GLONASS SLOT / FRQ # */
-    }
-    if (opt->rnxver>=302) {
         outrnx_glo_bias(fp,opt); /* GLONASS COD/PHS/BIS */
     }
     return fprintf(fp,"%-60.60s%-20s\n","","END OF HEADER")!=EOF;
