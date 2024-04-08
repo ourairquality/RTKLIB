@@ -573,7 +573,7 @@ EXPORT int input_rt17(raw_t *Raw, uint8_t Data)
     }
 
     if (Raw->outtype)
-        sprintf(Raw->msgtype, "RT17 0x%02X (%4d)", PacketBuffer[2], rt17->PacketLength);
+        sprintf(Raw->msgtype, "RT17 0x%02X (%4u)", PacketBuffer[2], rt17->PacketLength);
 
     /* If this is a SVDATA packet, then process it immediately */
     if (PacketBuffer[2] == RETSVDATA)

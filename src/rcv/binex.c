@@ -168,7 +168,7 @@ static int decode_bnx_00(raw_t *raw, uint8_t *buff, int len)
     
     msg=raw->msgtype+strlen(raw->msgtype);
     if (raw->outtype) {
-        msg+=sprintf(msg," time=%s src=%d",time_str(raw->time,0),src);
+        msg+=sprintf(msg," time=%s src=%u",time_str(raw->time,0),src);
     }
     while (p-buff<len) {
         p+=getbnxi(p,&fid);

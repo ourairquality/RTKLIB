@@ -705,7 +705,7 @@ static int decode_WE(raw_t *raw)
     
     if (raw->outtype) {
         msg=raw->msgtype+strlen(raw->msgtype);
-        sprintf(msg," prn=%3d tod=%6d",prn,tod);
+        sprintf(msg," prn=%3d tod=%6u",prn,tod);
     }
     if (!(seph.sat=satno(SYS_SBS,prn))) {
         trace(2,"javad WE satellite error: prn=%d\n",prn);
