@@ -529,7 +529,7 @@ static void corr_phase_bias(obsd_t *obs, int n, const nav_t *nav)
 /* periodic command ----------------------------------------------------------*/
 static void periodic_cmd(int cycle, const char *cmd, stream_t *stream)
 {
-    const char *p=cmd,*q;
+    const char *p,*q;
     char msg[1024],*r;
     int n,period;
     
