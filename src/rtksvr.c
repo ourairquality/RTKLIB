@@ -472,7 +472,7 @@ static void corr_phase_bias(obsd_t *obs, int n, const nav_t *nav)
 /* periodic command ----------------------------------------------------------*/
 static void periodic_cmd(int cycle, const char *cmd, stream_t *stream)
 {
-    const char *p=cmd,*q;
+    const char *p,*q;
     char msg[1024],*r;
     int n,period;
     
@@ -961,7 +961,7 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
     }
     /* write solution header to solution streams */
     for (i=3;i<5;i++) {
-        writesolhead(svr->stream+i,svr->solopt+i-3);
+        writesolhead(svr->stream+i,svr->solopt+(i-3));
     }
     /* create rtk server thread */
 #ifdef WIN32
@@ -1041,7 +1041,7 @@ extern int rtksvropenstr(rtksvr_t *svr, int index, int str, const char *path,
         svr->solopt[index-3]=*solopt;
         
         /* write solution header to solution stream */
-        writesolhead(svr->stream+index,svr->solopt+index-3);
+        writesolhead(svr->stream+index,svr->solopt+(index-3));
     }
     rtksvrunlock(svr);
     return 1;
