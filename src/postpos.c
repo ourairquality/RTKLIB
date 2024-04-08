@@ -155,10 +155,14 @@ static void outheader(FILE *fp, char **file, int n, const prcopt_t *popt,
         te=obss.data[j].time;
         t1=time2gpst(ts,&w1);
         t2=time2gpst(te,&w2);
-        if (sopt->times>=1) ts=gpst2utc(ts);
-        if (sopt->times>=1) te=gpst2utc(te);
-        if (sopt->times==2) ts=timeadd(ts,9*3600.0);
-        if (sopt->times==2) te=timeadd(te,9*3600.0);
+        if (sopt->times>=1) {
+            ts=gpst2utc(ts);
+            te=gpst2utc(te);
+        }
+        if (sopt->times==2) {
+            ts=timeadd(ts,9*3600.0);
+            te=timeadd(te,9*3600.0);
+        }
         time2str(ts,s2,1);
         time2str(te,s3,1);
         fprintf(fp,"%s obs start : %s %s (week%04d %8.1fs)\n",COMMENTH,s2,s1[sopt->times],w1,t1);
