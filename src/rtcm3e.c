@@ -738,7 +738,7 @@ static int encode_type1012(rtcm_t *rtcm, int sync)
     for (j=0;j<rtcm->obs.n&&nsat<MAXOBS;j++) {
         sat=rtcm->obs.data[j].sat;
         if (satsys(sat,&prn)!=SYS_GLO) continue;
-        if ((fcn=fcn_glo(sat,rtcm))<0) continue;  /* fcn+7 */
+        if (fcn_glo(sat,rtcm)<0) continue;  /* fcn+7 */
         nsat++;
     }
     /* encode header */
