@@ -1107,7 +1107,7 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
         for (j=0;j<MAXSAT;j++) navs.cbias[j][k][i]=-1;
         for (j=0;j<MAXRCV;j++) navs.rbias[j][k][i]=0;
         }
-    for (i=0,j=0;i<n;i++) {  /* first check infiles for .BIA or .BSX files */
+    for (i=0;i<n;i++) {  /* first check infiles for .BIA or .BSX files */
         if ((dcb_ok=readdcb(infile[i],&navs,stas))) break;
     }
     if (!dcb_ok&&*fopt->dcb) {  /* then check if DCB file specified */
