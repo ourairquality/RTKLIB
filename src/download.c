@@ -330,7 +330,6 @@ static int get_list(const path_t *path, const char *usr, const char *pwd,
 {
     FILE *fp;
     char cmd[4096],env[1024]="",remot[1024],*opt="",*opt2="",*p;
-    int stat;
     
 #ifndef WIN32
     opt2=" -o /dev/null";
