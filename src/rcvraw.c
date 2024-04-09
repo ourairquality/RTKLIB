@@ -1189,7 +1189,8 @@ static int decode_alm_qzs(const uint8_t *buff, alm_t *alm)
 /* decode GPS/QZSS almanac/health --------------------------------------------*/
 static int decode_frame_alm(const uint8_t *buff, alm_t *alm)
 {
-    int frm,dataid,ret=0;
+    uint32_t frm,dataid;
+    int ret=0;
     
     trace(4,"decode_frame_alm:\n");
     
