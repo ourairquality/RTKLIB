@@ -403,9 +403,9 @@ static int decode_rxmrawx(raw_t *raw)
         sscanf(q,"-STD_SLIP=%d",&cpstd_slip);
     } else cpstd_slip=CPSTD_SLIP;
     /* use multiple codes for each freq (-MULTICODE) */
-    if ((q=strstr(raw->opt,"-MULTICODE"))) multicode=1;
+    if (strstr(raw->opt,"-MULTICODE")) multicode=1;
     /* write rcvr stdevs to unused rinex fields */
-    if ((q=strstr(raw->opt,"-RCVSTDS"))) rcvstds=1;
+    if (strstr(raw->opt,"-RCVSTDS")) rcvstds=1;
 
     /* time tag adjustment */
     if (tadj>0.0) {
