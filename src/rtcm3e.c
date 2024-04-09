@@ -1616,7 +1616,7 @@ static int encode_ssr3(rtcm_t *rtcm, int sys, int subtype, int sync)
     /* encode SSR header */
     i=encode_ssr_head(3,rtcm,sys,subtype,nsat,sync,iod,udint,0,0,0);
     
-    for (j=nsat=0;j<MAXSAT;j++) {
+    for (j=0;j<MAXSAT;j++) {
         if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
         
         for (k=nbias=0;k<32;k++) {
@@ -1823,7 +1823,7 @@ static int encode_ssr7(rtcm_t *rtcm, int sys, int subtype, int sync)
     /* encode SSR header */
     i=encode_ssr_head(7,rtcm,sys,subtype,nsat,sync,iod,udint,0,0,0);
     
-    for (j=nsat=0;j<MAXSAT;j++) {
+    for (j=0;j<MAXSAT;j++) {
         if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
         
         for (k=nbias=0;k<32;k++) {
