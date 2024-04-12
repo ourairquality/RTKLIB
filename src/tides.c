@@ -48,7 +48,10 @@ static void tide_pl(const double *eu, const double *rp, double GMp,
     
     trace(4,"tide_pl : pos=%.3f %.3f\n",pos[0]*R2D,pos[1]*R2D);
     
-    if ((r=norm(rp,3))<=0.0) return;
+    if ((r=norm(rp,3))<=0.0) {
+        dr[0]=dr[1]=dr[2]=0;
+        return;
+    }
     
     for (i=0;i<3;i++) ep[i]=rp[i]/r;
     
