@@ -805,7 +805,7 @@ extern int inputsol(uint8_t data, gtime_t ts, gtime_t te, double tint,
     /* decode solution */
     sol.time=solbuf->time;
     if ((stat=decode_sol((char *)solbuf->buff,opt,&sol,solbuf->rb))>0) {
-        if (stat) solbuf->time=sol.time; /* update current time */
+        solbuf->time=sol.time; /* update current time */
         if (stat!=1) return 0;
     }
     if (stat!=1||!screent(sol.time,ts,te,tint)||(qflag&&sol.stat!=qflag)) {
