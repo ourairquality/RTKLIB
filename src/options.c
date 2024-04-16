@@ -28,6 +28,7 @@
 *                             pos1-tropopt, pos1-sateph, pos1-navsys,
 *                             pos2-gloarmode,
 *-----------------------------------------------------------------------------*/
+#define _POSIX_C_SOURCE 199506
 #include "rtklib.h"
 
 /* system options buffer -----------------------------------------------------*/
@@ -435,7 +436,8 @@ static void buff2sysopts(void)
     for (i=0;i<MAXSAT;i++) prcopt_.exsats[i]=0;
     if (exsats_[0]!='\0') {
         strcpy(buff,exsats_);
-        for (p=strtok(buff," ");p;p=strtok(NULL," ")) {
+        char *q;
+        for (p=strtok_r(buff," ",&q);p;p=strtok_r(NULL," ",&q)) {
             if (*p=='+') id=p+1; else id=p;
             if (!(sat=satid2no(id))) continue;
             prcopt_.exsats[sat-1]=*p=='+'?2:1;
@@ -445,7 +447,8 @@ static void buff2sysopts(void)
     for (i=0;i<NFREQ;i++) {
         for (j=0;j<9;j++) prcopt_.snrmask.mask[i][j]=0.0;
         strcpy(buff,snrmask_[i]);
-        for (p=strtok(buff,","),j=0;p&&j<9;p=strtok(NULL,",")) {
+        char *q;
+        for (p=strtok_r(buff,",",&q),j=0;p&&j<9;p=strtok_r(NULL,",",&q)) {
             prcopt_.snrmask.mask[i][j++]=atof(p);
         }
     }

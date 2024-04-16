@@ -29,6 +29,7 @@
 *           2017/05/26  1.17 add input format tersus
 *           2020/11/30  1.18 support api change strsvrstart(),strsvrstat()
 *-----------------------------------------------------------------------------*/
+#define _POSIX_C_SOURCE 199506
 #include <signal.h>
 #include <unistd.h>
 #include "rtklib.h"
@@ -297,12 +298,13 @@ int main(int argc, char **argv)
             return EXIT_FAILURE;
         }
         strcpy(buff,antinfo);
-        for (p=strtok(buff,","),j=0;p&&j<3;p=strtok(NULL,",")) ant[j++]=p;
+        char *r;
+        for (p=strtok_r(buff,",",&r),j=0;p&&j<3;p=strtok_r(NULL,",",&r)) ant[j++]=p;
         strcpy(conv[i]->out.sta.antdes,ant[0]);
         strcpy(conv[i]->out.sta.antsno,ant[1]);
         conv[i]->out.sta.antsetup=atoi(ant[2]);
         strcpy(buff,rcvinfo);
-        for (p=strtok(buff,","),j=0;p&&j<3;p=strtok(NULL,",")) rcv[j++]=p;
+        for (p=strtok_r(buff,",",&r),j=0;p&&j<3;p=strtok_r(NULL,",",&r)) rcv[j++]=p;
         strcpy(conv[i]->out.sta.rectype,rcv[0]);
         strcpy(conv[i]->out.sta.recver ,rcv[1]);
         strcpy(conv[i]->out.sta.recsno ,rcv[2]);

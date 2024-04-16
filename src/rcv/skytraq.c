@@ -44,6 +44,7 @@
 *                           use integer type in stdint.h
 *                           suppress warnings
 *-----------------------------------------------------------------------------*/
+#define _POSIX_C_SOURCE 199506
 #include "rtklib.h"
 
 #define STQSYNC1    0xA0        /* skytraq binary sync code 1 */
@@ -873,7 +874,8 @@ extern int gen_stq(const char *msg, uint8_t *buff)
     trace(4,"gen_stq: msg=%s\n",msg);
     
     strcpy(mbuff,msg);
-    for (p=strtok(mbuff," ");p&&narg<32;p=strtok(NULL," ")) {
+    char *r;
+    for (p=strtok_r(mbuff," ",&r);p&&narg<32;p=strtok_r(NULL," ",&r)) {
         args[narg++]=p;
     }
     if (narg<1) {

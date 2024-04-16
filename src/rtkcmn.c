@@ -2384,7 +2384,8 @@ static int decodef(char *p, int n, double *v)
     int i;
     
     for (i=0;i<n;i++) v[i]=0.0;
-    for (i=0,p=strtok(p," ");p&&i<n;p=strtok(NULL," ")) {
+    char *q;
+    for (i=0,p=strtok_r(p," ",&q);p&&i<n;p=strtok_r(NULL," ",&q)) {
         v[i++]=atof(p)*1E-3;
     }
     return i;
@@ -2437,7 +2438,7 @@ static int readngspcv(const char *file, pcvs_t *pcvs)
         else if (n==3) decodef(buff,10,pcv.var[0]);
         else if (n==4) decodef(buff,9,pcv.var[0]+10);
         else if (n==5) {
-            if (decodef(buff,3,neu)<3) continue;;
+            if (decodef(buff,3,neu)<3) continue;
             pcv.off[1][0]=neu[1];
             pcv.off[1][1]=neu[0];
             pcv.off[1][2]=neu[2];
@@ -2585,7 +2586,8 @@ extern pcv_t *searchpcv(int sat, const char *type, gtime_t time,
     }
     else {
         strcpy(buff,type);
-        for (p=strtok(buff," ");p&&n<2;p=strtok(NULL," ")) types[n++]=p;
+        char *q;
+        for (p=strtok_r(buff," ",&q);p&&n<2;p=strtok_r(NULL," ",&q)) types[n++]=p;
         if (n<=0) return NULL;
         
         /* search receiver antenna with radome at first */

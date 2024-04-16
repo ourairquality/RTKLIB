@@ -32,6 +32,7 @@
 *                           delete API strsvrsetsrctbl()
 *                           use integer types in stdint.h
 *-----------------------------------------------------------------------------*/
+#define _POSIX_C_SOURCE 199506
 #include "rtklib.h"
 
 /* test observation data message ---------------------------------------------*/
@@ -82,7 +83,8 @@ extern strconv_t *strconvnew(int itype, int otype, const char *msgs, int staid,
     
     conv->nmsg=0;
     strcpy(buff,msgs);
-    for (p=strtok(buff,",");p;p=strtok(NULL,",")) {
+    char *q;
+    for (p=strtok_r(buff,",",&q);p;p=strtok_r(NULL,",",&q)) {
        tint=0.0;
        if (sscanf(p,"%d(%lf)",&msg,&tint)<1) continue;
        conv->msgs[conv->nmsg]=msg;

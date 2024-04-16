@@ -44,6 +44,7 @@
 *                           delete option -noscan
 *                           suppress warnings
 *-----------------------------------------------------------------------------*/
+#define _POSIX_C_SOURCE 199506
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -319,7 +320,8 @@ static void setmask(const char *argv, rnxopt_t *opt, int mask)
     int i,code;
     
     strcpy(buff,argv);
-    for (p=strtok(buff,",");p;p=strtok(NULL,",")) {
+    char *r;
+    for (p=strtok_r(buff,",",&r);p;p=strtok_r(NULL,",",&r)) {
         if (strlen(p)<4||p[1]!='L') continue;
         if      (p[0]=='G') i=0;
         else if (p[0]=='R') i=1;
@@ -438,31 +440,36 @@ static int cmdopts(int argc, char **argv, rnxopt_t *opt, char **ifile,
         }
         else if (!strcmp(argv[i],"-ho")&&i+1<argc) {
             strcpy(buff,argv[++i]);
-            for (j=0,p=strtok(buff,"/");j<2&&p;j++,p=strtok(NULL,"/")) {
+            char *r;
+            for (j=0,p=strtok_r(buff,"/",&r);j<2&&p;j++,p=strtok_r(NULL,"/",&r)) {
                 strcpy(opt->name[j],p);
             }
         }
         else if (!strcmp(argv[i],"-hr")&&i+1<argc) {
             strcpy(buff,argv[++i]);
-            for (j=0,p=strtok(buff,"/");j<3&&p;j++,p=strtok(NULL,"/")) {
+            char *r;
+            for (j=0,p=strtok_r(buff,"/",&r);j<3&&p;j++,p=strtok_r(NULL,"/",&r)) {
                 strcpy(opt->rec[j],p);
             }
         }
         else if (!strcmp(argv[i],"-ha")&&i+1<argc) {
             strcpy(buff,argv[++i]);
-            for (j=0,p=strtok(buff,"/");j<3&&p;j++,p=strtok(NULL,"/")) {
+            char *r;
+            for (j=0,p=strtok_r(buff,"/",&r);j<3&&p;j++,p=strtok_r(NULL,"/",&r)) {
                 strcpy(opt->ant[j],p);
             }
         }
         else if (!strcmp(argv[i],"-hp")&&i+1<argc) {
             strcpy(buff,argv[++i]);
-            for (j=0,p=strtok(buff,"/");j<3&&p;j++,p=strtok(NULL,"/")) {
+            char *r;
+            for (j=0,p=strtok_r(buff,"/",&r);j<3&&p;j++,p=strtok_r(NULL,"/",&r)) {
                 opt->apppos[j]=atof(p);
             }
         }
         else if (!strcmp(argv[i],"-hd")&&i+1<argc) {
             strcpy(buff,argv[++i]);
-            for (j=0,p=strtok(buff,"/");j<3&&p;j++,p=strtok(NULL,"/")) {
+            char *r;
+            for (j=0,p=strtok_r(buff,"/",&r);j<3&&p;j++,p=strtok_r(NULL,"/",&r)) {
                 opt->antdel[j]=atof(p);
             }
         }
