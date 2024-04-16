@@ -36,6 +36,7 @@
 *                           add option -w
 *           2017/09/01 1.21 add command ssr
 *-----------------------------------------------------------------------------*/
+#define _POSIX_C_SOURCE 199506
 #include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
@@ -1384,7 +1385,8 @@ static void *con_thread(void *arg)
         }
         /* parse command */
         narg=0;
-        for (p=strtok(buff," \t\n");p&&narg<MAXARG;p=strtok(NULL," \t\n")) {
+        char *r;
+        for (p=strtok_r(buff," \t\n",&r);p&&narg<MAXARG;p=strtok_r(NULL," \t\n",&r)) {
             args[narg++]=p;
         }
         if (narg==0) continue;

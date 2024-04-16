@@ -75,6 +75,7 @@
 *                           suppress warning for buffer overflow by sprintf()
 *                           use integer types in stdint.h
 *-----------------------------------------------------------------------------*/
+#define _POSIX_C_SOURCE 199506
 #include <ctype.h>
 #include "rtklib.h"
 #ifndef WIN32
@@ -3134,7 +3135,8 @@ static int gen_hex(const char *msg, uint8_t *buff)
     trace(4,"gen_hex: msg=%s\n",msg);
     
     strncpy(mbuff,msg,1023);
-    for (p=strtok(mbuff," ");p&&narg<256;p=strtok(NULL," ")) {
+    char *r;
+    for (p=strtok_r(mbuff," ",&r);p&&narg<256;p=strtok_r(NULL," ",&r)) {
         args[narg++]=p;
     }
     for (i=0;i<narg;i++) {
