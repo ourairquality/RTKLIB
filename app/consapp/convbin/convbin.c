@@ -190,8 +190,7 @@ static int convbin(int format, rnxopt_t *opt, const char *ifile, char **file,
                    char *dir)
 {
     int i,def;
-    static char work[1024],ofile_[NOUTFILE][1024]={"","","","","","","","",""};
-    char ifile_[1024],*ofile[NOUTFILE],*p;
+    char ifile_[1024],*p;
     char *extnav=(opt->rnxver<=299||opt->navsys==SYS_GPS)?"N":"P";
     char *extlog="sbs";
     
@@ -202,7 +201,12 @@ static int convbin(int format, rnxopt_t *opt, const char *ifile, char **file,
     def=!file[0]&&!file[1]&&!file[2]&&!file[3]&&!file[4]&&!file[5]&&!file[6]&&
         !file[7]&&!file[8];
     
-    for (i=0;i<NOUTFILE;i++) ofile[i]=ofile_[i];
+    /* Stack storage for the output file strings */
+    char ofile_[NOUTFILE][1024], *ofile[NOUTFILE];
+    for (i=0;i<NOUTFILE;i++) {
+        ofile[i]=ofile_[i];
+        *ofile[i]='\0';
+    }
     
     if (file[0]) strcpy(ofile[0],file[0]);
     else if (*opt->staid) {
@@ -290,6 +294,7 @@ static int convbin(int format, rnxopt_t *opt, const char *ifile, char **file,
     }
     for (i=0;i<NOUTFILE;i++) {
         if (!*dir||!*ofile[i]) continue;
+        char work[1024];
         if ((p=strrchr(ofile[i],RTKLIB_FILEPATHSEP))) strcpy(work,p+1);
         else strcpy(work,ofile[i]);
         sprintf(ofile[i],"%s%c%s",dir,RTKLIB_FILEPATHSEP,work);
