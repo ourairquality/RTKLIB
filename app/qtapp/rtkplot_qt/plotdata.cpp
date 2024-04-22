@@ -392,7 +392,7 @@ void Plot::generateVisibilityData()
     double tint, pos[3], rr[3], rs[6], e[3], azel[2], time_span;
     unsigned char i, j;
     int nobs = 0, per, per_=-1;
-    char name[16];
+    char name[8];
 
     trace(3, "generateVisibilityData\n");
 
@@ -990,7 +990,7 @@ void Plot::saveSnrMp(const QString &file)
     QString obsType = ui->cBObservationTypeSNR->currentText();
     gtime_t time;
     double tow;
-    char sat[32], tstr[64], code[64];
+    char sat[8], tstr[64], code[64];
     QString data, time_label;
     int i, j, k, week;
 
@@ -1227,7 +1227,7 @@ void Plot::updateObservation(int nobs)
             const int &sat = observation.data[i + k].sat;
 
             if (simulatedObservation) {
-                char name[16];
+                char name[8];
                 satno2id(sat, name);
                 if (!tle_pos(time, name, "", "", &tleData, NULL, rs)) continue;
             } else {
