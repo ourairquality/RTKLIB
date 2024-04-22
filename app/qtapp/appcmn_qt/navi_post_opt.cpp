@@ -2042,7 +2042,7 @@ void OptDialog::showFrequenciesDialog()
 QString OptDialog::excludedSatellitesString(const prcopt_t *prcopt)
 {
     QString buff;
-    char id[32];
+    char id[8];
     int sat;
 
     buff = "";
