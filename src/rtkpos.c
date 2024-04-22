@@ -219,7 +219,7 @@ extern int rtkoutstat(rtk_t *rtk, char *buff)
     ssat_t *ssat;
     double tow,pos[3],vel[3],acc[3],vela[3]={0},acca[3]={0},xa[3];
     int i,j,week,est,nfreq,nf=NF(&rtk->opt);
-    char id[32],*p=buff;
+    char id[8],*p=buff;
 
     if (rtk->sol.stat==SOLQ_NONE) {
         return 0;
@@ -329,7 +329,7 @@ static void outsolstat(rtk_t *rtk,const nav_t *nav)
 {
     ssat_t *ssat;
     double tow;
-    char buff[MAXSOLMSG+1],id[32];
+    char buff[MAXSOLMSG+1],id[8];
     int i,j,k,n,week,nfreq,nf=NF(&rtk->opt);
 
     if (statlevel<=0||!fp_stat||!rtk->sol.stat) return;

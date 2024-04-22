@@ -376,7 +376,7 @@ void MonitorDialog::showRtk()
     int row, j, k, cycle, state, rtkstat, nsat0, nsat1, prcout, nave;
     int cputime, nb[3] = {0}, ne;
     unsigned int nmsg[3][10] = {{0}};
-    char tstr[64], id[32], s1[64] = "-", s2[64] = "-", s3[64] = "-";
+    char tstr[64], id[8], s1[64] = "-", s2[64] = "-", s3[64] = "-";
     char file[1024] = "";
     const QString ionoopt[] = {tr("OFF"), tr("Broadcast"), tr("SBAS"), tr("Dual-Frequency"), tr("Estimate STEC"), tr("IONEX TEC"), tr("QZSS LEX"), tr("STEC model")};
     const QString tropopt[] = {tr("OFF"), tr("Saastamoinen"), tr("SBAS"), tr("Estimate ZTD"), tr("Estimate ZTD+Grad")};
@@ -730,7 +730,7 @@ void MonitorDialog::showSat()
 	ssat_t *ssat;
     int i, j, k, n, fix, nfreq, sys = sys_tbl[ui->cBSelectNavigationSystems->currentIndex()];
     int vsat[MAXSAT] = {0};
-	char id[32];
+    char id[8];
     double az, el, cbias[MAXSAT][2];
 
     setSat();
@@ -988,7 +988,7 @@ void MonitorDialog::setObservations()
 void MonitorDialog::showObservations()
 {
     obsd_t obs[MAXOBS * 2];
-    char tstr[64], id[32], *code;
+    char tstr[64], id[8], *code;
     int i, k, n = 0, nex = ui->cBSelectObservation->currentIndex() ? NEXOBS : 0;
     int sys = sys_tbl[ui->cBSelectNavigationSystems->currentIndex()];
 
@@ -1060,7 +1060,7 @@ void MonitorDialog::showNavigations()
 	eph_t eph[MAXSAT];
 	gtime_t time;
     QString s;
-    char tstr[64], id[32];
+    char tstr[64], id[8];
     int i, k, n, prn, off = ui->cBSelectEphemeris->currentIndex();
     bool valid;
     int sys = sys_tbl[ui->cBSelectSingleNavigationSystem->currentIndex() + 1];
@@ -1177,7 +1177,7 @@ void MonitorDialog::showGlonassNavigations()
 	geph_t geph[NSATGLO];
 	gtime_t time;
     QString s;
-    char tstr[64], id[32];
+    char tstr[64], id[8];
     int i, n, valid, prn, off = ui->cBSelectEphemeris->currentIndex();
 
     rtksvrlock(rtksvr);
@@ -1263,7 +1263,7 @@ void MonitorDialog::showSbsNavigations()
     seph_t seph[MAXPRNSBS - MINPRNSBS + 1];
 	gtime_t time;
     int i, n, valid, prn, off = ui->cBSelectEphemeris->currentIndex();
-    char tstr[64], id[32];
+    char tstr[64], id[8];
 
     rtksvrlock(rtksvr); // lock
     if (!rtksvr->nav.seph) {
@@ -1600,7 +1600,7 @@ void MonitorDialog::showSbsLong()
 	sbssat_t sbssat;
 	gtime_t time;
     int i;
-    char tstr[64], id[32];
+    char tstr[64], id[8];
 
     rtksvrlock(rtksvr); // lock
     time = rtksvr->rtk.sol.time;
@@ -1706,7 +1706,7 @@ void MonitorDialog::showSbsFast()
 	sbssat_t sbssat;
 	gtime_t time;
     int i;
-    char tstr[64], id[32];
+    char tstr[64], id[8];
 
     rtksvrlock(rtksvr); // lock
     time = rtksvr->rtk.sol.time;
@@ -1853,7 +1853,7 @@ void MonitorDialog::showRtcmDgps()
 	gtime_t time;
 	dgps_t dgps[MAXSAT];
     int i;
-    char tstr[64], id[32];
+    char tstr[64], id[8];
 
     rtksvrlock(rtksvr);
     time = rtksvr->rtk.sol.time;
@@ -1902,7 +1902,7 @@ void MonitorDialog::showRtcmSsr()
     gtime_t time;
 	ssr_t ssr[MAXSAT];
     int i, k, n, sat[MAXSAT], sys = sys_tbl[ui->cBSelectSingleNavigationSystem->currentIndex() + 1];
-    char tstr[64], id[32];
+    char tstr[64], id[8];
     QString s;
 
     int effectiveStream = (inputStream < 0 || inputStream > 2) ? 0 : inputStream;
