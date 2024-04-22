@@ -2353,7 +2353,7 @@ void Plot::UpdateSatMask(void)
 void Plot::UpdateSatSel(void)
 {
     QString SatListText = SatList->currentText();
-    char id[16];
+    char id[8];
     int i, sys = 0;
 
     if (SatListText == "G") sys = SYS_GPS;

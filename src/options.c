@@ -467,7 +467,7 @@ static void buff2sysopts(void)
 static void sysopts2buff(void)
 {
     double pos[3],*rr;
-    char id[32],*p;
+    char id[8],*p;
     int i,j,sat,*ps;
     
     elmask_    =prcopt_.elmin     *R2D;

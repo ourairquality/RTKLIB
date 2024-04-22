@@ -1746,7 +1746,7 @@ void MainWindow::DrawSnr(QPainter *c, int w, int h, int x0, int y0,
     };
     QString s;
     int i, j, k, l, n, x1, y1, y2, y3, tm, bm, hh, ww, www, snr[NFREQ + 1], mask[7] = { 0 };
-    char id[16], sys[] = "GREJCS", *q;
+    char id[8], sys[] = "GREJCS", *q;
 
     trace(4, "DrawSnr: w=%d h=%d x0=%d y0=%d index=%d freq=%d\n", w, h, x0, y0, index, freq);
     tm=PanelFont.pixelSize()*3/4;
@@ -1819,7 +1819,7 @@ void MainWindow::DrawSat(QPainter *c, int w, int h, int x0, int y0,
     QPoint p(w / 2, h / 2);
     double r = MIN(w * 0.95, h * 0.95) / 2, azel[MAXSAT * 2], dop[4];
     int i, j, k, l, d, x[MAXSAT], y[MAXSAT], snr[NFREQ+1], ns = 0;
-    char id[16], sys[] = "GREJCIS", *q;
+    char id[8], sys[] = "GREJCIS", *q;
 
     trace(4, "DrawSat: w=%d h=%d index=%d freq=%d\n", w, h, index, freq);
 
@@ -2297,7 +2297,7 @@ void MainWindow::SaveNav(nav_t *nav)
 {
     QSettings settings(IniFile, QSettings::IniFormat);
     QString str;
-    char id[32];
+    char id[8];
     int i,j;
 
     trace(3, "SaveNav\n");

@@ -362,7 +362,7 @@ void MonitorDialog::ShowRtk(void)
     unsigned long thread;
     int cputime, nb[3] = { 0 }, ne;
     unsigned int nmsg[3][10] = { { 0 } };
-    char tstr[64], id[32], s1[64] = "-", s2[64] = "-", s3[64] = "-";
+    char tstr[64], id[8], s1[64] = "-", s2[64] = "-", s3[64] = "-";
     char file[1024] = "";
     const QString ionoopt[] = { tr("OFF"), tr("Broadcast"), tr("SBAS"), tr("Dual-Frequency"), tr("Estimate STEC"), tr("IONEX TEC"), tr("QZSS LEX"), "" };
     const QString tropopt[] = { tr("OFF"), tr("Saastamoinen"), tr("SBAS"), tr("Estimate ZTD"), tr("Estimate ZTD+Grad"), "" };
@@ -709,7 +709,7 @@ void MonitorDialog::ShowSat()
 	ssat_t *ssat;
     int i, j, k, n, fix, pmode, nfreq, sys=sys_tbl[SelSys->currentIndex()];
     int vsat[MAXSAT]={0};
-	char id[32];
+	char id[8];
     double az, el, cbias[MAXSAT][2];
 
     SetSat();
@@ -971,7 +971,7 @@ void MonitorDialog::SetObs(void)
 void MonitorDialog::ShowObs(void)
 {
     obsd_t obs[MAXOBS * 2];
-    char tstr[64], id[32], *code;
+    char tstr[64], id[8], *code;
     int i, k, n = 0, nex = ObsMode ? NEXOBS : 0,sys=sys_tbl[SelSys->currentIndex()];
 
 	rtksvrlock(&rtksvr);
@@ -1053,7 +1053,7 @@ void MonitorDialog::ShowNav()
 	eph_t eph[MAXSAT];
 	gtime_t time;
     QString s;
-    char tstr[64], id[32];
+    char tstr[64], id[8];
     int i, k, n, prn, off = SelEph->currentIndex();
     bool valid;
     int sys=sys_tbl[SelSys2->currentIndex()+1];
@@ -1166,7 +1166,7 @@ void MonitorDialog::ShowGnav(void)
 	geph_t geph[NSATGLO];
 	gtime_t time;
     QString s;
-    char tstr[64], id[32];
+    char tstr[64], id[8];
     int i, n, valid, prn, off = SelEph->currentIndex();
 
 	rtksvrlock(&rtksvr);
@@ -1245,7 +1245,7 @@ void MonitorDialog::ShowSbsNav(void)
     seph_t seph[MAXPRNSBS - MINPRNSBS + 1];
 	gtime_t time;
     int i, n, valid, prn, off = SelEph->currentIndex();
-    char tstr[64], id[32];
+    char tstr[64], id[8];
 
     for (int i = 0; i < MAXPRNSBS - MINPRNSBS + 1; i++) {
         seph[i].sat = seph[i].sva = seph[i].svh = 0;
@@ -1585,7 +1585,7 @@ void MonitorDialog::ShowSbsLong(void)
 	sbssat_t sbssat;
 	gtime_t time;
     int i;
-    char tstr[64], id[32];
+    char tstr[64], id[8];
 
 	rtksvrlock(&rtksvr); // lock
     time = rtksvr.rtk.sol.time;
@@ -1692,7 +1692,7 @@ void MonitorDialog::ShowSbsFast(void)
 	sbssat_t sbssat;
 	gtime_t time;
     int i;
-    char tstr[64], id[32];
+    char tstr[64], id[8];
 
 	rtksvrlock(&rtksvr); // lock
     time = rtksvr.rtk.sol.time;
@@ -1836,7 +1836,7 @@ void MonitorDialog::ShowRtcmDgps(void)
 	gtime_t time;
 	dgps_t dgps[MAXSAT];
     int i;
-    char tstr[64], id[32];
+    char tstr[64], id[8];
 
 	rtksvrlock(&rtksvr);
     time = rtksvr.rtk.sol.time;
@@ -1883,7 +1883,7 @@ void MonitorDialog::ShowRtcmSsr(void)
 	gtime_t time;
 	ssr_t ssr[MAXSAT];
     int i, k, n, sat[MAXSAT],sys=sys_tbl[SelSys2->currentIndex()+1];
-    char tstr[64], id[32];
+    char tstr[64], id[8];
 
 	rtksvrlock(&rtksvr);
     time = rtksvr.rtk.sol.time;

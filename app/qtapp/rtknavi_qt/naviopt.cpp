@@ -705,7 +705,7 @@ void OptDialog::LoadOpt(const QString &file)
     QLineEdit *editu[] = { RovPos1, RovPos2, RovPos3 };
     QLineEdit *editr[] = { RefPos1, RefPos2, RefPos3 };
     QString buff;
-    char id[32];
+    char id[8];
 	int sat;
     prcopt_t prcopt = prcopt_default;
     solopt_t solopt = solopt_default;

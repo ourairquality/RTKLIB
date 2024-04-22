@@ -910,7 +910,7 @@ void Plot::DrawObs(QPainter &c, int level)
     obsd_t *obs;
     double xs, ys, xt, xl[2], yl[2], tt[MAXSAT] = { 0 }, xp, xc, yc, yp[MAXSAT] = { 0 };
     int i, j, m = 0, sats[MAXSAT] = { 0 }, ind = ObsIndex;
-    char id[16];
+    char id[8];
 
     trace(3, "DrawObs: level=%d\n", level);
 
@@ -1247,7 +1247,7 @@ void Plot::DrawSky(QPainter &c, int level)
             if (p0[i][0] != 0.0 || p0[i][1] != 0.0) {
                 QPoint pnt;
                 if (GraphS->ToPoint(p0[i][0], p0[i][1], pnt)) {
-                    char id[16];
+                    char id[8];
                     satno2id(i+1,id);
                     DrawLabel(GraphS, c, pnt, QString(id), 1, 0);
                 }
@@ -1302,7 +1302,7 @@ void Plot::DrawSky(QPainter &c, int level)
             x = r * sin(Az[i]) * (1.0 - 2.0 * El[i] / PI);
             y = r * cos(Az[i]) * (1.0 - 2.0 * El[i] / PI);
 
-            char id[16];
+            char id[8];
             satno2id(obs->sat, id);
             GraphS->DrawMark(c, x, y, 0, col, Disp->font().pointSize() * 2 + 5, 0);
             GraphS->DrawMark(c, x, y, 1, col == Qt::black ? MColor[0][0] : CColor[2], Disp->font().pointSize() * 2 + 5, 0);
@@ -1323,7 +1323,7 @@ void Plot::DrawSky(QPainter &c, int level)
     }
         // show statistics
     if (ShowStats && BtnShowTrack->isChecked() && 0 <= ind && ind < NObs && !SimObs) {
-        char id[16];
+        char id[8];
 
         if (obstype == "ALL") {
             s = QString::asprintf("%3s: %*s %*s%*s %*s","SAT",NFREQ,"PR",NFREQ,"CP",
@@ -1980,7 +1980,7 @@ void Plot::DrawMpS(QPainter &c, int level)
             double x = r * sin(Az[i]) * (1.0 - 2.0 * El[i] / PI);
             double y = r * cos(Az[i]) * (1.0 - 2.0 * El[i] / PI);
 
-            char id[32];
+            char id[8];
             satno2id(obs->sat, id);
             GraphS->DrawMark(c, x, y, 0, col, Disp->font().pointSize() * 2 + 5, 0);
             GraphS->DrawMark(c, x, y, 1, CColor[2], Disp->font().pointSize() * 2 + 5, 0);

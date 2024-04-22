@@ -363,7 +363,7 @@ void Plot::GenVisData(void)
     double tint, pos[3], rr[3], rs[6], e[3], azel[2];
     unsigned char i, j;
     int nobs = 0;
-    char name[16];
+    char name[8];
 
     trace(3, "GenVisData\n");
 
@@ -1027,7 +1027,7 @@ void Plot::SaveSnrMp(const QString &file)
     QString ObsTypeText = ObsType2->currentText();
     gtime_t time;
     double tow;
-    char sat[32], tstr[64], code[64];
+    char sat[8], tstr[64], code[64];
     QString mp, data, tlabel;
     int i, j, k, week;
 
@@ -1255,7 +1255,7 @@ void Plot::UpdateObs(int nobs)
             double e[3],rs[6],dts[2],var;
             int sat=Obs.data[i+k].sat;
             if (SimObs) {
-                char name[16];
+                char name[8];
                 satno2id(sat,name);
                 if (!tle_pos(time,name,"","",&TLEData,NULL,rs)) continue;
             }
