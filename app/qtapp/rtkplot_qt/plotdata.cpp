@@ -69,7 +69,7 @@ void Plot::readSolution(const QStringList &files, int sel)
     showMessage(tr("Reading %1...").arg(files.first()));
     showLegend(QStringList());
 
-    if (!readsolt(paths, n, ts, te, tint, SOLQ_NONE, &sol)) {
+    if (!readsolt((const char **)paths, n, ts, te, tint, SOLQ_NONE, &sol)) {
         showMessage(tr("No solution data: %1...").arg(files.first()));
         showLegend(QStringList());
         readWaitEnd();
@@ -145,7 +145,7 @@ void Plot::readSolutionStat(const QStringList &files, int sel)
     showMessage(tr("Reading %1...").arg(files.first()));
     showLegend(QStringList());
 
-    readsolstatt(paths, n, ts, te, tint, solutionStat + sel);
+    readsolstatt((const char **)paths, n, ts, te, tint, solutionStat + sel);
 
     updateSatelliteList();
 }

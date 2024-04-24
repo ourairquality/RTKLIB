@@ -141,7 +141,7 @@ void ProcessingThread::addInput(const QString & file) {
 }
 void ProcessingThread::run()
 {
-    if ((stat = postpos(ts, te, ti, tu, &prcopt, &solopt, &filopt, infile, n, outfile,
+    if ((stat = postpos(ts, te, ti, tu, &prcopt, &solopt, &filopt, (const char **)infile, n, outfile,
                         qPrintable(rov), qPrintable(base))) == 1) {
         showmsg("Aborted");
     };

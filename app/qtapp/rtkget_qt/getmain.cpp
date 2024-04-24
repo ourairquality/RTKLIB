@@ -150,9 +150,9 @@ class DownloadThread : public QThread
                 fp = fopen(path, append ? "a" : "w");
             }
             if (test)
-                dl_test(ts, te, ti, urls, nurl, stas, nsta, qPrintable(dir), columnCnt, dateFormat, fp);
+                dl_test(ts, te, ti, urls, nurl, (const char **)stas, nsta, qPrintable(dir), columnCnt, dateFormat, fp);
             else
-                dl_exec(ts, te, ti, seqnos, seqnoe, urls, nurl, stas, nsta, qPrintable(dir), qPrintable(usr),
+                dl_exec(ts, te, ti, seqnos, seqnoe, urls, nurl, (const char **)stas, nsta, qPrintable(dir), qPrintable(usr),
                     qPrintable(pwd), qPrintable(proxy), opts, msg, fp);
             if (fp)
                 fclose(fp);
@@ -673,7 +673,7 @@ void MainForm::loadUrlList(const QString &file)
     ui->cBDataType->addItem(tr("ALL"));
     ui->cBSubType->addItem("");
 
-    n = dl_readurls(file.isEmpty() ? URL_FILE : qPrintable(file), (char **)sel, 1, urls_list, MAX_URL);
+    n = dl_readurls(file.isEmpty() ? URL_FILE : qPrintable(file), (const char **)sel, 1, urls_list, MAX_URL);
 
     for (i = 0; i < n; i++) {
         int p;
@@ -775,7 +775,7 @@ int MainForm::selectUrl(url_t *urls)
     }
     if (downOptDialog->urlFile.isEmpty()) file = URL_FILE;
 
-    nurl_out = dl_readurls(qPrintable(file), types, nurl_in, urls, MAX_URL_SEL);
+    nurl_out = dl_readurls(qPrintable(file), (const char **)types, nurl_in, urls, MAX_URL_SEL);
 
     for (i = 0; i < nurl_in; i++) delete []types[i];
 

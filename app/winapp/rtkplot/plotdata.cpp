@@ -62,7 +62,7 @@ void __fastcall TPlot::ReadSol(TStrings *files, int sel)
     ShowMsg(s.sprintf("reading %s...",paths[0]));
     ShowLegend(NULL);
     
-    if (!readsolt(paths,n,ts,te,tint,SOLQ_NONE,&sol)) {
+    if (!readsolt((const char **)paths,n,ts,te,tint,SOLQ_NONE,&sol)) {
         ShowMsg(s.sprintf("no solution data : %s...",paths[0]));
         ShowLegend(NULL);
         ReadWaitEnd();
@@ -137,7 +137,7 @@ void __fastcall TPlot::ReadSolStat(TStrings *files, int sel)
     ShowMsg(s.sprintf("reading %s...",paths[0]));
     ShowLegend(NULL);
     
-    readsolstatt(paths,n,ts,te,tint,SolStat+sel);
+    readsolstatt((const char **)paths,n,ts,te,tint,SolStat+sel);
     
     UpdateSatList();
 }

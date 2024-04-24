@@ -248,7 +248,7 @@ static int gen_path(gtime_t time, gtime_t time_p, int seqnos, int seqnoe,
 }
 /* generate download paths ---------------------------------------------------*/
 static int gen_paths(gtime_t time, gtime_t time_p, int seqnos, int seqnoe,
-                     const url_t *url, char **stas, int nsta, const char *dir,
+                     const url_t *url, const char **stas, int nsta, const char *dir,
                      paths_t *paths)
 {
     int i;
@@ -591,7 +591,7 @@ static int test_local(gtime_t ts, gtime_t te, double ti, const char *path,
 }
 /* test local files ----------------------------------------------------------*/
 static int test_locals(gtime_t ts, gtime_t te, double ti, const url_t *url,
-                       char **stas, int nsta, const char *dir, int *nc, int *nt,
+                       const char **stas, int nsta, const char *dir, int *nc, int *nt,
                        FILE *fp)
 {
     int i;
@@ -615,7 +615,7 @@ static int test_locals(gtime_t ts, gtime_t te, double ti, const url_t *url,
     return 0;
 }
 /* print total count of local files ------------------------------------------*/
-static int print_total(const url_t *url, char **stas, int nsta, int *nc,
+static int print_total(const url_t *url, const char **stas, int nsta, int *nc,
                        int *nt, FILE *fp)
 {
     int i;
@@ -672,7 +672,7 @@ static int print_total(const url_t *url, char **stas, int nsta, int *nc,
 *        %r -> rrrr    : station name
 *        %{env} -> env : environment variable
 *-----------------------------------------------------------------------------*/
-extern int dl_readurls(const char *file, char **types, int ntype, url_t *urls,
+extern int dl_readurls(const char *file, const char **types, int ntype, url_t *urls,
                        int nmax)
 {
     FILE *fp;
@@ -773,7 +773,7 @@ extern int dl_readstas(const char *file, char **stas, int nmax)
 *          not downloaded.
 *-----------------------------------------------------------------------------*/
 extern int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe,
-                   const url_t *urls, int nurl, char **stas, int nsta,
+                   const url_t *urls, int nurl, const char **stas, int nsta,
                    const char *dir, const char *usr, const char *pwd,
                    const char *proxy, int opts, char *msg, FILE *fp)
 {
@@ -840,7 +840,7 @@ extern int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe,
 * return : status (1:ok,0:error,-1:aborted)
 *-----------------------------------------------------------------------------*/
 extern void dl_test(gtime_t ts, gtime_t te, double ti, const url_t *urls,
-                    int nurl, char **stas, int nsta, const char *dir,
+                    int nurl, const char **stas, int nsta, const char *dir,
                     int ncol, int datefmt, FILE *fp)
 {
     gtime_t time;

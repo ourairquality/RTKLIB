@@ -332,7 +332,7 @@ int main(int argc, char **argv)
         if (*cmdfile[i]) readcmd(cmdfile[i],cmds_periodic[i],2);
     }
     /* start stream server */
-    if (!strsvrstart(&strsvr,opts,types,paths,logs,conv,cmds,cmds_periodic,
+    if (!strsvrstart(&strsvr,opts,types,(const char **)paths,(const char **)logs,conv,(const char **)cmds,(const char **)cmds_periodic,
                      stapos)) {
         fprintf(stderr,"stream server start error\n");
         return EXIT_FAILURE;
@@ -356,7 +356,7 @@ int main(int argc, char **argv)
         if (*cmdfile[i]) readcmd(cmdfile[i],cmds[i],1);
     }
     /* stop stream server */
-    strsvrstop(&strsvr,cmds);
+    strsvrstop(&strsvr,(const char **)cmds);
     
     for (i=0;i<n;i++) {
         strconvfree(conv[i]);

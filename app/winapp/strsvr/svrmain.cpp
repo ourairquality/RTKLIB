@@ -496,7 +496,7 @@ void __fastcall TMainForm::SvrStart(void)
 		matcpy(conv[i]->out.sta.del,AntOff,3,1);
 	}
 	// stream server start
-	if (!strsvrstart(&strsvr,opt,strs,paths,logs,conv,cmds,cmds_periodic,AntPos)) {
+	if (!strsvrstart(&strsvr,opt,strs,(const char **)paths,(const char **)logs,conv,(const char **)cmds,(const char **)cmds_periodic,AntPos)) {
 		return;
 	}
 	StartTime=utc2gpst(timeget());
@@ -537,7 +537,7 @@ void __fastcall TMainForm::SvrStop(void)
 			if (CmdEnaTcp[i][1]) cmds[i]=MainForm->CmdsTcp[i][1].c_str();
 		}
 	}
-	strsvrstop(&strsvr,cmds);
+	strsvrstop(&strsvr,(const char **)cmds);
 	
 	EndTime=utc2gpst(timeget());
 	Panel1	  ->Enabled=true;

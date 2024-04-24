@@ -1197,8 +1197,8 @@ void MainWindow::serverStart()
     rtksvr.bl_reset = maxBaseLine;
 
     // start rtk server
-    if (!rtksvrstart(&rtksvr, optDialog->serverCycle, optDialog->serverBufferSize, streamTypes, serverPaths, inputFormat, optDialog->navSelect,
-                     cmds, cmds_periodic, rcvopts, optDialog->nmeaCycle, nmeaRequestType, nmeapos,
+    if (!rtksvrstart(&rtksvr, optDialog->serverCycle, optDialog->serverBufferSize, streamTypes, (const char **)serverPaths, inputFormat, optDialog->navSelect,
+                     (const char **)cmds, (const char **)cmds_periodic, (const char **)rcvopts, optDialog->nmeaCycle, nmeaRequestType, nmeapos,
                      &optDialog->processingOptions, solopt, &monistr, errmsg)) {
 
         trace(2, "rtksvrstart error %s\n", errmsg);
@@ -1266,7 +1266,7 @@ void MainWindow::serverStop()
             if (commandEnableTcp[i][1]) strncpy(cmds[i], qPrintable(commandsTcp[i][1]), 1023);
         }
     }
-    rtksvrstop(&rtksvr, cmds);
+    rtksvrstop(&rtksvr, (const char **)cmds);
 
     for (i = 0; i < 3; i++) delete[] cmds[i];
 
