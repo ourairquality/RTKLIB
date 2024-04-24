@@ -188,7 +188,7 @@ QString Graph::NumText(double x, double dx)
 //---------------------------------------------------------------------------
 QString Graph::TimeText(double x, double dx)
 {
-    char str[64];
+    char str[40];
 
     time2str(gpst2time(Week, x), str, 1);
     int b = dx < 86400.0 ? 11 : (dx < 86400.0 * 30 ? 5 : 2), w = dx < 60.0 ? (dx < 1.0 ? 10 : 8) : 5;

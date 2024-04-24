@@ -424,7 +424,7 @@ void Plot::TimeStr(gtime_t time, int n, int tsys, QString &str)
 {
     struct tm *t;
     QString tstr;
-    char temp[64];
+    char temp[40];
     QString label = "";
     double tow;
     int week;

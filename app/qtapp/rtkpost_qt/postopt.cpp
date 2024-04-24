@@ -809,7 +809,7 @@ void OptDialog::SaveOpt(const QString &file)
     QString PPPOpts_Text = PPPOpts->text();
     QLineEdit *editu[] = { RovPos1, RovPos2, RovPos3 };
     QLineEdit *editr[] = { RefPos1, RefPos2, RefPos3 };
-    char buff[1024], *p, comment[256], s[64];
+    char buff[1024], *p, comment[256], s[40];
     int sat, ex;
     prcopt_t prcopt = prcopt_default;
     solopt_t solopt = solopt_default;

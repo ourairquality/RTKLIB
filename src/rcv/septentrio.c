@@ -787,7 +787,7 @@ static int decode_sbf(raw_t *raw)
 {
     uint8_t *p=raw->buff;
     uint32_t week,tow;
-    char tstr[32];
+    char tstr[40];
     int type=U2(p+4)&0x1fff;
     
     if (rtk_crc16(p+4,raw->len-4)!=U2(p+2)) {

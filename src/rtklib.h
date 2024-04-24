@@ -1458,7 +1458,7 @@ EXPORT void add_fatal(fatalfunc_t *func);
 EXPORT void    setstr(char *dst, const char *src, int n);
 EXPORT double  str2num(const char *s, int i, int n);
 EXPORT int     str2time(const char *s, int i, int n, gtime_t *t);
-EXPORT void    time2str(gtime_t t, char *str, int n);
+EXPORT char    *time2str(gtime_t t, char str[40], int n);
 EXPORT gtime_t epoch2time(const double *ep);
 EXPORT void    time2epoch(gtime_t t, double *ep);
 EXPORT void    time2epoch_n(gtime_t t, double *ep, int n);

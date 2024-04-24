@@ -174,15 +174,15 @@ static gtime_t adjday(gtime_t t, gtime_t t0)
     return t;
 }
 /* time string for ver.3 (yyyymmdd hhmmss UTC) -------------------------------*/
-static void timestr_rnx(char *str)
+static void timestr_rnx(char str[32])
 {
     gtime_t time;
     double ep[6];
     time=timeget();
     time.sec=0.0;
     time2epoch(time,ep);
-    sprintf(str,"%04.0f%02.0f%02.0f %02.0f%02.0f%02.0f UTC",ep[0],ep[1],ep[2],
-            ep[3],ep[4],ep[5]);
+    snprintf(str,32,"%04.0f%02.0f%02.0f %02.0f%02.0f%02.0f UTC",ep[0],ep[1],ep[2],
+             ep[3],ep[4],ep[5]);
 }
 /* satellite to satellite code -----------------------------------------------*/
 static int sat2code(int sat, char *code)
@@ -2577,7 +2577,7 @@ static void out_leaps(FILE *fp, int sys, const rnxopt_t *opt, const nav_t *nav)
 extern int outrnxnavh(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
 {
     int i;
-    char date[64],*sys;
+    char date[32],*sys;
     
     trace(3,"outrnxnavh:\n");
     
@@ -2744,7 +2744,7 @@ extern int outrnxnavb(FILE *fp, const rnxopt_t *opt, const eph_t *eph)
 extern int outrnxgnavh(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
 {
     int i;
-    char date[64];
+    char date[32];
     
     trace(3,"outrnxgnavh:\n");
     
@@ -2842,7 +2842,7 @@ extern int outrnxgnavb(FILE *fp, const rnxopt_t *opt, const geph_t *geph)
 extern int outrnxhnavh(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
 {
     int i;
-    char date[64];
+    char date[32];
     
     trace(3,"outrnxhnavh:\n");
     
@@ -2932,7 +2932,7 @@ extern int outrnxhnavb(FILE *fp, const rnxopt_t *opt, const seph_t *seph)
 extern int outrnxlnavh(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
 {
     int i;
-    char date[64];
+    char date[32];
     
     trace(3,"outrnxlnavh:\n");
     
@@ -2966,7 +2966,7 @@ extern int outrnxlnavh(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
 extern int outrnxqnavh(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
 {
     int i;
-    char date[64];
+    char date[32];
     
     trace(3,"outrnxqnavh:\n");
     
@@ -3000,7 +3000,7 @@ extern int outrnxqnavh(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
 extern int outrnxcnavh(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
 {
     int i;
-    char date[64];
+    char date[32];
 
     trace(3,"outrnxcnavh:\n");
     
@@ -3034,7 +3034,7 @@ extern int outrnxcnavh(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
 extern int outrnxinavh(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
 {
     int i;
-    char date[64];
+    char date[32];
     
     trace(3,"outrnxinavh:\n");
     

@@ -488,8 +488,9 @@ void MainForm::Timer1Timer()
     pos = fmod(byte[0] / 1e3 / MAX(ProgBarRange, 1), 1.0) * 110.0;
     Progress->setValue(!stat[0] ? 0 : MIN((int)pos, 100));
 
-    time2str(time, s1, 0);
-    Time->setText(QString(tr("%1 GPST")).arg(s1));
+    char tstr[40];
+    time2str(time, tstr, 0);
+    Time->setText(QString(tr("%1 GPST")).arg(tstr));
 
     if (Panel1->isEnabled())
         ctime = timediff(EndTime, StartTime);

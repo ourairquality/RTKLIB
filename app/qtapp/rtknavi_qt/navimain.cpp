@@ -1436,7 +1436,7 @@ void MainWindow::UpdateTime(void)
     struct tm *t;
     double tow;
     int week;
-    char tstr[64];
+    char tstr[40];
     QString str;
 
     trace(4, "UpdateTime\n");

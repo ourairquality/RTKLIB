@@ -977,7 +977,7 @@ void Plot::SaveDop(const QString &file)
     QString data;
     double azel[MAXOBS * 2], dop[4], tow;
     int i, j, ns, week;
-    char tstr[64];
+    char tstr[40];
     QString tlabel;
 
     trace(3, "SaveDop: file=%s\n", qPrintable(file));
@@ -1027,7 +1027,7 @@ void Plot::SaveSnrMp(const QString &file)
     QString ObsTypeText = ObsType2->currentText();
     gtime_t time;
     double tow;
-    char sat[8], tstr[64], code[64];
+    char sat[8], tstr[40], code[64];
     QString mp, data, tlabel;
     int i, j, k, week;
 

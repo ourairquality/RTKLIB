@@ -20,7 +20,7 @@ void TimeDialog::showEvent(QShowEvent *event)
     double tow, doy;
 	int week;
     QString msg;
-    char s1[64], s2[64];
+    char s1[40], s2[40];
 
     utc = gpst2utc(Time);
     time2str(Time, s1, 0);

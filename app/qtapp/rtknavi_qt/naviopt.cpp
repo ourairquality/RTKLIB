@@ -871,7 +871,7 @@ void OptDialog::SaveOpt(const QString &file)
     int otype[] = { STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPSVR, STR_NTRIPCAS, STR_FILE };
     QLineEdit *editu[] = { RovPos1, RovPos2, RovPos3 };
     QLineEdit *editr[] = { RefPos1, RefPos2, RefPos3 };
-    char buff[1024], *p, *q, comment[256], s[64];
+    char buff[1024], *p, *q, comment[256], s[40];
     int sat, ex;
     prcopt_t prcopt = prcopt_default;
     solopt_t solopt = solopt_default;
