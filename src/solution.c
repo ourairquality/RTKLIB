@@ -793,8 +793,6 @@ extern int inputsol(uint8_t data, gtime_t ts, gtime_t te, double tint,
     
     trace(4,"inputsol: data=0x%02x\n",data);
     
-    sol.time=solbuf->time;
-    
     if (data=='$'||(!isprint(data)&&data!='\r'&&data!='\n')) { /* sync header */
         solbuf->nb=0;
     }
