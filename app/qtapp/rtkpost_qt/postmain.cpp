@@ -162,7 +162,7 @@ void ProcessingThread::addList(char * &sta, const QString & list) {
 }
 void ProcessingThread::run()
 {
-    if ((stat=postpos(ts,te,ti,tu,&prcopt,&solopt,&filopt,infile,n,outfile,
+    if ((stat=postpos(ts,te,ti,tu,&prcopt,&solopt,&filopt,(const char **)infile,n,outfile,
                       rov,base))==1) {
         showmsg("aborted");
     };

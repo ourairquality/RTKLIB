@@ -153,7 +153,7 @@ extern int convgpx(const char *infile, const char *outfile, gtime_t ts,
     else strcpy(file,outfile);
     
     /* read solution file */
-    if (!readsolt((char **)&infile,1,ts,te,tint,qflg,&solbuf)) return -1;
+    if (!readsolt(&infile,1,ts,te,tint,qflg,&solbuf)) return -1;
     
     /* mean position */
     for (i=0;i<3;i++) {

@@ -101,7 +101,7 @@ int main(int argc, char **argv)
     gtime_t ts={0},te={0};
     double tint=0.0,es[]={2000,1,1,0,0,0},ee[]={2000,12,31,23,59,59},pos[3];
     int i,j,n,ret;
-    char *infile[MAXFILE],*outfile="",*p;
+    const char *infile[MAXFILE],*outfile="",*p;
     
     prcopt.mode  =PMODE_KINEMA;
     prcopt.navsys=0;

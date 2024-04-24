@@ -633,9 +633,9 @@ extern void strsvrinit(strsvr_t *svr, int nout)
 *          double *nmeapos  I   nmea request position (ecef) (m) (NULL: no)
 * return : status (0:error,1:ok)
 *-----------------------------------------------------------------------------*/
-extern int strsvrstart(strsvr_t *svr, int *opts, int *strs, char **paths,
-                       char **logs, strconv_t **conv, char **cmds,
-                       char **cmds_periodic, const double *nmeapos)
+extern int strsvrstart(strsvr_t *svr, int *opts, int *strs, const char **paths,
+                       const char **logs, strconv_t **conv, const char **cmds,
+                       const char **cmds_periodic, const double *nmeapos)
 {
     int i,rw,stropt[8]={0};
     char file1[MAXSTRPATH],file2[MAXSTRPATH],*p;
@@ -720,7 +720,7 @@ extern int strsvrstart(strsvr_t *svr, int *opts, int *strs, char **paths,
 *              ...
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void strsvrstop(strsvr_t *svr, char **cmds)
+extern void strsvrstop(strsvr_t *svr, const char **cmds)
 {
     int i;
     

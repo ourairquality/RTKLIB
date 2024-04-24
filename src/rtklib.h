@@ -1781,11 +1781,11 @@ EXPORT void freesolbuf(solbuf_t *solbuf);
 EXPORT void freesolstatbuf(solstatbuf_t *solstatbuf);
 EXPORT sol_t *getsol(solbuf_t *solbuf, int index);
 EXPORT int addsol(solbuf_t *solbuf, const sol_t *sol);
-EXPORT int readsol (char *files[], int nfile, solbuf_t *sol);
-EXPORT int readsolt(char *files[], int nfile, gtime_t ts, gtime_t te,
+EXPORT int readsol (const char *files[], int nfile, solbuf_t *sol);
+EXPORT int readsolt(const char *files[], int nfile, gtime_t ts, gtime_t te,
                     double tint, int qflag, solbuf_t *sol);
-EXPORT int readsolstat(char *files[], int nfile, solstatbuf_t *statbuf);
-EXPORT int readsolstatt(char *files[], int nfile, gtime_t ts, gtime_t te,
+EXPORT int readsolstat(const char *files[], int nfile, solstatbuf_t *statbuf);
+EXPORT int readsolstatt(const char *files[], int nfile, gtime_t ts, gtime_t te,
                         double tint, solstatbuf_t *statbuf);
 EXPORT int inputsol(uint8_t data, gtime_t ts, gtime_t te, double tint,
                     int qflag, const solopt_t *opt, solbuf_t *solbuf);
@@ -1899,15 +1899,15 @@ EXPORT int ppp_ar(rtk_t *rtk, const obsd_t *obs, int n, int *exc,
 /* post-processing positioning -----------------------------------------------*/
 EXPORT int postpos(gtime_t ts, gtime_t te, double ti, double tu,
                    const prcopt_t *popt, const solopt_t *sopt,
-                   const filopt_t *fopt, char **infile, int n, char *outfile,
+                   const filopt_t *fopt, const char **infile, int n, const char *outfile,
                    const char *rov, const char *base);
 
 /* stream server functions ---------------------------------------------------*/
 EXPORT void strsvrinit (strsvr_t *svr, int nout);
-EXPORT int  strsvrstart(strsvr_t *svr, int *opts, int *strs, char **paths,
-                        char **logs, strconv_t **conv, char **cmds,
-                        char **cmds_priodic, const double *nmeapos);
-EXPORT void strsvrstop (strsvr_t *svr, char **cmds);
+EXPORT int  strsvrstart(strsvr_t *svr, int *opts, int *strs, const char **paths,
+                        const char **logs, strconv_t **conv, const char **cmds,
+                        const char **cmds_priodic, const double *nmeapos);
+EXPORT void strsvrstop (strsvr_t *svr, const char **cmds);
 EXPORT void strsvrstat (strsvr_t *svr, int *stat, int *log_stat, int *byte,
                         int *bps, char *msg);
 EXPORT strconv_t *strconvnew(int itype, int otype, const char *msgs, int staid,
@@ -1918,11 +1918,11 @@ EXPORT void strconvfree(strconv_t *conv);
 EXPORT int  rtksvrinit  (rtksvr_t *svr);
 EXPORT void rtksvrfree  (rtksvr_t *svr);
 EXPORT int  rtksvrstart (rtksvr_t *svr, int cycle, int buffsize, int *strs,
-                         char **paths, int *formats, int navsel, char **cmds,
-                         char **cmds_periodic, char **rcvopts, int nmeacycle,
+                         const char **paths, int *formats, int navsel, const char **cmds,
+                         const char **cmds_periodic, const char **rcvopts, int nmeacycle,
                          int nmeareq, const double *nmeapos, prcopt_t *prcopt,
                          solopt_t *solopt, stream_t *moni, char *errmsg);
-EXPORT void rtksvrstop  (rtksvr_t *svr, char **cmds);
+EXPORT void rtksvrstop  (rtksvr_t *svr, const char **cmds);
 EXPORT int  rtksvropenstr(rtksvr_t *svr, int index, int str, const char *path,
                           const solopt_t *solopt);
 EXPORT void rtksvrclosestr(rtksvr_t *svr, int index);
@@ -1934,15 +1934,15 @@ EXPORT void rtksvrsstat (rtksvr_t *svr, int *sstat, char *msg);
 EXPORT int  rtksvrmark(rtksvr_t *svr, const char *name, const char *comment);
 
 /* downloader functions ------------------------------------------------------*/
-EXPORT int dl_readurls(const char *file, char **types, int ntype, url_t *urls,
+EXPORT int dl_readurls(const char *file, const char **types, int ntype, url_t *urls,
                        int nmax);
 EXPORT int dl_readstas(const char *file, char **stas, int nmax);
 EXPORT int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe,
-                   const url_t *urls, int nurl, char **stas, int nsta,
+                   const url_t *urls, int nurl, const char **stas, int nsta,
                    const char *dir, const char *usr, const char *pwd,
                    const char *proxy, int opts, char *msg, FILE *fp);
 EXPORT void dl_test(gtime_t ts, gtime_t te, double ti, const url_t *urls,
-                    int nurl, char **stas, int nsta, const char *dir,
+                    int nurl, const char **stas, int nsta, const char *dir,
                     int ncol, int datefmt, FILE *fp);
 
 /* GIS data functions --------------------------------------------------------*/

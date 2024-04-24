@@ -1212,8 +1212,8 @@ void MainWindow::SvrStart(void)
     rtksvr.bl_reset = MaxBL;
 
     // start rtk server
-    if (!rtksvrstart(&rtksvr, SvrCycle, SvrBuffSize, strs, paths, Format, NavSelect,
-                     cmds,cmds_periodic,rcvopts,NmeaCycle,NmeaReq,nmeapos,
+    if (!rtksvrstart(&rtksvr, SvrCycle, SvrBuffSize, strs, (const char **)paths, Format, NavSelect,
+                     (const char **)cmds,(const char **)cmds_periodic,(const char **)rcvopts,NmeaCycle,NmeaReq,nmeapos,
                      &PrcOpt,solopt,&monistr,errmsg)) {
 
         trace(2,"rtksvrstart error %s\n",errmsg);
@@ -1275,7 +1275,7 @@ void MainWindow::SvrStop(void)
             if (CmdEnaTcp[i][1]) strcpy(cmds[i], qPrintable(CmdsTcp[i][1]));
         }
     }
-    rtksvrstop(&rtksvr, cmds);
+    rtksvrstop(&rtksvr, (const char **)cmds);
 
     for (i = 0; i < 3; i++) delete[] cmds[i];
 

@@ -187,7 +187,7 @@ extern int convkml(const char *infile, const char *outfile, gtime_t ts,
     else strcpy(file,outfile);
     
     /* read solution file */
-    stat=readsolt(files,nfile,ts,te,tint,qflg,&solbuf);
+    stat=readsolt((const char **)files,nfile,ts,te,tint,qflg,&solbuf);
     
     for (i=0;i<MAXEXFILE;i++) free(files[i]);
     

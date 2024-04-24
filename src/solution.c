@@ -871,7 +871,7 @@ static int sort_solbuf(solbuf_t *solbuf)
 *          solbuf_t *solbuf O  solution buffer
 * return : status (1:ok,0:no data or error)
 *-----------------------------------------------------------------------------*/
-extern int readsolt(char *files[], int nfile, gtime_t ts, gtime_t te,
+extern int readsolt(const char *files[], int nfile, gtime_t ts, gtime_t te,
                     double tint, int qflag, solbuf_t *solbuf)
 {
     FILE *fp;
@@ -899,7 +899,7 @@ extern int readsolt(char *files[], int nfile, gtime_t ts, gtime_t te,
     }
     return sort_solbuf(solbuf);
 }
-extern int readsol(char *files[], int nfile, solbuf_t *sol)
+extern int readsol(const char *files[], int nfile, solbuf_t *sol)
 {
     gtime_t time={0};
     
@@ -1136,7 +1136,7 @@ static int readsolstatdata(FILE *fp, gtime_t ts, gtime_t te, double tint,
 *          solstatbuf_t *statbuf O  solution status buffer
 * return : status (1:ok,0:no data or error)
 *-----------------------------------------------------------------------------*/
-extern int readsolstatt(char *files[], int nfile, gtime_t ts, gtime_t te,
+extern int readsolstatt(const char *files[], int nfile, gtime_t ts, gtime_t te,
                         double tint, solstatbuf_t *statbuf)
 {
     FILE *fp;
@@ -1167,7 +1167,7 @@ extern int readsolstatt(char *files[], int nfile, gtime_t ts, gtime_t te,
     }
     return sort_solstat(statbuf);
 }
-extern int readsolstat(char *files[], int nfile, solstatbuf_t *statbuf)
+extern int readsolstat(const char *files[], int nfile, solstatbuf_t *statbuf)
 {
     gtime_t time={0};
     

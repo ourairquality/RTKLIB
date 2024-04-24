@@ -474,8 +474,8 @@ static int startsvr(vt_t *vt)
     solopt[1].posf=strfmt[4];
     
     /* start rtk server */
-    if (!rtksvrstart(&svr,svrcycle,buffsize,strtype,paths,strfmt,navmsgsel,
-                     cmds,cmds_periodic,ropts,nmeacycle,nmeareq,npos,&prcopt,
+    if (!rtksvrstart(&svr,svrcycle,buffsize,strtype,(const char **)paths,strfmt,navmsgsel,
+                     (const char **)cmds,(const char **)cmds_periodic,(const char **)ropts,nmeacycle,nmeareq,npos,&prcopt,
                      solopt,&moni,errmsg)) {
         trace(2,"rtk server start error (%s)\n",errmsg);
         vt_printf(vt,"rtk server start error (%s)\n",errmsg);
@@ -502,7 +502,7 @@ static void stopsvr(vt_t *vt)
         else cmds[i]=s[i];
     }
     /* stop rtk server */
-    rtksvrstop(&svr,cmds);
+    rtksvrstop(&svr,(const char **)cmds);
     
     /* execute stop command */
     if (*stopcmd&&(ret=system(stopcmd))) {

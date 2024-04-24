@@ -137,9 +137,9 @@ class DownloadThread : public QThread
                 fp = fopen(path, append ? "a" : "w");
             }
             if (test)
-                dl_test(ts, te, ti, urls, nurl, stas, nsta, dir, 35, 0, fp);
+                dl_test(ts, te, ti, urls, nurl, (const char **)stas, nsta, dir, 35, 0, fp);
             else
-                dl_exec(ts, te, ti, seqnos, seqnoe, urls, nurl, stas, nsta, dir, qPrintable(usr),
+                dl_exec(ts, te, ti, seqnos, seqnoe, urls, nurl, (const char **)stas, nsta, dir, qPrintable(usr),
                     qPrintable(pwd), qPrintable(proxy), opts, msg, fp);
             if (fp)
                 fclose(fp);
@@ -673,7 +673,7 @@ void MainForm::LoadUrl(QString file)
 
     if (file == "") file = URL_FILE; // default url
 
-    n = dl_readurls(qPrintable(file), (char **)sel, 1, urls, MAX_URL);
+    n = dl_readurls(qPrintable(file), (const char **)sel, 1, urls, MAX_URL);
 
     for (i = 0; i < n; i++) {
         int p;
@@ -766,7 +766,7 @@ int MainForm::SelectUrl(url_t *urls)
     }
     if (UrlFile == "") file = URL_FILE;
 
-    nurl = dl_readurls(qPrintable(file), types, nurl, urls, MAX_URL_SEL);
+    nurl = dl_readurls(qPrintable(file), (const char **)types, nurl, urls, MAX_URL_SEL);
 
     for (i = 0; i < MAX_URL_SEL; i++) delete [] types[i];
 
