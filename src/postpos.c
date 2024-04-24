@@ -131,8 +131,8 @@ static void outheader(FILE *fp, char **file, int n, const prcopt_t *popt,
     gtime_t ts,te;
     double t1,t2;
     int i,j,w1,w2;
-    char s2[32],s3[32];
-
+    char s2[40],s3[40];
+    
     trace(3,"outheader: n=%d\n",n);
 
     if (sopt->posf==SOLF_NMEA||sopt->posf==SOLF_STAT) {
@@ -495,8 +495,8 @@ static int valcomb(const sol_t *solf, const sol_t *solb, double *rbf,
 {
     double dr[3],var[3];
     int i;
-    char tstr[32];
-
+    char tstr[40];
+    
     trace(4,"valcomb :\n");
 
     /* compare forward and backward solution */
@@ -1245,8 +1245,8 @@ static int execses_r(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
 {
     gtime_t t0={0};
     int i,stat=0;
-    char *ifile[MAXINFILE],ofile[1024],*rov_,*p,*q,s[64]="";
-
+    char *ifile[MAXINFILE],ofile[1024],*rov_,*p,*q,s[40]="";
+    
     trace(3,"execses_r: n=%d outfile=%s\n",n,outfile);
 
     for (i=0;i<n;i++) if (strstr(infile[i],"%r")) break;
@@ -1295,8 +1295,8 @@ static int execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
 {
     gtime_t t0={0};
     int i,stat=0;
-    char *ifile[MAXINFILE],ofile[1024],*base_,*p,*q,s[64];
-
+    char *ifile[MAXINFILE],ofile[1024],*base_,*p,*q,s[40];
+    
     trace(3,"execses_b: n=%d outfile=%s\n",n,outfile);
 
     /* read prec ephemeris and sbas data */

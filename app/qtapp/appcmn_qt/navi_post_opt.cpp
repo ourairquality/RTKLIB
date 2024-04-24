@@ -1051,7 +1051,7 @@ void OptDialog::save(const QString &file)
 {
     QLineEdit *editu[] = {ui->lERoverPosition1, ui->lERoverPosition2, ui->lERoverPosition3};
     QLineEdit *editr[] = {ui->lEReferencePosition1, ui->lEReferencePosition2, ui->lEReferencePosition3};
-    char comment[256], s[64];
+    char comment[256];
     prcopt_t procOpts = prcopt_default;
     solopt_t solOpts = solopt_default;
     filopt_t filopt;
@@ -1216,8 +1216,9 @@ void OptDialog::save(const QString &file)
     // solstat
     // trace
 
-    time2str(utc2gpst(timeget()), s, 0);
-    sprintf(comment, qPrintable(tr("rtk options (%s, v.%s %s)")), s, VER_RTKLIB, PATCH_LEVEL);
+    char tstr[40];
+    time2str(utc2gpst(timeget()), tstr, 0);
+    sprintf(comment, qPrintable(tr("rtk options (%s, v.%s %s)")), tstr, VER_RTKLIB, PATCH_LEVEL);
 
     setsysopts(&procOpts, &solOpts, &filopt);
 
