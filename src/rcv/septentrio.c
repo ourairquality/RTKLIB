@@ -3781,7 +3781,6 @@ static int decode_rxsetup(raw_t *raw)
 static int decode_sbf(raw_t *raw)
 {
     unsigned short crc;
-    char tstr[40];
 
     /* read the SBF block ID and revision */
     int type = U2(raw->buff+4) & 0x1fff << 0;
@@ -3816,6 +3815,7 @@ static int decode_sbf(raw_t *raw)
     }
 
     if (raw->outtype) {
+        char tstr[40];
         time2str(raw->time, tstr, 2);
         sprintf(raw->msgtype, "SBF %4d (%4d): %s", type, raw->len, tstr);
     }
