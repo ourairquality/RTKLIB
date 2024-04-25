@@ -154,7 +154,7 @@ static int sisaindex(double value)
 /* decode BINEX mesaage 0x00: site metadata ----------------------------------*/
 static int decode_bnx_00(raw_t *raw, uint8_t *buff, int len)
 {
-    const static double gpst0[]={1980,1,6,0,0,0};
+    static const double gpst0[]={1980,1,6,0,0,0};
     double x[3];
     char *msg,str[MAXANT];
     uint8_t *p=buff;
@@ -1081,7 +1081,7 @@ static int decode_bnx_7f_05(raw_t *raw, uint8_t *buff, int len)
 /* decode BINEX mesaage 0x7f: GNSS data prototyping --------------------------*/
 static int decode_bnx_7f(raw_t *raw, uint8_t *buff, int len)
 {
-    const static double gpst0[]={1980,1,6,0,0,0};
+    static const double gpst0[]={1980,1,6,0,0,0};
     char *msg;
     uint8_t *p=buff;
     uint32_t srec,min,msec;
