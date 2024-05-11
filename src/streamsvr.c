@@ -466,8 +466,13 @@ static void periodic_cmd(int cycle, const char *cmd, stream_t *stream)
         period=0;
         if ((r=strrchr(msg,'#'))) {
             sscanf(r,"# %d",&period);
-            *r='\0';
-            while (*--r==' ') *r='\0'; /* delete tail spaces */
+            size_t end=r-msg;
+            msg[end]='\0';
+            /* Delete tailing spaces */
+            while (end>0) {
+              if (msg[end-1]!=' ') break;
+              msg[--end]='\0';
+            }
         }
         if (period<=0) period=1000;
         if (*msg&&cycle%period==0) {
