@@ -24,7 +24,7 @@
 *           2010/09/07 1.10 add elevation mask to hold ambiguity
 *           2012/02/01 1.11 add extended receiver error model
 *                           add glonass interchannel bias correction
-*                           add slip detectior by L1-L5 gf jump
+*                           add slip detection by L1-L5 gf jump
 *                           output snr of rover receiver in residuals
 *           2013/03/10 1.12 add otl and pole tides corrections
 *           2014/05/26 1.13 support beidou and galileo
@@ -1191,7 +1191,7 @@ static int constbl(rtk_t *rtk, const double *x, const double *P,
                    const double *Pc, int nc, const int *xi, double *v,
                    double *Hc, double *Ri, double *Rj, int index)
 {
-    const double thres=0.1; /* Threshold for nonliearity (v.2.3.0) */
+    const double thres=0.1; /* Threshold for nonlinearity (v.2.3.0) */
     double xb[3],b[3],var=0.0;
 
     trace(4,"constbl : \n");
@@ -1226,7 +1226,7 @@ static int constbl(rtk_t *rtk, const double *x, const double *P,
 
     return 1;
 }
-/* precise tropspheric model -------------------------------------------------*/
+/* precise tropospheric model -------------------------------------------------*/
 static double prectrop(gtime_t time, const double *pos, int r,
                        const double *azel, const prcopt_t *opt, const double *x,
                        double *dtdx)
