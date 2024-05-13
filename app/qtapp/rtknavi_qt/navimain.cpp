@@ -1168,13 +1168,17 @@ void MainWindow::SvrStart(void)
 
         if (strs[i] == STR_SERIAL) {
             cmds[i] = new char[1024];
+            cmds[i][0] = '\0';
             cmds_periodic[i] = new char[1024];
+            cmds_periodic[i][0] = '\0';
             if (CmdEna[i][0]) strcpy(cmds[i], qPrintable(Cmds[i][0]));
             if (CmdEna[i][2]) strcpy(cmds_periodic[i], qPrintable(Cmds[i][2]));
         } else if (strs[i] == STR_TCPCLI || strs[i] == STR_TCPSVR ||
                strs[i] == STR_NTRIPCLI) {
             cmds[i] = new char[1024];
+            cmds[i][0] = '\0';
             cmds_periodic[i] = new char[1024];
+            cmds_periodic[i][0] = '\0';
             if (CmdEnaTcp[i][0]) strcpy(cmds[i], qPrintable(CmdsTcp[i][0]));
             if (CmdEna[i][2]) strcpy(cmds_periodic[i], qPrintable(CmdsTcp[i][2]));
         };
@@ -1269,9 +1273,11 @@ void MainWindow::SvrStop(void)
 
         if (str == STR_SERIAL) {
             cmds[i] = new char[1024];
+            cmds[i][0] = '\0';
             if (CmdEna[i][1]) strcpy(cmds[i], qPrintable(Cmds[i][1]));
         } else if (str == STR_TCPCLI || str == STR_TCPSVR || str == STR_NTRIPCLI) {
             cmds[i] = new char[1024];
+            cmds[i][0] = '\0';
             if (CmdEnaTcp[i][1]) strcpy(cmds[i], qPrintable(CmdsTcp[i][1]));
         }
     }
