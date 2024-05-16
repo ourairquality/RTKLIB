@@ -1352,7 +1352,7 @@ extern int outnmea_gsa(uint8_t *buff, const sol_t *sol, const ssat_t *ssat)
 {
     double azel[MAXSAT*2],dop[4];
     char *p=(char *)buff,*q,*s,sum;
-    int i,j,sys,prn,nsat,mask=0,nsys=0,sats[MAXSAT];
+    int i,j,sys,nsat,mask=0,nsys=0,sats[MAXSAT];
     
     trace(3,"outnmea_gsa:\n");
     
@@ -1371,21 +1371,25 @@ extern int outnmea_gsa(uint8_t *buff, const sol_t *sol, const ssat_t *ssat)
         for (j=nsat=0;j<MAXSAT&&nsat<12;j++) {
             if (!(satsys(j+1,NULL)&nmea_sys[i])) continue;
             if (ssat[j].vs) sats[nsat++]=j+1;
-    }
-    if (nsat>0) {
-        s=p;
+        }
+        if (nsat>0) {
+            s=p;
             p+=sprintf(p,"$%sGSA,A,%d",nsys>1?"GN":nmea_tid[i],sol->stat?3:1);
             for (j=0;j<12;j++) {
-                sys=satsys(sats[j],&prn);
-                if      (sys==SYS_SBS) prn-=87;  /* SBS: 33-64 */
-                else if (sys==SYS_GLO) prn+=64;  /* GLO: 65-99 */
-                else if (sys==SYS_QZS) prn-=192; /* QZS: 01-10 */
-                if (j<nsat) p+=sprintf(p,",%02d",prn);
-            else        p+=sprintf(p,",");
-        }
+                if (j<nsat) {
+                    int prn;
+                    sys=satsys(sats[j],&prn);
+                    if      (sys==SYS_SBS) prn-=87;  /* SBS: 33-64 */
+                    else if (sys==SYS_GLO) prn+=64;  /* GLO: 65-99 */
+                    else if (sys==SYS_QZS) prn-=192; /* QZS: 01-10 */
+                    p+=sprintf(p,",%02d",prn);
+                }
+                else
+                    p+=sprintf(p,",");
+            }
             p+=sprintf(p,",%3.1f,%3.1f,%3.1f,%d",dop[1],dop[2],dop[3],
                        nmea_sid[i]);
-        for (q=s+1,sum=0;*q;q++) sum^=*q; /* check-sum */
+            for (q=s+1,sum=0;*q;q++) sum^=*q; /* check-sum */
             p+=sprintf(p,"*%02X\r\n",sum);
         }
     }
