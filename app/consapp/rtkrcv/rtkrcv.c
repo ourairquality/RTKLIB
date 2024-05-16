@@ -909,7 +909,7 @@ static void prnavidata(vt_t *vt)
     }
     vt_printf(vt,"ION: %9.2E %9.2E %9.2E %9.2E %9.2E %9.2E %9.2E %9.2E\n",
             ion[0],ion[1],ion[2],ion[3],ion[4],ion[5],ion[6],ion[7]);
-    vt_printf(vt,"UTC: %9.2E %9.2E %9.2E %9.2E  LEAPS: %d\n",utc[0],utc[1],utc[2],
+    vt_printf(vt,"UTC: %9.2E %9.2E %9.2E %9.2E  LEAPS: %.0f\n",utc[0],utc[1],utc[2],
             utc[3],utc[4]);
 }
 /* print error/warning messages ----------------------------------------------*/
