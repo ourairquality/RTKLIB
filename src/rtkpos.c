@@ -214,14 +214,14 @@ extern void rtkclosestat(void)
     statlevel=0;
 }
 /* write solution status to buffer -------------------------------------------*/
-extern int rtkoutstat(rtk_t *rtk, char *buff)
+extern int rtkoutstat(rtk_t *rtk, int level, char *buff)
 {
     ssat_t *ssat;
     double tow,pos[3],vel[3],acc[3],vela[3]={0},acca[3]={0},xa[3];
     int i,j,week,est,nfreq,nf=NF(&rtk->opt);
     char id[8],*p=buff;
     
-    if (rtk->sol.stat==SOLQ_NONE) {
+    if (level<=0||rtk->sol.stat==SOLQ_NONE) {
         return 0;
     }
     /* write ppp solution status to buffer */
@@ -299,6 +299,25 @@ extern int rtkoutstat(rtk_t *rtk, char *buff)
                        rtk->sol.stat,i+1,rtk->x[j],xa[0]);
         }
     }
+
+    if (level <= 1) return (int)(p-buff);
+
+    /* Write residuals and status */
+    for (i=0;i<MAXSAT;i++) {
+        ssat=rtk->ssat+i;
+        if (!ssat->vs) continue;
+        satno2id(i+1,id);
+        for (j=0;j<nfreq;j++) {
+            int k=IB(i+1,j,&rtk->opt);
+            p+=sprintf(p,"$SAT,%d,%.3f,%s,%d,%.1f,%.1f,%.4f,%.4f,%d,%.2f,%d,%d,%d,%u,%u,%u,%.2f,%.6f,%.5f\n",
+                       week,tow,id,j+1,ssat->azel[0]*R2D,ssat->azel[1]*R2D,
+                       ssat->resp[j],ssat->resc[j],ssat->vsat[j],ssat->snr_rover[j]*SNR_UNIT,
+                       ssat->fix[j],ssat->slip[j]&3,ssat->lock[j],ssat->outc[j],
+                       ssat->slipc[j],ssat->rejc[j],k<rtk->nx?rtk->x[k]:0,
+                       k<rtk->nx?rtk->P[k+k*rtk->nx]:0,ssat->icbias[j]);
+        }
+    }
+
     return (int)(p-buff);
 }
 /* swap solution status file -------------------------------------------------*/
@@ -340,30 +359,9 @@ static void outsolstat(rtk_t *rtk,const nav_t *nav)
     swapsolstat();
     
     /* write solution status */
-    n=rtkoutstat(rtk,buff); buff[n]='\0';
+    n=rtkoutstat(rtk,statlevel,buff); buff[n]='\0';
     
     fputs(buff,fp_stat);
-    
-    if (rtk->sol.stat==SOLQ_NONE||statlevel<=1) return;
-    
-    tow=time2gpst(rtk->sol.time,&week);
-    nfreq=rtk->opt.mode>=PMODE_DGPS?nf:1;
-    
-    /* write residuals and status */
-    for (i=0;i<MAXSAT;i++) {
-        ssat=rtk->ssat+i;
-        if (!ssat->vs) continue;
-        satno2id(i+1,id);
-        for (j=0;j<nfreq;j++) {
-            k=IB(i+1,j,&rtk->opt);
-            fprintf(fp_stat,"$SAT,%d,%.3f,%s,%d,%.1f,%.1f,%.4f,%.4f,%d,%.2f,%d,%d,%d,%u,%u,%u,%.2f,%.6f,%.5f\n",
-                    week,tow,id,j+1,ssat->azel[0]*R2D,ssat->azel[1]*R2D,
-                    ssat->resp[j],ssat->resc[j],ssat->vsat[j],ssat->snr_rover[j]*SNR_UNIT,
-                    ssat->fix[j],ssat->slip[j]&3,ssat->lock[j],ssat->outc[j],
-                    ssat->slipc[j],ssat->rejc[j],k<rtk->nx?rtk->x[k]:0,
-                    k<rtk->nx?rtk->P[k+k*rtk->nx]:0,ssat->icbias[j]);
-        }
-    }
 }
 /* save error message --------------------------------------------------------*/
 static void errmsg(rtk_t *rtk, const char *format, ...)
