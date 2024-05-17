@@ -9,7 +9,11 @@ CTARGET=
 
 OPTION = -DENAGLO -DENAGAL -DENAQZS -DENACMP -DENAIRN -DTRACE -DNFREQ=3 -DNEXOBS=3 -DSVR_REUSEADDR
 CFLAGS = -std=c99 -Wall -O3 -pedantic -Wno-unused-but-set-variable -I$(SRC) $(OPTION) $(CTARGET) -g
-LDLIBS  = -lm -lrt -lpthread
+LDLIBS  = -lm -lpthread
+
+ifeq ($(strip $(shell uname -s)),Linux)
+	LDLIBS += -lrt
+endif
 
 all        : str2str
 str2str    : str2str.o stream.o rtkcmn.o trace.o solution.o sbas.o geoid.o
@@ -121,4 +125,3 @@ test6:
 
 clean:
 	rm -f str2str str2str.exe *.o *.out *.trace
-
