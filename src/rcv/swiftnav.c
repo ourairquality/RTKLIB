@@ -39,7 +39,7 @@
 #define ID_MSGIONGPS 0x0090    /* GPS ionospheric parameters */
 #define ID_MSG_SBAS_RAW 0x7777 /* SBAS data */
 
-#define SEC_DAY 86400.0
+#define SEC_DAY 86400.0L
 
 /** Constant difference of Beidou time from GPS time */
 #define BDS_WEEK_TO_GPS_WEEK 1356
@@ -304,25 +304,26 @@ static int Base64_Decode(uint8_t *_pcData, uint32_t _uDataLen, uint8_t *_puDecod
 } /* Base64_Decode() */
 /* URA value (m) to URA index ------------------------------------------------*/
 
-static int uraindex(double value) {
-  static const double ura_eph[] = {2.4,  3.4,   4.85,  6.85,  9.65,   13.65,  24.0,   48.0,
-                                   96.0, 192.0, 384.0, 768.0, 1536.0, 3072.0, 6144.0, 0.0};
+static int uraindex(long double value) {
+  static const long double ura_eph[] = {2.4L,    3.4L,    4.85L,   6.85L,  9.65L,  13.65L,
+                                        24.0L,   48.0L,   96.0L,   192.0L, 384.0L, 768.0L,
+                                        1536.0L, 3072.0L, 6144.0L, 0.0L};
   int i;
   for (i = 0; i < 15; i++)
     if (ura_eph[i] >= value) break;
   return i;
 }
 
-static int sisa_index(double value) {
-  if (value < 0.0 || value > 6.0)
+static int sisa_index(long double value) {
+  if (value < 0.0L || value > 6.0L)
     return 255; /* unknown or NAPA */
-  else if (value <= 0.5)
-    return (int)(value / 0.01);
-  else if (value <= 1.0)
-    return (int)((value - 0.5) / 0.02) + 50;
-  else if (value <= 2.0)
-    return (int)((value - 1.0) / 0.04) + 75;
-  return ((int)(value - 2.0) / 0.16) + 100;
+  else if (value <= 0.5L)
+    return (int)(value / 0.01L);
+  else if (value <= 1.0L)
+    return (int)((value - 0.5L) / 0.02L) + 50;
+  else if (value <= 2.0L)
+    return (int)((value - 1.0L) / 0.04L) + 75;
+  return ((int)(value - 2.0L) / 0.16L) + 100;
 }
 
 /* SBP checksum calculation --------------------------------------------------*/
@@ -366,14 +367,14 @@ static int flushobuf(raw_t *raw) {
   for (i = 0; i < MAXOBS; i++) {
     raw->obuf.data[i].time = time0;
     for (j = 0; j < NFREQ + NEXOBS; j++) {
-      raw->obuf.data[i].L[j] = raw->obuf.data[i].P[j] = 0.0;
-      raw->obuf.data[i].D[j] = 0.0;
+      raw->obuf.data[i].L[j] = raw->obuf.data[i].P[j] = 0.0L;
+      raw->obuf.data[i].D[j] = 0.0L;
       raw->obuf.data[i].SNR[j] = raw->obuf.data[i].LLI[j] = 0;
       raw->obuf.data[i].code[j] = CODE_NONE;
     }
   }
   for (i = 0; i < MAXSAT; i++) {
-    raw->prCA[i] = raw->dpCA[i] = 0.0;
+    raw->prCA[i] = raw->dpCA[i] = 0.0L;
   }
   return n > 0 ? 1 : 0;
 }
@@ -384,7 +385,8 @@ static void clearbuff(raw_t *raw) {
 }
 
 /* appropriate calculation of LLI for SBP */
-static uint8_t calculate_loss_of_lock(double dt, uint32_t prev_lock_time, uint32_t curr_lock_time) {
+static uint8_t calculate_loss_of_lock(long double dt, uint32_t prev_lock_time,
+                                      uint32_t curr_lock_time) {
   if (prev_lock_time > curr_lock_time) {
     /*    fprintf(stderr, "prev_lock_time %d curr_lock_time %d\n",
      * prev_lock_time, curr_lock_time);*/
@@ -412,7 +414,7 @@ static uint8_t calculate_loss_of_lock(double dt, uint32_t prev_lock_time, uint32
 /* decode SBF measurements message (observables) -----------------------------*/
 static int decode_msgobs(raw_t *raw) {
   gtime_t time;
-  double tow, dResTow, pseudorange, carr_phase, freq_doppler, delta_time;
+  long double tow, dResTow, pseudorange, carr_phase, freq_doppler, delta_time;
   int16_t i, ii, sat, n, week;
   uint8_t *p = (raw->buff) + 6; /* jump to TOW location */
   uint8_t num_obs, lock_info;
@@ -434,10 +436,10 @@ static int decode_msgobs(raw_t *raw) {
   /*  uSeqIdx  = num_obs&0xf; */
   num_obs = ((raw->len) - 19) / 17;
 
-  time = gpst2time(week, tow * 0.001 + dResTow * 1e-9);
+  time = gpst2time(week, tow * 0.001L + dResTow * 1e-9L);
   /* start new observation period */
-  delta_time = fabs(timediff(time, raw->time));
-  if ((delta_time) > 1E-6) {
+  delta_time = fabsl(timediff(time, raw->time));
+  if ((delta_time) > 1E-6L) {
     n = 0;
     iDidFlush = flushobuf(raw);
   } else {
@@ -450,14 +452,14 @@ static int decode_msgobs(raw_t *raw) {
 
   /* add observations */
   for (i = 0; i < num_obs && i < MAXOBS; i++, p += 17) {
-    pseudorange = U4(p) * 0.02;    /* pseudorange observation in 2cm units */
-    carr_phase = I4(p + 4);        /* carrier phase integer cycles */
-    carr_phase += p[8] / 256.0;    /* carrier phase fractional cycles */
-    freq_doppler = I2(p + 9);      /* Doppler shift in integer Hz */
-    freq_doppler += p[11] / 256.0; /* fractional part of Doppler shift */
-    cn0_int = p[12];               /* C/N0 */
-    lock_info = p[13] & 0xf;       /* lock time */
-    flags = p[14];                 /* observation flags */
+    pseudorange = U4(p) * 0.02L;    /* pseudorange observation in 2cm units */
+    carr_phase = I4(p + 4);         /* carrier phase integer cycles */
+    carr_phase += p[8] / 256.0L;    /* carrier phase fractional cycles */
+    freq_doppler = I2(p + 9);       /* Doppler shift in integer Hz */
+    freq_doppler += p[11] / 256.0L; /* fractional part of Doppler shift */
+    cn0_int = p[12];                /* C/N0 */
+    lock_info = p[13] & 0xf;        /* lock time */
+    flags = p[14];                  /* observation flags */
     sat_id = p[15];
     band_code = p[16];
 
@@ -497,16 +499,16 @@ static int decode_msgobs(raw_t *raw) {
 
     /* store signal info */
     if (freq < NFREQ + NEXOBS) {
-      raw->obuf.data[ii].P[freq] = (flags & 0x1) ? pseudorange : 0.0;
-      raw->obuf.data[ii].L[freq] = (flags & 0x2) ? carr_phase : 0.0;
-      raw->obuf.data[ii].D[freq] = (flags & 0x8) ? (float)freq_doppler : 0.0f;
-      raw->obuf.data[ii].SNR[freq] = (cn0_int * 0.25 / SNR_UNIT + 0.5);
+      raw->obuf.data[ii].P[freq] = (flags & 0x1) ? pseudorange : 0.0L;
+      raw->obuf.data[ii].L[freq] = (flags & 0x2) ? carr_phase : 0.0L;
+      raw->obuf.data[ii].D[freq] = (flags & 0x8) ? freq_doppler : 0.0L;
+      raw->obuf.data[ii].SNR[freq] = (cn0_int * 0.25L / SNR_UNIT + 0.5L);
       raw->obuf.data[ii].code[freq] = code;
 
       if (flags & 0x2) {
         prev_lockt = rtcm_phase_lock_table[(raw->halfc[sat - 1][freq])];
         curr_lockt = rtcm_phase_lock_table[lock_info];
-        slip = calculate_loss_of_lock(delta_time * 1000.0, prev_lockt, curr_lockt);
+        slip = calculate_loss_of_lock(delta_time * 1000.0L, prev_lockt, curr_lockt);
         half_cycle_amb = (flags & 0x4) ? 0 : 1;
         if (half_cycle_amb) {
           slip |= 0x2; /* half-cycle ambiguity unresolved */
@@ -530,36 +532,36 @@ static int decode_msgobs(raw_t *raw) {
  * --------------------------*/
 static void decode_gpsnav_common_dep1(uint8_t *_pBuff, eph_t *_pEph) {
   uint16_t uWeekE, uWeekC;
-  double dToc;
+  long double dToc;
 
   _pEph->toes = U4(_pBuff + 4);
   uWeekE = U2(_pBuff + 8);
-  _pEph->sva = uraindex(R8(_pBuff + 10)); /* URA index */
+  _pEph->sva = uraindex((long double)R8(_pBuff + 10)); /* URA index */
   _pEph->fit = U4(_pBuff + 18) / 3600;
   /* _pEph->flag = U1(_pBuff + 22); SBP payload does not have L2 flag */
   _pEph->svh = U1(_pBuff + 23);
 
-  _pEph->tgd[0] = R8(_pBuff + 24);
-  _pEph->crs = R8(_pBuff + 32);
-  _pEph->crc = R8(_pBuff + 40);
-  _pEph->cuc = R8(_pBuff + 48);
-  _pEph->cus = R8(_pBuff + 56);
-  _pEph->cic = R8(_pBuff + 64);
-  _pEph->cis = R8(_pBuff + 72);
+  _pEph->tgd[0] = (long double)R8(_pBuff + 24);
+  _pEph->crs = (long double)R8(_pBuff + 32);
+  _pEph->crc = (long double)R8(_pBuff + 40);
+  _pEph->cuc = (long double)R8(_pBuff + 48);
+  _pEph->cus = (long double)R8(_pBuff + 56);
+  _pEph->cic = (long double)R8(_pBuff + 64);
+  _pEph->cis = (long double)R8(_pBuff + 72);
 
-  _pEph->deln = R8(_pBuff + 80);
-  _pEph->M0 = R8(_pBuff + 88);
-  _pEph->e = R8(_pBuff + 96);
-  _pEph->A = pow(R8(_pBuff + 104), 2);
-  _pEph->OMG0 = R8(_pBuff + 112);
-  _pEph->OMGd = R8(_pBuff + 120);
-  _pEph->omg = R8(_pBuff + 128);
-  _pEph->i0 = R8(_pBuff + 136);
-  _pEph->idot = R8(_pBuff + 144);
+  _pEph->deln = (long double)R8(_pBuff + 80);
+  _pEph->M0 = (long double)R8(_pBuff + 88);
+  _pEph->e = (long double)R8(_pBuff + 96);
+  _pEph->A = powl((long double)R8(_pBuff + 104), 2);
+  _pEph->OMG0 = (long double)R8(_pBuff + 112);
+  _pEph->OMGd = (long double)R8(_pBuff + 120);
+  _pEph->omg = (long double)R8(_pBuff + 128);
+  _pEph->i0 = (long double)R8(_pBuff + 136);
+  _pEph->idot = (long double)R8(_pBuff + 144);
 
-  _pEph->f0 = R8(_pBuff + 152);
-  _pEph->f1 = R8(_pBuff + 160);
-  _pEph->f2 = R8(_pBuff + 168);
+  _pEph->f0 = (long double)R8(_pBuff + 152);
+  _pEph->f1 = (long double)R8(_pBuff + 160);
+  _pEph->f2 = (long double)R8(_pBuff + 168);
 
   dToc = U4(_pBuff + 176);
   uWeekC = U2(_pBuff + 180); /* WN */
@@ -575,36 +577,36 @@ static void decode_gpsnav_common_dep1(uint8_t *_pBuff, eph_t *_pEph) {
  * --------------------------*/
 static void decode_gpsnav_common(uint8_t *_pBuff, eph_t *_pEph) {
   uint16_t uWeekE, uWeekC;
-  double dToc;
+  long double dToc;
 
   _pEph->toes = U4(_pBuff + 4);
   uWeekE = U2(_pBuff + 8);
-  _pEph->sva = uraindex(R4(_pBuff + 10)); /* URA index */
+  _pEph->sva = uraindex((long double)R4(_pBuff + 10)); /* URA index */
   _pEph->fit = U4(_pBuff + 14) / 3600;
   _pEph->flag = 1; /* U1(_pBuff + 18); SBP payload does not have L2 flag */
   _pEph->svh = U1(_pBuff + 19);
 
-  _pEph->tgd[0] = R4(_pBuff + 20);
-  _pEph->crs = R4(_pBuff + 24);
-  _pEph->crc = R4(_pBuff + 28);
-  _pEph->cuc = R4(_pBuff + 32);
-  _pEph->cus = R4(_pBuff + 36);
-  _pEph->cic = R4(_pBuff + 40);
-  _pEph->cis = R4(_pBuff + 44);
+  _pEph->tgd[0] = (long double)R4(_pBuff + 20);
+  _pEph->crs = (long double)R4(_pBuff + 24);
+  _pEph->crc = (long double)R4(_pBuff + 28);
+  _pEph->cuc = (long double)R4(_pBuff + 32);
+  _pEph->cus = (long double)R4(_pBuff + 36);
+  _pEph->cic = (long double)R4(_pBuff + 40);
+  _pEph->cis = (long double)R4(_pBuff + 44);
 
-  _pEph->deln = R8(_pBuff + 48);
-  _pEph->M0 = R8(_pBuff + 56);
-  _pEph->e = R8(_pBuff + 64);
-  _pEph->A = pow(R8(_pBuff + 72), 2);
-  _pEph->OMG0 = R8(_pBuff + 80);
-  _pEph->OMGd = R8(_pBuff + 88);
-  _pEph->omg = R8(_pBuff + 96);
-  _pEph->i0 = R8(_pBuff + 104);
-  _pEph->idot = R8(_pBuff + 112);
+  _pEph->deln = (long double)R8(_pBuff + 48);
+  _pEph->M0 = (long double)R8(_pBuff + 56);
+  _pEph->e = (long double)R8(_pBuff + 64);
+  _pEph->A = powl((long double)R8(_pBuff + 72), 2);
+  _pEph->OMG0 = (long double)R8(_pBuff + 80);
+  _pEph->OMGd = (long double)R8(_pBuff + 88);
+  _pEph->omg = (long double)R8(_pBuff + 96);
+  _pEph->i0 = (long double)R8(_pBuff + 104);
+  _pEph->idot = (long double)R8(_pBuff + 112);
 
-  _pEph->f0 = R4(_pBuff + 120);
-  _pEph->f1 = R4(_pBuff + 124);
-  _pEph->f2 = R4(_pBuff + 128);
+  _pEph->f0 = (long double)R4(_pBuff + 120);
+  _pEph->f1 = (long double)R4(_pBuff + 124);
+  _pEph->f2 = (long double)R4(_pBuff + 128);
 
   dToc = U4(_pBuff + 132);
   uWeekC = U2(_pBuff + 136); /* WN */
@@ -621,36 +623,36 @@ static void decode_gpsnav_common(uint8_t *_pBuff, eph_t *_pEph) {
  * --------------------------*/
 static void decode_bdsnav_common(uint8_t *_pBuff, eph_t *_pEph) {
   uint16_t uWeekE, uWeekC;
-  double dToc;
+  long double dToc;
 
   _pEph->toes = U4(_pBuff + 4) - BDS_SECOND_TO_GPS_SECOND;
   uWeekE = U2(_pBuff + 8);
-  _pEph->sva = uraindex(R4(_pBuff + 10)); /* URA index */
+  _pEph->sva = uraindex((long double)R4(_pBuff + 10)); /* URA index */
   _pEph->fit = U4(_pBuff + 14) ? 0 : 4;
   _pEph->flag = U1(_pBuff + 18);
 
-  _pEph->tgd[0] = R4(_pBuff + 20);
-  _pEph->tgd[1] = R4(_pBuff + 24);
-  _pEph->crs = R4(_pBuff + 28);
-  _pEph->crc = R4(_pBuff + 32);
-  _pEph->cuc = R4(_pBuff + 36);
-  _pEph->cus = R4(_pBuff + 40);
-  _pEph->cic = R4(_pBuff + 44);
-  _pEph->cis = R4(_pBuff + 48);
+  _pEph->tgd[0] = (long double)R4(_pBuff + 20);
+  _pEph->tgd[1] = (long double)R4(_pBuff + 24);
+  _pEph->crs = (long double)R4(_pBuff + 28);
+  _pEph->crc = (long double)R4(_pBuff + 32);
+  _pEph->cuc = (long double)R4(_pBuff + 36);
+  _pEph->cus = (long double)R4(_pBuff + 40);
+  _pEph->cic = (long double)R4(_pBuff + 44);
+  _pEph->cis = (long double)R4(_pBuff + 48);
 
-  _pEph->deln = R8(_pBuff + 52);
-  _pEph->M0 = R8(_pBuff + 60);
-  _pEph->e = R8(_pBuff + 68);
-  _pEph->A = pow(R8(_pBuff + 76), 2);
-  _pEph->OMG0 = R8(_pBuff + 84);
-  _pEph->OMGd = R8(_pBuff + 92);
-  _pEph->omg = R8(_pBuff + 100);
-  _pEph->i0 = R8(_pBuff + 108);
-  _pEph->idot = R8(_pBuff + 116);
+  _pEph->deln = (long double)R8(_pBuff + 52);
+  _pEph->M0 = (long double)R8(_pBuff + 60);
+  _pEph->e = (long double)R8(_pBuff + 68);
+  _pEph->A = powl((long double)R8(_pBuff + 76), 2);
+  _pEph->OMG0 = (long double)R8(_pBuff + 84);
+  _pEph->OMGd = (long double)R8(_pBuff + 92);
+  _pEph->omg = (long double)R8(_pBuff + 100);
+  _pEph->i0 = (long double)R8(_pBuff + 108);
+  _pEph->idot = (long double)R8(_pBuff + 116);
 
-  _pEph->f0 = R8(_pBuff + 124);
-  _pEph->f1 = R4(_pBuff + 132);
-  _pEph->f2 = R4(_pBuff + 136);
+  _pEph->f0 = (long double)R8(_pBuff + 124);
+  _pEph->f1 = (long double)R4(_pBuff + 132);
+  _pEph->f2 = (long double)R4(_pBuff + 136);
 
   dToc = U4(_pBuff + 140);
   uWeekC = U2(_pBuff + 144); /* WN */
@@ -666,36 +668,36 @@ static void decode_bdsnav_common(uint8_t *_pBuff, eph_t *_pEph) {
  * --------------------------*/
 static void decode_galnav_common(uint8_t *_pBuff, eph_t *_pEph) {
   uint16_t uWeekE, uWeekC;
-  double dToc;
+  long double dToc;
 
   _pEph->toes = U4(_pBuff + 4);
   uWeekE = U2(_pBuff + 8);
-  _pEph->sva = sisa_index(R4(_pBuff + 10)); /* SISA */
+  _pEph->sva = sisa_index((long double)R4(_pBuff + 10)); /* SISA */
   _pEph->fit = U4(_pBuff + 14) ? 0 : 4;
   _pEph->flag = U1(_pBuff + 18);
 
-  _pEph->tgd[0] = R4(_pBuff + 20);
-  _pEph->tgd[1] = R4(_pBuff + 24);
-  _pEph->crs = R4(_pBuff + 28);
-  _pEph->crc = R4(_pBuff + 32);
-  _pEph->cuc = R4(_pBuff + 36);
-  _pEph->cus = R4(_pBuff + 40);
-  _pEph->cic = R4(_pBuff + 44);
-  _pEph->cis = R4(_pBuff + 48);
+  _pEph->tgd[0] = (long double)R4(_pBuff + 20);
+  _pEph->tgd[1] = (long double)R4(_pBuff + 24);
+  _pEph->crs = (long double)R4(_pBuff + 28);
+  _pEph->crc = (long double)R4(_pBuff + 32);
+  _pEph->cuc = (long double)R4(_pBuff + 36);
+  _pEph->cus = (long double)R4(_pBuff + 40);
+  _pEph->cic = (long double)R4(_pBuff + 44);
+  _pEph->cis = (long double)R4(_pBuff + 48);
 
-  _pEph->deln = R8(_pBuff + 52);
-  _pEph->M0 = R8(_pBuff + 60);
-  _pEph->e = R8(_pBuff + 68);
-  _pEph->A = pow(R8(_pBuff + 76), 2);
-  _pEph->OMG0 = R8(_pBuff + 84);
-  _pEph->OMGd = R8(_pBuff + 92);
-  _pEph->omg = R8(_pBuff + 100);
-  _pEph->i0 = R8(_pBuff + 108);
-  _pEph->idot = R8(_pBuff + 116);
+  _pEph->deln = (long double)R8(_pBuff + 52);
+  _pEph->M0 = (long double)R8(_pBuff + 60);
+  _pEph->e = (long double)R8(_pBuff + 68);
+  _pEph->A = powl((long double)R8(_pBuff + 76), 2);
+  _pEph->OMG0 = (long double)R8(_pBuff + 84);
+  _pEph->OMGd = (long double)R8(_pBuff + 92);
+  _pEph->omg = (long double)R8(_pBuff + 100);
+  _pEph->i0 = (long double)R8(_pBuff + 108);
+  _pEph->idot = (long double)R8(_pBuff + 116);
 
-  _pEph->f0 = R8(_pBuff + 124);
-  _pEph->f1 = R8(_pBuff + 132);
-  _pEph->f2 = R4(_pBuff + 140);
+  _pEph->f0 = (long double)R8(_pBuff + 124);
+  _pEph->f1 = (long double)R8(_pBuff + 132);
+  _pEph->f2 = (long double)R4(_pBuff + 140);
 
   dToc = U4(_pBuff + 144);
   uWeekC = U2(_pBuff + 148); /* WN */
@@ -1092,7 +1094,7 @@ static int decode_glonav_dep_d(raw_t *raw) {
   uint8_t *puiTmp = (raw->buff) + 6;
   geph_t geph = {0};
   uint16_t uWeekE;
-  double dSeconds;
+  long double dSeconds;
   uint8_t prn, sat, code;
 
   trace(4, "decode_glonav_dep_d: len=%d\n", raw->len);
@@ -1117,33 +1119,33 @@ static int decode_glonav_dep_d(raw_t *raw) {
     trace(2, "decode_glonav_dep_d: code error: code=%d\n", code);
   }
 
-  dSeconds = (double)U4(puiTmp + 2);
+  dSeconds = (long double)U4(puiTmp + 2);
   uWeekE = U2(puiTmp + 6);
   geph.toe = gpst2time(uWeekE, dSeconds);
 
-  dSeconds = dSeconds - floor(dSeconds / SEC_DAY) * SEC_DAY;
-  dSeconds = floor((dSeconds + 900) / 1800) * 1800;
+  dSeconds = dSeconds - floorl(dSeconds / SEC_DAY) * SEC_DAY;
+  dSeconds = floorl((dSeconds + 900) / 1800) * 1800;
   geph.tof = utc2gpst(gpst2time(uWeekE, dSeconds));
   geph.iode = (int)puiTmp[119];
 
-  geph.sva = (int)R8(puiTmp + 8); /* URA */
-  geph.age = U4(puiTmp + 16);     /* fit interval */
-  geph.svh = puiTmp[21];          /* health */
-  geph.gamn = R8(puiTmp + 22);    /* */
-  geph.taun = R8(puiTmp + 30);    /* */
-  geph.dtaun = R8(puiTmp + 38);   /* */
+  geph.sva = (int)(long double)R8(puiTmp + 8); /* URA */
+  geph.age = U4(puiTmp + 16);                  /* fit interval */
+  geph.svh = puiTmp[21];                       /* health */
+  geph.gamn = (long double)R8(puiTmp + 22);    /* */
+  geph.taun = (long double)R8(puiTmp + 30);    /* */
+  geph.dtaun = (long double)R8(puiTmp + 38);   /* */
 
-  geph.pos[0] = R8(puiTmp + 46);
-  geph.pos[1] = R8(puiTmp + 54);
-  geph.pos[2] = R8(puiTmp + 62);
+  geph.pos[0] = (long double)R8(puiTmp + 46);
+  geph.pos[1] = (long double)R8(puiTmp + 54);
+  geph.pos[2] = (long double)R8(puiTmp + 62);
 
-  geph.vel[0] = R8(puiTmp + 70);
-  geph.vel[1] = R8(puiTmp + 78);
-  geph.vel[2] = R8(puiTmp + 86);
+  geph.vel[0] = (long double)R8(puiTmp + 70);
+  geph.vel[1] = (long double)R8(puiTmp + 78);
+  geph.vel[2] = (long double)R8(puiTmp + 86);
 
-  geph.acc[0] = R8(puiTmp + 94);
-  geph.acc[1] = R8(puiTmp + 102);
-  geph.acc[2] = R8(puiTmp + 110);
+  geph.acc[0] = (long double)R8(puiTmp + 94);
+  geph.acc[1] = (long double)R8(puiTmp + 102);
+  geph.acc[2] = (long double)R8(puiTmp + 110);
 
   geph.frq = (int)puiTmp[118] - 8;
 
@@ -1165,7 +1167,7 @@ static int decode_glonav(raw_t *raw) {
   uint8_t *puiTmp = (raw->buff) + 6;
   geph_t geph = {0};
   uint16_t uWeekE;
-  double dSeconds;
+  long double dSeconds;
   uint8_t prn, sat, code;
 
   trace(4, "decode_glonav: len=%d\n", raw->len);
@@ -1192,33 +1194,33 @@ static int decode_glonav(raw_t *raw) {
     trace(2, "decode_glonav: code error: code=%d\n", code);
   }
 
-  dSeconds = (double)U4(puiTmp + 2);
+  dSeconds = (long double)U4(puiTmp + 2);
   uWeekE = U2(puiTmp + 6);
   geph.toe = gpst2time(uWeekE, dSeconds);
 
-  dSeconds = dSeconds - floor(dSeconds / SEC_DAY) * SEC_DAY;
-  dSeconds = floor((dSeconds + 900) / 1800) * 1800;
+  dSeconds = dSeconds - floorl(dSeconds / SEC_DAY) * SEC_DAY;
+  dSeconds = floorl((dSeconds + 900) / 1800) * 1800;
   geph.tof = utc2gpst(gpst2time(uWeekE, dSeconds));
   geph.iode = (int)puiTmp[91];
 
-  geph.sva = (int)R4(puiTmp + 8); /* URA */
-  geph.age = U4(puiTmp + 12);     /* fit interval */
-  geph.svh = puiTmp[17];          /* health */
-  geph.gamn = R4(puiTmp + 18);    /* */
-  geph.taun = R4(puiTmp + 22);    /* */
-  geph.dtaun = R4(puiTmp + 26);   /* */
+  geph.sva = (int)(long double)R4(puiTmp + 8); /* URA */
+  geph.age = U4(puiTmp + 12);                  /* fit interval */
+  geph.svh = puiTmp[17];                       /* health */
+  geph.gamn = (long double)R4(puiTmp + 18);    /* */
+  geph.taun = (long double)R4(puiTmp + 22);    /* */
+  geph.dtaun = (long double)R4(puiTmp + 26);   /* */
 
-  geph.pos[0] = R8(puiTmp + 30);
-  geph.pos[1] = R8(puiTmp + 38);
-  geph.pos[2] = R8(puiTmp + 46);
+  geph.pos[0] = (long double)R8(puiTmp + 30);
+  geph.pos[1] = (long double)R8(puiTmp + 38);
+  geph.pos[2] = (long double)R8(puiTmp + 46);
 
-  geph.vel[0] = R8(puiTmp + 54);
-  geph.vel[1] = R8(puiTmp + 62);
-  geph.vel[2] = R8(puiTmp + 70);
+  geph.vel[0] = (long double)R8(puiTmp + 54);
+  geph.vel[1] = (long double)R8(puiTmp + 62);
+  geph.vel[2] = (long double)R8(puiTmp + 70);
 
-  geph.acc[0] = R4(puiTmp + 78);
-  geph.acc[1] = R4(puiTmp + 82);
-  geph.acc[2] = R4(puiTmp + 86);
+  geph.acc[0] = (long double)R4(puiTmp + 78);
+  geph.acc[1] = (long double)R4(puiTmp + 82);
+  geph.acc[2] = (long double)R4(puiTmp + 86);
 
   geph.frq = (int)puiTmp[90] - 8;
 
@@ -1245,14 +1247,14 @@ static int decode_gpsion(raw_t *raw) {
     return -1;
   }
 
-  raw->nav.ion_gps[0] = R8(puiTmp + 6);
-  raw->nav.ion_gps[1] = R8(puiTmp + 14);
-  raw->nav.ion_gps[2] = R8(puiTmp + 18);
-  raw->nav.ion_gps[3] = R8(puiTmp + 22);
-  raw->nav.ion_gps[4] = R8(puiTmp + 30);
-  raw->nav.ion_gps[5] = R8(puiTmp + 38);
-  raw->nav.ion_gps[6] = R8(puiTmp + 46);
-  raw->nav.ion_gps[7] = R8(puiTmp + 54);
+  raw->nav.ion_gps[0] = (long double)R8(puiTmp + 6);
+  raw->nav.ion_gps[1] = (long double)R8(puiTmp + 14);
+  raw->nav.ion_gps[2] = (long double)R8(puiTmp + 18);
+  raw->nav.ion_gps[3] = (long double)R8(puiTmp + 22);
+  raw->nav.ion_gps[4] = (long double)R8(puiTmp + 30);
+  raw->nav.ion_gps[5] = (long double)R8(puiTmp + 38);
+  raw->nav.ion_gps[6] = (long double)R8(puiTmp + 46);
+  raw->nav.ion_gps[7] = (long double)R8(puiTmp + 54);
 
   return 9;
 }
@@ -1265,7 +1267,7 @@ static int decode_snav(raw_t *raw) {
   uint32_t tow_ms, k;
   uint8_t uSbasPream[3] = {0x53, 0x9A, 0xC6};
   uint8_t sat, code;
-  time2gpst(timeadd(raw->time, -1.0), &week);
+  time2gpst(timeadd(raw->time, -1.0L), &week);
 
   trace(4, "MSG_SBAS_RAW: len=%d\n", raw->len);
 

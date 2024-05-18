@@ -47,8 +47,9 @@
 #define SQR(x) ((x) * (x))
 
 /* URA table (URA index -> URA value) ----------------------------------------*/
-static const double ura_eph[] = {2.4,  3.4,   4.85,  6.85,  9.65,   13.65,  24.0,   48.0,
-                                 96.0, 192.0, 384.0, 768.0, 1536.0, 3072.0, 6144.0, 0.0};
+static const long double ura_eph[] = {2.4L,    3.4L,    4.85L,   6.85L,  9.65L,  13.65L,
+                                      24.0L,   48.0L,   96.0L,   192.0L, 384.0L, 768.0L,
+                                      1536.0L, 3072.0L, 6144.0L, 0.0L};
 /* get fields (big-endian) ---------------------------------------------------*/
 #define U1(p) (*((uint8_t *)(p)))
 #define I1(p) (*((int8_t *)(p)))
@@ -104,47 +105,47 @@ static uint8_t csum8(const uint8_t *buff, int len) {
   return cs;
 }
 /* adjust weekly rollover of GPS time ----------------------------------------*/
-static gtime_t adjweek(gtime_t time, double tow) {
-  double tow_p;
+static gtime_t adjweek(gtime_t time, long double tow) {
+  long double tow_p;
   int week;
   tow_p = time2gpst(time, &week);
-  if (tow < tow_p - 302400.0)
-    tow += 604800.0;
-  else if (tow > tow_p + 302400.0)
-    tow -= 604800.0;
+  if (tow < tow_p - 302400.0L)
+    tow += 604800.0L;
+  else if (tow > tow_p + 302400.0L)
+    tow -= 604800.0L;
   return gpst2time(week, tow);
 }
 /* adjust daily rollover of time ---------------------------------------------*/
-static gtime_t adjday(gtime_t time, double tod) {
-  double ep[6], tod_p;
+static gtime_t adjday(gtime_t time, long double tod) {
+  long double ep[6], tod_p;
   time2epoch(time, ep);
-  tod_p = ep[3] * 3600.0 + ep[4] * 60.0 + ep[5];
-  if (tod < tod_p - 43200.0)
-    tod += 86400.0;
-  else if (tod > tod_p + 43200.0)
-    tod -= 86400.0;
-  ep[3] = ep[4] = ep[5] = 0.0;
+  tod_p = ep[3] * 3600.0L + ep[4] * 60.0L + ep[5];
+  if (tod < tod_p - 43200.0L)
+    tod += 86400.0L;
+  else if (tod > tod_p + 43200.0L)
+    tod -= 86400.0L;
+  ep[3] = ep[4] = ep[5] = 0.0L;
   return timeadd(epoch2time(ep), tod);
 }
 /* URA value (m) to URA index ------------------------------------------------*/
-static int uraindex(double value) {
+static int uraindex(long double value) {
   int i;
   for (i = 0; i < 15; i++)
     if (ura_eph[i] >= value) break;
   return i;
 }
 /* Galileo SISA value (m) to SISA index --------------------------------------*/
-static int sisaindex(double value) {
-  if (value < 0.5) return (int)((value) / 0.01);
-  if (value < 1.0) return (int)((value - 0.5) / 0.02) + 50;
-  if (value < 2.0) return (int)((value - 1.0) / 0.04) + 75;
-  if (value <= 6.0) return (int)((value - 2.0) / 0.16) + 100;
+static int sisaindex(long double value) {
+  if (value < 0.5L) return (int)((value) / 0.01L);
+  if (value < 1.0L) return (int)((value - 0.5L) / 0.02L) + 50;
+  if (value < 2.0L) return (int)((value - 1.0L) / 0.04L) + 75;
+  if (value <= 6.0L) return (int)((value - 2.0L) / 0.16L) + 100;
   return 255; /* NAPA */
 }
 /* decode BINEX mesaage 0x00: site metadata ----------------------------------*/
 static int decode_bnx_00(raw_t *raw, uint8_t *buff, int len) {
-  static const double gpst0[] = {1980, 1, 6, 0, 0, 0};
-  double x[3];
+  static const long double gpst0[] = {1980, 1, 6, 0, 0, 0};
+  long double x[3];
   char str[MAXANT];
   uint8_t *p = buff;
   uint32_t min, qsec, src, fid = 0, flen = 0;
@@ -156,7 +157,7 @@ static int decode_bnx_00(raw_t *raw, uint8_t *buff, int len) {
   p += 1;
   src = U1(p);
   p += 1;
-  raw->time = timeadd(epoch2time(gpst0), min * 60.0 + qsec * 0.25);
+  raw->time = timeadd(epoch2time(gpst0), min * 60.0L + qsec * 0.25L);
 
   if (raw->outtype) {
     char tstr[40];
@@ -196,12 +197,12 @@ static int decode_bnx_00(raw_t *raw, uint8_t *buff, int len) {
         p += flen;
       }
       for (i = 0; i < 3; i++) {
-        x[i] = R8(p);
+        x[i] = (long double)R8(p);
         p += 8;
       }
       if (raw->outtype) {
-        rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " [%02x]%.3f/%.3f/%.3f", fid, x[0], x[1],
-                     x[2]);
+        rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " [%02x]%.3Lf/%.3Lf/%.3Lf", fid, x[0],
+                     x[1], x[2]);
       }
       if (fid == 0x1d) { /* antenna ECEF X/Y/Z position */
         matcpy(raw->sta.pos, x, 3, 1);
@@ -232,7 +233,7 @@ static int decode_bnx_01_00(raw_t *raw, uint8_t *buff, int len) {
 static int decode_bnx_01_01(raw_t *raw, uint8_t *buff, int len) {
   eph_t eph = {0};
   uint8_t *p = buff;
-  double tow, ura, sqrtA;
+  long double tow, ura, sqrtA;
   int prn, sat, flag;
 
   trace(4, "BINEX 0x01-01: len=%d\n", len);
@@ -246,49 +247,49 @@ static int decode_bnx_01_01(raw_t *raw, uint8_t *buff, int len) {
     p += 4;
     eph.toes = I4(p);
     p += 4;
-    eph.tgd[0] = R4(p);
+    eph.tgd[0] = (long double)R4(p);
     p += 4;
     eph.iodc = I4(p);
     p += 4;
-    eph.f2 = R4(p);
+    eph.f2 = (long double)R4(p);
     p += 4;
-    eph.f1 = R4(p);
+    eph.f1 = (long double)R4(p);
     p += 4;
-    eph.f0 = R4(p);
+    eph.f0 = (long double)R4(p);
     p += 4;
     eph.iode = I4(p);
     p += 4;
-    eph.deln = R4(p) * SC2RAD;
+    eph.deln = (long double)R4(p) * SC2RAD;
     p += 4;
-    eph.M0 = R8(p);
+    eph.M0 = (long double)R8(p);
     p += 8;
-    eph.e = R8(p);
+    eph.e = (long double)R8(p);
     p += 8;
-    sqrtA = R8(p);
+    sqrtA = (long double)R8(p);
     p += 8;
-    eph.cic = R4(p);
+    eph.cic = (long double)R4(p);
     p += 4;
-    eph.crc = R4(p);
+    eph.crc = (long double)R4(p);
     p += 4;
-    eph.cis = R4(p);
+    eph.cis = (long double)R4(p);
     p += 4;
-    eph.crs = R4(p);
+    eph.crs = (long double)R4(p);
     p += 4;
-    eph.cuc = R4(p);
+    eph.cuc = (long double)R4(p);
     p += 4;
-    eph.cus = R4(p);
+    eph.cus = (long double)R4(p);
     p += 4;
-    eph.OMG0 = R8(p);
+    eph.OMG0 = (long double)R8(p);
     p += 8;
-    eph.omg = R8(p);
+    eph.omg = (long double)R8(p);
     p += 8;
-    eph.i0 = R8(p);
+    eph.i0 = (long double)R8(p);
     p += 8;
-    eph.OMGd = R4(p) * SC2RAD;
+    eph.OMGd = (long double)R4(p) * SC2RAD;
     p += 4;
-    eph.idot = R4(p) * SC2RAD;
+    eph.idot = (long double)R4(p) * SC2RAD;
     p += 4;
-    ura = R4(p) * 0.1;
+    ura = (long double)R4(p) * 0.1L;
     p += 4;
     eph.svh = U2(p);
     p += 2;
@@ -325,7 +326,7 @@ static int decode_bnx_01_01(raw_t *raw, uint8_t *buff, int len) {
 static int decode_bnx_01_02(raw_t *raw, uint8_t *buff, int len) {
   geph_t geph = {0};
   uint8_t *p = buff;
-  double tod, tof, tau_gps;
+  long double tod, tof, tau_gps;
   int prn, sat, day, leap;
 
   trace(4, "BINEX 0x01-02: len=%d\n", len);
@@ -337,29 +338,29 @@ static int decode_bnx_01_02(raw_t *raw, uint8_t *buff, int len) {
     p += 2;
     tod = U4(p);
     p += 4;
-    geph.taun = -R8(p);
+    geph.taun = -(long double)R8(p);
     p += 8;
-    geph.gamn = R8(p);
+    geph.gamn = (long double)R8(p);
     p += 8;
     tof = U4(p);
     p += 4;
-    geph.pos[0] = R8(p) * 1E3;
+    geph.pos[0] = (long double)R8(p) * 1E3L;
     p += 8;
-    geph.vel[0] = R8(p) * 1E3;
+    geph.vel[0] = (long double)R8(p) * 1E3L;
     p += 8;
-    geph.acc[0] = R8(p) * 1E3;
+    geph.acc[0] = (long double)R8(p) * 1E3L;
     p += 8;
-    geph.pos[1] = R8(p) * 1E3;
+    geph.pos[1] = (long double)R8(p) * 1E3L;
     p += 8;
-    geph.vel[1] = R8(p) * 1E3;
+    geph.vel[1] = (long double)R8(p) * 1E3L;
     p += 8;
-    geph.acc[1] = R8(p) * 1E3;
+    geph.acc[1] = (long double)R8(p) * 1E3L;
     p += 8;
-    geph.pos[2] = R8(p) * 1E3;
+    geph.pos[2] = (long double)R8(p) * 1E3L;
     p += 8;
-    geph.vel[2] = R8(p) * 1E3;
+    geph.vel[2] = (long double)R8(p) * 1E3L;
     p += 8;
-    geph.acc[2] = R8(p) * 1E3;
+    geph.acc[2] = (long double)R8(p) * 1E3L;
     p += 8;
     geph.svh = U1(p) & 0x1;
     p += 1; /* MSB of Bn */
@@ -369,9 +370,9 @@ static int decode_bnx_01_02(raw_t *raw, uint8_t *buff, int len) {
     p += 1;
     leap = U1(p);
     p += 1;
-    tau_gps = R8(p);
+    tau_gps = (long double)R8(p);
     p += 8;
-    geph.dtaun = R8(p);
+    geph.dtaun = (long double)R8(p);
   } else {
     trace(2, "BINEX 0x01-02: length error len=%d\n", len);
     return -1;
@@ -382,12 +383,12 @@ static int decode_bnx_01_02(raw_t *raw, uint8_t *buff, int len) {
   }
   if (raw->time.time == 0) return 0;
   geph.sat = sat;
-  geph.toe = utc2gpst(adjday(raw->time, tod - 10800.0));
-  geph.tof = utc2gpst(adjday(raw->time, tof - 10800.0));
-  geph.iode = (int)(fmod(tod, 86400.0) / 900.0 + 0.5);
+  geph.toe = utc2gpst(adjday(raw->time, tod - 10800.0L));
+  geph.tof = utc2gpst(adjday(raw->time, tof - 10800.0L));
+  geph.iode = (int)(fmodl(tod, 86400.0L) / 900.0L + 0.5L);
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (fabs(timediff(geph.toe, raw->nav.geph[prn - MINPRNGLO][0].toe)) < 1.0 &&
+    if (fabsl(timediff(geph.toe, raw->nav.geph[prn - MINPRNGLO][0].toe)) < 1.0L &&
         geph.svh == raw->nav.geph[prn - MINPRNGLO][0].svh)
       return 0;
   }
@@ -400,7 +401,7 @@ static int decode_bnx_01_02(raw_t *raw, uint8_t *buff, int len) {
 static int decode_bnx_01_03(raw_t *raw, uint8_t *buff, int len) {
   seph_t seph = {0};
   uint8_t *p = buff;
-  double tow, tod, tof;
+  long double tow, tod, tof;
   int prn, sat, week, iodn;
 
   trace(4, "BINEX 0x01-03: len=%d\n", len);
@@ -412,29 +413,29 @@ static int decode_bnx_01_03(raw_t *raw, uint8_t *buff, int len) {
     p += 2;
     tow = U4(p);
     p += 4;
-    seph.af0 = R8(p);
+    seph.af0 = (long double)R8(p);
     p += 8;
-    tod = R4(p);
+    tod = (long double)R4(p);
     p += 4;
     tof = U4(p);
     p += 4;
-    seph.pos[0] = R8(p) * 1E3;
+    seph.pos[0] = (long double)R8(p) * 1E3L;
     p += 8;
-    seph.vel[0] = R8(p) * 1E3;
+    seph.vel[0] = (long double)R8(p) * 1E3L;
     p += 8;
-    seph.acc[0] = R8(p) * 1E3;
+    seph.acc[0] = (long double)R8(p) * 1E3L;
     p += 8;
-    seph.pos[1] = R8(p) * 1E3;
+    seph.pos[1] = (long double)R8(p) * 1E3L;
     p += 8;
-    seph.vel[1] = R8(p) * 1E3;
+    seph.vel[1] = (long double)R8(p) * 1E3L;
     p += 8;
-    seph.acc[1] = R8(p) * 1E3;
+    seph.acc[1] = (long double)R8(p) * 1E3L;
     p += 8;
-    seph.pos[2] = R8(p) * 1E3;
+    seph.pos[2] = (long double)R8(p) * 1E3L;
     p += 8;
-    seph.vel[2] = R8(p) * 1E3;
+    seph.vel[2] = (long double)R8(p) * 1E3L;
     p += 8;
-    seph.acc[2] = R8(p) * 1E3;
+    seph.acc[2] = (long double)R8(p) * 1E3L;
     p += 8;
     seph.svh = U1(p);
     p += 1;
@@ -454,7 +455,7 @@ static int decode_bnx_01_03(raw_t *raw, uint8_t *buff, int len) {
   seph.tof = adjweek(seph.t0, tof);
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (fabs(timediff(seph.t0, raw->nav.seph[prn - MINPRNSBS][0].t0)) < 1.0 &&
+    if (fabsl(timediff(seph.t0, raw->nav.seph[prn - MINPRNSBS][0].t0)) < 1.0L &&
         seph.sva == raw->nav.seph[prn - MINPRNSBS][0].sva)
       return 0;
   }
@@ -467,7 +468,7 @@ static int decode_bnx_01_03(raw_t *raw, uint8_t *buff, int len) {
 static int decode_bnx_01_04(raw_t *raw, uint8_t *buff, int len) {
   eph_t eph = {0};
   uint8_t *p = buff;
-  double tow, ura, sqrtA;
+  long double tow, ura, sqrtA;
   int prn, sat, set, eph_sel = 3; /* ephemeris selection (1:I/NAV+2:F/NAV) */
 
   trace(4, "BINEX 0x01-04: len=%d\n", len);
@@ -484,49 +485,49 @@ static int decode_bnx_01_04(raw_t *raw, uint8_t *buff, int len) {
     p += 4;
     eph.toes = I4(p);
     p += 4;
-    eph.tgd[0] = R4(p);
+    eph.tgd[0] = (long double)R4(p);
     p += 4; /* BGD E5a/E1 */
-    eph.tgd[1] = R4(p);
+    eph.tgd[1] = (long double)R4(p);
     p += 4; /* BGD E5b/E1 */
     eph.iode = I4(p);
     p += 4; /* IODnav */
-    eph.f2 = R4(p);
+    eph.f2 = (long double)R4(p);
     p += 4;
-    eph.f1 = R4(p);
+    eph.f1 = (long double)R4(p);
     p += 4;
-    eph.f0 = R4(p);
+    eph.f0 = (long double)R4(p);
     p += 4;
-    eph.deln = R4(p) * SC2RAD;
+    eph.deln = (long double)R4(p) * SC2RAD;
     p += 4;
-    eph.M0 = R8(p);
+    eph.M0 = (long double)R8(p);
     p += 8;
-    eph.e = R8(p);
+    eph.e = (long double)R8(p);
     p += 8;
-    sqrtA = R8(p);
+    sqrtA = (long double)R8(p);
     p += 8;
-    eph.cic = R4(p);
+    eph.cic = (long double)R4(p);
     p += 4;
-    eph.crc = R4(p);
+    eph.crc = (long double)R4(p);
     p += 4;
-    eph.cis = R4(p);
+    eph.cis = (long double)R4(p);
     p += 4;
-    eph.crs = R4(p);
+    eph.crs = (long double)R4(p);
     p += 4;
-    eph.cuc = R4(p);
+    eph.cuc = (long double)R4(p);
     p += 4;
-    eph.cus = R4(p);
+    eph.cus = (long double)R4(p);
     p += 4;
-    eph.OMG0 = R8(p);
+    eph.OMG0 = (long double)R8(p);
     p += 8;
-    eph.omg = R8(p);
+    eph.omg = (long double)R8(p);
     p += 8;
-    eph.i0 = R8(p);
+    eph.i0 = (long double)R8(p);
     p += 8;
-    eph.OMGd = R4(p) * SC2RAD;
+    eph.OMGd = (long double)R4(p) * SC2RAD;
     p += 4;
-    eph.idot = R4(p) * SC2RAD;
+    eph.idot = (long double)R4(p) * SC2RAD;
     p += 4;
-    ura = R4(p);
+    ura = (long double)R4(p);
     p += 4;
     eph.svh = U2(p);
     p += 2;
@@ -549,11 +550,11 @@ static int decode_bnx_01_04(raw_t *raw, uint8_t *buff, int len) {
   eph.toe = gpst2time(eph.week, eph.toes);
   eph.toc = gpst2time(eph.week, eph.toes);
   eph.ttr = adjweek(eph.toe, tow);
-  eph.sva = ura < 0.0 ? (int)(-ura) - 1 : sisaindex(ura); /* SISA index */
+  eph.sva = ura < 0.0L ? (int)(-ura) - 1 : sisaindex(ura); /* SISA index */
   if (!strstr(raw->opt, "-EPHALL")) {
     if (raw->nav.eph[sat - 1][set].iode == eph.iode &&
-        fabs(timediff(raw->nav.eph[sat - 1][set].toe, eph.toe)) < 1.0 &&
-        fabs(timediff(raw->nav.eph[sat - 1][set].toc, eph.toc)) < 1.0) {
+        fabsl(timediff(raw->nav.eph[sat - 1][set].toe, eph.toe)) < 1.0L &&
+        fabsl(timediff(raw->nav.eph[sat - 1][set].toc, eph.toc)) < 1.0L) {
       return 0;
     }
   }
@@ -563,15 +564,15 @@ static int decode_bnx_01_04(raw_t *raw, uint8_t *buff, int len) {
   return 2;
 }
 /* BDS signed 10 bit Tgd -> sec ----------------------------------------------*/
-static double bds_tgd(int tgd) {
+static long double bds_tgd(int tgd) {
   tgd &= 0x3FF;
-  return (tgd & 0x200) ? -1E-10 * ((~tgd) & 0x1FF) : 1E-10 * (tgd & 0x1FF);
+  return (tgd & 0x200) ? -1E-10L * ((~tgd) & 0x1FF) : 1E-10L * (tgd & 0x1FF);
 }
 /* decode BINEX mesaage 0x01-05: decoded Beidou-2/Compass ephmemeris ---------*/
 static int decode_bnx_01_05(raw_t *raw, uint8_t *buff, int len) {
   eph_t eph = {0};
   uint8_t *p = buff;
-  double tow, toc, sqrtA;
+  long double tow, toc, sqrtA;
   int prn, sat, flag1, flag2;
 
   trace(4, "BINEX 0x01-05: len=%d\n", len);
@@ -587,41 +588,41 @@ static int decode_bnx_01_05(raw_t *raw, uint8_t *buff, int len) {
     p += 4;
     eph.toes = I4(p);
     p += 4;
-    eph.f2 = R4(p);
+    eph.f2 = (long double)R4(p);
     p += 4;
-    eph.f1 = R4(p);
+    eph.f1 = (long double)R4(p);
     p += 4;
-    eph.f0 = R4(p);
+    eph.f0 = (long double)R4(p);
     p += 4;
-    eph.deln = R4(p) * SC2RAD;
+    eph.deln = (long double)R4(p) * SC2RAD;
     p += 4;
-    eph.M0 = R8(p);
+    eph.M0 = (long double)R8(p);
     p += 8;
-    eph.e = R8(p);
+    eph.e = (long double)R8(p);
     p += 8;
-    sqrtA = R8(p);
+    sqrtA = (long double)R8(p);
     p += 8;
-    eph.cic = R4(p);
+    eph.cic = (long double)R4(p);
     p += 4;
-    eph.crc = R4(p);
+    eph.crc = (long double)R4(p);
     p += 4;
-    eph.cis = R4(p);
+    eph.cis = (long double)R4(p);
     p += 4;
-    eph.crs = R4(p);
+    eph.crs = (long double)R4(p);
     p += 4;
-    eph.cuc = R4(p);
+    eph.cuc = (long double)R4(p);
     p += 4;
-    eph.cus = R4(p);
+    eph.cus = (long double)R4(p);
     p += 4;
-    eph.OMG0 = R8(p);
+    eph.OMG0 = (long double)R8(p);
     p += 8;
-    eph.omg = R8(p);
+    eph.omg = (long double)R8(p);
     p += 8;
-    eph.i0 = R8(p);
+    eph.i0 = (long double)R8(p);
     p += 8;
-    eph.OMGd = R4(p) * SC2RAD;
+    eph.OMGd = (long double)R4(p) * SC2RAD;
     p += 4;
-    eph.idot = R4(p) * SC2RAD;
+    eph.idot = (long double)R4(p) * SC2RAD;
     p += 4;
     flag1 = U2(p);
     p += 2;
@@ -636,9 +637,9 @@ static int decode_bnx_01_05(raw_t *raw, uint8_t *buff, int len) {
   }
   eph.sat = sat;
   eph.A = SQR(sqrtA);
-  eph.toe = gpst2time(eph.week + 1356, eph.toes + 14.0); /* bdt -> gpst */
-  eph.toc = gpst2time(eph.week + 1356, eph.toes + 14.0); /* bdt -> gpst */
-  eph.ttr = adjweek(eph.toe, tow + 14.0);                /* bdt -> gpst */
+  eph.toe = gpst2time(eph.week + 1356, eph.toes + 14.0L); /* bdt -> gpst */
+  eph.toc = gpst2time(eph.week + 1356, eph.toes + 14.0L); /* bdt -> gpst */
+  eph.ttr = adjweek(eph.toe, tow + 14.0L);                /* bdt -> gpst */
   eph.iodc = (flag1 >> 1) & 0x1F;
   eph.iode = (flag1 >> 6) & 0x1F;
   eph.svh = flag1 & 0x01;
@@ -650,7 +651,7 @@ static int decode_bnx_01_05(raw_t *raw, uint8_t *buff, int len) {
   /* message source (0:unknown,1:B1I,2:B1Q,3:B2I,4:B2Q,5:B3I,6:B3Q)*/
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (fabs(timediff(raw->nav.eph[sat - 1][0].toe, eph.toe)) < 1.0) return 0;
+    if (fabsl(timediff(raw->nav.eph[sat - 1][0].toe, eph.toe)) < 1.0L) return 0;
   }
   raw->nav.eph[sat - 1][0] = eph;
   raw->ephsat = sat;
@@ -661,7 +662,7 @@ static int decode_bnx_01_05(raw_t *raw, uint8_t *buff, int len) {
 static int decode_bnx_01_06(raw_t *raw, uint8_t *buff, int len) {
   eph_t eph = {0};
   uint8_t *p = buff;
-  double tow, ura, sqrtA;
+  long double tow, ura, sqrtA;
   int prn, sat, flag;
 
   trace(4, "BINEX 0x01-06: len=%d\n", len);
@@ -675,49 +676,49 @@ static int decode_bnx_01_06(raw_t *raw, uint8_t *buff, int len) {
     p += 4;
     eph.toes = I4(p);
     p += 4;
-    eph.tgd[0] = R4(p);
+    eph.tgd[0] = (long double)R4(p);
     p += 4;
     eph.iodc = I4(p);
     p += 4;
-    eph.f2 = R4(p);
+    eph.f2 = (long double)R4(p);
     p += 4;
-    eph.f1 = R4(p);
+    eph.f1 = (long double)R4(p);
     p += 4;
-    eph.f0 = R4(p);
+    eph.f0 = (long double)R4(p);
     p += 4;
     eph.iode = I4(p);
     p += 4;
-    eph.deln = R4(p) * SC2RAD;
+    eph.deln = (long double)R4(p) * SC2RAD;
     p += 4;
-    eph.M0 = R8(p);
+    eph.M0 = (long double)R8(p);
     p += 8;
-    eph.e = R8(p);
+    eph.e = (long double)R8(p);
     p += 8;
-    sqrtA = R8(p);
+    sqrtA = (long double)R8(p);
     p += 8;
-    eph.cic = R4(p);
+    eph.cic = (long double)R4(p);
     p += 4;
-    eph.crc = R4(p);
+    eph.crc = (long double)R4(p);
     p += 4;
-    eph.cis = R4(p);
+    eph.cis = (long double)R4(p);
     p += 4;
-    eph.crs = R4(p);
+    eph.crs = (long double)R4(p);
     p += 4;
-    eph.cuc = R4(p);
+    eph.cuc = (long double)R4(p);
     p += 4;
-    eph.cus = R4(p);
+    eph.cus = (long double)R4(p);
     p += 4;
-    eph.OMG0 = R8(p);
+    eph.OMG0 = (long double)R8(p);
     p += 8;
-    eph.omg = R8(p);
+    eph.omg = (long double)R8(p);
     p += 8;
-    eph.i0 = R8(p);
+    eph.i0 = (long double)R8(p);
     p += 8;
-    eph.OMGd = R4(p) * SC2RAD;
+    eph.OMGd = (long double)R4(p) * SC2RAD;
     p += 4;
-    eph.idot = R4(p) * SC2RAD;
+    eph.idot = (long double)R4(p) * SC2RAD;
     p += 4;
-    ura = R4(p) * 0.1;
+    ura = (long double)R4(p) * 0.1L;
     p += 4;
     eph.svh = U2(p);
     p += 2;
@@ -735,7 +736,7 @@ static int decode_bnx_01_06(raw_t *raw, uint8_t *buff, int len) {
   eph.toe = gpst2time(eph.week, eph.toes);
   eph.toc = gpst2time(eph.week, eph.toes);
   eph.ttr = adjweek(eph.toe, tow);
-  eph.fit = (flag & 0x01) ? 0.0 : 2.0; /* 0:2hr,1:>2hr */
+  eph.fit = (flag & 0x01) ? 0.0L : 2.0L; /* 0:2hr,1:>2hr */
   eph.sva = uraindex(ura);
   eph.code = 2; /* codes on L2 channel */
 
@@ -752,7 +753,7 @@ static int decode_bnx_01_06(raw_t *raw, uint8_t *buff, int len) {
 static int decode_bnx_01_07(raw_t *raw, uint8_t *buff, int len) {
   eph_t eph = {0};
   uint8_t *p = buff;
-  double tow, toc, sqrtA;
+  long double tow, toc, sqrtA;
   int prn, sat, flag, iodec;
 
   trace(4, "BINEX 0x01-07: len=%d\n", len);
@@ -768,41 +769,41 @@ static int decode_bnx_01_07(raw_t *raw, uint8_t *buff, int len) {
     p += 4;
     eph.toes = I4(p);
     p += 4;
-    eph.f2 = R4(p);
+    eph.f2 = (long double)R4(p);
     p += 4;
-    eph.f1 = R4(p);
+    eph.f1 = (long double)R4(p);
     p += 4;
-    eph.f0 = R4(p);
+    eph.f0 = (long double)R4(p);
     p += 4;
-    eph.deln = R4(p) * SC2RAD;
+    eph.deln = (long double)R4(p) * SC2RAD;
     p += 4;
-    eph.M0 = R8(p);
+    eph.M0 = (long double)R8(p);
     p += 8;
-    eph.e = R8(p);
+    eph.e = (long double)R8(p);
     p += 8;
-    sqrtA = R8(p);
+    sqrtA = (long double)R8(p);
     p += 8;
-    eph.cic = R4(p);
+    eph.cic = (long double)R4(p);
     p += 4;
-    eph.crc = R4(p);
+    eph.crc = (long double)R4(p);
     p += 4;
-    eph.cis = R4(p);
+    eph.cis = (long double)R4(p);
     p += 4;
-    eph.crs = R4(p);
+    eph.crs = (long double)R4(p);
     p += 4;
-    eph.cuc = R4(p);
+    eph.cuc = (long double)R4(p);
     p += 4;
-    eph.cus = R4(p);
+    eph.cus = (long double)R4(p);
     p += 4;
-    eph.OMG0 = R8(p);
+    eph.OMG0 = (long double)R8(p);
     p += 8;
-    eph.omg = R8(p);
+    eph.omg = (long double)R8(p);
     p += 8;
-    eph.i0 = R8(p);
+    eph.i0 = (long double)R8(p);
     p += 8;
-    eph.OMGd = R4(p) * SC2RAD;
+    eph.OMGd = (long double)R4(p) * SC2RAD;
     p += 4;
-    eph.idot = R4(p) * SC2RAD;
+    eph.idot = (long double)R4(p) * SC2RAD;
     p += 4;
     flag = U1(p);
     p += 1;
@@ -827,8 +828,8 @@ static int decode_bnx_01_07(raw_t *raw, uint8_t *buff, int len) {
 
   if (!strstr(raw->opt, "-EPHALL")) {
     if (raw->nav.eph[sat - 1][0].iode == eph.iode &&
-        fabs(timediff(raw->nav.eph[sat - 1][0].toe, eph.toe)) < 1.0 &&
-        fabs(timediff(raw->nav.eph[sat - 1][0].toc, eph.toc)) < 1.0)
+        fabsl(timediff(raw->nav.eph[sat - 1][0].toe, eph.toe)) < 1.0L &&
+        fabsl(timediff(raw->nav.eph[sat - 1][0].toc, eph.toc)) < 1.0L)
       return 0;
   }
   raw->nav.eph[sat - 1][0] = eph;
@@ -840,7 +841,7 @@ static int decode_bnx_01_07(raw_t *raw, uint8_t *buff, int len) {
 static int decode_bnx_01_14(raw_t *raw, uint8_t *buff, int len) {
   eph_t eph = {0};
   uint8_t *p = buff;
-  double tow, ura, sqrtA;
+  long double tow, ura, sqrtA;
   int prn, sat, tocs, set, eph_sel = 3;
 
   trace(4, "BINEX 0x01-14: len=%d\n", len);
@@ -859,49 +860,49 @@ static int decode_bnx_01_14(raw_t *raw, uint8_t *buff, int len) {
     p += 4;
     eph.toes = I4(p);
     p += 4;
-    eph.tgd[0] = R4(p);
+    eph.tgd[0] = (long double)R4(p);
     p += 4; /* BGD E5a/E1 */
-    eph.tgd[1] = R4(p);
+    eph.tgd[1] = (long double)R4(p);
     p += 4; /* BGD E5b/E1 */
     eph.iode = I4(p);
     p += 4; /* IODnav */
-    eph.f2 = R4(p);
+    eph.f2 = (long double)R4(p);
     p += 4;
-    eph.f1 = R4(p);
+    eph.f1 = (long double)R4(p);
     p += 4;
-    eph.f0 = R8(p);
+    eph.f0 = (long double)R8(p);
     p += 8;
-    eph.deln = R4(p) * SC2RAD;
+    eph.deln = (long double)R4(p) * SC2RAD;
     p += 4;
-    eph.M0 = R8(p);
+    eph.M0 = (long double)R8(p);
     p += 8;
-    eph.e = R8(p);
+    eph.e = (long double)R8(p);
     p += 8;
-    sqrtA = R8(p);
+    sqrtA = (long double)R8(p);
     p += 8;
-    eph.cic = R4(p);
+    eph.cic = (long double)R4(p);
     p += 4;
-    eph.crc = R4(p);
+    eph.crc = (long double)R4(p);
     p += 4;
-    eph.cis = R4(p);
+    eph.cis = (long double)R4(p);
     p += 4;
-    eph.crs = R4(p);
+    eph.crs = (long double)R4(p);
     p += 4;
-    eph.cuc = R4(p);
+    eph.cuc = (long double)R4(p);
     p += 4;
-    eph.cus = R4(p);
+    eph.cus = (long double)R4(p);
     p += 4;
-    eph.OMG0 = R8(p);
+    eph.OMG0 = (long double)R8(p);
     p += 8;
-    eph.omg = R8(p);
+    eph.omg = (long double)R8(p);
     p += 8;
-    eph.i0 = R8(p);
+    eph.i0 = (long double)R8(p);
     p += 8;
-    eph.OMGd = R4(p) * SC2RAD;
+    eph.OMGd = (long double)R4(p) * SC2RAD;
     p += 4;
-    eph.idot = R4(p) * SC2RAD;
+    eph.idot = (long double)R4(p) * SC2RAD;
     p += 4;
-    ura = R4(p);
+    ura = (long double)R4(p);
     p += 4;
     eph.svh = U2(p);
     p += 2;
@@ -924,11 +925,11 @@ static int decode_bnx_01_14(raw_t *raw, uint8_t *buff, int len) {
   eph.toe = gpst2time(eph.week, eph.toes);
   eph.toc = gpst2time(eph.week, tocs);
   eph.ttr = adjweek(eph.toe, tow);
-  eph.sva = ura < 0.0 ? (int)(-ura) - 1 : sisaindex(ura); /* SISA index */
+  eph.sva = ura < 0.0L ? (int)(-ura) - 1 : sisaindex(ura); /* SISA index */
   if (!strstr(raw->opt, "-EPHALL")) {
     if (raw->nav.eph[sat - 1][set].iode == eph.iode &&
-        fabs(timediff(raw->nav.eph[sat - 1][set].toe, eph.toe)) < 1.0 &&
-        fabs(timediff(raw->nav.eph[sat - 1][set].toc, eph.toc)) < 1.0) {
+        fabsl(timediff(raw->nav.eph[sat - 1][set].toe, eph.toe)) < 1.0L &&
+        fabsl(timediff(raw->nav.eph[sat - 1][set].toc, eph.toc)) < 1.0L) {
       return 0;
     }
   }
@@ -1060,7 +1061,7 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nob
       CODE_L9A, CODE_L9B, CODE_L9C, CODE_L9X                      /*  6- 9 */
   };
   const uint8_t *codes = NULL;
-  double range[8], phase[8], cnr[8], dopp[8] = {0}, acc, freq;
+  long double range[8], phase[8], cnr[8], dopp[8] = {0}, acc, freq;
   uint8_t *p = buff;
   uint8_t flag, flags[4];
   int i, j, k, sys, prn, fcn = -10, code[8], slip[8], pri[8], idx[8];
@@ -1114,32 +1115,32 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nob
         raw->nav.glo_fcn[prn - 1] = fcn + 8; /* fcn+8 */
       }
     }
-    acc = (flags[0] & 0x20) ? 0.0001 : 0.00002; /* phase accuracy */
+    acc = (flags[0] & 0x20) ? 0.0001L : 0.00002L; /* phase accuracy */
 
-    cnr[i] = U1(p++) * 0.4;
+    cnr[i] = U1(p++) * 0.4L;
 
     if (i == 0) {
-      cnr[i] += getbits(p, 0, 2) * 0.1;
-      range[i] = getbitu(p, 2, 32) * 0.064 + getbitu(p, 34, 6) * 0.001;
+      cnr[i] += getbits(p, 0, 2) * 0.1L;
+      range[i] = getbitu(p, 2, 32) * 0.064L + getbitu(p, 34, 6) * 0.001L;
       p += 5;
     } else if (flags[0] & 0x40) {
-      cnr[i] += getbits(p, 0, 2) * 0.1;
-      range[i] = range[0] + getbits(p, 4, 20) * 0.001;
+      cnr[i] += getbits(p, 0, 2) * 0.1L;
+      range[i] = range[0] + getbits(p, 4, 20) * 0.001L;
       p += 3;
     } else {
-      range[i] = range[0] + getbits(p, 0, 16) * 0.001;
+      range[i] = range[0] + getbits(p, 0, 16) * 0.001L;
       p += 2;
     }
     if (flags[0] & 0x40) {
       phase[i] = range[i] + getbits(p, 0, 24) * acc;
       p += 3;
     } else {
-      cnr[i] += getbits(p, 0, 2) * 0.1;
+      cnr[i] += getbits(p, 0, 2) * 0.1L;
       phase[i] = range[i] + getbits(p, 2, 22) * acc;
       p += 3;
     }
     if (flags[0] & 0x04) {
-      dopp[i] = getbits(p, 0, 24) / 256.0;
+      dopp[i] = getbits(p, 0, 24) / 256.0L;
       p += 3;
     }
     if (flags[0] & 0x08) {
@@ -1153,7 +1154,7 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nob
     }
     trace(5, "(%d) CODE=%2d S=%d F=%02X %02X %02X %02X\n", i + 1, code[i], slip[i], flags[0],
           flags[1], flags[2], flags[3]);
-    trace(5, "(%d) P=%13.3f L=%13.3f D=%7.1f SNR=%4.1f SCNT=%2d\n", i + 1, range[i], phase[i],
+    trace(5, "(%d) P=%13.3Lf L=%13.3Lf D=%7.1Lf SNR=%4.1Lf SCNT=%2d\n", i + 1, range[i], phase[i],
           dopp[i], cnr[i], slipcnt[i]);
   }
   if (!codes) {
@@ -1173,8 +1174,8 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nob
       if (idx[j] == i && (k < 0 || pri[j] > pri[k])) k = j;
     }
     if (k < 0) {
-      data->P[i] = data->L[i] = 0.0;
-      data->D[i] = 0.0f;
+      data->P[i] = data->L[i] = 0.0L;
+      data->D[i] = 0.0L;
       data->SNR[i] = data->LLI[i] = 0;
       data->code[i] = CODE_NONE;
     } else {
@@ -1182,7 +1183,7 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nob
       data->P[i] = range[k];
       data->L[i] = phase[k] * freq / CLIGHT;
       data->D[i] = dopp[k];
-      data->SNR[i] = (uint16_t)(cnr[k] / SNR_UNIT + 0.5);
+      data->SNR[i] = (uint16_t)(cnr[k] / SNR_UNIT + 0.5L);
       data->code[i] = codes[code[k]];
       data->LLI[i] = slip[k] ? 1 : 0;
       mask[k] = 1;
@@ -1193,8 +1194,8 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nob
       if (!mask[k]) break;
     }
     if (k >= nobs) {
-      data->P[i] = data->L[i] = 0.0;
-      data->D[i] = 0.0f;
+      data->P[i] = data->L[i] = 0.0L;
+      data->D[i] = 0.0L;
       data->SNR[i] = data->LLI[i] = 0;
       data->code[i] = CODE_NONE;
     } else {
@@ -1202,7 +1203,7 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nob
       data->P[i] = range[k];
       data->L[i] = phase[k] * freq / CLIGHT;
       data->D[i] = dopp[k];
-      data->SNR[i] = (uint16_t)(cnr[k] / SNR_UNIT + 0.5);
+      data->SNR[i] = (uint16_t)(cnr[k] / SNR_UNIT + 0.5L);
       data->code[i] = codes[code[k]];
       data->LLI[i] = slip[k] ? 1 : 0;
       mask[k] = 1;
@@ -1213,7 +1214,7 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nob
 /* decode BINEX mesaage 0x7f-05: Trimble NetR8 -------------------------------*/
 static int decode_bnx_7f_05(raw_t *raw, uint8_t *buff, int len) {
   obsd_t data = {{0}};
-  double clkoff = 0.0, toff[16] = {0};
+  long double clkoff = 0.0L, toff[16] = {0};
   uint8_t *p = buff;
   uint32_t flag;
   int i, nsat, nobs, prn, sys, sat, clkrst = 0, rsys = 0, nsys = 0, tsys[16] = {0};
@@ -1226,7 +1227,7 @@ static int decode_bnx_7f_05(raw_t *raw, uint8_t *buff, int len) {
 
   if (flag & 0x80) { /* rxclkoff */
     clkrst = getbitu(p, 0, 2);
-    clkoff = getbits(p, 2, 22) * 1E-9;
+    clkoff = getbits(p, 2, 22) * 1E-9L;
     p += 3;
   }
   if (flag & 0x40) { /* systime */
@@ -1234,7 +1235,7 @@ static int decode_bnx_7f_05(raw_t *raw, uint8_t *buff, int len) {
     rsys = getbitu(p, 4, 4);
     p++;
     for (i = 0; i < nsys; i++) {
-      toff[i] = getbits(p, 0, 24) * 1E-9;
+      toff[i] = getbits(p, 0, 24) * 1E-9L;
       tsys[i] = getbitu(p, 28, 4);
       p += 4;
     }
@@ -1292,7 +1293,7 @@ static int decode_bnx_7f_05(raw_t *raw, uint8_t *buff, int len) {
 }
 /* decode BINEX mesaage 0x7f: GNSS data prototyping --------------------------*/
 static int decode_bnx_7f(raw_t *raw, uint8_t *buff, int len) {
-  static const double gpst0[] = {1980, 1, 6, 0, 0, 0};
+  static const long double gpst0[] = {1980, 1, 6, 0, 0, 0};
   uint8_t *p = buff;
   uint32_t srec, min, msec;
 
@@ -1302,7 +1303,7 @@ static int decode_bnx_7f(raw_t *raw, uint8_t *buff, int len) {
   p += 4;
   msec = U2(p);
   p += 2;
-  raw->time = timeadd(epoch2time(gpst0), min * 60.0 + msec * 0.001);
+  raw->time = timeadd(epoch2time(gpst0), min * 60.0L + msec * 0.001L);
 
   if (raw->outtype) {
     char tstr[40];

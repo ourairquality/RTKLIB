@@ -53,9 +53,9 @@ static int is_stamsg(int msg) {
   return msg == 1005 || msg == 1006 || msg == 1007 || msg == 1008 || msg == 1033 || msg == 1230;
 }
 /* test time interval --------------------------------------------------------*/
-static bool is_tint(gtime_t time, double tint) {
-  if (tint <= 0.0) return true;
-  return fmod(time2gpst(time, NULL) + DTTOL, tint) <= 2.0 * DTTOL;
+static bool is_tint(gtime_t time, long double tint) {
+  if (tint <= 0.0L) return true;
+  return fmodl(time2gpst(time, NULL) + DTTOL, tint) <= 2.0L * DTTOL;
 }
 /* new stream converter --------------------------------------------------------
  * generate new stream converter
@@ -77,9 +77,9 @@ extern strconv_t *strconvnew(int itype, int otype, const char *msgs, int staid, 
   rtkstrcpy(buff, sizeof(buff), msgs);
   char *q;
   for (char *p = strtok_r(buff, ",", &q); p; p = strtok_r(NULL, ",", &q)) {
-    double tint = 0.0;
+    long double tint = 0.0L;
     int msg;
-    if (sscanf(p, "%d(%lf)", &msg, &tint) < 1) continue;
+    if (sscanf(p, "%d(%Lf)", &msg, &tint) < 1) continue;
     conv->msgs[conv->nmsg] = msg;
     conv->tint[conv->nmsg] = tint;
     conv->tick[conv->nmsg] = tickget();
@@ -291,7 +291,7 @@ static void write_obs(gtime_t time, stream_t *str, strconv_t *conv) {
 /* write nav data messages ---------------------------------------------------*/
 static void write_nav(gtime_t time, stream_t *str, strconv_t *conv) {
   for (int i = 0; i < conv->nmsg; i++) {
-    if (!is_navmsg(conv->msgs[i]) || conv->tint[i] > 0.0) continue;
+    if (!is_navmsg(conv->msgs[i]) || conv->tint[i] > 0.0L) continue;
 
     /* generate messages */
     if (conv->otype == STRFMT_RTCM2) {
@@ -375,10 +375,10 @@ static void write_nav_cycle(stream_t *str, strconv_t *conv) {
   uint32_t tick = tickget();
 
   for (int i = 0; i < conv->nmsg; i++) {
-    if (!is_navmsg(conv->msgs[i]) || conv->tint[i] <= 0.0) continue;
+    if (!is_navmsg(conv->msgs[i]) || conv->tint[i] <= 0.0L) continue;
 
     /* output cycle */
-    int tint = (int)(conv->tint[i] * 1000.0);
+    int tint = (int)(conv->tint[i] * 1000.0L);
     if ((int)(tick - conv->tick[i]) < tint) continue;
     conv->tick[i] = tick;
 
@@ -409,7 +409,7 @@ static void write_sta_cycle(stream_t *str, strconv_t *conv) {
     if (!is_stamsg(conv->msgs[i])) continue;
 
     /* output cycle */
-    int tint = conv->tint[i] == 0.0 ? 30000 : (int)(conv->tint[i] * 1000.0);
+    int tint = conv->tint[i] == 0.0L ? 30000 : (int)(conv->tint[i] * 1000.0L);
     if ((int)(tick - conv->tick[i]) < tint) continue;
     conv->tick[i] = tick;
 
@@ -579,7 +579,7 @@ extern void strsvrinit(strsvr_t *svr, int nout) {
   svr->relayback = 0;
   svr->npb = 0;
   for (int i = 0; i < 16; i++) *svr->cmds_periodic[i] = '\0';
-  for (int i = 0; i < 3; i++) svr->nmeapos[i] = 0.0;
+  for (int i = 0; i < 3; i++) svr->nmeapos[i] = 0.0L;
   svr->buff = svr->pbuf = NULL;
   svr->tick = 0;
   for (int i = 0; i < nout + 1 && i < 16; i++) strinit(svr->stream + i);
@@ -639,12 +639,12 @@ extern void strsvrinit(strsvr_t *svr, int nout) {
  *              cmds[2]= output stream 2 command
  *              cmds[3]= output stream 3 command
  *              ...
- *          double *nmeapos  I   nmea request position (ecef) (m) (NULL: no)
+ *          long double *nmeapos  I   nmea request position (ecef) (m) (NULL: no)
  * return : status (true:ok,false:error)
  *-----------------------------------------------------------------------------*/
 extern bool strsvrstart(strsvr_t *svr, const int *opts, const int *strs, const char **paths,
                         const char **logs, strconv_t **conv, const char **cmds,
-                        const char **cmds_periodic, const double *nmeapos) {
+                        const char **cmds_periodic, const long double *nmeapos) {
   tracet(3, "strsvrstart:\n");
 
   if (svr->state) return false;
@@ -659,7 +659,7 @@ extern bool strsvrstart(strsvr_t *svr, const int *opts, const int *strs, const c
   svr->buffsize = opts[3] < 4096 ? 4096 : opts[3];                 /* >=4096byte */
   svr->nmeacycle = 0 < opts[5] && opts[5] < 1000 ? 1000 : opts[5]; /* >=1s */
   svr->relayback = opts[7];
-  for (int i = 0; i < 3; i++) svr->nmeapos[i] = nmeapos ? nmeapos[i] : 0.0;
+  for (int i = 0; i < 3; i++) svr->nmeapos[i] = nmeapos ? nmeapos[i] : 0.0L;
   for (int i = 0; i < svr->nstr; i++) {
     rtkstrcpy(svr->cmds_periodic[i], sizeof(svr->cmds_periodic[0]),
               !cmds_periodic[i] ? "" : cmds_periodic[i]);

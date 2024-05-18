@@ -112,16 +112,16 @@ static uint8_t checksum(uint8_t *buff, int size) {
   return cs;
 }
 /* 8-bit week -> full week ---------------------------------------------------*/
-static void adj_utcweek(gtime_t time, double *utc) {
+static void adj_utcweek(gtime_t time, long double *utc) {
   int week;
 
-  if (utc[3] >= 256.0) return;
+  if (utc[3] >= 256.0L) return;
   time2gpst(time, &week);
   utc[3] += week / 256 * 256;
   if (utc[3] < week - 128)
-    utc[3] += 256.0;
+    utc[3] += 256.0L;
   else if (utc[3] > week + 128)
-    utc[3] -= 256.0;
+    utc[3] -= 256.0L;
 }
 /* GNSSId to system  ---------------------------------------------------------*/
 static int sky_sys(int gnssid) {
@@ -212,7 +212,7 @@ static int sky_sig(int sys, int signal_type) {
 /* decode skytraq measurement epoch (0xDC) -----------------------------------*/
 static int decode_stqtime(raw_t *raw) {
   uint8_t *p = raw->buff + 4;
-  double tow;
+  long double tow;
   int week;
 
   trace(4, "decode_stqtime: len=%d\n", raw->len);
@@ -220,11 +220,11 @@ static int decode_stqtime(raw_t *raw) {
   raw->iod = U1(p + 1);
   week = U2(p + 2);
   week = adjgpsweek(week);
-  tow = U4(p + 4) * 0.001;
+  tow = U4(p + 4) * 0.001L;
   raw->time = gpst2time(week, tow);
 
   if (raw->outtype) {
-    rtksnprintf(raw->msgtype, sizeof(raw->msgtype), "SKYTRAQ EPOCH (%4d): iod=%d week=%d tow=%.3f",
+    rtksnprintf(raw->msgtype, sizeof(raw->msgtype), "SKYTRAQ EPOCH (%4d): iod=%d week=%d tow=%.3Lf",
                 raw->len, raw->iod, week, tow);
   }
   return 0;
@@ -232,7 +232,7 @@ static int decode_stqtime(raw_t *raw) {
 /* decode skytraq raw measurement (0xDD) -------------------------------------*/
 static int decode_stqraw(raw_t *raw) {
   uint8_t *p = raw->buff + 4, ind;
-  double pr1, cp1;
+  long double pr1, cp1;
   int i, j, iod, prn, sys, sat, n = 0, nsat;
 
   trace(4, "decode_stqraw: len=%d\n", raw->len);
@@ -273,33 +273,33 @@ static int decode_stqraw(raw_t *raw) {
       continue;
     }
     ind = U1(p + 22);
-    pr1 = !(ind & 1) ? 0.0 : R8(p + 2);
-    cp1 = !(ind & 4) ? 0.0 : R8(p + 10);
-    cp1 -= floor((cp1 + 1E9) / 2E9) * 2E9; /* -10^9 < cp1 < 10^9 */
+    pr1 = !(ind & 1) ? 0.0L : (long double)R8(p + 2);
+    cp1 = !(ind & 4) ? 0.0L : (long double)R8(p + 10);
+    cp1 -= floorl((cp1 + 1E9L) / 2E9L) * 2E9L; /* -10^9 < cp1 < 10^9 */
 
     raw->obs.data[n].P[0] = pr1;
     raw->obs.data[n].L[0] = cp1;
-    raw->obs.data[n].D[0] = !(ind & 2) ? 0.0 : R4(p + 18);
-    raw->obs.data[n].SNR[0] = (uint16_t)(U1(p + 1) / SNR_UNIT + 0.5);
+    raw->obs.data[n].D[0] = !(ind & 2) ? 0.0L : (long double)R4(p + 18);
+    raw->obs.data[n].SNR[0] = (uint16_t)(U1(p + 1) / SNR_UNIT + 0.5L);
     raw->obs.data[n].LLI[0] = 0;
     raw->obs.data[n].code[0] = sys == SYS_CMP ? CODE_L2I : CODE_L1C;
 
     raw->lockt[sat - 1][0] = ind & 8 ? 1 : 0; /* cycle slip */
 
-    if (raw->obs.data[n].L[0] != 0.0) {
+    if (raw->obs.data[n].L[0] != 0.0L) {
       raw->obs.data[n].LLI[0] = (uint8_t)raw->lockt[sat - 1][0];
       raw->lockt[sat - 1][0] = 0;
     }
     /* receiver dependent options */
     if (strstr(raw->opt, "-INVCP")) {
-      raw->obs.data[n].L[0] *= -1.0;
+      raw->obs.data[n].L[0] *= -1.0L;
     }
     raw->obs.data[n].time = raw->time;
     raw->obs.data[n].sat = sat;
 
     for (j = 1; j < NFREQ + NEXOBS; j++) {
-      raw->obs.data[n].L[j] = raw->obs.data[n].P[j] = 0.0;
-      raw->obs.data[n].D[j] = 0.0;
+      raw->obs.data[n].L[j] = raw->obs.data[n].P[j] = 0.0L;
+      raw->obs.data[n].D[j] = 0.0L;
       raw->obs.data[n].SNR[j] = raw->obs.data[n].LLI[j] = 0;
       raw->obs.data[n].code[j] = CODE_NONE;
     }
@@ -311,7 +311,7 @@ static int decode_stqraw(raw_t *raw) {
 /* decode skytraq extended raw measurement data v.1 (0xE5) -------------------*/
 static int decode_stqrawx(raw_t *raw) {
   uint8_t *p = raw->buff + 4, ind;
-  double tow, peri, pr1, cp1;
+  long double tow, peri, pr1, cp1;
   int i, j, k, ver, week, nsat, sys, sig, prn, sat, n = 0, idx;
 
   trace(4, "decode_stqraw: len=%d\n", raw->len);
@@ -324,9 +324,9 @@ static int decode_stqrawx(raw_t *raw) {
   raw->iod = U1(p + 2);
   week = U2(p + 3);
   week = adjgpsweek(week);
-  tow = U4(p + 5) * 0.001;
+  tow = U4(p + 5) * 0.001L;
   raw->time = gpst2time(week, tow);
-  peri = U2(p + 9) * 0.001;
+  peri = U2(p + 9) * 0.001L;
   nsat = U1(p + 13);
   if (raw->len < 19 + 31 * nsat) {
     trace(2, "stq raw length error: len=%d nsat=%d\n", raw->len, nsat);
@@ -346,9 +346,9 @@ static int decode_stqrawx(raw_t *raw) {
       raw->nav.geph[prn - 1][0].frq = (int)(U1(p + 2) & 0xF) - 7;
     }
     ind = U2(p + 27);
-    pr1 = !(ind & 1) ? 0.0 : R8(p + 4);
-    cp1 = !(ind & 4) ? 0.0 : R8(p + 12);
-    cp1 -= floor((cp1 + 1E9) / 2E9) * 2E9; /* -10^9 < cp1 < 10^9 */
+    pr1 = !(ind & 1) ? 0.0L : (long double)R8(p + 4);
+    cp1 = !(ind & 4) ? 0.0L : (long double)R8(p + 12);
+    cp1 -= floorl((cp1 + 1E9L) / 2E9L) * 2E9L; /* -10^9 < cp1 < 10^9 */
 
     for (j = 0; j < n; j++) {
       if (raw->obs.data[j].sat == sat) break;
@@ -358,8 +358,8 @@ static int decode_stqrawx(raw_t *raw) {
       raw->obs.data[n].sat = sat;
       raw->obs.data[n].rcv = 0;
       for (k = 0; k < NFREQ + NEXOBS; k++) {
-        raw->obs.data[n].L[k] = raw->obs.data[n].P[k] = 0.0;
-        raw->obs.data[n].D[k] = 0.0;
+        raw->obs.data[n].L[k] = raw->obs.data[n].P[k] = 0.0L;
+        raw->obs.data[n].D[k] = 0.0L;
         raw->obs.data[n].SNR[k] = raw->obs.data[n].LLI[k] = 0;
         raw->obs.data[n].code[k] = CODE_NONE;
       }
@@ -367,20 +367,20 @@ static int decode_stqrawx(raw_t *raw) {
     }
     raw->obs.data[j].P[idx] = pr1;
     raw->obs.data[j].L[idx] = cp1;
-    raw->obs.data[j].D[idx] = !(ind & 2) ? 0.0 : R4(p + 20);
-    raw->obs.data[j].SNR[idx] = (uint16_t)(U1(p + 3) / SNR_UNIT + 0.5);
+    raw->obs.data[j].D[idx] = !(ind & 2) ? 0.0L : (long double)R4(p + 20);
+    raw->obs.data[j].SNR[idx] = (uint16_t)(U1(p + 3) / SNR_UNIT + 0.5L);
     raw->obs.data[j].LLI[idx] = 0;
     raw->obs.data[j].code[idx] = sig;
 
     raw->lockt[sat - 1][idx] = ind & 8 ? 1 : 0; /* cycle slip */
 
-    if (raw->obs.data[j].L[idx] != 0.0) {
+    if (raw->obs.data[j].L[idx] != 0.0L) {
       raw->obs.data[j].LLI[idx] = (uint8_t)raw->lockt[sat - 1][idx];
       raw->lockt[sat - 1][idx] = 0;
     }
     /* receiver dependent options */
     if (strstr(raw->opt, "-INVCP")) {
-      raw->obs.data[n].L[idx] *= -1.0;
+      raw->obs.data[n].L[idx] *= -1.0L;
     }
     raw->obs.data[n].time = raw->time;
     raw->obs.data[n].sat = sat;
@@ -393,7 +393,7 @@ static int decode_stqgene(raw_t *raw) {
   eph_t eph = {0};
   int i, j, prn, sat, sys;
   int part1, page1, part2, page2, type;
-  double ion[4] = {0}, utc[8] = {0};
+  long double ion[4] = {0}, utc[8] = {0};
   uint8_t *p = raw->buff + 4, buff[32], crc_buff[26] = {0};
 
   trace(4, "decode_stqgene: len=%d\n", raw->len);
@@ -462,8 +462,8 @@ static int decode_stqgene(raw_t *raw) {
 
   if (!strstr(raw->opt, "-EPHALL")) {
     if (eph.iode == raw->nav.eph[sat - 1][0].iode &&
-        timediff(eph.toe, raw->nav.eph[sat - 1][0].toe) == 0.0 &&
-        timediff(eph.toc, raw->nav.eph[sat - 1][0].toc) == 0.0)
+        timediff(eph.toe, raw->nav.eph[sat - 1][0].toe) == 0.0L &&
+        timediff(eph.toc, raw->nav.eph[sat - 1][0].toc) == 0.0L)
       return 0;
   }
   raw->nav.eph[sat - 1][0] = eph;
@@ -695,7 +695,7 @@ static int decode_stqbds(raw_t *raw) {
     if (!decode_bds_d2(raw->subfrm[sat - 1], &eph, NULL)) return 0;
   }
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (timediff(eph.toe, raw->nav.eph[sat - 1][0].toe) == 0.0) return 0; /* unchanged */
+    if (timediff(eph.toe, raw->nav.eph[sat - 1][0].toe) == 0.0L) return 0; /* unchanged */
   }
   eph.sat = sat;
   raw->nav.eph[sat - 1][0] = eph;

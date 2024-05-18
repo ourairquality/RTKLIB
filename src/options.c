@@ -36,8 +36,8 @@ static prcopt_t prcopt_;
 static solopt_t solopt_;
 static filopt_t filopt_;
 static int antpostype_[2];
-static double elmask_, elmaskar_, elmaskhold_;
-static double antpos_[2][3];
+static long double elmask_, elmaskar_, elmaskhold_;
+static long double antpos_[2][3];
 static char exsats_[1024];
 static char snrmask_[NFREQ][1024];
 
@@ -282,7 +282,7 @@ extern bool str2opt(opt_t *opt, const char *str) {
       *(int *)opt->var = atoi(str);
       break;
     case 1:
-      *(double *)opt->var = atof(str);
+      *(long double *)opt->var = strtold(str, NULL);
       break;
     case 2:
       if (strlen(str) + 1 > opt->vsize) return false;
@@ -311,7 +311,7 @@ extern void opt2str(const opt_t *opt, char *str, size_t size) {
       rtkcatprintf(str, size, "%d", *(int *)opt->var);
       break;
     case 1:
-      rtkcatprintf(str, size, "%.15g", *(double *)opt->var);
+      rtkcatprintf(str, size, "%.15Lg", *(long double *)opt->var);
       break;
     case 2:
       rtkcatprintf(str, size, "%s", (char *)opt->var);
@@ -420,11 +420,11 @@ static void buff2sysopts(void) {
 
   for (int i = 0; i < 2; i++) {
     int *ps = i == 0 ? &prcopt_.rovpos : &prcopt_.refpos;
-    double *rr = i == 0 ? prcopt_.ru : prcopt_.rb;
+    long double *rr = i == 0 ? prcopt_.ru : prcopt_.rb;
 
     if (antpostype_[i] == 0) { /* lat/lon/hgt */
       *ps = 0;
-      double pos[3];
+      long double pos[3];
       pos[0] = antpos_[i][0] * D2R;
       pos[1] = antpos_[i][1] * D2R;
       pos[2] = antpos_[i][2];
@@ -456,13 +456,13 @@ static void buff2sysopts(void) {
   }
   /* snrmask */
   for (int i = 0; i < NFREQ; i++) {
-    for (int j = 0; j < 9; j++) prcopt_.snrmask.mask[i][j] = 0.0;
+    for (int j = 0; j < 9; j++) prcopt_.snrmask.mask[i][j] = 0.0L;
     char buff[1024];
     rtkstrcpy(buff, sizeof(buff), snrmask_[i]);
     char *q;
     const char *p = strtok_r(buff, ",", &q);
     for (int j = 0; p && j < 9; p = strtok_r(NULL, ",", &q)) {
-      prcopt_.snrmask.mask[i][j++] = atof(p);
+      prcopt_.snrmask.mask[i][j++] = strtold(p, NULL);
     }
   }
   /* Guard number of frequencies */
@@ -485,11 +485,11 @@ static void sysopts2buff(void) {
 
   for (int i = 0; i < 2; i++) {
     const int *ps = i == 0 ? &prcopt_.rovpos : &prcopt_.refpos;
-    const double *rr = i == 0 ? prcopt_.ru : prcopt_.rb;
+    const long double *rr = i == 0 ? prcopt_.ru : prcopt_.rb;
 
     if (*ps == 0) {
       antpostype_[i] = 0;
-      double pos[3];
+      long double pos[3];
       ecef2pos(rr, pos);
       antpos_[i][0] = pos[0] * R2D;
       antpos_[i][1] = pos[1] * R2D;
@@ -511,7 +511,7 @@ static void sysopts2buff(void) {
   for (int i = 0; i < NFREQ; i++) {
     snrmask_[i][0] = '\0';
     for (int j = 0; j < 9; j++) {
-      rtkcatprintf(snrmask_[i], sizeof(snrmask_[i]), "%s%.0f", j > 0 ? "," : "",
+      rtkcatprintf(snrmask_[i], sizeof(snrmask_[i]), "%s%.0Lf", j > 0 ? "," : "",
                    prcopt_.snrmask.mask[i][j]);
     }
   }
@@ -540,12 +540,12 @@ extern void resetsysopts(void) {
   filopt_.solstat[0] = '\0';
   filopt_.trace[0] = '\0';
   for (int i = 0; i < 2; i++) antpostype_[i] = 0;
-  elmask_ = 15.0;
-  elmaskar_ = 0.0;
-  elmaskhold_ = 0.0;
+  elmask_ = 15.0L;
+  elmaskar_ = 0.0L;
+  elmaskhold_ = 0.0L;
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 3; j++) {
-      antpos_[i][j] = 0.0;
+      antpos_[i][j] = 0.0L;
     }
   exsats_[0] = '\0';
 }

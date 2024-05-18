@@ -158,9 +158,9 @@ typedef struct {             /* file control type */
   uint32_t tick_f;           /* start tick in file */
   long fpos_n;               /* next file position */
   uint32_t tick_n;           /* next tick */
-  double start;              /* start offset (s) */
-  double speed;              /* replay speed (time factor) */
-  double swapintv;           /* swap interval (hr) (0: no swap) */
+  long double start;         /* start offset (s) */
+  long double speed;         /* replay speed (time factor) */
+  long double swapintv;      /* swap interval (hr) (0: no swap) */
   rtklib_lock_t lock;        /* lock flag */
 } file_t;
 
@@ -617,7 +617,7 @@ static bool openfile_(file_t *file, gtime_t time, char *msg, size_t msize) {
 
     if (file->mode & STR_MODE_R) {
       char tagh[TIMETAGH_LEN + 1] = "";
-      double time_sec;
+      long double time_sec;
       uint32_t time_time;
       if (fread(&tagh, TIMETAGH_LEN, 1, file->fp_tag) == 1 &&
           fread(&time_time, sizeof(time_time), 1, file->fp_tag) == 1 &&
@@ -633,7 +633,7 @@ static bool openfile_(file_t *file, gtime_t time, char *msg, size_t msize) {
       timeset(gpst2utc(file->time));
     } else {
       char tagh[TIMETAGH_LEN + 1] = "";
-      double time_sec;
+      long double time_sec;
       uint32_t time_time;
       rtksnprintf(tagh, sizeof(tagh), "TIMETAG RTKLIB %s", VER_RTKLIB);
       memcpy(tagh + TIMETAGH_LEN - 4, &file->tick_f, sizeof(file->tick_f));
@@ -676,22 +676,22 @@ static file_t *openfile(const char *path, int mode, char *msg, size_t msize) {
   if (!(mode & (STR_MODE_R | STR_MODE_W))) return NULL;
 
   /* file options */
-  double speed = 1.0, start = 0.0, swapintv = 0.0;
+  long double speed = 1.0L, start = 0.0L, swapintv = 0.0L;
   int timetag = 0, size_fpos = 4;                               /* default 4B */
   for (char *p = (char *)path; (p = strstr(p, "::")); p += 2) { /* file options */
     if (*(p + 2) == 'T')
       timetag = 1;
     else if (*(p + 2) == '+')
-      sscanf(p + 2, "+%lf", &start);
+      sscanf(p + 2, "+%Lf", &start);
     else if (*(p + 2) == 'x')
-      sscanf(p + 2, "x%lf", &speed);
+      sscanf(p + 2, "x%Lf", &speed);
     else if (*(p + 2) == 'S')
-      sscanf(p + 2, "S=%lf", &swapintv);
+      sscanf(p + 2, "S=%Lf", &swapintv);
     else if (*(p + 2) == 'P')
       sscanf(p + 2, "P=%d", &size_fpos);
   }
-  if (start <= 0.0) start = 0.0;
-  if (swapintv <= 0.0) swapintv = 0.0;
+  if (start <= 0.0L) start = 0.0L;
+  if (swapintv <= 0.0L) swapintv = 0.0L;
 
   file_t *file = (file_t *)malloc(sizeof(file_t));
   if (!file) return NULL;
@@ -784,9 +784,9 @@ static int statexfile(const file_t *file, char *msg, size_t msize) {
   rtkcatprintf(msg, msize, "  wtime   = %s\n", tstr2);
   rtkcatprintf(msg, msize, "  tick    = %u\n", file->tick);
   rtkcatprintf(msg, msize, "  tick_f  = %u\n", file->tick_f);
-  rtkcatprintf(msg, msize, "  start   = %.3f\n", file->start);
-  rtkcatprintf(msg, msize, "  speed   = %.3f\n", file->speed);
-  rtkcatprintf(msg, msize, "  swapintv= %.3f\n", file->swapintv);
+  rtkcatprintf(msg, msize, "  start   = %.3Lf\n", file->start);
+  rtkcatprintf(msg, msize, "  speed   = %.3Lf\n", file->speed);
+  rtkcatprintf(msg, msize, "  swapintv= %.3Lf\n", file->swapintv);
   return state;
 }
 /* read file -----------------------------------------------------------------*/
@@ -816,7 +816,7 @@ static int readfile(file_t *file, uint8_t *buff, int nmax, char *msg, size_t msi
     if (file->repmode) { /* slave */
       t = (uint32_t)(tick_master + file->offset);
     } else { /* master */
-      t = (uint32_t)((tickget() - file->tick) * file->speed + file->start * 1000.0);
+      t = (uint32_t)((tickget() - file->tick) * file->speed + file->start * 1000.0L);
       tick_master = t;
     }
     /* seek time-tag file to get next tick and file position */
@@ -838,9 +838,9 @@ static int readfile(file_t *file, uint8_t *buff, int nmax, char *msg, size_t msi
     if (file->tick_n == (uint32_t)(-1)) {
       rtksnprintf(msg, msize, "end");
     } else {
-      rtksnprintf(msg, msize, "T%+.1fs", (int)t * 0.001);
-      file->wtime = timeadd(file->time, (int)t * 0.001);
-      timeset(timeadd(gpst2utc(file->time), (int)file->tick_n * 0.001));
+      rtksnprintf(msg, msize, "T%+.1Lfs", (int)t * 0.001L);
+      file->wtime = timeadd(file->time, (int)t * 0.001L);
+      timeset(timeadd(gpst2utc(file->time), (int)file->tick_n * 0.001L));
     }
     long n = file->fpos_n - ftell(file->fp);
     if (n < nmax) {
@@ -858,7 +858,7 @@ static int readfile(file_t *file, uint8_t *buff, int nmax, char *msg, size_t msi
   return nr;
 }
 /* write file ----------------------------------------------------------------*/
-static int writefile(file_t *file, uint8_t *buff, int n, char *msg, size_t msize) {
+static int writefile(file_t *file, const uint8_t *buff, int n, char *msg, size_t msize) {
   tracet(4, "writefile: fp=%d n=%d\n", file->fp, n);
 
   if (!file) return 0;
@@ -866,20 +866,20 @@ static int writefile(file_t *file, uint8_t *buff, int n, char *msg, size_t msize
   gtime_t wtime = utc2gpst(timeget()); /* write time in gpst */
 
   /* swap writing file */
-  if (file->swapintv > 0.0 && file->wtime.time != 0) {
-    double intv = file->swapintv * 3600.0;
+  if (file->swapintv > 0.0L && file->wtime.time != 0) {
+    long double intv = file->swapintv * 3600.0L;
     int week1;
-    double tow1 = time2gpst(file->wtime, &week1);
+    long double tow1 = time2gpst(file->wtime, &week1);
     int week2;
-    double tow2 = time2gpst(wtime, &week2);
-    tow2 += 604800.0 * (week2 - week1);
+    long double tow2 = time2gpst(wtime, &week2);
+    tow2 += 604800.0L * (week2 - week1);
 
     /* open new swap file */
-    if (floor((tow1 + fswapmargin) / intv) < floor((tow2 + fswapmargin) / intv)) {
+    if (floorl((tow1 + fswapmargin) / intv) < floorl((tow2 + fswapmargin) / intv)) {
       swapfile(file, timeadd(wtime, fswapmargin), msg, msize);
     }
     /* close old swap file */
-    if (floor((tow1 - fswapmargin) / intv) < floor((tow2 - fswapmargin) / intv)) {
+    if (floorl((tow1 - fswapmargin) / intv) < floorl((tow2 - fswapmargin) / intv)) {
       swapclose(file);
     }
   }
@@ -2182,16 +2182,16 @@ static gtime_t nextdltime(const int *topts, int stat) {
   /* current time (gpst) */
   gtime_t time = utc2gpst(timeget());
   int week;
-  double tow = time2gpst(time, &week);
+  long double tow = time2gpst(time, &week);
 
   /* next retry time */
   if (stat == 0 && topts[3] > 0) {
-    tow = (floor((tow - topts[2]) / topts[3]) + 1.0) * topts[3] + topts[2];
+    tow = (floorl((tow - topts[2]) / topts[3]) + 1.0L) * topts[3] + topts[2];
     return gpst2time(week, tow);
   }
   /* next interval time */
   int tint = topts[1] <= 0 ? 3600 : topts[1];
-  tow = (floor((tow - topts[2]) / tint) + 1.0) * tint + topts[2];
+  tow = (floorl((tow - topts[2]) / tint) + 1.0L) * tint + topts[2];
   time = gpst2time(week, tow);
 
   return time;
@@ -2315,7 +2315,7 @@ static ftp_t *openftp(const char *path, int type, char *msg, size_t msize) {
                 sizeof(ftp->user), ftp->passwd, sizeof(ftp->passwd), ftp->topts);
 
   /* set first download time */
-  ftp->tnext = timeadd(timeget(), 10.0);
+  ftp->tnext = timeadd(timeget(), 10.0L);
 
   return ftp;
 }
@@ -2331,7 +2331,7 @@ static int readftp(ftp_t *ftp, uint8_t *buff, int n, char *msg, size_t msize) {
 
   gtime_t time = utc2gpst(timeget());
 
-  if (timediff(time, ftp->tnext) < 0.0) { /* until download time? */
+  if (timediff(time, ftp->tnext) < 0.0L) { /* until download time? */
     return 0;
   }
   if (ftp->state <= 0) { /* ftp/http not executed? */
@@ -2809,7 +2809,7 @@ extern int strread(stream_t *stream, uint8_t *buff, int n) {
   }
   int tt = (int)(tick - stream->tick_i);
   if (tt >= tirate) {
-    stream->inr = (uint32_t)((double)((stream->inb - stream->inbt) * 8) / (tt * 0.001));
+    stream->inr = (uint32_t)((long double)((stream->inb - stream->inbt) * 8) / (tt * 0.001L));
     stream->tick_i = tick;
     stream->inbt = stream->inb;
   }
@@ -2877,7 +2877,7 @@ extern int strwrite(stream_t *stream, uint8_t *buff, int n) {
   }
   int tt = (int)(tick - stream->tick_o);
   if (tt > tirate) {
-    stream->outr = (uint32_t)((double)((stream->outb - stream->outbt) * 8) / (tt * 0.001));
+    stream->outr = (uint32_t)((long double)((stream->outb - stream->outbt) * 8) / (tt * 0.001L));
     stream->tick_o = tick;
     stream->outbt = stream->outb;
   }
@@ -3109,7 +3109,7 @@ extern gtime_t strgettime(stream_t *stream) {
  * return : none
  *-----------------------------------------------------------------------------*/
 extern void strsendnmea(stream_t *stream, const sol_t *sol) {
-  tracet(3, "strsendnmea: rr=%.3f %.3f %.3f\n", sol->rr[0], sol->rr[1], sol->rr[2]);
+  tracet(3, "strsendnmea: rr=%.3Lf %.3Lf %.3Lf\n", sol->rr[0], sol->rr[1], sol->rr[2]);
 
   uint8_t buff[1024];
   outnmea_gga((char *)buff, sizeof(buff), sol);

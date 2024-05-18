@@ -79,9 +79,9 @@ extern bool init_rtcm(rtcm_t *rtcm) {
   rtcm->sta.rectype[0] = rtcm->sta.recver[0] = rtcm->sta.recsno[0] = '\0';
   rtcm->sta.antsetup = rtcm->sta.itrf = rtcm->sta.deltype = 0;
   for (int i = 0; i < 3; i++) {
-    rtcm->sta.pos[i] = rtcm->sta.del[i] = 0.0;
+    rtcm->sta.pos[i] = rtcm->sta.del[i] = 0.0L;
   }
-  rtcm->sta.hgt = 0.0;
+  rtcm->sta.hgt = 0.0L;
   rtcm->dgps = NULL;
   for (int i = 0; i < MAXSAT; i++) {
     rtcm->ssr[i] = ssr0;
@@ -91,7 +91,7 @@ extern bool init_rtcm(rtcm_t *rtcm) {
   rtcm->obsflag = rtcm->ephsat = 0;
   for (int i = 0; i < MAXSAT; i++)
     for (int j = 0; j < NFREQ + NEXOBS; j++) {
-      rtcm->cp[i][j] = 0.0;
+      rtcm->cp[i][j] = 0.0L;
       rtcm->lock[i][j] = rtcm->loss[i][j] = 0;
       rtcm->lltime[i][j] = time0;
     }

@@ -49,14 +49,14 @@ static int read_shape_head(FILE *fp) {
   return I4_L(buff + 32);
 }
 /* initialize boundary -------------------------------------------------------*/
-static void init_bound(double *bound) {
-  bound[0] = PI / 2.0;
-  bound[1] = -PI / 2.0;
+static void init_bound(long double *bound) {
+  bound[0] = PI / 2.0L;
+  bound[1] = -PI / 2.0L;
   bound[2] = PI;
   bound[3] = -PI;
 }
 /* update boundary -----------------------------------------------------------*/
-static void update_bound(const double *pos, double *bound) {
+static void update_bound(const long double *pos, long double *bound) {
   if (pos[0] < bound[0]) bound[0] = pos[0];
   if (pos[0] > bound[1]) bound[1] = pos[0];
   if (pos[1] < bound[2]) bound[2] = pos[1];
@@ -73,14 +73,14 @@ static bool gis_add(gisd_t **p, int type, void *data) {
   return true;
 }
 /* read point data -----------------------------------------------------------*/
-static bool read_pnt(FILE *fp, double *bound, gisd_t **p) {
+static bool read_pnt(FILE *fp, long double *bound, gisd_t **p) {
   uint8_t buff[16];
   if (fread(buff, 16, 1, fp) != 1) {
     return false;
   }
   gis_pnt_t *pnt = (gis_pnt_t *)malloc(sizeof(gis_pnt_t));
   if (!pnt) return false;
-  double pos[3] = {0};
+  long double pos[3] = {0};
   pos[0] = D8_L(buff + 8) * D2R;
   pos[1] = D8_L(buff) * D2R;
   update_bound(pos, bound);
@@ -89,7 +89,7 @@ static bool read_pnt(FILE *fp, double *bound, gisd_t **p) {
   return gis_add(p, 1, pnt);
 }
 /* read multi-point data ------------------------------------------------------*/
-static bool read_mpnt(FILE *fp, double *bound, gisd_t **p) {
+static bool read_mpnt(FILE *fp, long double *bound, gisd_t **p) {
   uint8_t buff[36];
   if (fread(buff, 36, 1, fp) != 1) {
     return false;
@@ -103,7 +103,7 @@ static bool read_mpnt(FILE *fp, double *bound, gisd_t **p) {
   return true;
 }
 /* read polyline data ---------------------------------------------------------*/
-static bool read_poly(FILE *fp, double *bound, gisd_t **p) {
+static bool read_poly(FILE *fp, long double *bound, gisd_t **p) {
   uint8_t buff[40];
   if (fread(buff, 40, 1, fp) != 1) {
     return false;
@@ -127,7 +127,7 @@ static bool read_poly(FILE *fp, double *bound, gisd_t **p) {
       return false;
     }
 
-    if (!(poly->pos = (double *)malloc(sizeof(double) * nr * 3))) {
+    if (!(poly->pos = (long double *)malloc(sizeof(long double) * nr * 3))) {
       free(poly);
       free(part);
       return false;
@@ -142,7 +142,7 @@ static bool read_poly(FILE *fp, double *bound, gisd_t **p) {
         free(part);
         return false;
       }
-      double pos[3] = {0};
+      long double pos[3] = {0};
       pos[0] = D8_L(buff + 8) * D2R;
       pos[1] = D8_L(buff) * D2R;
       if (pos[0] < -1E16 || pos[1] < -1E16) {
@@ -165,7 +165,7 @@ static bool read_poly(FILE *fp, double *bound, gisd_t **p) {
   return true;
 }
 /* read polygon data ---------------------------------------------------------*/
-static bool read_polygon(FILE *fp, double *bound, gisd_t **p) {
+static bool read_polygon(FILE *fp, long double *bound, gisd_t **p) {
   uint8_t buff[40];
   if (fread(buff, 40, 1, fp) != 1) {
     return false;
@@ -189,7 +189,7 @@ static bool read_polygon(FILE *fp, double *bound, gisd_t **p) {
       free(part);
       return false;
     }
-    if (!(polygon->pos = (double *)malloc(sizeof(double) * nr * 3))) {
+    if (!(polygon->pos = (long double *)malloc(sizeof(long double) * nr * 3))) {
       free(polygon);
       free(part);
       return false;
@@ -204,10 +204,10 @@ static bool read_polygon(FILE *fp, double *bound, gisd_t **p) {
         free(part);
         return false;
       }
-      double pos[3] = {0};
+      long double pos[3] = {0};
       pos[0] = D8_L(buff + 8) * D2R;
       pos[1] = D8_L(buff) * D2R;
-      if (pos[0] < -1E16 || pos[1] < -1E16) {
+      if (pos[0] < -1E16L || pos[1] < -1E16L) {
         continue;
       }
       update_bound(pos, polygon->bound);
@@ -227,7 +227,7 @@ static bool read_polygon(FILE *fp, double *bound, gisd_t **p) {
   return true;
 }
 /* read shapefile records ----------------------------------------------------*/
-static bool gis_read_record(FILE *fp, FILE *fp_idx, int type, double *bound, gisd_t **data) {
+static bool gis_read_record(FILE *fp, FILE *fp_idx, int type, long double *bound, gisd_t **data) {
   uint8_t buff[16];
 
   for (int i = 0; fread(buff, 1, 8, fp_idx) == 8; i++) {

@@ -389,7 +389,7 @@ static const char *RetsvdataTable[] = {
 typedef struct {          /* RT17 information struct type */
   uint8_t *MessageBuffer; /* Message buffer */
   uint8_t *PacketBuffer;  /* Packet buffer */
-  double Tow;             /* Receive time of week */
+  long double Tow;        /* Receive time of week */
   uint32_t Flags;         /* Miscellaneous internal flag bits */
   uint32_t MessageBytes;  /* Number of bytes in message buffer */
   uint32_t MessageLength; /* Message length (bytes) */
@@ -423,14 +423,14 @@ static int DecodeRawdata(raw_t *Raw);
 static int DecodeRetsvdata(raw_t *Raw);
 static int DecodeType17(raw_t *Raw, uint32_t rif);
 static int DecodeType29(raw_t *Raw);
-static int GetWeek(raw_t *Raw, double tow);
+static int GetWeek(raw_t *Raw, long double tow);
 static int16_t ReadI2(uint8_t *p);
 static int32_t ReadI4(uint8_t *p);
 static float ReadR4(uint8_t *p);
 static double ReadR8(uint8_t *p);
 static uint16_t ReadU2(uint8_t *p);
 static uint32_t ReadU4(uint8_t *p);
-static void SetWeek(raw_t *Raw, int Week, double tow);
+static void SetWeek(raw_t *Raw, int Week, long double tow);
 static int SyncPacket(rt17_t *rt17, uint8_t Data);
 static void UnwrapRawdata(rt17_t *rt17, uint32_t *rif);
 static void UnwrapGenout(rt17_t *rt17);
@@ -784,7 +784,7 @@ static int DecodeBeidouEphemeris(raw_t *Raw) {
   uint8_t *p = rt17->PacketBuffer;
   int prn, sat, toc, tow;
   uint32_t Flags, toe;
-  double sqrtA;
+  long double sqrtA;
   eph_t eph = {0};
   tracet(3, "RT17: DecodeBeidouEphemeris(); Length=%d\n", rt17->PacketLength);
   if (rt17->PacketLength < 182) {
@@ -805,25 +805,25 @@ static int DecodeBeidouEphemeris(raw_t *Raw) {
   tow = I4(p + 12);        /* 012-015: TOW */
   toc = I4(p + 16);        /* 016-019: TOC (seconds) */
   toe = U4(p + 20);        /* 020-023: TOE (seconds) */
-  eph.tgd[0] = R8(p + 24); /* 024-031: TGD (seconds) */
-  eph.f2 = R8(p + 32);     /* 032-029: AF2 (seconds/seconds^2) */
-  eph.f1 = R8(p + 40);     /* 040-047: AF1 (seconds/seconds) */
-  eph.f0 = R8(p + 48);     /* 048-055: AF0 (seconds) */
-  eph.crs = R8(p + 56);    /* 056-063: CRS (meters) */
-  eph.deln = R8(p + 64);   /* 064-071: DELTA N (semi-circles/second) */
-  eph.M0 = R8(p + 72);     /* 072-079: M SUB 0 (semi-circles) */
-  eph.cuc = R8(p + 80);    /* 080-087: CUC (semi-circles) */
-  eph.e = R8(p + 88);      /* 088-095: ECCENTRICITY (dimensionless) */
-  eph.cus = R8(p + 96);    /* 096-103: CUS (semi-circles) */
-  sqrtA = R8(p + 104);     /* 104-111: SQRT A (meters ^ 0.5) */
-  eph.cic = R8(p + 112);   /* 112-119: CIC (semi-circles) */
-  eph.OMG0 = R8(p + 120);  /* 120-127: OMEGA SUB 0 (semi-circles) */
-  eph.cis = R8(p + 128);   /* 128-135: CIS (semi-circlces) */
-  eph.i0 = R8(p + 136);    /* 136-143: I SUB 0 (semi-circles) */
-  eph.crc = R8(p + 144);   /* 144-151: CRC (meters) */
-  eph.omg = R8(p + 152);   /* 152-159: OMEGA (semi-circles?) */
-  eph.OMGd = R8(p + 160);  /* 160-167: OMEGA DOT (semi-circles/second) */
-  eph.idot = R8(p + 168);  /* 168-175: I DOT (semi-circles/second) */
+  eph.tgd[0] = (long double)R8(p + 24); /* 024-031: TGD (seconds) */
+  eph.f2 = (long double)R8(p + 32);     /* 032-029: AF2 (seconds/seconds^2) */
+  eph.f1 = (long double)R8(p + 40);     /* 040-047: AF1 (seconds/seconds) */
+  eph.f0 = (long double)R8(p + 48);     /* 048-055: AF0 (seconds) */
+  eph.crs = (long double)R8(p + 56);    /* 056-063: CRS (meters) */
+  eph.deln = (long double)R8(p + 64);   /* 064-071: DELTA N (semi-circles/second) */
+  eph.M0 = (long double)R8(p + 72);     /* 072-079: M SUB 0 (semi-circles) */
+  eph.cuc = (long double)R8(p + 80);    /* 080-087: CUC (semi-circles) */
+  eph.e = (long double)R8(p + 88);      /* 088-095: ECCENTRICITY (dimensionless) */
+  eph.cus = (long double)R8(p + 96);    /* 096-103: CUS (semi-circles) */
+  sqrtA = (long double)R8(p + 104);     /* 104-111: SQRT A (meters ^ 0.5) */
+  eph.cic = (long double)R8(p + 112);   /* 112-119: CIC (semi-circles) */
+  eph.OMG0 = (long double)R8(p + 120);  /* 120-127: OMEGA SUB 0 (semi-circles) */
+  eph.cis = (long double)R8(p + 128);   /* 128-135: CIS (semi-circlces) */
+  eph.i0 = (long double)R8(p + 136);    /* 136-143: I SUB 0 (semi-circles) */
+  eph.crc = (long double)R8(p + 144);   /* 144-151: CRC (meters) */
+  eph.omg = (long double)R8(p + 152);   /* 152-159: OMEGA (semi-circles?) */
+  eph.OMGd = (long double)R8(p + 160);  /* 160-167: OMEGA DOT (semi-circles/second) */
+  eph.idot = (long double)R8(p + 168);  /* 168-175: I DOT (semi-circles/second) */
   Flags = U4(p + 176);     /* 176-179: FLAGS */
 
   /*
@@ -917,7 +917,7 @@ static int DecodeGalileoEphemeris(raw_t *Raw) {
   eph_t eph = {0};
   uint8_t SISA, MODEL1, MODEL2;
   uint16_t IODnav, HSDVS;
-  double BDG1, BDG2;
+  long double BDG1, BDG2;
   tracet(3, "RT17: DecodeGalileoEphemeris(); Length=%d\n", rt17->PacketLength);
   if (rt17->PacketLength < 190) {
     tracet(2, "RT17: RETSVDATA packet length %d < 190 bytes. Galileo ephemeris packet discarded.\n",
@@ -935,30 +935,30 @@ static int DecodeGalileoEphemeris(raw_t *Raw) {
   tow = I4(p + 9);        /* 008-012: TOW */
   IODnav = U2(p + 13);    /* 013-014: Ephemeris and clock correction issue of data */
   toe = U4(p + 15);       /* 015-018: TOE (seconds) */
-  eph.crs = R8(p + 19);   /* 019-026: CRS (meters) */
-  eph.deln = R8(p + 27);  /* 027-034: DELTA N (semi-circles/second) */
-  eph.M0 = R8(p + 35);    /* 035-042: M SUB 0 (semi-circles) */
-  eph.cuc = R8(p + 43);   /* 043-050: CUC (semi-circles) */
-  eph.e = R8(p + 51);     /* 051-058: ECCENTRICITY (dimensionless) */
-  eph.cus = R8(p + 59);   /* 059-066: CUS (semi-circles) */
-  sqrtA = R8(p + 67);     /* 067-074: SQRT A (meters ^ 0.5) */
-  eph.cic = R8(p + 75);   /* 075-082: CIC (semi-circles) */
-  eph.OMG0 = R8(p + 83);  /* 083-090: OMEGA SUB 0 (semi-circles) */
-  eph.cis = R8(p + 91);   /* 091-098: CIS (semi-circlces) */
-  eph.i0 = R8(p + 99);    /* 099-106: I SUB 0 (semi-circles) */
-  eph.crc = R8(p + 107);  /* 107-114: CRC (meters) */
-  eph.omg = R8(p + 115);  /* 115-122: OMEGA (semi-circles?) */
-  eph.OMGd = R8(p + 123); /* 123-130: OMEGA DOT (semi-circles/second) */
-  eph.idot = R8(p + 131); /* 131-138: I DOT (semi-circles/second) */
+  eph.crs = (long double)R8(p + 19);   /* 019-026: CRS (meters) */
+  eph.deln = (long double)R8(p + 27);  /* 027-034: DELTA N (semi-circles/second) */
+  eph.M0 = (long double)R8(p + 35);    /* 035-042: M SUB 0 (semi-circles) */
+  eph.cuc = (long double)R8(p + 43);   /* 043-050: CUC (semi-circles) */
+  eph.e = (long double)R8(p + 51);     /* 051-058: ECCENTRICITY (dimensionless) */
+  eph.cus = (long double)R8(p + 59);   /* 059-066: CUS (semi-circles) */
+  sqrtA = (long double)R8(p + 67);     /* 067-074: SQRT A (meters ^ 0.5) */
+  eph.cic = (long double)R8(p + 75);   /* 075-082: CIC (semi-circles) */
+  eph.OMG0 = (long double)R8(p + 83);  /* 083-090: OMEGA SUB 0 (semi-circles) */
+  eph.cis = (long double)R8(p + 91);   /* 091-098: CIS (semi-circlces) */
+  eph.i0 = (long double)R8(p + 99);    /* 099-106: I SUB 0 (semi-circles) */
+  eph.crc = (long double)R8(p + 107);  /* 107-114: CRC (meters) */
+  eph.omg = (long double)R8(p + 115);  /* 115-122: OMEGA (semi-circles?) */
+  eph.OMGd = (long double)R8(p + 123); /* 123-130: OMEGA DOT (semi-circles/second) */
+  eph.idot = (long double)R8(p + 131); /* 131-138: I DOT (semi-circles/second) */
   SISA = U1(p + 149);     /* 149-149: ? */
   HSDVS = U2(p + 150);    /* 150-151: Signal Health Flag */
   toc = I4(p + 142);      /* 142-145: TOC (seconds) */
-  eph.f0 = R8(p + 146);   /* 146-153: AF0 (seconds) */
-  eph.f1 = R8(p + 154);   /* 154-161: AF1 (seconds/seconds) */
-  eph.f2 = R8(p + 162);   /* 162-169: AF2 (seconds/seconds^2) */
-  BDG1 = R8(p + 170);     /* 170-177: Seconds */
+  eph.f0 = (long double)R8(p + 146);   /* 146-153: AF0 (seconds) */
+  eph.f1 = (long double)R8(p + 154);   /* 154-161: AF1 (seconds/seconds) */
+  eph.f2 = (long double)R8(p + 162);   /* 162-169: AF2 (seconds/seconds^2) */
+  BDG1 = (long double)R8(p + 170);     /* 170-177: Seconds */
   MODEL1 = U1(p + 178);   /* 178-178: Clock model for TOC/AF0?2/BGD1 */
-  BDG2 = R8(p + 179);     /* 179-186: Seconds */
+  BDG2 = (long double)R8(p + 179);     /* 179-186: Seconds */
   MODEL2 = U1(p + 187);   /* 187-187: Clock model for BGD2 */
   /*
   | Multiply these by PI to make semi-circle units into radian units for RTKLIB.
@@ -1028,7 +1028,7 @@ static int DecodeGPSEphemeris(raw_t *Raw) {
   uint8_t *p = rt17->PacketBuffer;
   int prn, sat, toc, tow;
   uint32_t Flags, toe;
-  double sqrtA;
+  long double sqrtA;
   eph_t eph = {0};
 
   tracet(3, "RT17: DecodeGPSEphemeris(); Length=%d\n", rt17->PacketLength);
@@ -1046,33 +1046,33 @@ static int DecodeGPSEphemeris(raw_t *Raw) {
     return -1;
   }
 
-  eph.week = U2(p + 6);    /* 006-007: Ephemeris Week number (weeks) */
-  eph.iodc = U2(p + 8);    /* 008-009: IODC */
-  /* Reserved byte */      /* 010-010: RESERVED */
-  eph.iode = U1(p + 11);   /* 011-011: IODE */
-  tow = I4(p + 12);        /* 012-015: TOW */
-  toc = I4(p + 16);        /* 016-019: TOC (seconds) */
-  toe = U4(p + 20);        /* 020-023: TOE (seconds) */
-  eph.tgd[0] = R8(p + 24); /* 024-031: TGD (seconds) */
-  eph.f2 = R8(p + 32);     /* 032-029: AF2 (seconds/seconds^2) */
-  eph.f1 = R8(p + 40);     /* 040-047: AF1 (seconds/seconds) */
-  eph.f0 = R8(p + 48);     /* 048-055: AF0 (seconds) */
-  eph.crs = R8(p + 56);    /* 056-063: CRS (meters) */
-  eph.deln = R8(p + 64);   /* 064-071: DELTA N (semi-circles/second) */
-  eph.M0 = R8(p + 72);     /* 072-079: M SUB 0 (semi-circles) */
-  eph.cuc = R8(p + 80);    /* 080-087: CUC (semi-circles) */
-  eph.e = R8(p + 88);      /* 088-095: ECCENTRICITY (dimensionless) */
-  eph.cus = R8(p + 96);    /* 096-103: CUS (semi-circles) */
-  sqrtA = R8(p + 104);     /* 104-111: SQRT A (meters ^ 0.5) */
-  eph.cic = R8(p + 112);   /* 112-119: CIC (semi-circles) */
-  eph.OMG0 = R8(p + 120);  /* 120-127: OMEGA SUB 0 (semi-circles) */
-  eph.cis = R8(p + 128);   /* 128-135: CIS (semi-circlces) */
-  eph.i0 = R8(p + 136);    /* 136-143: I SUB 0 (semi-circles) */
-  eph.crc = R8(p + 144);   /* 144-151: CRC (meters) */
-  eph.omg = R8(p + 152);   /* 152-159: OMEGA (semi-circles?) */
-  eph.OMGd = R8(p + 160);  /* 160-167: OMEGA DOT (semi-circles/second) */
-  eph.idot = R8(p + 168);  /* 168-175: I DOT (semi-circles/second) */
-  Flags = U4(p + 176);     /* 176-179: FLAGS */
+  eph.week = U2(p + 6);                 /* 006-007: Ephemeris Week number (weeks) */
+  eph.iodc = U2(p + 8);                 /* 008-009: IODC */
+  /* Reserved byte */                   /* 010-010: RESERVED */
+  eph.iode = U1(p + 11);                /* 011-011: IODE */
+  tow = I4(p + 12);                     /* 012-015: TOW */
+  toc = I4(p + 16);                     /* 016-019: TOC (seconds) */
+  toe = U4(p + 20);                     /* 020-023: TOE (seconds) */
+  eph.tgd[0] = (long double)R8(p + 24); /* 024-031: TGD (seconds) */
+  eph.f2 = (long double)R8(p + 32);     /* 032-029: AF2 (seconds/seconds^2) */
+  eph.f1 = (long double)R8(p + 40);     /* 040-047: AF1 (seconds/seconds) */
+  eph.f0 = (long double)R8(p + 48);     /* 048-055: AF0 (seconds) */
+  eph.crs = (long double)R8(p + 56);    /* 056-063: CRS (meters) */
+  eph.deln = (long double)R8(p + 64);   /* 064-071: DELTA N (semi-circles/second) */
+  eph.M0 = (long double)R8(p + 72);     /* 072-079: M SUB 0 (semi-circles) */
+  eph.cuc = (long double)R8(p + 80);    /* 080-087: CUC (semi-circles) */
+  eph.e = (long double)R8(p + 88);      /* 088-095: ECCENTRICITY (dimensionless) */
+  eph.cus = (long double)R8(p + 96);    /* 096-103: CUS (semi-circles) */
+  sqrtA = (long double)R8(p + 104);     /* 104-111: SQRT A (meters ^ 0.5) */
+  eph.cic = (long double)R8(p + 112);   /* 112-119: CIC (semi-circles) */
+  eph.OMG0 = (long double)R8(p + 120);  /* 120-127: OMEGA SUB 0 (semi-circles) */
+  eph.cis = (long double)R8(p + 128);   /* 128-135: CIS (semi-circlces) */
+  eph.i0 = (long double)R8(p + 136);    /* 136-143: I SUB 0 (semi-circles) */
+  eph.crc = (long double)R8(p + 144);   /* 144-151: CRC (meters) */
+  eph.omg = (long double)R8(p + 152);   /* 152-159: OMEGA (semi-circles?) */
+  eph.OMGd = (long double)R8(p + 160);  /* 160-167: OMEGA DOT (semi-circles/second) */
+  eph.idot = (long double)R8(p + 168);  /* 168-175: I DOT (semi-circles/second) */
+  Flags = U4(p + 176);                  /* 176-179: FLAGS */
 
   /*
   | Multiply these by PI to make ICD specified semi-circle units into radian
@@ -1235,7 +1235,7 @@ static int DecodeGSOF1(raw_t *Raw, uint8_t *p) {
     tracet(2, "RT17: GSOF Position Time message record length %d < 6 bytes. Record discarded.\n",
            p[1]);
   else
-    SetWeek(Raw, I2(p + 6), ((double)I4(p + 2)) * 0.001);
+    SetWeek(Raw, I2(p + 6), ((long double)I4(p + 2)) * 0.001L);
 
   return 0;
 }
@@ -1247,13 +1247,13 @@ static int DecodeGSOF3(raw_t *Raw, uint8_t *p) {
   if (p[1] < 24)
     tracet(2, "RT17: GSOF ECEF Position record length %d < 24 bytes. Record discarded.\n", p[1]);
   else {
-    sta->pos[0] = R8(p + 2);
-    sta->pos[1] = R8(p + 10);
-    sta->pos[2] = R8(p + 18);
-    sta->del[0] = 0.0;
-    sta->del[1] = 0.0;
-    sta->del[2] = 0.0;
-    sta->hgt = 0.0;
+    sta->pos[0] = (long double)R8(p + 2);
+    sta->pos[1] = (long double)R8(p + 10);
+    sta->pos[2] = (long double)R8(p + 18);
+    sta->del[0] = 0.0L;
+    sta->del[1] = 0.0L;
+    sta->del[2] = 0.0L;
+    sta->hgt = 0.0L;
     sta->deltype = 0; /* e/n/u */
   }
 
@@ -1277,7 +1277,7 @@ static int DecodeGSOF16(raw_t *Raw, uint8_t *p) {
     tracet(2, "RT17: GSOF Current Time message record length %d < 9 bytes. Record discarded.\n",
            p[1]);
   else if (U1(p + 10) & M_BIT0) /* If week and milliseconds of week are valid */
-    SetWeek(Raw, I2(p + 6), ((double)I4(p + 2)) * 0.001);
+    SetWeek(Raw, I2(p + 6), ((long double)I4(p + 2)) * 0.001L);
 
   return 0;
 }
@@ -1289,7 +1289,7 @@ static int DecodeGSOF26(raw_t *Raw, uint8_t *p) {
            "RT17: GSOF Position Time UTC message record length %d < 6 bytes. Record discarded.\n",
            p[1]);
   else
-    SetWeek(Raw, I2(p + 6), ((double)I4(p + 2)) * 0.001);
+    SetWeek(Raw, I2(p + 6), ((long double)I4(p + 2)) * 0.001L);
 
   return 0;
 }
@@ -1302,7 +1302,7 @@ static int DecodeGSOF41(raw_t *raw, uint8_t *p) {
            "Record discarded.\n",
            p[1]);
   else
-    SetWeek(raw, I2(p + 6), ((double)I4(p + 2)) * 0.001);
+    SetWeek(raw, I2(p + 6), ((long double)I4(p + 2)) * 0.001L);
 
   return 0;
 }
@@ -1323,8 +1323,8 @@ static int DecodeIONAndUTCData(raw_t *Raw) {
   int week;
   uint8_t *p = rt17->PacketBuffer;
   nav_t *nav = &Raw->nav;
-  double *ion_gps = nav->ion_gps;
-  double *utc_gps = nav->utc_gps;
+  long double *ion_gps = nav->ion_gps;
+  long double *utc_gps = nav->utc_gps;
 
   tracet(3, "RT17: DecodeIONAndUTCData, Length=%d.\n", rt17->PacketLength);
 
@@ -1336,27 +1336,27 @@ static int DecodeIONAndUTCData(raw_t *Raw) {
   }
 
   /* ION / UTC data does not have the current GPS week number. Punt! */
-  week = GetWeek(Raw, 0.0);
+  week = GetWeek(Raw, 0.0L);
 
-  ion_gps[0] = R8(p + 6);  /* 006-013: ALPHA 0 (seconds) */
-  ion_gps[1] = R8(p + 14); /* 014-021: ALPHA 1 (seconds/semi-circle) */
-  ion_gps[2] = R8(p + 22); /* 022-029: ALPHA 2 (seconds/semi-circle)^2 */
-  ion_gps[3] = R8(p + 30); /* 030-037: ALPHA 3 (seconds/semi-circle)^3 */
-  ion_gps[4] = R8(p + 38); /* 038-045: BETA 0  (seconds) */
-  ion_gps[5] = R8(p + 46); /* 046-053: BETA 1  (seconds/semi-circle) */
-  ion_gps[6] = R8(p + 54); /* 054-061: BETA 2  (seconds/semi-circle)^2 */
-  ion_gps[7] = R8(p + 62); /* 062-069: BETA 3  (seconds/semi-circle)^3 */
-  utc_gps[0] = R8(p + 70); /* 070-077: ASUB0   (seconds)*/
-  utc_gps[1] = R8(p + 78); /* 078-085: ASUB1   (seconds/seconds) */
-  utc_gps[2] = R8(p + 86); /* 086-093: TSUB0T */
+  ion_gps[0] = (long double)R8(p + 6);  /* 006-013: ALPHA 0 (seconds) */
+  ion_gps[1] = (long double)R8(p + 14); /* 014-021: ALPHA 1 (seconds/semi-circle) */
+  ion_gps[2] = (long double)R8(p + 22); /* 022-029: ALPHA 2 (seconds/semi-circle)^2 */
+  ion_gps[3] = (long double)R8(p + 30); /* 030-037: ALPHA 3 (seconds/semi-circle)^3 */
+  ion_gps[4] = (long double)R8(p + 38); /* 038-045: BETA 0  (seconds) */
+  ion_gps[5] = (long double)R8(p + 46); /* 046-053: BETA 1  (seconds/semi-circle) */
+  ion_gps[6] = (long double)R8(p + 54); /* 054-061: BETA 2  (seconds/semi-circle)^2 */
+  ion_gps[7] = (long double)R8(p + 62); /* 062-069: BETA 3  (seconds/semi-circle)^3 */
+  utc_gps[0] = (long double)R8(p + 70); /* 070-077: ASUB0   (seconds)*/
+  utc_gps[1] = (long double)R8(p + 78); /* 078-085: ASUB1   (seconds/seconds) */
+  utc_gps[2] = (long double)R8(p + 86); /* 086-093: TSUB0T */
   utc_gps[3] = week;
-  utc_gps[4] = R8(p + 94);  /* 094-101: DELTATLS (seconds) */
-  /* Unused by RTKLIB R8 */ /* 102-109: DELTATLSF */
-  /* Unused by RTKLIB R8 */ /* 110-117: IONTIME */
-  /* Unused by RTKLIB U1 */ /* 118-118: WNSUBT */
-  /* Unused by RTKLIB U1 */ /* 119-119: WNSUBLSF */
-  /* Unused by RTKLIB U1 */ /* 120-120: DN */
-  /* Reserved six bytes */  /* 121-126: RESERVED */
+  utc_gps[4] = (long double)R8(p + 94); /* 094-101: DELTATLS (seconds) */
+  /* Unused by RTKLIB R8 */             /* 102-109: DELTATLSF */
+  /* Unused by RTKLIB R8 */             /* 110-117: IONTIME */
+  /* Unused by RTKLIB U1 */             /* 118-118: WNSUBT */
+  /* Unused by RTKLIB U1 */             /* 119-119: WNSUBLSF */
+  /* Unused by RTKLIB U1 */             /* 120-120: DN */
+  /* Reserved six bytes */              /* 121-126: RESERVED */
 
   return 9;
 }
@@ -1380,7 +1380,7 @@ static int DecodeQZSSEphemeris(raw_t *Raw) {
   uint8_t *p = rt17->PacketBuffer;
   int prn, sat, toc, tow;
   uint32_t Flags, toe;
-  double sqrtA;
+  long double sqrtA;
   eph_t eph = {0};
   tracet(3, "RT17: DecodeQZSSEphemeris(); Length=%d\n", rt17->PacketLength);
   if (rt17->PacketLength < 184) {
@@ -1402,25 +1402,25 @@ static int DecodeQZSSEphemeris(raw_t *Raw) {
   tow = I4(p + 14);        /* 014-017: TOW */
   toc = I4(p + 18);        /* 018-021: TOC (seconds) */
   toe = U4(p + 22);        /* 022-025: TOE (seconds) */
-  eph.tgd[0] = R8(p + 26); /* 026-033: TGD (seconds) */
-  eph.f2 = R8(p + 34);     /* 034-041: AF2 (seconds/seconds^2) */
-  eph.f1 = R8(p + 42);     /* 042-049: AF1 (seconds/seconds) */
-  eph.f0 = R8(p + 50);     /* 050-057: AF0 (seconds) */
-  eph.crs = R8(p + 58);    /* 058-065: CRS (meters) */
-  eph.deln = R8(p + 66);   /* 066-073: DELTA N (semi-circles/second) */
-  eph.M0 = R8(p + 74);     /* 074-081: M SUB 0 (semi-circles) */
-  eph.cuc = R8(p + 82);    /* 082-089: CUC (semi-circles) */
-  eph.e = R8(p + 90);      /* 090-097: ECCENTRICITY (dimensionless) */
-  eph.cus = R8(p + 98);    /* 098-105: CUS (semi-circles) */
-  sqrtA = R8(p + 106);     /* 106-113: SQRT A (meters ^ 0.5) */
-  eph.cic = R8(p + 114);   /* 114-121: CIC (semi-circles) */
-  eph.OMG0 = R8(p + 122);  /* 122-129: OMEGA SUB 0 (semi-circles) */
-  eph.cis = R8(p + 130);   /* 130-137: CIS (semi-circlces) */
-  eph.i0 = R8(p + 138);    /* 138-145: I SUB 0 (semi-circles) */
-  eph.crc = R8(p + 146);   /* 146-153: CRC (meters) */
-  eph.omg = R8(p + 154);   /* 154-161: OMEGA (semi-circles?) */
-  eph.OMGd = R8(p + 162);  /* 162-169: OMEGA DOT (semi-circles/second) */
-  eph.idot = R8(p + 170);  /* 170-177: I DOT (semi-circles/second) */
+  eph.tgd[0] = (long double)R8(p + 26); /* 026-033: TGD (seconds) */
+  eph.f2 = (long double)R8(p + 34);     /* 034-041: AF2 (seconds/seconds^2) */
+  eph.f1 = (long double)R8(p + 42);     /* 042-049: AF1 (seconds/seconds) */
+  eph.f0 = (long double)R8(p + 50);     /* 050-057: AF0 (seconds) */
+  eph.crs = (long double)R8(p + 58);    /* 058-065: CRS (meters) */
+  eph.deln = (long double)R8(p + 66);   /* 066-073: DELTA N (semi-circles/second) */
+  eph.M0 = (long double)R8(p + 74);     /* 074-081: M SUB 0 (semi-circles) */
+  eph.cuc = (long double)R8(p + 82);    /* 082-089: CUC (semi-circles) */
+  eph.e = (long double)R8(p + 90);      /* 090-097: ECCENTRICITY (dimensionless) */
+  eph.cus = (long double)R8(p + 98);    /* 098-105: CUS (semi-circles) */
+  sqrtA = (long double)R8(p + 106);     /* 106-113: SQRT A (meters ^ 0.5) */
+  eph.cic = (long double)R8(p + 114);   /* 114-121: CIC (semi-circles) */
+  eph.OMG0 = (long double)R8(p + 122);  /* 122-129: OMEGA SUB 0 (semi-circles) */
+  eph.cis = (long double)R8(p + 130);   /* 130-137: CIS (semi-circlces) */
+  eph.i0 = (long double)R8(p + 138);    /* 138-145: I SUB 0 (semi-circles) */
+  eph.crc = (long double)R8(p + 146);   /* 146-153: CRC (meters) */
+  eph.omg = (long double)R8(p + 154);   /* 154-161: OMEGA (semi-circles?) */
+  eph.OMGd = (long double)R8(p + 162);  /* 162-169: OMEGA DOT (semi-circles/second) */
+  eph.idot = (long double)R8(p + 170);  /* 170-177: I DOT (semi-circles/second) */
   Flags = U4(p + 178);     /* 178-181: FLAGS */
 
   /*
@@ -1605,14 +1605,14 @@ static int DecodeRetsvdata(raw_t *Raw) {
 static int DecodeType17(raw_t *Raw, uint32_t rif) {
   rt17_t *rt17 = (rt17_t *)Raw->rcv_data;
   uint8_t *p = rt17->MessageBuffer;
-  double ClockOffset, tow;
+  long double ClockOffset, tow;
   int Flags1, Flags2, FlagStatus, i, n, nsat, prn, Week;
   gtime_t Time;
   obsd_t *obs;
 
-  tow = R8(p) * 0.001;
+  tow = (long double)R8(p) * 0.001L;
   p += 8; /* Receive time within the current GPS week. */
-  ClockOffset = R8(p) * 0.001;
+  ClockOffset = (long double)R8(p) * 0.001L;
   p += 8; /* Clock offset value. 0.0 = not known */
 
 #if 0
@@ -1649,36 +1649,36 @@ static int DecodeType17(raw_t *Raw, uint32_t rif) {
       if (Flags1 & M_BIT6) /* L1 data valid */
       {
         /* Measure of L1 signal strength (dB * 4) */
-        obs->SNR[0] = (uint16_t)(U1(p) * 0.25 / SNR_UNIT + 0.5);
+        obs->SNR[0] = (uint16_t)(U1(p) * 0.25L / SNR_UNIT + 0.5L);
         p++;
 
         /* Full L1 C/A code or P-code pseudorange (meters) */
-        obs->P[0] = R8(p);
+        obs->P[0] = (long double)R8(p);
         p += 8;
 
         /*  L1 Continuous Phase (cycles) */
         if (Flags1 & M_BIT4) /* L1 phase valid */
-          obs->L[0] = -R8(p);
+          obs->L[0] = -(long double)R8(p);
         p += 8;
 
         /* L1 Doppler (Hz) */
-        obs->D[0] = R4(p);
+        obs->D[0] = (long double)R4(p);
         p += 4;
       }
 
       if (Flags1 & M_BIT0) /* L2 data loaded */
       {
         /* Measure of L2 signal strength (dB * 4) */
-        obs->SNR[1] = (uint16_t)(U1(p) * 0.25 / SNR_UNIT + 0.5);
+        obs->SNR[1] = (uint16_t)(U1(p) * 0.25L / SNR_UNIT + 0.5L);
         p++;
 
         /* L2 Continuous Phase (cycles) */
-        if (Flags1 & M_BIT5) obs->L[1] = -R8(p);
+        if (Flags1 & M_BIT5) obs->L[1] = -(long double)R8(p);
         p += 8;
 
         /* L2 P-Code or L2 Encrypted Code */
         if (Flags1 & M_BIT5) /* L2 range valid */
-          obs->P[1] = obs->P[0] + R4(p);
+          obs->P[1] = obs->P[0] + (long double)R4(p);
         p += 4;
       }
 
@@ -1725,20 +1725,20 @@ static int DecodeType17(raw_t *Raw, uint32_t rif) {
       if (Flags1 & M_BIT6) /* L1 data valid */
       {
         /* Measure of satellite signal strength (dB) */
-        obs->SNR[0] = (uint16_t)(R8(p) / SNR_UNIT + 0.5);
+        obs->SNR[0] = (uint16_t)((long double)R8(p) / SNR_UNIT + 0.5L);
         p += 8;
 
         /* Full L1 C/A code or P-code pseudorange (meters) */
-        obs->P[0] = R8(p);
+        obs->P[0] = (long double)R8(p);
         p += 8;
 
         /* L1 Continuous Phase (cycles) */
         if (Flags1 & M_BIT4) /* L1 phase valid */
-          obs->L[0] = -R8(p);
+          obs->L[0] = -(long double)R8(p);
         p += 8;
 
         /* L1 Doppler (Hz) */
-        obs->D[0] = R8(p);
+        obs->D[0] = (long double)R8(p);
         p += 8;
 
         /* Reserved 8 bytes */
@@ -1748,17 +1748,17 @@ static int DecodeType17(raw_t *Raw, uint32_t rif) {
       if (Flags1 & M_BIT0) /* L2 data loaded */
       {
         /* Measure of L2 signal strength (dB) */
-        obs->SNR[1] = (uint16_t)(R8(p) / SNR_UNIT + 0.5);
+        obs->SNR[1] = (uint16_t)((long double)R8(p) / SNR_UNIT + 0.5L);
         p += 8;
 
         /* L2 Continuous Phase (cycles) */
         if (Flags1 & M_BIT5) /* L2 phase valid */
-          obs->L[1] = -R8(p);
+          obs->L[1] = -(long double)R8(p);
         p += 8;
 
         /* L2 P-Code or L2 Encrypted Code */
         if (Flags1 & M_BIT5) /* L2 pseudorange valid */
-          obs->P[1] = obs->P[0] + R8(p);
+          obs->P[1] = obs->P[0] + (long double)R8(p);
         p += 8;
       }
 
@@ -1773,21 +1773,21 @@ static int DecodeType17(raw_t *Raw, uint32_t rif) {
         p++; /* U1 Reserved byte */
 
         /* L2 Doppler (Hz) */
-        obs->D[1] = R8(p);
+        obs->D[1] = (long double)R8(p);
         p += 8;
       }
     }
 
-    obs->code[0] = (obs->P[0] == 0.0) ? CODE_NONE : (Flags2 & M_BIT0) ? CODE_L1P : CODE_L1C;
-    obs->code[1] = (obs->P[1] == 0.0)  ? CODE_NONE
+    obs->code[0] = (obs->P[0] == 0.0L) ? CODE_NONE : (Flags2 & M_BIT0) ? CODE_L1P : CODE_L1C;
+    obs->code[1] = (obs->P[1] == 0.0L) ? CODE_NONE
                    : (Flags2 & M_BIT2) ? CODE_L2W
                    : (Flags2 & M_BIT1) ? CODE_L2P
                                        : CODE_L2C;
 
     if (Flags1 & M_BIT1) obs->LLI[0] |= 1; /* L1 cycle slip */
 
-    if (Flags1 & M_BIT2) obs->LLI[1] |= 1;                         /* L2 cycle slip */
-    if ((Flags2 & M_BIT2) && (obs->P[1] != 0.0)) obs->LLI[1] |= 4; /* Tracking encrypted code */
+    if (Flags1 & M_BIT2) obs->LLI[1] |= 1;                          /* L2 cycle slip */
+    if ((Flags2 & M_BIT2) && (obs->P[1] != 0.0L)) obs->LLI[1] |= 4; /* Tracking encrypted code */
 
     if (!(obs->sat = satno(SYS_GPS, prn))) {
       tracet(2, "RT17: Satellite number error, PRN=%d.\n", prn);
@@ -1796,7 +1796,7 @@ static int DecodeType17(raw_t *Raw, uint32_t rif) {
 
 #if 0
     /* Apply clock offset to observables */
-    if (ClockOffset != 0.0) {
+    if (ClockOffset != 0.0L) {
       obs->P[0] += ClockOffset * (CLIGHT / FREQL1);
       obs->P[1] += ClockOffset * (CLIGHT / FREQL2);
       obs->L[0] += ClockOffset * FREQL1;
@@ -1826,7 +1826,7 @@ static int DecodeType29(raw_t *Raw) {
     tracet(2, "RT17: Enhanced Position record block #1 length %d < 7 bytes. Record discarded.\n",
            *p);
   else
-    SetWeek(Raw, I2(p + 1), ((double)I4(p + 3)) * 0.001);
+    SetWeek(Raw, I2(p + 1), ((long double)I4(p + 3)) * 0.001L);
 
   return 0;
 }
@@ -1840,7 +1840,7 @@ static int DecodeType29(raw_t *Raw) {
 | Week rollover and increment from the initial week and
 | subsequent weeks is handled.
 */
-static int GetWeek(raw_t *Raw, double Tow) {
+static int GetWeek(raw_t *Raw, long double Tow) {
   rt17_t *rt17 = (rt17_t *)Raw->rcv_data;
   int Week = 0;
 
@@ -1850,7 +1850,7 @@ static int GetWeek(raw_t *Raw, double Tow) {
       rt17->Week++;
     }
 
-    if (Tow != 0.0) rt17->Tow = Tow;
+    if (Tow != 0.0L) rt17->Tow = Tow;
   } else if (!(rt17->Flags & M_WEEK_SCAN)) {
     char *opt = strstr(Raw->opt, "-WEEK=");
 
@@ -1870,11 +1870,11 @@ static int GetWeek(raw_t *Raw, double Tow) {
   Week = rt17->Week;
 
   if (!Week && !(rt17->Flags & (M_WEEK_OPTION | M_WEEK_EPH))) {
-    if ((Raw->time.time == 0) && (Raw->time.sec == 0.0)) Raw->time = timeget();
+    if ((Raw->time.time == 0) && (Raw->time.sec == 0.0L)) Raw->time = timeget();
 
     time2gpst(Raw->time, &Week);
 
-    if (Tow != 0.0) Raw->time = gpst2time(Week, Tow);
+    if (Tow != 0.0L) Raw->time = gpst2time(Week, Tow);
 
     rt17->Week = Week;
     rt17->Flags |= M_WEEK_TIME;
@@ -2019,7 +2019,7 @@ static uint32_t ReadU4(uint8_t *p) {
 |
 | The -WEEK=n initial week option overrides us.
 */
-static void SetWeek(raw_t *Raw, int Week, double Tow) {
+static void SetWeek(raw_t *Raw, int Week, long double Tow) {
   rt17_t *rt17 = (rt17_t *)Raw->rcv_data;
 
   if (!(rt17->Flags & M_WEEK_OPTION)) {
@@ -2037,7 +2037,7 @@ static void SetWeek(raw_t *Raw, int Week, double Tow) {
   }
 
   /* Also update the time if we can */
-  if (Week && (Tow != 0.0)) Raw->time = gpst2time(Week, Tow);
+  if (Week && (Tow != 0.0L)) Raw->time = gpst2time(Week, Tow);
 }
 
 /* SyncPacket - Synchronize the raw data stream to the start of a series of RT-17 packets */

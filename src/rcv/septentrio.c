@@ -173,8 +173,8 @@ static void init_obsd(gtime_t time, int sat, obsd_t *data) {
   data->sat = (uint8_t)sat;
 
   for (i = 0; i < NFREQ + NEXOBS; i++) {
-    data->L[i] = data->P[i] = 0.0;
-    data->D[i] = 0.0f;
+    data->L[i] = data->P[i] = 0.0L;
+    data->D[i] = 0.0L;
     data->SNR[i] = (uint16_t)0;
     data->LLI[i] = (uint8_t)0;
     data->code[i] = CODE_NONE;
@@ -183,7 +183,7 @@ static void init_obsd(gtime_t time, int sat, obsd_t *data) {
 /* decode SBF GNSS measurements ----------------------------------------------*/
 static int decode_measepoch(raw_t *raw) {
   uint8_t *p = raw->buff + 14, code;
-  double P1, P2, L1, L2, D1, D2, S1, S2, freq1, freq2;
+  long double P1, P2, L1, L2, D1, D2, S1, S2, freq1, freq2;
   int i, j, idx, n, n1, n2, len1, len2, sig, ant, svid, info, sat, sys, lock, fcn, LLI;
   int ant_sel = 0; /* antenna selection (0:main) */
 
@@ -235,29 +235,29 @@ static int decode_measepoch(raw_t *raw) {
       continue;
     }
     init_obsd(raw->time, sat, raw->obs.data + n);
-    P1 = D1 = 0.0;
+    P1 = D1 = 0.0L;
     sys = satsys(sat, NULL);
     freq1 = code2freq(sys, code, fcn);
 
     if ((U1(p + 3) & 0x1f) != 0 || U4(p + 4) != 0) {
-      P1 = (U1(p + 3) & 0x0f) * 4294967.296 + U4(p + 4) * 0.001;
+      P1 = (U1(p + 3) & 0x0f) * 4294967.296L + U4(p + 4) * 0.001L;
       raw->obs.data[n].P[idx] = P1;
     }
     if (I4(p + 8) != -2147483648) {
-      D1 = I4(p + 8) * 0.0001;
-      raw->obs.data[n].D[idx] = (float)D1;
+      D1 = I4(p + 8) * 0.0001L;
+      raw->obs.data[n].D[idx] = D1;
     }
     lock = U2(p + 16);
-    if (P1 != 0.0 && freq1 > 0.0 && lock != 65535 && (I1(p + 14) != -128 || U2(p + 12) != 0)) {
-      L1 = I1(p + 14) * 65.536 + U2(p + 12) * 0.001;
+    if (P1 != 0.0L && freq1 > 0.0L && lock != 65535 && (I1(p + 14) != -128 || U2(p + 12) != 0)) {
+      L1 = I1(p + 14) * 65.536L + U2(p + 12) * 0.001L;
       raw->obs.data[n].L[idx] = P1 * freq1 / CLIGHT + L1;
       LLI = (lock < raw->lockt[sat - 1][idx] ? 1 : 0) + ((info & (1 << 2)) ? 2 : 0);
       raw->obs.data[n].LLI[idx] = (uint8_t)LLI;
       raw->lockt[sat - 1][idx] = lock;
     }
     if (U1(p + 15) != 255) {
-      S1 = U1(p + 15) * 0.25 + ((sig == 1 || sig == 2) ? 0.0 : 10.0);
-      raw->obs.data[n].SNR[idx] = (uint16_t)(S1 / SNR_UNIT + 0.5);
+      S1 = U1(p + 15) * 0.25L + ((sig == 1 || sig == 2) ? 0.0L : 10.0L);
+      raw->obs.data[n].SNR[idx] = (uint16_t)(S1 / SNR_UNIT + 0.5L);
     }
     raw->obs.data[n].code[idx] = code;
 
@@ -275,21 +275,21 @@ static int decode_measepoch(raw_t *raw) {
         trace(3, "sbf measepoch sig error: sat=%d sig=%d\n", sat, sig);
         continue;
       }
-      P2 = 0.0;
+      P2 = 0.0L;
       freq2 = code2freq(sys, code, fcn);
 
-      if (P1 != 0.0 && (getbits(p + 3, 5, 3) != -4 || U2(p + 6) != 0)) {
-        P2 = P1 + getbits(p + 3, 5, 3) * 65.536 + U2(p + 6) * 0.001;
+      if (P1 != 0.0L && (getbits(p + 3, 5, 3) != -4 || U2(p + 6) != 0)) {
+        P2 = P1 + getbits(p + 3, 5, 3) * 65.536L + U2(p + 6) * 0.001L;
         raw->obs.data[n].P[idx] = P2;
       }
-      if (P2 != 0.0 && freq2 > 0.0 && (I1(p + 4) != -128 || U2(p + 8) != 0)) {
-        L2 = I1(p + 4) * 65.536 + U2(p + 8) * 0.001;
+      if (P2 != 0.0L && freq2 > 0.0L && (I1(p + 4) != -128 || U2(p + 8) != 0)) {
+        L2 = I1(p + 4) * 65.536L + U2(p + 8) * 0.001L;
         raw->obs.data[n].L[idx] = P2 * freq2 / CLIGHT + L2;
       }
-      if (D1 != 0.0 && freq1 > 0.0 && freq2 > 0.0 &&
+      if (D1 != 0.0L && freq1 > 0.0L && freq2 > 0.0L &&
           (getbits(p + 3, 0, 5) != -16 || U2(p + 10) != 0)) {
-        D2 = getbits(p + 3, 0, 5) * 6.5536 + U2(p + 10) * 0.0001;
-        raw->obs.data[n].D[idx] = (float)(D1 * freq2 / freq1) + D2;
+        D2 = getbits(p + 3, 0, 5) * 6.5536L + U2(p + 10) * 0.0001L;
+        raw->obs.data[n].D[idx] = (D1 * freq2 / freq1) + D2;
       }
       lock = U1(p + 1);
       if (lock != 255) {
@@ -298,8 +298,8 @@ static int decode_measepoch(raw_t *raw) {
         raw->lockt[sat - 1][idx] = lock;
       }
       if (U1(p + 2) != 255) {
-        S2 = U1(p + 2) * 0.25 + ((sig == 1 || sig == 2) ? 0.0 : 10.0);
-        raw->obs.data[n].SNR[idx] = (uint16_t)(S2 / SNR_UNIT + 0.5);
+        S2 = U1(p + 2) * 0.25L + ((sig == 1 || sig == 2) ? 0.0L : 10.0L);
+        raw->obs.data[n].SNR[idx] = (uint16_t)(S2 / SNR_UNIT + 0.5L);
       }
       raw->obs.data[n].code[idx] = code;
     }
@@ -321,8 +321,8 @@ static int decode_eph(raw_t *raw, int sat) {
 
   if (!strstr(raw->opt, "-EPHALL")) {
     if (eph.iode == raw->nav.eph[sat - 1][0].iode && eph.iodc == raw->nav.eph[sat - 1][0].iodc &&
-        timediff(eph.toe, raw->nav.eph[sat - 1][0].toe) == 0.0 &&
-        timediff(eph.toc, raw->nav.eph[sat - 1][0].toc) == 0.0)
+        timediff(eph.toe, raw->nav.eph[sat - 1][0].toe) == 0.0L &&
+        timediff(eph.toc, raw->nav.eph[sat - 1][0].toc) == 0.0L)
       return 0;
   }
   eph.sat = sat;
@@ -332,24 +332,24 @@ static int decode_eph(raw_t *raw, int sat) {
   return 2;
 }
 /* UTC 8-bit week -> full week -----------------------------------------------*/
-static void adj_utcweek(gtime_t time, double *utc) {
+static void adj_utcweek(gtime_t time, long double *utc) {
   int week;
 
   time2gpst(time, &week);
   utc[3] += week / 256 * 256;
   if (utc[3] < week - 127)
-    utc[3] += 256.0;
+    utc[3] += 256.0L;
   else if (utc[3] > week + 127)
-    utc[3] -= 256.0;
+    utc[3] -= 256.0L;
   utc[5] += utc[3] / 256 * 256;
   if (utc[5] < utc[3] - 127)
-    utc[5] += 256.0;
+    utc[5] += 256.0L;
   else if (utc[5] > utc[3] + 127)
-    utc[5] -= 256.0;
+    utc[5] -= 256.0L;
 }
 /* decode ION/UTC parameters -------------------------------------------------*/
 static int decode_ionutc(raw_t *raw, int sat) {
-  double ion[8], utc[8];
+  long double ion[8], utc[8];
   int sys = satsys(sat, NULL);
 
   if (!decode_frame(raw->subfrm[sat - 1], NULL, NULL, ion, utc)) return 0;
@@ -412,7 +412,7 @@ static int decode_gpsrawca(raw_t *raw) { return decode_rawca(raw, SYS_GPS); }
 static int decode_glorawca(raw_t *raw) {
   geph_t geph = {0};
   gtime_t *time;
-  double utc[8] = {0};
+  long double utc[8] = {0};
   uint8_t *p = raw->buff + 14, buff[12];
   int i, svid, sat, prn, m;
 
@@ -441,7 +441,7 @@ static int decode_glorawca(raw_t *raw) {
     return -1;
   }
   time = (gtime_t *)(raw->subfrm[sat - 1] + 150);
-  if (fabs(timediff(raw->time, *time)) > 30.0) {
+  if (fabsl(timediff(raw->time, *time)) > 30.0L) {
     memset(raw->subfrm[sat - 1], 0, 40);
     memcpy(time, &raw->time, sizeof(gtime_t));
   }
@@ -461,7 +461,7 @@ static int decode_glorawca(raw_t *raw) {
 
   if (!strstr(raw->opt, "-EPHALL")) {
     if (geph.iode == raw->nav.geph[prn - 1][0].iode &&
-        timediff(geph.toe, raw->nav.geph[prn - 1][0].toe) == 0.0)
+        timediff(geph.toe, raw->nav.geph[prn - 1][0].toe) == 0.0L)
       return 0;
   }
   raw->nav.geph[prn - 1][0] = geph;
@@ -472,7 +472,7 @@ static int decode_glorawca(raw_t *raw) {
 /* decode SBF Galileo F/NAV navigation page ----------------------------------*/
 static int decode_galrawfnav(raw_t *raw) {
   eph_t eph = {0};
-  double ion[4] = {0}, utc[8] = {0};
+  long double ion[4] = {0}, utc[8] = {0};
   uint8_t *p = raw->buff + 14, buff[32];
   int i, svid, src, sat, prn, type;
 
@@ -528,8 +528,8 @@ static int decode_galrawfnav(raw_t *raw) {
 
   if (!strstr(raw->opt, "-EPHALL")) {
     if (eph.iode == raw->nav.eph[sat - 1][1].iode &&
-        timediff(eph.toe, raw->nav.eph[sat - 1][1].toe) == 0.0 &&
-        timediff(eph.toc, raw->nav.eph[sat - 1][1].toc) == 0.0)
+        timediff(eph.toe, raw->nav.eph[sat - 1][1].toe) == 0.0L &&
+        timediff(eph.toc, raw->nav.eph[sat - 1][1].toc) == 0.0L)
       return 0;
   }
   raw->nav.eph[sat - 1][1] = eph;
@@ -540,7 +540,7 @@ static int decode_galrawfnav(raw_t *raw) {
 /* decode SBF Galileo I/NAV navigation page ----------------------------------*/
 static int decode_galrawinav(raw_t *raw) {
   eph_t eph = {0};
-  double ion[4] = {0}, utc[8] = {0};
+  long double ion[4] = {0}, utc[8] = {0};
   uint8_t *p = raw->buff + 14, buff[32], type, part1, part2, page1, page2;
   int i, j, svid, src, sat, prn;
 
@@ -608,8 +608,8 @@ static int decode_galrawinav(raw_t *raw) {
 
   if (!strstr(raw->opt, "-EPHALL")) {
     if (eph.iode == raw->nav.eph[sat - 1][0].iode &&
-        timediff(eph.toe, raw->nav.eph[sat - 1][0].toe) == 0.0 &&
-        timediff(eph.toc, raw->nav.eph[sat - 1][0].toc) == 0.0)
+        timediff(eph.toe, raw->nav.eph[sat - 1][0].toe) == 0.0L &&
+        timediff(eph.toc, raw->nav.eph[sat - 1][0].toc) == 0.0L)
       return 0;
   }
   raw->nav.eph[sat - 1][0] = eph;
@@ -651,7 +651,7 @@ static int decode_georawl1(raw_t *raw) {
 /* decode SBF BDS navigation frame -------------------------------------------*/
 static int decode_bdsraw(raw_t *raw) {
   eph_t eph = {0};
-  double ion[8], utc[8];
+  long double ion[8], utc[8];
   uint8_t *p = raw->buff + 14, buff[40];
   int i, id, svid, sat, prn, pgn;
 
@@ -707,7 +707,7 @@ static int decode_bdsraw(raw_t *raw) {
       return 0;
   }
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (timediff(eph.toe, raw->nav.eph[sat - 1][0].toe) == 0.0) return 0;
+    if (timediff(eph.toe, raw->nav.eph[sat - 1][0].toe) == 0.0L) return 0;
   }
   eph.sat = sat;
   raw->nav.eph[sat - 1][0] = eph;
@@ -720,7 +720,7 @@ static int decode_qzsrawl1ca(raw_t *raw) { return decode_rawca(raw, SYS_QZS); }
 /* decode SBF NavIC/IRNSS subframe -------------------------------------------*/
 static int decode_navicraw(raw_t *raw) {
   eph_t eph = {0};
-  double ion[8], utc[9];
+  long double ion[8], utc[9];
   uint8_t *p = raw->buff + 14, buff[40];
   int i, id, svid, sat, prn, ret = 0;
 
@@ -752,7 +752,7 @@ static int decode_navicraw(raw_t *raw) {
 
     if (!strstr(raw->opt, "-EPHALL")) {
       if (eph.iode == raw->nav.eph[sat - 1][0].iode &&
-          timediff(eph.toe, raw->nav.eph[sat - 1][0].toe) == 0.0) {
+          timediff(eph.toe, raw->nav.eph[sat - 1][0].toe) == 0.0L) {
         return 0;
       }
     }
@@ -797,7 +797,7 @@ static int decode_sbf(raw_t *raw) {
     trace(2, "sbf tow/week error: type=%d len=%d\n", type, raw->len);
     return -1;
   }
-  raw->time = gpst2time(week, tow * 0.001);
+  raw->time = gpst2time(week, tow * 0.001L);
 
   if (raw->outtype) {
     time2str(raw->time, tstr, 2);

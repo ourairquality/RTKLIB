@@ -75,10 +75,11 @@ static double R8(uint8_t *p) {
 }
 
 /* ura values (ref [3] 20.3.3.3.1.1) -----------------------------------------*/
-static const double ura_eph[] = {2.4,  3.4,   4.85,  6.85,  9.65,   13.65,  24.0,   48.0,
-                                 96.0, 192.0, 384.0, 768.0, 1536.0, 3072.0, 6144.0, 0.0};
+static const long double ura_eph[] = {2.4L,    3.4L,    4.85L,   6.85L,  9.65L,  13.65L,
+                                      24.0L,   48.0L,   96.0L,   192.0L, 384.0L, 768.0L,
+                                      1536.0L, 3072.0L, 6144.0L, 0.0L};
 /* ura value (m) to ura index ------------------------------------------------*/
-static int uraindex(double value) {
+static int uraindex(long double value) {
   int i;
   for (i = 0; i < 15; i++)
     if (ura_eph[i] >= value) break;
@@ -87,10 +88,10 @@ static int uraindex(double value) {
 /* decode NVS xf5-raw: raw measurement data ----------------------------------*/
 static int decode_xf5raw(raw_t *raw) {
   gtime_t time;
-  double tadj = 0.0, toff = 0.0, tn;
+  long double tadj = 0.0L, toff = 0.0L, tn;
   int dTowInt;
-  double dTowUTC, dTowGPS, dTowFrac, L1, P1, D1;
-  double gpsutcTimescale;
+  long double dTowUTC, dTowGPS, dTowFrac, L1, P1, D1;
+  long double gpsutcTimescale;
   uint8_t rcvTimeScaleCorr, sys, carrNo;
   int i, j, prn, sat, n = 0, nsat, week;
   uint8_t *p = raw->buff + 2;
@@ -100,12 +101,12 @@ static int decode_xf5raw(raw_t *raw) {
 
   /* time tag adjustment option (-TADJ) */
   if ((q = strstr(raw->opt, "-tadj"))) {
-    sscanf(q, "-TADJ=%lf", &tadj);
+    sscanf(q, "-TADJ=%Lf", &tadj);
   }
-  dTowUTC = R8(p);
+  dTowUTC = (long double)R8(p);
   week = U2(p + 8);
-  gpsutcTimescale = R8(p + 10);
-  /* glonassutcTimescale = R8(p+18); */
+  gpsutcTimescale = (long double)R8(p + 10);
+  /* glonassutcTimescale = (long double)R8(p+18); */
   rcvTimeScaleCorr = I1(p + 26);
 
   /* check gps week range */
@@ -125,22 +126,22 @@ static int decode_xf5raw(raw_t *raw) {
   dTowGPS = dTowUTC + gpsutcTimescale;
 
   /* Tweak pseudoranges to allow Rinex to represent the NVS time of measure */
-  dTowInt = 10.0 * floor((dTowGPS / 10.0) + 0.5);
-  dTowFrac = dTowGPS - (double)dTowInt;
-  time = gpst2time(week, dTowInt * 0.001);
+  dTowInt = 10.0L * floorl((dTowGPS / 10.0L) + 0.5L);
+  dTowFrac = dTowGPS - (long double)dTowInt;
+  time = gpst2time(week, dTowInt * 0.001L);
 
   /* time tag adjustment */
-  if (tadj > 0.0) {
+  if (tadj > 0.0L) {
     tn = time2gpst(time, &week) / tadj;
-    toff = (tn - floor(tn + 0.5)) * tadj;
+    toff = (tn - floorl(tn + 0.5L)) * tadj;
     time = timeadd(time, -toff);
   }
   /* check time tag jump and output warning */
-  if (raw->time.time && fabs(timediff(time, raw->time)) > 86400.0) {
+  if (raw->time.time && fabsl(timediff(time, raw->time)) > 86400.0L) {
     time2str(time, tstr, 3);
     trace(2, "nvs xf5raw time tag jump warning: time=%s\n", tstr);
   }
-  if (fabs(timediff(time, raw->time)) <= 1e-3) {
+  if (fabsl(timediff(time, raw->time)) <= 1e-3L) {
     time2str(time, tstr, 3);
     trace(2, "nvs xf5raw time tag duplicated: time=%s\n", tstr);
     return 0;
@@ -155,25 +156,25 @@ static int decode_xf5raw(raw_t *raw) {
       continue;
     }
     carrNo = I1(p + 2);
-    L1 = R8(p + 4);
-    P1 = R8(p + 12);
-    D1 = R8(p + 20);
+    L1 = (long double)R8(p + 4);
+    P1 = (long double)R8(p + 12);
+    D1 = (long double)R8(p + 20);
 
     /* check range error */
-    if (L1 < -1E10 || L1 > 1E10 || P1 < -1E10 || P1 > 1E10 || D1 < -1E5 || D1 > 1E5) {
+    if (L1 < -1E10L || L1 > 1E10L || P1 < -1E10L || P1 > 1E10L || D1 < -1E5L || D1 > 1E5L) {
       trace(2, "nvs xf5raw obs range error: sat=%2d L1=%12.5e P1=%12.5e D1=%12.5e\n", sat, L1, P1,
             D1);
       continue;
     }
-    raw->obs.data[n].SNR[0] = (uint16_t)(I1(p + 3) / SNR_UNIT + 0.5);
+    raw->obs.data[n].SNR[0] = (uint16_t)(I1(p + 3) / SNR_UNIT + 0.5L);
     if (sys == SYS_GLO) {
       raw->obs.data[n].L[0] = L1 - toff * (FREQ1_GLO + DFRQ1_GLO * carrNo);
     } else {
       raw->obs.data[n].L[0] = L1 - toff * FREQL1;
     }
     raw->obs.data[n].P[0] =
-        (P1 - dTowFrac) * CLIGHT * 0.001 - toff * CLIGHT; /* in ms, needs to be converted */
-    raw->obs.data[n].D[0] = (float)D1;
+        (P1 - dTowFrac) * CLIGHT * 0.001L - toff * CLIGHT; /* in ms, needs to be converted */
+    raw->obs.data[n].D[0] = D1;
 
     /* set LLI if meas flag 4 (carrier phase present) off -> on */
     flag = U1(p + 28);
@@ -184,8 +185,8 @@ static int decode_xf5raw(raw_t *raw) {
     raw->obs.data[n].sat = sat;
 
     for (j = 1; j < NFREQ + NEXOBS; j++) {
-      raw->obs.data[n].L[j] = raw->obs.data[n].P[j] = 0.0;
-      raw->obs.data[n].D[j] = 0.0;
+      raw->obs.data[n].L[j] = raw->obs.data[n].P[j] = 0.0L;
+      raw->obs.data[n].D[j] = 0.0L;
       raw->obs.data[n].SNR[j] = raw->obs.data[n].LLI[j] = 0;
       raw->obs.data[n].code[j] = CODE_NONE;
     }
@@ -200,31 +201,31 @@ static int decode_gpsephem(int sat, raw_t *raw) {
   eph_t eph = {0};
   uint8_t *puiTmp = (raw->buff) + 2;
   uint16_t week;
-  double toc;
+  long double toc;
 
   trace(4, "decode_ephem: sat=%2d\n", sat);
 
-  eph.crs = R4(&puiTmp[2]);
-  eph.deln = R4(&puiTmp[6]) * 1e+3;
-  eph.M0 = R8(&puiTmp[10]);
-  eph.cuc = R4(&puiTmp[18]);
-  eph.e = R8(&puiTmp[22]);
-  eph.cus = R4(&puiTmp[30]);
-  eph.A = pow(R8(&puiTmp[34]), 2);
-  eph.toes = R8(&puiTmp[42]) * 1e-3;
-  eph.cic = R4(&puiTmp[50]);
-  eph.OMG0 = R8(&puiTmp[54]);
-  eph.cis = R4(&puiTmp[62]);
-  eph.i0 = R8(&puiTmp[66]);
-  eph.crc = R4(&puiTmp[74]);
-  eph.omg = R8(&puiTmp[78]);
-  eph.OMGd = R8(&puiTmp[86]) * 1e+3;
-  eph.idot = R8(&puiTmp[94]) * 1e+3;
-  eph.tgd[0] = R4(&puiTmp[102]) * 1e-3;
-  toc = R8(&puiTmp[106]) * 1e-3;
-  eph.f2 = R4(&puiTmp[114]) * 1e+3;
-  eph.f1 = R4(&puiTmp[118]);
-  eph.f0 = R4(&puiTmp[122]) * 1e-3;
+  eph.crs = (long double)R4(&puiTmp[2]);
+  eph.deln = (long double)R4(&puiTmp[6]) * 1e+3L;
+  eph.M0 = (long double)R8(&puiTmp[10]);
+  eph.cuc = (long double)R4(&puiTmp[18]);
+  eph.e = (long double)R8(&puiTmp[22]);
+  eph.cus = (long double)R4(&puiTmp[30]);
+  eph.A = powl((long double)R8(&puiTmp[34]), 2);
+  eph.toes = (long double)R8(&puiTmp[42]) * 1e-3L;
+  eph.cic = (long double)R4(&puiTmp[50]);
+  eph.OMG0 = (long double)R8(&puiTmp[54]);
+  eph.cis = (long double)R4(&puiTmp[62]);
+  eph.i0 = (long double)R8(&puiTmp[66]);
+  eph.crc = (long double)R4(&puiTmp[74]);
+  eph.omg = (long double)R8(&puiTmp[78]);
+  eph.OMGd = (long double)R8(&puiTmp[86]) * 1e+3L;
+  eph.idot = (long double)R8(&puiTmp[94]) * 1e+3L;
+  eph.tgd[0] = (long double)R4(&puiTmp[102]) * 1e-3L;
+  toc = (long double)R8(&puiTmp[106]) * 1e-3L;
+  eph.f2 = (long double)R4(&puiTmp[114]) * 1e+3L;
+  eph.f1 = (long double)R4(&puiTmp[118]);
+  eph.f0 = (long double)R4(&puiTmp[122]) * 1e-3L;
   eph.sva = uraindex(I2(&puiTmp[126]));
   eph.iode = I2(&puiTmp[128]);
   eph.iodc = I2(&puiTmp[130]);
@@ -252,15 +253,15 @@ static int decode_gpsephem(int sat, raw_t *raw) {
   return 2;
 }
 /* adjust daily rollover of time ---------------------------------------------*/
-static gtime_t adjday(gtime_t time, double tod) {
-  double ep[6], tod_p;
+static gtime_t adjday(gtime_t time, long double tod) {
+  long double ep[6], tod_p;
   time2epoch(time, ep);
-  tod_p = ep[3] * 3600.0 + ep[4] * 60.0 + ep[5];
-  if (tod < tod_p - 43200.0)
-    tod += 86400.0;
-  else if (tod > tod_p + 43200.0)
-    tod -= 86400.0;
-  ep[3] = ep[4] = ep[5] = 0.0;
+  tod_p = ep[3] * 3600.0L + ep[4] * 60.0L + ep[5];
+  if (tod < tod_p - 43200.0L)
+    tod += 86400.0L;
+  else if (tod > tod_p + 43200.0L)
+    tod -= 86400.0L;
+  ep[3] = ep[4] = ep[5] = 0.0L;
   return timeadd(epoch2time(ep), tod);
 }
 /* decode gloephem -----------------------------------------------------------*/
@@ -272,19 +273,19 @@ static int decode_gloephem(int sat, raw_t *raw) {
   if (raw->len >= 93) {
     prn = I1(p + 1);
     geph.frq = I1(p + 2);
-    geph.pos[0] = R8(p + 3);
-    geph.pos[1] = R8(p + 11);
-    geph.pos[2] = R8(p + 19);
-    geph.vel[0] = R8(p + 27) * 1e+3;
-    geph.vel[1] = R8(p + 35) * 1e+3;
-    geph.vel[2] = R8(p + 43) * 1e+3;
-    geph.acc[0] = R8(p + 51) * 1e+6;
-    geph.acc[1] = R8(p + 59) * 1e+6;
-    geph.acc[2] = R8(p + 67) * 1e+6;
-    tb = R8(p + 75) * 1e-3;
+    geph.pos[0] = (long double)R8(p + 3);
+    geph.pos[1] = (long double)R8(p + 11);
+    geph.pos[2] = (long double)R8(p + 19);
+    geph.vel[0] = (long double)R8(p + 27) * 1e+3L;
+    geph.vel[1] = (long double)R8(p + 35) * 1e+3L;
+    geph.vel[2] = (long double)R8(p + 43) * 1e+3L;
+    geph.acc[0] = (long double)R8(p + 51) * 1e+6L;
+    geph.acc[1] = (long double)R8(p + 59) * 1e+6L;
+    geph.acc[2] = (long double)R8(p + 67) * 1e+6L;
+    tb = (long double)R8(p + 75) * 1e-3L;
     tk = tb;
-    geph.gamn = R4(p + 83);
-    geph.taun = R4(p + 87) * 1e-3;
+    geph.gamn = (long double)R4(p + 83);
+    geph.taun = (long double)R4(p + 87) * 1e-3L;
     geph.age = I2(p + 91);
   } else {
     trace(2, "nvs NE length error: len=%d\n", raw->len);
@@ -297,13 +298,13 @@ static int decode_gloephem(int sat, raw_t *raw) {
   if (raw->time.time == 0) return 0;
 
   geph.iode = (tb / 900) & 0x7F;
-  geph.toe = utc2gpst(adjday(raw->time, tb - 10800.0));
-  geph.tof = utc2gpst(adjday(raw->time, tk - 10800.0));
+  geph.toe = utc2gpst(adjday(raw->time, tb - 10800.0L));
+  geph.tof = utc2gpst(adjday(raw->time, tk - 10800.0L));
 #if 0
   /* check illegal ephemeris by toe */
-  double tt = timediff(raw->time, geph.toe);
-  if (fabs(tt) > 3600.0) {
-    trace(3, "nvs NE illegal toe: prn=%2d tt=%6.0f\n", prn, tt);
+  long double tt = timediff(raw->time, geph.toe);
+  if (fabsl(tt) > 3600.0) {
+    trace(3, "nvs NE illegal toe: prn=%2d tt=%6.0Lf\n", prn, tt);
     return 0;
   }
 #endif
@@ -316,7 +317,7 @@ static int decode_gloephem(int sat, raw_t *raw) {
     return -1;
   }
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (fabs(timediff(geph.toe, raw->nav.geph[prn - MINPRNGLO][0].toe)) < 1.0 &&
+    if (fabsl(timediff(geph.toe, raw->nav.geph[prn - MINPRNGLO][0].toe)) < 1.0L &&
         geph.svh == raw->nav.geph[prn - MINPRNGLO][0].svh)
       return 0;
   }
@@ -408,14 +409,14 @@ static int decode_x4aiono(raw_t *raw) {
 
   trace(4, "decode_x4aiono: len=%d\n", raw->len);
 
-  raw->nav.ion_gps[0] = R4(p);
-  raw->nav.ion_gps[1] = R4(p + 4);
-  raw->nav.ion_gps[2] = R4(p + 8);
-  raw->nav.ion_gps[3] = R4(p + 12);
-  raw->nav.ion_gps[4] = R4(p + 16);
-  raw->nav.ion_gps[5] = R4(p + 20);
-  raw->nav.ion_gps[6] = R4(p + 24);
-  raw->nav.ion_gps[7] = R4(p + 28);
+  raw->nav.ion_gps[0] = (long double)R4(p);
+  raw->nav.ion_gps[1] = (long double)R4(p + 4);
+  raw->nav.ion_gps[2] = (long double)R4(p + 8);
+  raw->nav.ion_gps[3] = (long double)R4(p + 12);
+  raw->nav.ion_gps[4] = (long double)R4(p + 16);
+  raw->nav.ion_gps[5] = (long double)R4(p + 20);
+  raw->nav.ion_gps[6] = (long double)R4(p + 24);
+  raw->nav.ion_gps[7] = (long double)R4(p + 28);
 
   return 9;
 }
@@ -425,8 +426,8 @@ static int decode_x4btime(raw_t *raw) {
 
   trace(4, "decode_x4btime: len=%d\n", raw->len);
 
-  raw->nav.utc_gps[1] = R8(p);
-  raw->nav.utc_gps[0] = R8(p + 8);
+  raw->nav.utc_gps[1] = (long double)R8(p);
+  raw->nav.utc_gps[0] = (long double)R8(p + 8);
   raw->nav.utc_gps[2] = I4(p + 16);
   raw->nav.utc_gps[3] = I2(p + 20);
   raw->nav.utc_gps[4] = I1(p + 22);
@@ -483,13 +484,13 @@ extern int input_nvs(raw_t *raw, uint8_t data) {
     return 0;
   }
   if ((raw->nbyte == 1) && (data != NVSSYNC) && (data != NVSENDMSG)) {
-    /* Discard double 0x10 and 0x10 0x03 at beginning of frame */
+    /* Discard long double 0x10 and 0x10 0x03 at beginning of frame */
     raw->buff[1] = data;
     raw->nbyte = 2;
     raw->flag = 0;
     return 0;
   }
-  /* This is all done to discard a double 0x10 */
+  /* This is all done to discard a long double 0x10 */
   if (data == NVSSYNC) raw->flag = (raw->flag + 1) % 2;
   if ((data != NVSSYNC) || (raw->flag)) {
     /* Store the new byte */
@@ -531,7 +532,7 @@ extern int input_nvsf(raw_t *raw, FILE *fp) {
       raw->buff[0] = data;
       if ((data = fgetc(fp)) == EOF) return -2;
 
-      /* Discard double 0x10 and 0x10 0x03 */
+      /* Discard long double 0x10 and 0x10 0x03 */
       if ((data != NVSSYNC) && (data != NVSENDMSG)) {
         raw->buff[1] = data;
         break;

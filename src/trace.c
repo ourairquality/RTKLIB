@@ -74,13 +74,13 @@ extern void tracet_impl(int level, const char *format, ...) {
 
   if (!fp_trace || level > level_trace) return;
   traceswap();
-  fprintf(fp_trace, "%d %9.3f: ", level, (tickget() - tick_trace) / 1000.0);
+  fprintf(fp_trace, "%d %9.3Lf: ", level, (tickget() - tick_trace) / 1000.0L);
   va_start(ap, format);
   vfprintf(fp_trace, format, ap);
   va_end(ap);
   fflush(fp_trace);
 }
-extern void tracemat_impl(int level, const double *A, int n, int m, int p, int q) {
+extern void tracemat_impl(int level, const long double *A, int n, int m, int p, int q) {
   if (!fp_trace || level > level_trace) return;
   matfprint(A, n, m, p, q, fp_trace);
   fflush(fp_trace);
@@ -93,8 +93,8 @@ extern void traceobs_impl(int level, const obsd_t *obs, int n) {
     char id[8];
     satno2id(obs[i].sat, id);
     fprintf(fp_trace,
-            " (%2d) %s %-3s rcv%d %13.3f %13.3f %13.3f %13.3f %d %d %d %d "
-            "%x %x %3.2f %3.2f\n",
+            " (%2d) %s %-3s rcv%d %13.3Lf %13.3Lf %13.3Lf %13.3Lf %d %d %d %d "
+            "%x %x %3.2Lf %3.2Lf\n",
             i + 1, str, id, obs[i].rcv, obs[i].L[0], obs[i].L[1], obs[i].P[0], obs[i].P[1],
             obs[i].LLI[0], obs[i].LLI[1], obs[i].code[0], obs[i].code[1], obs[i].Lstd[0],
             obs[i].Pstd[0], obs[i].SNR[0] * SNR_UNIT, obs[i].SNR[1] * SNR_UNIT);
@@ -115,11 +115,11 @@ extern void tracenav_impl(int level, const nav_t *nav) {
               nav->eph[i][j].iodc, nav->eph[i][j].svh);
     }
   }
-  fprintf(fp_trace, "(ion) %9.4e %9.4e %9.4e %9.4e\n", nav->ion_gps[0], nav->ion_gps[1],
+  fprintf(fp_trace, "(ion) %9.4Le %9.4Le %9.4Le %9.4Le\n", nav->ion_gps[0], nav->ion_gps[1],
           nav->ion_gps[2], nav->ion_gps[3]);
-  fprintf(fp_trace, "(ion) %9.4e %9.4e %9.4e %9.4e\n", nav->ion_gps[4], nav->ion_gps[5],
+  fprintf(fp_trace, "(ion) %9.4Le %9.4Le %9.4Le %9.4Le\n", nav->ion_gps[4], nav->ion_gps[5],
           nav->ion_gps[6], nav->ion_gps[7]);
-  fprintf(fp_trace, "(ion) %9.4e %9.4e %9.4e %9.4e\n", nav->ion_gal[0], nav->ion_gal[1],
+  fprintf(fp_trace, "(ion) %9.4Le %9.4Le %9.4Le %9.4Le\n", nav->ion_gal[0], nav->ion_gal[1],
           nav->ion_gal[2], nav->ion_gal[3]);
 }
 extern void tracegnav_impl(int level, const nav_t *nav) {
@@ -132,8 +132,8 @@ extern void tracegnav_impl(int level, const nav_t *nav) {
       time2str(nav->geph[i][j].tof, s2, 0);
       char id[8];
       satno2id(nav->geph[i][j].sat, id);
-      fprintf(fp_trace, "(%3d) %-3s : %s %s %2d %2d %8.3f\n", i + 1, id, s1, s2,
-              nav->geph[i][j].frq, nav->geph[i][j].svh, nav->geph[i][j].taun * 1E6);
+      fprintf(fp_trace, "(%3d) %-3s : %s %s %2d %2d %8.3Lf\n", i + 1, id, s1, s2,
+              nav->geph[i][j].frq, nav->geph[i][j].svh, nav->geph[i][j].taun * 1E6L);
     }
   }
 }
@@ -162,11 +162,11 @@ extern void tracepeph_impl(int level, const nav_t *nav) {
       char id[8];
       satno2id(j + 1, id);
       fprintf(fp_trace,
-              "%-3s %d %-3s %13.3f %13.3f %13.3f %13.3f %6.3f %6.3f "
-              "%6.3f %6.3f\n",
+              "%-3s %d %-3s %13.3Lf %13.3Lf %13.3Lf %13.3Lf %6.3Lf %6.3Lf "
+              "%6.3Lf %6.3Lf\n",
               s, nav->peph[i].index, id, nav->peph[i].pos[j][0], nav->peph[i].pos[j][1],
-              nav->peph[i].pos[j][2], nav->peph[i].pos[j][3] * 1E9, nav->peph[i].std[j][0],
-              nav->peph[i].std[j][1], nav->peph[i].std[j][2], nav->peph[i].std[j][3] * 1E9);
+              nav->peph[i].pos[j][2], nav->peph[i].pos[j][3] * 1E9L, nav->peph[i].std[j][0],
+              nav->peph[i].std[j][1], nav->peph[i].std[j][2], nav->peph[i].std[j][3] * 1E9L);
     }
   }
 }
@@ -179,8 +179,8 @@ extern void tracepclk_impl(int level, const nav_t *nav) {
     for (int j = 0; j < MAXSAT; j++) {
       char id[8];
       satno2id(j + 1, id);
-      fprintf(fp_trace, "%-3s %d %-3s %13.3f %6.3f\n", s, nav->pclk[i].index, id,
-              nav->pclk[i].clk[j][0] * 1E9, nav->pclk[i].std[j][0] * 1E9);
+      fprintf(fp_trace, "%-3s %d %-3s %13.3Lf %6.3Lf\n", s, nav->pclk[i].index, id,
+              nav->pclk[i].clk[j][0] * 1E9L, nav->pclk[i].std[j][0] * 1E9L);
     }
   }
 }

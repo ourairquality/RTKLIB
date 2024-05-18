@@ -114,23 +114,23 @@ int main(int argc, char **argv) {
   }
   gtime_t ts = {0}, te = {0};
   const char *infile[MAXFILE], *outfile = "";
-  double tint = 0.0;
+  long double tint = 0.0L;
   int n = 0;
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-o") && i + 1 < argc)
       outfile = argv[++i];
     else if (!strcmp(argv[i], "-ts") && i + 2 < argc) {
-      double es[] = {2000, 1, 1, 0, 0, 0};
-      sscanf(argv[++i], "%lf/%lf/%lf", es, es + 1, es + 2);
-      sscanf(argv[++i], "%lf:%lf:%lf", es + 3, es + 4, es + 5);
+      long double es[] = {2000, 1, 1, 0, 0, 0};
+      sscanf(argv[++i], "%Lf/%Lf/%Lf", es, es + 1, es + 2);
+      sscanf(argv[++i], "%Lf:%Lf:%Lf", es + 3, es + 4, es + 5);
       ts = epoch2time(es);
     } else if (!strcmp(argv[i], "-te") && i + 2 < argc) {
-      double ee[] = {2000, 12, 31, 23, 59, 59};
-      sscanf(argv[++i], "%lf/%lf/%lf", ee, ee + 1, ee + 2);
-      sscanf(argv[++i], "%lf:%lf:%lf", ee + 3, ee + 4, ee + 5);
+      long double ee[] = {2000, 12, 31, 23, 59, 59};
+      sscanf(argv[++i], "%Lf/%Lf/%Lf", ee, ee + 1, ee + 2);
+      sscanf(argv[++i], "%Lf:%Lf:%Lf", ee + 3, ee + 4, ee + 5);
       te = epoch2time(ee);
     } else if (!strcmp(argv[i], "-ti") && i + 1 < argc)
-      tint = atof(argv[++i]);
+      tint = strtold(argv[++i], NULL);
     else if (!strcmp(argv[i], "-k") && i + 1 < argc) {
       ++i;
       continue;
@@ -165,9 +165,9 @@ int main(int argc, char **argv) {
         if (!p) break;
       }
     } else if (!strcmp(argv[i], "-m") && i + 1 < argc)
-      prcopt.elmin = atof(argv[++i]) * D2R;
+      prcopt.elmin = strtold(argv[++i], NULL) * D2R;
     else if (!strcmp(argv[i], "-v") && i + 1 < argc)
-      prcopt.thresar[0] = atof(argv[++i]);
+      prcopt.thresar[0] = strtold(argv[++i], NULL);
     else if (!strcmp(argv[i], "-s") && i + 1 < argc)
       rtkstrcpy(solopt.sep, sizeof(solopt.sep), argv[++i]);
     else if (!strcmp(argv[i], "-d") && i + 1 < argc)
@@ -193,15 +193,15 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[i], "-g"))
       solopt.degf = 1;
     else if (!strcmp(argv[i], "-bl") && i + 2 < argc) {
-      for (int j = 0; j < 2; j++) prcopt.baseline[j] = atof(argv[++i]);
+      for (int j = 0; j < 2; j++) prcopt.baseline[j] = strtold(argv[++i], NULL);
     } else if (!strcmp(argv[i], "-r") && i + 3 < argc) {
       prcopt.refpos = prcopt.rovpos = 0;
-      for (int j = 0; j < 3; j++) prcopt.rb[j] = atof(argv[++i]);
+      for (int j = 0; j < 3; j++) prcopt.rb[j] = strtold(argv[++i], NULL);
       matcpy(prcopt.ru, prcopt.rb, 3, 1);
     } else if (!strcmp(argv[i], "-l") && i + 3 < argc) {
       prcopt.refpos = prcopt.rovpos = 0;
-      double pos[3];
-      for (int j = 0; j < 3; j++) pos[j] = atof(argv[++i]);
+      long double pos[3];
+      for (int j = 0; j < 3; j++) pos[j] = strtold(argv[++i], NULL);
       for (int j = 0; j < 2; j++) pos[j] *= D2R;
       pos2ecef(pos, prcopt.rb);
       matcpy(prcopt.ru, prcopt.rb, 3, 1);
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
     showmsg("error : no input file");
     return EXIT_FAILURE;
   }
-  int ret = postpos(ts, te, tint, 0.0, &prcopt, &solopt, &filopt, infile, n, outfile, "", "");
+  int ret = postpos(ts, te, tint, 0.0L, &prcopt, &solopt, &filopt, infile, n, outfile, "", "");
 
   if (!ret) fprintf(stderr, "%40s\r", "");
   return ret ? EXIT_FAILURE : 0;

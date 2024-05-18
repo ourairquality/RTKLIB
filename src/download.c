@@ -598,7 +598,7 @@ static bool exec_down(path_t *path, char *remot_p, size_t rsize, const char *usr
   return false;
 }
 /* test local file -----------------------------------------------------------*/
-static bool test_local(gtime_t ts, gtime_t te, double ti, const char *path, const char *sta,
+static bool test_local(gtime_t ts, gtime_t te, long double ti, const char *path, const char *sta,
                        const char *dir, int *nc, int *nt, FILE *fp) {
   bool abort = false;
 
@@ -630,7 +630,7 @@ static bool test_local(gtime_t ts, gtime_t te, double ti, const char *path, cons
   return abort;
 }
 /* test local files ----------------------------------------------------------*/
-static bool test_locals(gtime_t ts, gtime_t te, double ti, const url_t *url, const char **stas,
+static bool test_locals(gtime_t ts, gtime_t te, long double ti, const url_t *url, const char **stas,
                         int nsta, const char *dir, int *nc, int *nt, FILE *fp) {
   if (strstr(url->path, "%s") || strstr(url->path, "%S")) {
     fprintf(fp, "%s\n", url->type);
@@ -775,7 +775,7 @@ extern int dl_readstas(const char *file, char **stas, size_t size, int nmax) {
 /* execute download ------------------------------------------------------------
  * execute download
  * args   : gtime_t ts,te    I   time start and end
- *          double tint      I   time interval (s)
+ *          long double tint      I   time interval (s)
  *          int    seqnos    I   sequence number start
  *          int    seqnoe    I   sequence number end
  *          url_t  *urls     I   URL list
@@ -803,10 +803,10 @@ extern int dl_readstas(const char *file, char **stas, size_t size, int nmax) {
  *          remote file-list. The secondary matched or the following files are
  *          not downloaded.
  *-----------------------------------------------------------------------------*/
-extern int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe, const url_t *urls,
-                   int nurl, const char **stas, int nsta, const char *dir, const char *usr,
-                   const char *pwd, const char *proxy, int opts, char *msg, size_t msize,
-                   FILE *fp) {
+extern int dl_exec(gtime_t ts, gtime_t te, long double ti, int seqnos, int seqnoe,
+                   const url_t *urls, int nurl, const char **stas, int nsta, const char *dir,
+                   const char *usr, const char *pwd, const char *proxy, int opts, char *msg,
+                   size_t msize, FILE *fp) {
   paths_t paths = {0};
   gtime_t ts_p = {0};
   int n[4] = {0};
@@ -848,8 +848,8 @@ extern int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe, co
   if (!(opts & DLOPT_HOLDLST)) {
     remove(FTP_LISTING);
   }
-  rtksnprintf(msg, msize, "OK=%d No_File=%d Skip=%d Error=%d (Time=%.1f s)", n[0], n[1], n[2], n[3],
-              (tickget() - tick) * 0.001);
+  rtksnprintf(msg, msize, "OK=%d No_File=%d Skip=%d Error=%d (Time=%.1Lf s)", n[0], n[1], n[2],
+              n[3], (tickget() - tick) * 0.001L);
 
   free_path(&paths);
 
@@ -858,7 +858,7 @@ extern int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe, co
 /* execute local file test -----------------------------------------------------
  * execute local file test
  * args   : gtime_t ts,te    I   time start and end
- *          double tint      I   time interval (s)
+ *          long double tint      I   time interval (s)
  *          url_t  *urls     I   remote URL addresses
  *          int    nurl      I   number of remote URL addresses
  *          char   **stas    I   stations
@@ -869,7 +869,7 @@ extern int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe, co
  *          FILE   *fp       IO  log test result file pointer
  * return : status (1:ok,0:error,-1:aborted)
  *-----------------------------------------------------------------------------*/
-extern void dl_test(gtime_t ts, gtime_t te, double ti, const url_t *urls, int nurl,
+extern void dl_test(gtime_t ts, gtime_t te, long double ti, const url_t *urls, int nurl,
                     const char **stas, int nsta, const char *dir, int ncol, int datefmt, FILE *fp) {
   if (ncol < 1)
     ncol = 1;
@@ -910,7 +910,7 @@ extern void dl_test(gtime_t ts, gtime_t te, double ti, const url_t *urls, int nu
         fprintf(fp, "%-4s", strcmp(date, date_p) ? date : "");
       } else {
         int week;
-        if (fabs(time2gpst(time, &week)) < 1.0) {
+        if (fabsl(time2gpst(time, &week)) < 1.0L) {
           fprintf(fp, "%04d", week);
           flag = 1;
         } else {
@@ -924,8 +924,8 @@ extern void dl_test(gtime_t ts, gtime_t te, double ti, const url_t *urls, int nu
 
     int j = 0;
     for (int i = 0; i < nurl && !abort; i++) {
-      gtime_t time = timeadd(ts, ti * ncol - 1.0);
-      if (timediff(time, te) >= 0.0) time = te;
+      gtime_t time = timeadd(ts, ti * ncol - 1.0L);
+      if (timediff(time, te) >= 0.0L) time = te;
 
       /* test local files */
       abort = test_locals(ts, time, ti, urls + i, stas, nsta, dir, nc + j, nt + j, fp);

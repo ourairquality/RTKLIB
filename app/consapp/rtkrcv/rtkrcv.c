@@ -71,7 +71,7 @@
 #define ESC_RESET "\033[0m"       /* ansi/vt100: reset attribute */
 #define ESC_BOLD "\033[1m"        /* ansi/vt100: bold */
 
-#define SQRT(x) ((x) <= 0.0 || (x) != (x) ? 0.0 : sqrt(x))
+#define SQRT(x) ((x) <= 0.0L || (x) != (x) ? 0.0L : sqrtl(x))
 
 /* type definitions ----------------------------------------------------------*/
 
@@ -101,25 +101,25 @@ static int strtype[] = {              /* stream types */
 static char strpath[8][MAXSTR] = {"", "", "", "", "", "", "", ""}; /* stream paths */
 static int strfmt[] = {                                            /* stream formats */
                        STRFMT_UBX, STRFMT_RTCM3, STRFMT_SP3, SOLF_LLH, SOLF_NMEA};
-static int svrcycle = 10;              /* server cycle (ms) */
-static int timeout = 10000;            /* timeout time (ms) */
-static int reconnect = 10000;          /* reconnect interval (ms) */
-static int nmeacycle = 5000;           /* nmea request cycle (ms) */
-static int buffsize = 32768;           /* input buffer size (bytes) */
-static int navmsgsel = 0;              /* navigation message select */
-static char proxyaddr[256] = "";       /* http/ntrip proxy */
-static int nmeareq = 0;                /* nmea request type (0:off,1:lat/lon,2:single) */
-static double nmeapos[] = {0, 0, 0};   /* nmea position (lat/lon/height) (deg,m) */
-static char rcvcmds[3][MAXSTR] = {""}; /* receiver commands files */
-static char startcmd[MAXSTR] = "";     /* start command */
-static char stopcmd[MAXSTR] = "";      /* stop command */
-static int modflgr[256] = {0};         /* modified flags of receiver options */
-static int modflgs[256] = {0};         /* modified flags of system options */
-static int moniport = 0;               /* monitor port */
-static int keepalive = 0;              /* keep alive flag */
-static int start = 0;                  /* auto start */
-static int fswapmargin = 30;           /* file swap margin (s) */
-static char sta_name[256] = "";        /* station name */
+static int svrcycle = 10;                 /* server cycle (ms) */
+static int timeout = 10000;               /* timeout time (ms) */
+static int reconnect = 10000;             /* reconnect interval (ms) */
+static int nmeacycle = 5000;              /* nmea request cycle (ms) */
+static int buffsize = 32768;              /* input buffer size (bytes) */
+static int navmsgsel = 0;                 /* navigation message select */
+static char proxyaddr[256] = "";          /* http/ntrip proxy */
+static int nmeareq = 0;                   /* nmea request type (0:off,1:lat/lon,2:single) */
+static long double nmeapos[] = {0, 0, 0}; /* nmea position (lat/lon/height) (deg,m) */
+static char rcvcmds[3][MAXSTR] = {""};    /* receiver commands files */
+static char startcmd[MAXSTR] = "";        /* start command */
+static char stopcmd[MAXSTR] = "";         /* stop command */
+static int modflgr[256] = {0};            /* modified flags of receiver options */
+static int modflgs[256] = {0};            /* modified flags of system options */
+static int moniport = 0;                  /* monitor port */
+static int keepalive = 0;                 /* keep alive flag */
+static int start = 0;                     /* auto start */
+static int fswapmargin = 30;              /* file swap margin (s) */
+static char sta_name[256] = "";           /* station name */
 
 static prcopt_t prcopt;            /* processing options */
 static solopt_t solopt[2] = {{0}}; /* solution options */
@@ -405,13 +405,13 @@ static bool startsvr(vt_t *vt) {
     }
   }
   if (prcopt.refpos == 4) { /* rtcm */
-    for (int i = 0; i < 3; i++) prcopt.rb[i] = 0.0;
+    for (int i = 0; i < 3; i++) prcopt.rb[i] = 0.0L;
   }
-  double pos[3];
+  long double pos[3];
   pos[0] = nmeapos[0] * D2R;
   pos[1] = nmeapos[1] * D2R;
   pos[2] = nmeapos[2];
-  double npos[3];
+  long double npos[3];
   pos2ecef(pos, npos);
 
   /* read antenna file */
@@ -503,17 +503,17 @@ static void prtime(vt_t *vt, gtime_t time) {
   if (timetype == 1) {
     time2str(gpst2utc(time), tstr, 2);
   } else if (timetype == 2) {
-    time2str(timeadd(gpst2utc(time), 9 * 3600.0), tstr, 2);
+    time2str(timeadd(gpst2utc(time), 9 * 3600.0L), tstr, 2);
   } else if (timetype == 3) {
     int week;
-    double tow = time2gpst(time, &week);
-    rtksnprintf(tstr, sizeof(tstr), "  %04d %9.2f", week, tow);
+    long double tow = time2gpst(time, &week);
+    rtksnprintf(tstr, sizeof(tstr), "  %04d %9.2Lf", week, tow);
   } else
     time2str(time, tstr, 1);
   vt_printf(vt, "%s ", tstr);
 }
 /* print solution ------------------------------------------------------------*/
-static void prsolution(vt_t *vt, const sol_t *sol, const double *rb) {
+static void prsolution(vt_t *vt, const sol_t *sol, const long double *rb) {
   trace(4, "prsolution:\n");
 
   if (sol->time.time == 0 || !sol->stat) return;
@@ -521,12 +521,12 @@ static void prsolution(vt_t *vt, const sol_t *sol, const double *rb) {
   const char *solstr[] = {"------", "FIX", "FLOAT", "SBAS", "DGPS", "SINGLE", "PPP", ""};
   vt_printf(vt, "(%-6s)", solstr[sol->stat]);
 
-  double bl[3] = {0};
-  if (norm(sol->rr, 3) > 0.0 && norm(rb, 3) > 0.0) {
+  long double bl[3] = {0};
+  if (norm(sol->rr, 3) > 0.0L && norm(rb, 3) > 0.0L) {
     for (int i = 0; i < 3; i++) bl[i] = sol->rr[i] - rb[i];
   }
-  double len = norm(bl, 3);
-  double Qr[9];
+  long double len = norm(bl, 3);
+  long double Qr[9];
   Qr[0] = sol->qr[0];
   Qr[4] = sol->qr[1];
   Qr[8] = sol->qr[2];
@@ -535,82 +535,82 @@ static void prsolution(vt_t *vt, const sol_t *sol, const double *rb) {
   Qr[2] = Qr[6] = sol->qr[5];
 
   if (soltype == 0) {
-    double pos[3] = {0};
-    double Qe[9] = {0};
-    double dms1[3] = {0}, dms2[3] = {0};
-    if (norm(sol->rr, 3) > 0.0) {
+    long double pos[3] = {0};
+    long double Qe[9] = {0};
+    long double dms1[3] = {0}, dms2[3] = {0};
+    if (norm(sol->rr, 3) > 0.0L) {
       ecef2pos(sol->rr, pos);
       covenu(pos, Qr, Qe);
       deg2dms(pos[0] * R2D, dms1, 4);
       deg2dms(pos[1] * R2D, dms2, 4);
       if (solopt[0].height == 1) pos[2] -= geoidh(pos); /* geodetic */
     }
-    vt_printf(vt, " %s:%2.0f %02.0f %07.4f", pos[0] < 0 ? "S" : "N", fabs(dms1[0]), dms1[1],
+    vt_printf(vt, " %s:%2.0Lf %02.0Lf %07.4Lf", pos[0] < 0 ? "S" : "N", fabsl(dms1[0]), dms1[1],
               dms1[2]);
-    vt_printf(vt, " %s:%3.0f %02.0f %07.4f", pos[1] < 0 ? "W" : "E", fabs(dms2[0]), dms2[1],
+    vt_printf(vt, " %s:%3.0Lf %02.0Lf %07.4Lf", pos[1] < 0 ? "W" : "E", fabsl(dms2[0]), dms2[1],
               dms2[2]);
-    vt_printf(vt, " H:%8.3f", pos[2]);
+    vt_printf(vt, " H:%8.3Lf", pos[2]);
     if (solflag & 1) {
-      vt_printf(vt, " (N:%6.3f E:%6.3f U:%6.3f)", SQRT(Qe[4]), SQRT(Qe[0]), SQRT(Qe[8]));
+      vt_printf(vt, " (N:%6.3Lf E:%6.3Lf U:%6.3Lf)", SQRT(Qe[4]), SQRT(Qe[0]), SQRT(Qe[8]));
     }
   } else if (soltype == 1) {
-    double pos[3] = {0};
-    double Qe[9] = {0};
-    if (norm(sol->rr, 3) > 0.0) {
+    long double pos[3] = {0};
+    long double Qe[9] = {0};
+    if (norm(sol->rr, 3) > 0.0L) {
       ecef2pos(sol->rr, pos);
       covenu(pos, Qr, Qe);
       if (solopt[0].height == 1) pos[2] -= geoidh(pos); /* geodetic */
     }
-    vt_printf(vt, " %s:%11.8f", pos[0] < 0.0 ? "S" : "N", fabs(pos[0]) * R2D);
-    vt_printf(vt, " %s:%12.8f", pos[1] < 0.0 ? "W" : "E", fabs(pos[1]) * R2D);
-    vt_printf(vt, " H:%8.3f", pos[2]);
+    vt_printf(vt, " %s:%11.8Lf", pos[0] < 0.0L ? "S" : "N", fabsl(pos[0]) * R2D);
+    vt_printf(vt, " %s:%12.8Lf", pos[1] < 0.0L ? "W" : "E", fabsl(pos[1]) * R2D);
+    vt_printf(vt, " H:%8.3Lf", pos[2]);
     if (solflag & 1) {
-      vt_printf(vt, " (E:%6.3f N:%6.3f U:%6.3fm)", SQRT(Qe[0]), SQRT(Qe[4]), SQRT(Qe[8]));
+      vt_printf(vt, " (E:%6.3Lf N:%6.3Lf U:%6.3Lfm)", SQRT(Qe[0]), SQRT(Qe[4]), SQRT(Qe[8]));
     }
   } else if (soltype == 2) {
-    vt_printf(vt, " X:%12.3f", sol->rr[0]);
-    vt_printf(vt, " Y:%12.3f", sol->rr[1]);
-    vt_printf(vt, " Z:%12.3f", sol->rr[2]);
+    vt_printf(vt, " X:%12.3Lf", sol->rr[0]);
+    vt_printf(vt, " Y:%12.3Lf", sol->rr[1]);
+    vt_printf(vt, " Z:%12.3Lf", sol->rr[2]);
     if (solflag & 1) {
-      vt_printf(vt, " (X:%6.3f Y:%6.3f Z:%6.3f)", SQRT(Qr[0]), SQRT(Qr[4]), SQRT(Qr[8]));
+      vt_printf(vt, " (X:%6.3Lf Y:%6.3Lf Z:%6.3Lf)", SQRT(Qr[0]), SQRT(Qr[4]), SQRT(Qr[8]));
     }
   } else if (soltype == 3) {
-    double enu[3] = {0};
-    double Qe[9] = {0};
-    if (len > 0.0) {
-      double pos[3] = {0};
+    long double enu[3] = {0};
+    long double Qe[9] = {0};
+    if (len > 0.0L) {
+      long double pos[3] = {0};
       ecef2pos(rb, pos);
       ecef2enu(pos, bl, enu);
       covenu(pos, Qr, Qe);
     }
-    vt_printf(vt, " E:%12.3f", enu[0]);
-    vt_printf(vt, " N:%12.3f", enu[1]);
-    vt_printf(vt, " U:%12.3f", enu[2]);
+    vt_printf(vt, " E:%12.3Lf", enu[0]);
+    vt_printf(vt, " N:%12.3Lf", enu[1]);
+    vt_printf(vt, " U:%12.3Lf", enu[2]);
     if (solflag & 1) {
-      vt_printf(vt, " (E:%6.3f N:%6.3f U:%6.3f)", SQRT(Qe[0]), SQRT(Qe[4]), SQRT(Qe[8]));
+      vt_printf(vt, " (E:%6.3Lf N:%6.3Lf U:%6.3Lf)", SQRT(Qe[0]), SQRT(Qe[4]), SQRT(Qe[8]));
     }
   } else if (soltype == 4) {
-    double pitch = 0.0, yaw = 0.0;
-    double Qe[9] = {0};
-    if (len > 0.0) {
-      double pos[3] = {0};
+    long double pitch = 0.0L, yaw = 0.0L;
+    long double Qe[9] = {0};
+    if (len > 0.0L) {
+      long double pos[3] = {0};
       ecef2pos(rb, pos);
-      double enu[3] = {0};
+      long double enu[3] = {0};
       ecef2enu(pos, bl, enu);
       covenu(pos, Qr, Qe);
-      pitch = asin(enu[2] / len);
-      yaw = atan2(enu[0], enu[1]);
-      if (yaw < 0.0) yaw += 2.0 * PI;
+      pitch = asinl(enu[2] / len);
+      yaw = atan2l(enu[0], enu[1]);
+      if (yaw < 0.0L) yaw += 2.0L * PI;
     }
-    vt_printf(vt, " P:%12.3f", pitch * R2D);
-    vt_printf(vt, " Y:%12.3f", yaw * R2D);
-    vt_printf(vt, " L:%12.3f", len);
+    vt_printf(vt, " P:%12.3Lf", pitch * R2D);
+    vt_printf(vt, " Y:%12.3Lf", yaw * R2D);
+    vt_printf(vt, " L:%12.3Lf", len);
     if (solflag & 1) {
-      vt_printf(vt, " (E:%6.3f N:%6.3f U:%6.3f)", SQRT(Qe[0]), SQRT(Qe[4]), SQRT(Qe[8]));
+      vt_printf(vt, " (E:%6.3Lf N:%6.3Lf U:%6.3Lf)", SQRT(Qe[0]), SQRT(Qe[4]), SQRT(Qe[8]));
     }
   }
   if (solflag & 2) {
-    vt_printf(vt, " A:%4.1f R:%5.1f N:%2d", sol->age, sol->ratio, sol->ns);
+    vt_printf(vt, " A:%4.1Lf R:%5.1Lf N:%2d", sol->age, sol->ratio, sol->ns);
   }
   vt_printf(vt, "\n");
 }
@@ -644,13 +644,13 @@ static void prstatus(vt_t *vt) {
     for (int j = 0; j < 10; j++) {
       nmsg[i][j] = svr.nmsg[i][j];
     }
-  double rt[3] = {0};
+  long double rt[3] = {0};
   if (svr.state) {
-    double runtime = (double)(tickget() - svr.tick) / 1000.0;
-    rt[0] = floor(runtime / 3600.0);
-    runtime -= rt[0] * 3600.0;
-    rt[1] = floor(runtime / 60.0);
-    rt[2] = runtime - rt[1] * 60.0;
+    long double runtime = (tickget() - svr.tick) / 1000.0L;
+    rt[0] = floorl(runtime / 3600.0L);
+    runtime -= rt[0] * 3600.0L;
+    rt[1] = floorl(runtime / 60.0L);
+    rt[2] = runtime - rt[1] * 60.0L;
   }
   rtcm_t rtcm[3];
   for (int i = 0; i < 3; i++) rtcm[i] = svr.rtcm[i];
@@ -665,7 +665,7 @@ static void prstatus(vt_t *vt) {
   rtksvrunlock(&svr);
 
   int n = 0;
-  double azel[MAXSAT * 2];
+  long double azel[MAXSAT * 2];
   for (int i = 0; i < MAXSAT; i++) {
     if (rtk.opt.mode == PMODE_SINGLE && !rtk.ssat[i].vs) continue;
     if (rtk.opt.mode != PMODE_SINGLE && !rtk.ssat[i].vsat[0]) continue;
@@ -673,8 +673,8 @@ static void prstatus(vt_t *vt) {
     azel[1 + n * 2] = rtk.ssat[i].azel[1];
     n++;
   }
-  double dop[4] = {0};
-  dops(n, azel, 0.0, dop);
+  long double dop[4] = {0};
+  dops(n, azel, 0.0L, dop);
 
   vt_printf(vt, "\n%s%-28s: %s%s\n", ESC_BOLD, "Parameter", "Value", ESC_RESET);
   vt_printf(vt, "%-28s: %s %s\n", "rtklib version", VER_RTKLIB, PATCH_LEVEL);
@@ -683,7 +683,7 @@ static void prstatus(vt_t *vt) {
   vt_printf(vt, "%-28s: %d\n", "processing cycle (ms)", cycle);
   vt_printf(vt, "%-28s: %s\n", "positioning mode", mode[rtk.opt.mode]);
   vt_printf(vt, "%-28s: %s\n", "frequencies", freq[rtk.opt.nf]);
-  vt_printf(vt, "%-28s: %02.0f:%02.0f:%04.1f\n", "accumulated time to run", rt[0], rt[1], rt[2]);
+  vt_printf(vt, "%-28s: %02.0Lf:%02.0Lf:%04.1Lf\n", "accumulated time to run", rt[0], rt[1], rt[2]);
   vt_printf(vt, "%-28s: %d\n", "cpu time for a cycle (ms)", cputime);
   vt_printf(vt, "%-28s: %d\n", "missing obs data count", prcout);
   vt_printf(vt, "%-28s: %d,%d\n", "bytes in input buffer", nb[0], nb[1]);
@@ -717,70 +717,70 @@ static void prstatus(vt_t *vt) {
   char tstr[40];
   time2str(rtk.sol.time, tstr, 9);
   vt_printf(vt, "%-28s: %s\n", "time of receiver clock rover", rtk.sol.time.time ? tstr : "-");
-  vt_printf(vt, "%-28s: %.3f,%.3f,%.3f,%.3f\n", "time sys offset (ns)", rtk.sol.dtr[1] * 1e9,
-            rtk.sol.dtr[2] * 1e9, rtk.sol.dtr[3] * 1e9, rtk.sol.dtr[4] * 1e9);
-  vt_printf(vt, "%-28s: %.3f\n", "solution interval (s)", rtk.tt);
-  vt_printf(vt, "%-28s: %.3f\n", "age of differential (s)", rtk.sol.age);
-  vt_printf(vt, "%-28s: %.3f\n", "ratio for ar validation", rtk.sol.ratio);
+  vt_printf(vt, "%-28s: %.3Lf,%.3Lf,%.3Lf,%.3Lf\n", "time sys offset (ns)", rtk.sol.dtr[1] * 1e9L,
+            rtk.sol.dtr[2] * 1e9L, rtk.sol.dtr[3] * 1e9L, rtk.sol.dtr[4] * 1e9L);
+  vt_printf(vt, "%-28s: %.3Lf\n", "solution interval (s)", rtk.tt);
+  vt_printf(vt, "%-28s: %.3Lf\n", "age of differential (s)", rtk.sol.age);
+  vt_printf(vt, "%-28s: %.3Lf\n", "ratio for ar validation", rtk.sol.ratio);
   vt_printf(vt, "%-28s: %d\n", "# of satellites rover", nsat0);
   vt_printf(vt, "%-28s: %d\n", "# of satellites base", nsat1);
   vt_printf(vt, "%-28s: %d\n", "# of valid satellites", rtk.sol.ns);
-  vt_printf(vt, "%-28s: %.1f,%.1f,%.1f,%.1f\n", "GDOP/PDOP/HDOP/VDOP", dop[0], dop[1], dop[2],
+  vt_printf(vt, "%-28s: %.1Lf,%.1Lf,%.1Lf,%.1Lf\n", "GDOP/PDOP/HDOP/VDOP", dop[0], dop[1], dop[2],
             dop[3]);
   vt_printf(vt, "%-28s: %d\n", "# of real estimated states", rtk.na);
   vt_printf(vt, "%-28s: %d\n", "# of all estimated states", rtk.nx);
-  vt_printf(vt, "%-28s: %.3f,%.3f,%.3f\n", "pos xyz single (m) rover", rtk.sol.rr[0], rtk.sol.rr[1],
+  vt_printf(vt, "%-28s: %.3Lf,%.3Lf,%.3Lf\n", "pos xyz single (m) rover", rtk.sol.rr[0], rtk.sol.rr[1],
             rtk.sol.rr[2]);
-  double pos[3];
-  if (norm(rtk.sol.rr, 3) > 0.0)
+  long double pos[3];
+  if (norm(rtk.sol.rr, 3) > 0.0L)
     ecef2pos(rtk.sol.rr, pos);
   else
-    pos[0] = pos[1] = pos[2] = 0.0;
-  vt_printf(vt, "%-28s: %.8f,%.8f,%.3f\n", "pos llh single (deg,m) rover", pos[0] * R2D,
+    pos[0] = pos[1] = pos[2] = 0.0L;
+  vt_printf(vt, "%-28s: %.8Lf,%.8Lf,%.3Lf\n", "pos llh single (deg,m) rover", pos[0] * R2D,
             pos[1] * R2D, pos[2]);
-  double vel[3];
+  long double vel[3];
   ecef2enu(pos, rtk.sol.rr + 3, vel);
-  vt_printf(vt, "%-28s: %.3f,%.3f,%.3f\n", "vel enu (m/s) rover", vel[0], vel[1], vel[2]);
-  vt_printf(vt, "%-28s: %.3f,%.3f,%.3f\n", "pos xyz float (m) rover", rtk.x ? rtk.x[0] : 0,
+  vt_printf(vt, "%-28s: %.3Lf,%.3Lf,%.3Lf\n", "vel enu (m/s) rover", vel[0], vel[1], vel[2]);
+  vt_printf(vt, "%-28s: %.3Lf,%.3Lf,%.3Lf\n", "pos xyz float (m) rover", rtk.x ? rtk.x[0] : 0,
             rtk.x ? rtk.x[1] : 0, rtk.x ? rtk.x[2] : 0);
-  vt_printf(vt, "%-28s: %.3f,%.3f,%.3f\n", "pos xyz float std (m) rover",
+  vt_printf(vt, "%-28s: %.3Lf,%.3Lf,%.3Lf\n", "pos xyz float std (m) rover",
             rtk.P ? SQRT(rtk.P[0]) : 0, rtk.P ? SQRT(rtk.P[1 + 1 * rtk.nx]) : 0,
             rtk.P ? SQRT(rtk.P[2 + 2 * rtk.nx]) : 0);
-  vt_printf(vt, "%-28s: %.3f,%.3f,%.3f\n", "pos xyz fixed (m) rover", rtk.xa ? rtk.xa[0] : 0,
+  vt_printf(vt, "%-28s: %.3Lf,%.3Lf,%.3Lf\n", "pos xyz fixed (m) rover", rtk.xa ? rtk.xa[0] : 0,
             rtk.xa ? rtk.xa[1] : 0, rtk.xa ? rtk.xa[2] : 0);
-  vt_printf(vt, "%-28s: %.3f,%.3f,%.3f\n", "pos xyz fixed std (m) rover",
+  vt_printf(vt, "%-28s: %.3Lf,%.3Lf,%.3Lf\n", "pos xyz fixed std (m) rover",
             rtk.Pa ? SQRT(rtk.Pa[0]) : 0, rtk.Pa ? SQRT(rtk.Pa[1 + 1 * rtk.na]) : 0,
             rtk.Pa ? SQRT(rtk.Pa[2 + 2 * rtk.na]) : 0);
-  vt_printf(vt, "%-28s: %.3f,%.3f,%.3f\n", "pos xyz (m) base", rtk.rb[0], rtk.rb[1], rtk.rb[2]);
-  if (norm(rtk.rb, 3) > 0.0)
+  vt_printf(vt, "%-28s: %.3Lf,%.3Lf,%.3Lf\n", "pos xyz (m) base", rtk.rb[0], rtk.rb[1], rtk.rb[2]);
+  if (norm(rtk.rb, 3) > 0.0L)
     ecef2pos(rtk.rb, pos);
   else
-    pos[0] = pos[1] = pos[2] = 0.0;
-  vt_printf(vt, "%-28s: %.8f,%.8f,%.3f\n", "pos llh (deg,m) base", pos[0] * R2D, pos[1] * R2D,
+    pos[0] = pos[1] = pos[2] = 0.0L;
+  vt_printf(vt, "%-28s: %.8Lf,%.8Lf,%.3Lf\n", "pos llh (deg,m) base", pos[0] * R2D, pos[1] * R2D,
             pos[2]);
   vt_printf(vt, "%-28s: %d\n", "# of average single pos base", nave);
   vt_printf(vt, "%-28s: %s\n", "ant type rover", rtk.opt.pcvr[0].type);
-  double *del = rtk.opt.antdel[0];
-  vt_printf(vt, "%-28s: %.3f %.3f %.3f\n", "ant delta rover", del[0], del[1], del[2]);
+  long double *del = rtk.opt.antdel[0];
+  vt_printf(vt, "%-28s: %.3Lf %.3Lf %.3Lf\n", "ant delta rover", del[0], del[1], del[2]);
   vt_printf(vt, "%-28s: %s\n", "ant type base", rtk.opt.pcvr[1].type);
   del = rtk.opt.antdel[1];
-  vt_printf(vt, "%-28s: %.3f %.3f %.3f\n", "ant delta base", del[0], del[1], del[2]);
+  vt_printf(vt, "%-28s: %.3Lf %.3Lf %.3Lf\n", "ant delta base", del[0], del[1], del[2]);
   ecef2enu(pos, rtk.rb + 3, vel);
-  vt_printf(vt, "%-28s: %.3f,%.3f,%.3f\n", "vel enu (m/s) base", vel[0], vel[1], vel[2]);
-  double bl1 = 0.0;
-  if (rtk.opt.mode > 0 && rtk.x && norm(rtk.x, 3) > 0.0) {
-    double rr[3];
+  vt_printf(vt, "%-28s: %.3Lf,%.3Lf,%.3Lf\n", "vel enu (m/s) base", vel[0], vel[1], vel[2]);
+  long double bl1 = 0.0L;
+  if (rtk.opt.mode > 0 && rtk.x && norm(rtk.x, 3) > 0.0L) {
+    long double rr[3];
     for (int i = 0; i < 3; i++) rr[i] = rtk.x[i] - rtk.rb[i];
     bl1 = norm(rr, 3);
   }
-  double bl2 = 0.0;
-  if (rtk.opt.mode > 0 && rtk.xa && norm(rtk.xa, 3) > 0.0) {
-    double rr[3];
+  long double bl2 = 0.0L;
+  if (rtk.opt.mode > 0 && rtk.xa && norm(rtk.xa, 3) > 0.0L) {
+    long double rr[3];
     for (int i = 0; i < 3; i++) rr[i] = rtk.xa[i] - rtk.rb[i];
     bl2 = norm(rr, 3);
   }
-  vt_printf(vt, "%-28s: %.3f\n", "baseline length float (m)", bl1);
-  vt_printf(vt, "%-28s: %.3f\n", "baseline length fixed (m)", bl2);
+  vt_printf(vt, "%-28s: %.3Lf\n", "baseline length float (m)", bl1);
+  vt_printf(vt, "%-28s: %.3Lf\n", "baseline length fixed (m)", bl2);
   vt_printf(vt, "%-28s: %s\n", "last time mark", tmcount ? tmstr : "-");
   vt_printf(vt, "%-28s: %d\n", "receiver time mark count", rcvcount);
   vt_printf(vt, "%-28s: %d\n", "rtklib time mark count", tmcount);
@@ -805,21 +805,21 @@ static void prsatellite(vt_t *vt, int nf) {
   vt_printf(vt, "%s\n", ESC_RESET);
 
   for (int i = 0; i < MAXSAT; i++) {
-    if (rtk.ssat[i].azel[1] <= 0.0) continue;
+    if (rtk.ssat[i].azel[1] <= 0.0L) continue;
     char id[8];
     satno2id(i + 1, id);
     vt_printf(vt, "%3s %2s", id, rtk.ssat[i].vs ? "OK" : "-");
-    double az = rtk.ssat[i].azel[0] * R2D;
-    if (az < 0.0) az += 360.0;
-    double el = rtk.ssat[i].azel[1] * R2D;
-    vt_printf(vt, " %5.1f %4.1f", az, el);
+    long double az = rtk.ssat[i].azel[0] * R2D;
+    if (az < 0.0L) az += 360.0L;
+    long double el = rtk.ssat[i].azel[1] * R2D;
+    vt_printf(vt, " %5.1Lf %4.1Lf", az, el);
     for (int j = 0; j < nf; j++) vt_printf(vt, " %2s", rtk.ssat[i].vsat[j] ? "OK" : "-");
     for (int j = 0; j < nf; j++) {
       int fix = rtk.ssat[i].fix[j];
       vt_printf(vt, " %5s", fix == 1 ? "FLOAT" : (fix == 2 ? "FIX" : (fix == 3 ? "HOLD" : "-")));
     }
-    for (int j = 0; j < nf; j++) vt_printf(vt, "%7.3f", rtk.ssat[i].resp[j]);
-    for (int j = 0; j < nf; j++) vt_printf(vt, "%8.4f", rtk.ssat[i].resc[j]);
+    for (int j = 0; j < nf; j++) vt_printf(vt, "%7.3Lf", rtk.ssat[i].resp[j]);
+    for (int j = 0; j < nf; j++) vt_printf(vt, "%8.4Lf", rtk.ssat[i].resc[j]);
     for (int j = 0; j < nf; j++) vt_printf(vt, " %4d", rtk.ssat[i].slipc[j]);
     for (int j = 0; j < nf; j++) vt_printf(vt, " %6d", rtk.ssat[i].lock[j]);
     for (int j = 0; j < nf; j++) vt_printf(vt, " %3d", rtk.ssat[i].rejc[j]);
@@ -855,10 +855,10 @@ static void probserv(vt_t *vt, int nf) {
     char id[8];
     satno2id(obs[i].sat, id);
     vt_printf(vt, "%s %3s %d", tstr, id, obs[i].rcv);
-    for (int j = 0; j < nf; j++) vt_printf(vt, "%13.3f", obs[i].P[j]);
-    for (int j = 0; j < nf; j++) vt_printf(vt, "%14.3f", obs[i].L[j]);
-    for (int j = 0; j < nf; j++) vt_printf(vt, "%8.1f", obs[i].D[j]);
-    for (int j = 0; j < nf; j++) vt_printf(vt, "%3.0f", obs[i].SNR[j] * SNR_UNIT);
+    for (int j = 0; j < nf; j++) vt_printf(vt, "%13.3Lf", obs[i].P[j]);
+    for (int j = 0; j < nf; j++) vt_printf(vt, "%14.3Lf", obs[i].L[j]);
+    for (int j = 0; j < nf; j++) vt_printf(vt, "%8.1Lf", obs[i].D[j]);
+    for (int j = 0; j < nf; j++) vt_printf(vt, "%3.0Lf", obs[i].SNR[j] * SNR_UNIT);
     for (int j = 0; j < nf; j++) vt_printf(vt, "%2d", obs[i].LLI[j]);
     vt_printf(vt, "\n");
   }
@@ -873,9 +873,9 @@ static void prnavidata(vt_t *vt) {
   for (int i = 0; i < MAXSAT; i++) eph[i] = svr.nav.eph[i][0];
   geph_t geph[MAXPRNGLO];
   for (int i = 0; i < MAXPRNGLO; i++) geph[i] = svr.nav.geph[i][0];
-  double ion[8];
+  long double ion[8];
   for (int i = 0; i < 8; i++) ion[i] = svr.nav.ion_gps[i];
-  double utc[8];
+  long double utc[8];
   for (int i = 0; i < 8; i++) utc[i] = svr.nav.utc_gps[i];
   rtksvrunlock(&svr);
 
@@ -885,7 +885,7 @@ static void prnavidata(vt_t *vt) {
     int prn;
     if (!(satsys(i + 1, &prn) & (SYS_GPS | SYS_GAL | SYS_QZS | SYS_CMP)) || eph[i].sat != i + 1)
       continue;
-    int valid = eph[i].toe.time != 0 && !eph[i].svh && fabs(timediff(time, eph[i].toe)) <= MAXDTOE;
+    int valid = eph[i].toe.time != 0 && !eph[i].svh && fabsl(timediff(time, eph[i].toe)) <= MAXDTOE;
     char id[8];
     satno2id(i + 1, id);
     char s1[64];
@@ -911,7 +911,7 @@ static void prnavidata(vt_t *vt) {
     int prn;
     if (!(satsys(i + 1, &prn) & SYS_GLO) || geph[prn - 1].sat != i + 1) continue;
     int valid = geph[prn - 1].toe.time != 0 && !geph[prn - 1].svh &&
-                fabs(timediff(time, geph[prn - 1].toe)) <= MAXDTOE_GLO;
+                fabsl(timediff(time, geph[prn - 1].toe)) <= MAXDTOE_GLO;
     char id[8];
     satno2id(i + 1, id);
     char s1[64];
@@ -928,9 +928,9 @@ static void prnavidata(vt_t *vt) {
               geph[prn - 1].iode, 0, geph[prn - 1].frq, geph[prn - 1].age, geph[prn].svh, s1, "-",
               s2, 0, 0);
   }
-  vt_printf(vt, "ION: %9.2E %9.2E %9.2E %9.2E %9.2E %9.2E %9.2E %9.2E\n", ion[0], ion[1], ion[2],
+  vt_printf(vt, "ION: %9.2LE %9.2LE %9.2LE %9.2LE %9.2LE %9.2LE %9.2LE %9.2LE\n", ion[0], ion[1], ion[2],
             ion[3], ion[4], ion[5], ion[6], ion[7]);
-  vt_printf(vt, "UTC: %9.2E %9.2E %9.2E %9.2E  LEAPS: %.0f\n", utc[0], utc[1], utc[2], utc[3],
+  vt_printf(vt, "UTC: %9.2LE %9.2LE %9.2LE %9.2LE  LEAPS: %.0Lf\n", utc[0], utc[1], utc[2], utc[3],
             utc[4]);
 }
 /* print error/warning messages ----------------------------------------------*/
@@ -997,16 +997,16 @@ static void prssr(vt_t *vt) {
     if (!ssr[i].t0[0].time) continue;
     char id[8];
     satno2id(i + 1, id);
-    int valid = fabs(timediff(time, ssr[i].t0[0])) <= 1800.0;
+    int valid = fabsl(timediff(time, ssr[i].t0[0])) <= 1800.0L;
     char tstr[40];
     time2str(ssr[i].t0[0], tstr, 0);
     rtkcatprintf(buff, sizeof(buff),
-                 "%3s %3s %3.0f %3d %3d %19s %6.3f %6.3f %6.3f %6.3f %6.3f "
-                 "%6.3f %8.3f %6.3f %6.4f %6.3f\n",
+                 "%3s %3s %3.0Lf %3d %3d %19s %6.3Lf %6.3Lf %6.3Lf %6.3Lf %6.3Lf "
+                 "%6.3Lf %8.3Lf %6.3Lf %6.4Lf %6.3Lf\n",
                  id, valid ? "OK" : "-", ssr[i].udi[0], ssr[i].iode, ssr[i].ura, tstr,
-                 ssr[i].deph[0], ssr[i].deph[1], ssr[i].deph[2], ssr[i].ddeph[0] * 1E3,
-                 ssr[i].ddeph[1] * 1E3, ssr[i].ddeph[2] * 1E3, ssr[i].dclk[0], ssr[i].dclk[1] * 1E3,
-                 ssr[i].dclk[2] * 1E3, ssr[i].hrclk);
+                 ssr[i].deph[0], ssr[i].deph[1], ssr[i].deph[2], ssr[i].ddeph[0] * 1E3L,
+                 ssr[i].ddeph[1] * 1E3L, ssr[i].ddeph[2] * 1E3L, ssr[i].dclk[0], ssr[i].dclk[1] * 1E3L,
+                 ssr[i].dclk[2] * 1E3L, ssr[i].hrclk);
   }
   vt_puts(vt, buff);
 }
@@ -1037,7 +1037,7 @@ static void cmd_solution(char **args, int narg, vt_t *vt) {
   trace(3, "cmd_solution:\n");
 
   int cycle = 0;
-  if (narg > 1) cycle = (int)(atof(args[1]) * 1000.0);
+  if (narg > 1) cycle = (int)(strtold(args[1], NULL) * 1000.0L);
 
   if (cycle > 0) svr.nsol = 0;
 
@@ -1057,7 +1057,7 @@ static void cmd_status(char **args, int narg, vt_t *vt) {
   trace(3, "cmd_status:\n");
 
   int cycle = 0;
-  if (narg > 1) cycle = (int)(atof(args[1]) * 1000.0);
+  if (narg > 1) cycle = (int)(strtold(args[1], NULL) * 1000.0L);
 
   while (!vt_chkbrk(vt)) {
     if (cycle > 0) vt_printf(vt, ESC_CLEAR);
@@ -1075,7 +1075,7 @@ static void cmd_satellite(char **args, int narg, vt_t *vt) {
 
   int nf = 2, cycle = 0;
   for (int i = 1; i < narg; i++) {
-    if (sscanf(args[i], "-%d", &nf) < 1) cycle = (int)(atof(args[i]) * 1000.0);
+    if (sscanf(args[i], "-%d", &nf) < 1) cycle = (int)(strtold(args[i], NULL) * 1000.0L);
   }
   while (!vt_chkbrk(vt)) {
     if (cycle > 0) vt_printf(vt, ESC_CLEAR);
@@ -1093,7 +1093,7 @@ static void cmd_observ(char **args, int narg, vt_t *vt) {
 
   int nf = 2, cycle = 0;
   for (int i = 1; i < narg; i++) {
-    if (sscanf(args[i], "-%d", &nf) < 1) cycle = (int)(atof(args[i]) * 1000.0);
+    if (sscanf(args[i], "-%d", &nf) < 1) cycle = (int)(strtold(args[i], NULL) * 1000.0L);
   }
   while (!vt_chkbrk(vt)) {
     if (cycle > 0) vt_printf(vt, ESC_CLEAR);
@@ -1110,7 +1110,7 @@ static void cmd_navidata(char **args, int narg, vt_t *vt) {
   trace(3, "cmd_navidata:\n");
 
   int cycle = 0;
-  if (narg > 1) cycle = (int)(atof(args[1]) * 1000.0);
+  if (narg > 1) cycle = (int)(strtold(args[1], NULL) * 1000.0L);
 
   while (!vt_chkbrk(vt)) {
     if (cycle > 0) vt_printf(vt, ESC_CLEAR);
@@ -1141,7 +1141,7 @@ static void cmd_stream(char **args, int narg, vt_t *vt) {
   trace(3, "cmd_stream:\n");
 
   int cycle = 0;
-  if (narg > 1) cycle = (int)(atof(args[1]) * 1000.0);
+  if (narg > 1) cycle = (int)(strtold(args[1], NULL) * 1000.0L);
 
   while (!vt_chkbrk(vt)) {
     if (cycle > 0) vt_printf(vt, ESC_CLEAR);
@@ -1158,7 +1158,7 @@ static void cmd_ssr(char **args, int narg, vt_t *vt) {
   trace(3, "cmd_ssr:\n");
 
   int cycle = 0;
-  if (narg > 1) cycle = (int)(atof(args[1]) * 1000.0);
+  if (narg > 1) cycle = (int)(strtold(args[1], NULL) * 1000.0L);
 
   while (!vt_chkbrk(vt)) {
     if (cycle > 0) vt_printf(vt, ESC_CLEAR);

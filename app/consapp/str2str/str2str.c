@@ -245,7 +245,7 @@ int main(int argc, char **argv) {
     cmds_periodic[i][0] = '\0';
   }
 
-  double stapos[3] = {0}, stadel[3] = {0};
+  long double stapos[3] = {0}, stadel[3] = {0};
   const char *local = "", *proxy = "", *msg = "1004,1019", *opt = "";
   const char *antinfo = "", *rcvinfo = "";
   char *ant[] = {"", "", ""}, *rcv[] = {"", "", ""}, *logfile = "";
@@ -262,19 +262,19 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
       n++;
     } else if (!strcmp(argv[i], "-p") && i + 3 < argc) {
-      double pos[3];
-      pos[0] = atof(argv[++i]) * D2R;
-      pos[1] = atof(argv[++i]) * D2R;
-      pos[2] = atof(argv[++i]);
+      long double pos[3];
+      pos[0] = strtold(argv[++i], NULL) * D2R;
+      pos[1] = strtold(argv[++i], NULL) * D2R;
+      pos[2] = strtold(argv[++i], NULL);
       pos2ecef(pos, stapos);
     } else if (!strcmp(argv[i], "-px") && i + 3 < argc) {
-      stapos[0] = atof(argv[++i]);
-      stapos[1] = atof(argv[++i]);
-      stapos[2] = atof(argv[++i]);
+      stapos[0] = strtold(argv[++i], NULL);
+      stapos[1] = strtold(argv[++i], NULL);
+      stapos[2] = strtold(argv[++i], NULL);
     } else if (!strcmp(argv[i], "-o") && i + 3 < argc) {
-      stadel[0] = atof(argv[++i]);
-      stadel[1] = atof(argv[++i]);
-      stadel[2] = atof(argv[++i]);
+      stadel[0] = strtold(argv[++i], NULL);
+      stadel[1] = strtold(argv[++i], NULL);
+      stadel[2] = strtold(argv[++i], NULL);
     } else if (!strcmp(argv[i], "-msg") && i + 1 < argc)
       msg = argv[++i];
     else if (!strcmp(argv[i], "-opt") && i + 1 < argc)

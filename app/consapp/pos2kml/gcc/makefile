@@ -2,7 +2,7 @@
 
 BINDIR = /usr/local/bin
 SRC    = ../../../../src
-CFLAGS = -std=c99 -Wall -O3 -pedantic -I$(SRC) -DTRACE
+CFLAGS = -std=c99 -Wall -O3 -pedantic -Wint-in-bool-context -Wextra  -Wdouble-promotion -I$(SRC) -DTRACE
 LDLIBS  = -lm -lrt
 
 pos2kml    : pos2kml.o convkml.o convgpx.o solution.o geoid.o rtkcmn.o trace.o preceph.o

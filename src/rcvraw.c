@@ -51,21 +51,21 @@
  *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
-#define P2_8 0.00390625             /* 2^-8 */
-#define P2_15 3.051757812500000E-05 /* 2^-15 */
-#define P2_28 3.725290298461914E-09 /* 2^-28 */
-#define P2_34 5.820766091346740E-11 /* 2^-34 */
-#define P2_41 4.547473508864641E-13 /* 2^-41 */
-#define P2_46 1.421085471520200E-14 /* 2^-46 */
-#define P2_51 4.440892098500626E-16 /* 2^-51 */
-#define P2_59 1.734723475976810E-18 /* 2^-59 */
-#define P2_66 1.355252715606881E-20 /* 2^-66 */
-#define P2_68 3.388131789017201E-21 /* 2^-68 */
-#define P2P11 2048.0                /* 2^11 */
-#define P2P12 4096.0                /* 2^12 */
-#define P2P14 16384.0               /* 2^14 */
-#define P2P15 32768.0               /* 2^15 */
-#define P2P16 65536.0               /* 2^16 */
+#define P2_8 0.00390625L                 /* 2^-8 */
+#define P2_15 3.0517578125000000000E-05L /* 2^-15 */
+#define P2_28 3.7252902984619140625E-09L /* 2^-28 */
+#define P2_34 5.8207660913467407227E-11L /* 2^-34 */
+#define P2_41 4.5474735088646411896E-13L /* 2^-41 */
+#define P2_46 1.4210854715202003717E-14L /* 2^-46 */
+#define P2_51 4.4408920985006261617E-16L /* 2^-51 */
+#define P2_59 1.7347234759768070944E-18L /* 2^-59 */
+#define P2_66 1.3552527156068805425E-20L /* 2^-66 */
+#define P2_68 3.3881317890172013563E-21L /* 2^-68 */
+#define P2P11 2048.0L                    /* 2^11 */
+#define P2P12 4096.0L                    /* 2^12 */
+#define P2P14 16384.0L                   /* 2^14 */
+#define P2P15 32768.0L                   /* 2^15 */
+#define P2P16 65536.0L                   /* 2^16 */
 
 #define SQR(x) ((x) * (x))
 
@@ -155,22 +155,22 @@ static int32_t merge_two_s(int32_t a, uint32_t b, unsigned n) {
 }
 
 /* Get sign-magnitude bits ---------------------------------------------------*/
-static double getbitg(const uint8_t *buff, unsigned pos, unsigned len) {
-  if (len == 0) return 0.0;
-  double value = getbitu(buff, pos + 1, len - 1);
+static long double getbitg(const uint8_t *buff, unsigned pos, unsigned len) {
+  if (len == 0) return 0.0L;
+  long double value = getbitu(buff, pos + 1, len - 1);
   return getbitu(buff, pos, 1) ? -value : value;
 }
 
 /* decode NavIC/IRNSS ephemeris ----------------------------------------------*/
 static bool decode_irn_eph(const uint8_t *buff, eph_t *eph) {
   eph_t eph_irn = {0};
-  double tow1, tow2, toc, sqrtA;
+  long double tow1, tow2, toc, sqrtA;
   int i, id1, id2, week;
 
   trace(4, "decode_irn_eph:\n");
 
   i = 8; /* subframe 1 */
-  tow1 = getbitu(buff, i, 17) * 12.0;
+  tow1 = getbitu(buff, i, 17) * 12.0L;
   i += 17 + 2;
   id1 = getbitu(buff, i, 2);
   i += 2 + 1;
@@ -184,7 +184,7 @@ static bool decode_irn_eph(const uint8_t *buff, eph_t *eph) {
   i += 8;
   eph_irn.sva = getbitu(buff, i, 4);
   i += 4;
-  toc = getbitu(buff, i, 16) * 16.0;
+  toc = getbitu(buff, i, 16) * 16.0L;
   i += 16;
   eph_irn.tgd[0] = getbits(buff, i, 8) * P2_31;
   i += 8;
@@ -202,20 +202,20 @@ static bool decode_irn_eph(const uint8_t *buff, eph_t *eph) {
   i += 15;
   eph_irn.cis = getbits(buff, i, 15) * P2_28;
   i += 15;
-  eph_irn.crc = getbits(buff, i, 15) * 0.0625;
+  eph_irn.crc = getbits(buff, i, 15) * 0.0625L;
   i += 15;
-  eph_irn.crs = getbits(buff, i, 15) * 0.0625;
+  eph_irn.crs = getbits(buff, i, 15) * 0.0625L;
   i += 15;
   eph_irn.idot = getbits(buff, i, 14) * P2_43 * SC2RAD;
 
   i = 8 * 37 + 8; /* subframe 2 */
-  tow2 = getbitu(buff, i, 17) * 12.0;
+  tow2 = getbitu(buff, i, 17) * 12.0L;
   i += 17 + 2;
   id2 = getbitu(buff, i, 2);
   i += 2 + 1;
   eph_irn.M0 = getbits(buff, i, 32) * P2_31 * SC2RAD;
   i += 32;
-  eph_irn.toes = getbitu(buff, i, 16) * 16.0;
+  eph_irn.toes = getbitu(buff, i, 16) * 16.0L;
   i += 16;
   eph_irn.e = getbitu(buff, i, 32) * P2_33;
   i += 32;
@@ -230,7 +230,7 @@ static bool decode_irn_eph(const uint8_t *buff, eph_t *eph) {
   eph_irn.i0 = getbits(buff, i, 32) * P2_31 * SC2RAD;
 
   /* test subframe id, tow and consistency of toe and toc */
-  if (id1 != 0 || id2 != 1 || tow1 + 12.0 != tow2 || toc != eph_irn.toes) {
+  if (id1 != 0 || id2 != 1 || tow1 + 12.0L != tow2 || toc != eph_irn.toes) {
     return false;
   }
   eph_irn.A = SQR(sqrtA);
@@ -238,16 +238,16 @@ static bool decode_irn_eph(const uint8_t *buff, eph_t *eph) {
   week = adjgpsweek(week);
   eph_irn.week = week; /* week number consistent to toe */
   eph_irn.toe = eph_irn.toc = gpst2time(eph_irn.week, eph_irn.toes);
-  if (tow1 < eph_irn.toes - 302400.0)
+  if (tow1 < eph_irn.toes - 302400.0L)
     week++;
-  else if (tow1 > eph_irn.toes + 302400.0)
+  else if (tow1 > eph_irn.toes + 302400.0L)
     week--;
   eph_irn.ttr = gpst2time(week, tow1);
   *eph = eph_irn;
   return true;
 }
 /* decode NavIC/IRNSS iono parameters ----------------------------------------*/
-static bool decode_irn_ion(const uint8_t *buff, double *ion) {
+static bool decode_irn_ion(const uint8_t *buff, long double *ion) {
   int i, id3, id4;
 
   trace(4, "decode_irn_ion:\n");
@@ -282,7 +282,7 @@ static bool decode_irn_ion(const uint8_t *buff, double *ion) {
   return true;
 }
 /* decode NavIC/IRNSS UTC parameters -----------------------------------------*/
-static bool decode_irn_utc(const uint8_t *buff, double *utc) {
+static bool decode_irn_utc(const uint8_t *buff, long double *utc) {
   int i, id3, id4;
 
   trace(4, "decode_irn_utc:\n");
@@ -307,7 +307,7 @@ static bool decode_irn_utc(const uint8_t *buff, double *utc) {
   i += 7; /* A2 */
   utc[4] = getbits(buff, i, 8);
   i += 8; /* dt_LS */
-  utc[2] = getbitu(buff, i, 16) * 16.0;
+  utc[2] = getbitu(buff, i, 16) * 16.0L;
   i += 16; /* tot */
   utc[3] = getbitu(buff, i, 10);
   i += 10; /* WNt */
@@ -326,16 +326,16 @@ static bool decode_irn_utc(const uint8_t *buff, double *utc) {
  *                                 buff[ 74-110]: subframe 3
  *                                 buff[111-147]: subframe 4
  *          eph_t *eph       IO  NavIC/IRNSS ephemeris        (NULL: not output)
- *          double *ion      IO  NavIC/IRNSS iono parametgers (NULL: not output)
+ *          long double *ion      IO  NavIC/IRNSS iono parametgers (NULL: not output)
  *                                 ion[0-3]: alpha_0,...,alpha_3
  *                                 ion[4-7]: beta_0,...,beta_3
- *          double *utc      IO  NavIC/IRNSS UTC parametgers  (NULL: not output)
+ *          long double *utc      IO  NavIC/IRNSS UTC parametgers  (NULL: not output)
  *                                 utc[0-3]: A0,A1,tot,WNt
  *                                 utc[4-7]: dt_LS,WN_LSF,DN,dt_LSF
  *                                 utc[8]  : A2
  * return : status (true:ok,false:error)
  *-----------------------------------------------------------------------------*/
-extern bool decode_irn_nav(const uint8_t *buff, eph_t *eph, double *ion, double *utc) {
+extern bool decode_irn_nav(const uint8_t *buff, eph_t *eph, long double *ion, long double *utc) {
   trace(4, "decode_irn_nav:\n");
 
   if (eph && !decode_irn_eph(buff, eph)) return false;
@@ -346,7 +346,7 @@ extern bool decode_irn_nav(const uint8_t *buff, eph_t *eph, double *ion, double 
 /* decode Galileo I/NAV ephemeris --------------------------------------------*/
 static bool decode_gal_inav_eph(const uint8_t *buff, eph_t *eph) {
   eph_t eph_gal = {0};
-  double tow, toc, tt, sqrtA;
+  long double tow, toc, tt, sqrtA;
   int i, week, svid, e5b_hs, e1b_hs, e5b_dvs, e1b_dvs, type[6], iod_nav[4];
 
   trace(4, "decode_gal_inav_eph:\n");
@@ -356,7 +356,7 @@ static bool decode_gal_inav_eph(const uint8_t *buff, eph_t *eph) {
   i += 6;
   iod_nav[0] = getbitu(buff, i, 10);
   i += 10;
-  eph_gal.toes = getbitu(buff, i, 14) * 60.0;
+  eph_gal.toes = getbitu(buff, i, 14) * 60.0L;
   i += 14;
   eph_gal.M0 = getbits(buff, i, 32) * P2_31 * SC2RAD;
   i += 32;
@@ -407,7 +407,7 @@ static bool decode_gal_inav_eph(const uint8_t *buff, eph_t *eph) {
   i += 16;
   eph_gal.cis = getbits(buff, i, 16) * P2_29;
   i += 16;
-  toc = getbitu(buff, i, 14) * 60.0;
+  toc = getbitu(buff, i, 14) * 60.0L;
   i += 14;
   eph_gal.f0 = getbits(buff, i, 31) * P2_34;
   i += 31;
@@ -455,9 +455,9 @@ static bool decode_gal_inav_eph(const uint8_t *buff, eph_t *eph) {
   eph_gal.svh = (e5b_hs << 7) | (e5b_dvs << 6) | (e1b_hs << 1) | e1b_dvs;
   eph_gal.ttr = gst2time(week, tow);
   tt = timediff(gst2time(week, eph_gal.toes), eph_gal.ttr);
-  if (tt > 302400.0)
+  if (tt > 302400.0L)
     week--; /* week consistent with toe */
-  else if (tt < -302400.0)
+  else if (tt < -302400.0L)
     week++;
   eph_gal.toe = gst2time(week, eph_gal.toes);
   eph_gal.toc = gst2time(week, toc);
@@ -467,14 +467,14 @@ static bool decode_gal_inav_eph(const uint8_t *buff, eph_t *eph) {
   return true;
 }
 /* decode Galileo I/NAV iono parameters --------------------------------------*/
-static bool decode_gal_inav_ion(const uint8_t *buff, double *ion) {
+static bool decode_gal_inav_ion(const uint8_t *buff, long double *ion) {
   int i = 128 * 5; /* word type 5 */
 
   trace(4, "decode_gal_inav_ion:\n");
 
   if (getbitu(buff, i, 6) != 5) return false;
   i += 6;
-  ion[0] = getbitu(buff, i, 11) * 0.25;
+  ion[0] = getbitu(buff, i, 11) * 0.25L;
   i += 11;
   ion[1] = getbits(buff, i, 11) * P2_8;
   i += 11;
@@ -484,7 +484,7 @@ static bool decode_gal_inav_ion(const uint8_t *buff, double *ion) {
   return true;
 }
 /* decode Galileo I/NAV UTC parameters ---------------------------------------*/
-static bool decode_gal_inav_utc(const uint8_t *buff, double *utc) {
+static bool decode_gal_inav_utc(const uint8_t *buff, long double *utc) {
   int i = 128 * 6; /* word type 6 */
 
   trace(4, "decode_gal_inav_utc:\n");
@@ -497,7 +497,7 @@ static bool decode_gal_inav_utc(const uint8_t *buff, double *utc) {
   i += 24; /* A1 */
   utc[4] = getbits(buff, i, 8);
   i += 8; /* dt_LS */
-  utc[2] = getbitu(buff, i, 8) * 3600.0;
+  utc[2] = getbitu(buff, i, 8) * 3600.0L;
   i += 8; /* tot */
   utc[3] = getbitu(buff, i, 8);
   i += 8; /* WNt */
@@ -519,14 +519,14 @@ static bool decode_gal_inav_utc(const uint8_t *buff, double *utc) {
  *                                 buff[80- 95]: word type 5
  *                                 buff[96-111]: word type 6
  *          eph_t    *eph    IO  Galileo I/NAV ephemeris       (NULL: not output)
- *          double   *ion    IO  Galileo I/NAV iono parameters (NULL: not output)
+ *          long double   *ion    IO  Galileo I/NAV iono parameters (NULL: not output)
  *                                 ion[0-3]: a_i0,a_i1,a_i2,flags
- *          double   *utc    IO  Galileo I/NAV UTC parameters  (NULL: not output)
+ *          long double   *utc    IO  Galileo I/NAV UTC parameters  (NULL: not output)
  *                                 utc[0-3]: A0,A1,tot,WNt
  *                                 utc[4-7]: dt_LS,WN_LSF,DN,dt_LSF
  * return : status (true:ok,false:error)
  *-----------------------------------------------------------------------------*/
-extern bool decode_gal_inav(const uint8_t *buff, eph_t *eph, double *ion, double *utc) {
+extern bool decode_gal_inav(const uint8_t *buff, eph_t *eph, long double *ion, long double *utc) {
   trace(4, "decode_gal_fnav:\n");
 
   if (eph && !decode_gal_inav_eph(buff, eph)) return false;
@@ -537,7 +537,7 @@ extern bool decode_gal_inav(const uint8_t *buff, eph_t *eph, double *ion, double
 /* decode Galileo F/NAV ephemeris --------------------------------------------*/
 static bool decode_gal_fnav_eph(const uint8_t *buff, eph_t *eph) {
   eph_t eph_gal = {0};
-  double tow[4], toc, tt, sqrtA;
+  long double tow[4], toc, tt, sqrtA;
   int i, week[3], svid, e5a_hs, e5a_dvs, type[4], iod_nav[4];
 
   trace(4, "decode_gal_fnav_eph:\n");
@@ -549,7 +549,7 @@ static bool decode_gal_fnav_eph(const uint8_t *buff, eph_t *eph) {
   i += 6;
   iod_nav[0] = getbitu(buff, i, 10);
   i += 10;
-  toc = getbitu(buff, i, 14) * 60.0;
+  toc = getbitu(buff, i, 14) * 60.0L;
   i += 14;
   eph_gal.f0 = getbits(buff, i, 31) * P2_34;
   i += 31;
@@ -609,7 +609,7 @@ static bool decode_gal_fnav_eph(const uint8_t *buff, eph_t *eph) {
   i += 16;
   eph_gal.crs = getbits(buff, i, 16) * P2_5;
   i += 16;
-  eph_gal.toes = getbitu(buff, i, 14) * 60.0;
+  eph_gal.toes = getbitu(buff, i, 14) * 60.0L;
   i += 14;
   week[2] = getbitu(buff, i, 12);
   i += 12;
@@ -641,14 +641,14 @@ static bool decode_gal_fnav_eph(const uint8_t *buff, eph_t *eph) {
     return false;
   }
   eph_gal.A = sqrtA * sqrtA;
-  eph_gal.tgd[1] = 0.0; /* BGD E5b/E1 */
+  eph_gal.tgd[1] = 0.0L; /* BGD E5b/E1 */
   eph_gal.iode = eph_gal.iodc = iod_nav[0];
   eph_gal.svh = (e5a_hs << 4) | (e5a_dvs << 3);
   eph_gal.ttr = gst2time(week[0], tow[0]);
   tt = timediff(gst2time(week[0], eph_gal.toes), eph_gal.ttr);
-  if (tt > 302400.0)
+  if (tt > 302400.0L)
     week[0]--; /* week consistent with toe */
-  else if (tt < -302400.0)
+  else if (tt < -302400.0L)
     week[0]++;
   eph_gal.toe = gst2time(week[0], eph_gal.toes);
   eph_gal.toc = gst2time(week[0], toc);
@@ -658,14 +658,14 @@ static bool decode_gal_fnav_eph(const uint8_t *buff, eph_t *eph) {
   return true;
 }
 /* decode Galileo F/NAV iono parameters --------------------------------------*/
-static bool decode_gal_fnav_ion(const uint8_t *buff, double *ion) {
+static bool decode_gal_fnav_ion(const uint8_t *buff, long double *ion) {
   int i = 0; /* page type 1 */
 
   trace(4, "decode_gal_fnav_ion:\n");
 
   if (getbitu(buff, i, 6) != 1) return false;
   i += 6 + 6 + 10 + 14 + 31 + 21 + 6 + 8;
-  ion[0] = getbitu(buff, i, 11) * 0.25;
+  ion[0] = getbitu(buff, i, 11) * 0.25L;
   i += 11;
   ion[1] = getbits(buff, i, 11) * P2_8;
   i += 11;
@@ -675,7 +675,7 @@ static bool decode_gal_fnav_ion(const uint8_t *buff, double *ion) {
   return true;
 }
 /* decode Galileo F/NAV UTC parameters ---------------------------------------*/
-static bool decode_gal_fnav_utc(const uint8_t *buff, double *utc) {
+static bool decode_gal_fnav_utc(const uint8_t *buff, long double *utc) {
   int i = 93 * 8; /* page type 4 */
 
   trace(4, "decode_gal_fnav_utc:\n");
@@ -688,7 +688,7 @@ static bool decode_gal_fnav_utc(const uint8_t *buff, double *utc) {
   i += 24; /* A1 */
   utc[4] = getbits(buff, i, 8);
   i += 8; /* dt_LS */
-  utc[2] = getbitu(buff, i, 8) * 3600.0;
+  utc[2] = getbitu(buff, i, 8) * 3600.0L;
   i += 8; /* tot */
   utc[3] = getbitu(buff, i, 8);
   i += 8; /* WN_ot */
@@ -709,14 +709,14 @@ static bool decode_gal_fnav_utc(const uint8_t *buff, double *utc) {
  *                                 buff[124-154]: page type 5
  *                                 buff[155-185]: page type 6
  *          eph_t    *eph    IO  Galileo F/NAV ephemeris       (NULL: not output)
- *          double   *ion    IO  Galileo F/NAV iono parameters (NULL: not output)
+ *          long double   *ion    IO  Galileo F/NAV iono parameters (NULL: not output)
  *                                 ion[0-3]: a_i0,a_i1,a_i2,flags
- *          double   *utc    IO  Galileo F/NAV UTC parameters  (NULL: not output)
+ *          long double   *utc    IO  Galileo F/NAV UTC parameters  (NULL: not output)
  *                                 utc[0-3]: A0,A1,tot,WNt
  *                                 utc[4-7]: dt_LS,WN_LSF,DN,dt_LSF
  * return : status (true:ok,false:error)
  *-----------------------------------------------------------------------------*/
-extern bool decode_gal_fnav(const uint8_t *buff, eph_t *eph, double *ion, double *utc) {
+extern bool decode_gal_fnav(const uint8_t *buff, eph_t *eph, long double *ion, long double *utc) {
   trace(4, "decode_gal_fnav:\n");
 
   if (eph && !decode_gal_fnav_eph(buff, eph)) return false;
@@ -727,7 +727,7 @@ extern bool decode_gal_fnav(const uint8_t *buff, eph_t *eph, double *ion, double
 /* decode BDS D1 navigation data ---------------------------------------------*/
 static bool decode_bds_d1_eph(const uint8_t *buff, eph_t *eph) {
   eph_t eph_bds = {0};
-  double toc_bds, sqrtA;
+  long double toc_bds, sqrtA;
   uint32_t toe1, toe2, sow1, sow2, sow3;
   int i, frn1, frn2, frn3;
 
@@ -738,9 +738,9 @@ static bool decode_bds_d1_eph(const uint8_t *buff, eph_t *eph) {
   eph_bds.iodc = getbitu(buff, i + 43, 5); /* AODC */
   eph_bds.sva = getbitu(buff, i + 48, 4);
   eph_bds.week = getbitu(buff, i + 60, 13); /* week in BDT */
-  toc_bds = getbitu2(buff, i + 73, 9, i + 90, 8) * 8.0;
-  eph_bds.tgd[0] = getbits(buff, i + 98, 10) * 0.1 * 1E-9;
-  eph_bds.tgd[1] = getbits2(buff, i + 108, 4, i + 120, 6) * 0.1 * 1E-9;
+  toc_bds = getbitu2(buff, i + 73, 9, i + 90, 8) * 8.0L;
+  eph_bds.tgd[0] = getbits(buff, i + 98, 10) * 0.1L * 1E-9L;
+  eph_bds.tgd[1] = getbits2(buff, i + 108, 4, i + 120, 6) * 0.1L * 1E-9L;
   eph_bds.f2 = getbits(buff, i + 214, 11) * P2_66;
   eph_bds.f0 = getbits2(buff, i + 225, 7, i + 240, 17) * P2_33;
   eph_bds.f1 = getbits2(buff, i + 257, 5, i + 270, 17) * P2_50;
@@ -771,7 +771,7 @@ static bool decode_bds_d1_eph(const uint8_t *buff, eph_t *eph) {
   eph_bds.idot = getbits2(buff, i + 189, 13, i + 210, 1) * P2_43 * SC2RAD;
   eph_bds.OMG0 = getbits2(buff, i + 211, 21, i + 240, 11) * P2_31 * SC2RAD;
   eph_bds.omg = getbits2(buff, i + 251, 11, i + 270, 21) * P2_31 * SC2RAD;
-  eph_bds.toes = merge_two_u(toe1, toe2, 15) * 8.0;
+  eph_bds.toes = merge_two_u(toe1, toe2, 15) * 8.0L;
 
   /* check consistency of subframe ids, sows and toe/toc */
   if (frn1 != 1 || frn2 != 2 || frn3 != 3) {
@@ -783,13 +783,13 @@ static bool decode_bds_d1_eph(const uint8_t *buff, eph_t *eph) {
     return false;
   }
   if (toc_bds != eph_bds.toes) {
-    trace(3, "decode_bds_d1_eph error: toe=%.0f toc=%.0f\n", eph_bds.toes, toc_bds);
+    trace(3, "decode_bds_d1_eph error: toe=%.0Lf toc=%.0Lf\n", eph_bds.toes, toc_bds);
     return false;
   }
   eph_bds.ttr = bdt2gpst(bdt2time(eph_bds.week, sow1)); /* bdt -> gpst */
-  if (eph_bds.toes > sow1 + 302400.0)
+  if (eph_bds.toes > sow1 + 302400.0L)
     eph_bds.week++;
-  else if (eph_bds.toes < sow1 - 302400.0)
+  else if (eph_bds.toes < sow1 - 302400.0L)
     eph_bds.week--;
   eph_bds.toe = bdt2gpst(bdt2time(eph_bds.week, eph_bds.toes));
   eph_bds.toc = bdt2gpst(bdt2time(eph_bds.week, toc_bds));
@@ -799,7 +799,7 @@ static bool decode_bds_d1_eph(const uint8_t *buff, eph_t *eph) {
   return true;
 }
 /* decode BDS D1 iono parameters ---------------------------------------------*/
-static bool decode_bds_d1_ion(const uint8_t *buff, double *ion) {
+static bool decode_bds_d1_ion(const uint8_t *buff, long double *ion) {
   int i = 8 * 38 * 0; /* subframe 1 */
 
   trace(4, "decode_bds_d1_ion:\n");
@@ -818,7 +818,7 @@ static bool decode_bds_d1_ion(const uint8_t *buff, double *ion) {
   return true;
 }
 /* decode BDS D1 UTC parameters ----------------------------------------------*/
-static bool decode_bds_d1_utc(const uint8_t *buff, double *utc) {
+static bool decode_bds_d1_utc(const uint8_t *buff, long double *utc) {
   int i = 8 * 38 * 4; /* subframe 5 */
 
   trace(4, "decode_bds_d1_utc:\n");
@@ -847,15 +847,15 @@ static bool decode_bds_d1_utc(const uint8_t *buff, double *utc) {
  *                                  buff[114-141]: subframe 4
  *                                  buff[152-189]: subframe 5
  *          eph_t    *eph    IO  BDS D1 ephemeris       (NULL: not output)
- *          double   *ion    IO  BDS D1 iono parameters (NULL: not output)
+ *          long double   *ion    IO  BDS D1 iono parameters (NULL: not output)
  *                                 ion[0-3]: alpha_0,...,alpha_3
  *                                 ion[4-7]: beta_0,...,beta_3
- *          double   *utc    IO  BDS D1 UTC parameters  (NULL: not output)
+ *          long double   *utc    IO  BDS D1 UTC parameters  (NULL: not output)
  *                                 utc[0-2]: A0,A1,tot,WNt
  *                                 utc[4-7]: dt_LS,WN_LSF,DN,dt_LSF
  * return : status (true:ok,false:error)
  *-----------------------------------------------------------------------------*/
-extern bool decode_bds_d1(const uint8_t *buff, eph_t *eph, double *ion, double *utc) {
+extern bool decode_bds_d1(const uint8_t *buff, eph_t *eph, long double *ion, long double *utc) {
   trace(4, "decode_bds_d1:\n");
 
   if (eph && !decode_bds_d1_eph(buff, eph)) return false;
@@ -866,7 +866,7 @@ extern bool decode_bds_d1(const uint8_t *buff, eph_t *eph, double *ion, double *
 /* decode BDS D2 ephemeris ---------------------------------------------------*/
 static bool decode_bds_d2_eph(const uint8_t *buff, eph_t *eph) {
   eph_t eph_bds = {0};
-  double toc_bds, sqrtA;
+  long double toc_bds, sqrtA;
   uint32_t f1p4, cucp5, ep6, cicp7, i0p8, OMGdp9, omgp10;
   uint32_t sow1, sow3, sow4, sow5, sow6, sow7, sow8, sow9, sow10;
   int i, f1p3, cucp4, ep5, cicp6, i0p7, OMGdp8, omgp9;
@@ -881,9 +881,9 @@ static bool decode_bds_d2_eph(const uint8_t *buff, eph_t *eph) {
   eph_bds.iodc = getbitu(buff, i + 47, 5); /* AODC */
   eph_bds.sva = getbitu(buff, i + 60, 4);
   eph_bds.week = getbitu(buff, i + 64, 13); /* week in BDT */
-  toc_bds = getbitu2(buff, i + 77, 5, i + 90, 12) * 8.0;
-  eph_bds.tgd[0] = getbits(buff, i + 102, 10) * 0.1 * 1E-9;
-  eph_bds.tgd[1] = getbits(buff, i + 120, 10) * 0.1 * 1E-9;
+  toc_bds = getbitu2(buff, i + 77, 5, i + 90, 12) * 8.0L;
+  eph_bds.tgd[0] = getbits(buff, i + 102, 10) * 0.1L * 1E-9L;
+  eph_bds.tgd[1] = getbits(buff, i + 120, 10) * 0.1L * 1E-9L;
 
   i = 8 * 38 * 2; /* page 3 */
   pgn3 = getbitu(buff, i + 42, 4);
@@ -921,7 +921,7 @@ static bool decode_bds_d2_eph(const uint8_t *buff, eph_t *eph) {
   sow7 = getbitu2(buff, i + 18, 8, i + 30, 12);
   cicp7 = getbitu2(buff, i + 46, 6, i + 60, 2);
   eph_bds.cis = getbits(buff, i + 62, 18) * P2_31;
-  eph_bds.toes = getbitu2(buff, i + 80, 2, i + 90, 15) * 8.0;
+  eph_bds.toes = getbitu2(buff, i + 80, 2, i + 90, 15) * 8.0L;
   i0p7 = getbits2(buff, i + 105, 7, i + 120, 14);
 
   i = 8 * 38 * 7; /* page 8 */
@@ -959,7 +959,7 @@ static bool decode_bds_d2_eph(const uint8_t *buff, eph_t *eph) {
     return false;
   }
   if (toc_bds != eph_bds.toes) {
-    trace(3, "decode_bds_d2 error: toe=%.0f toc=%.0f\n", eph_bds.toes, toc_bds);
+    trace(3, "decode_bds_d2 error: toe=%.0Lf toc=%.0Lf\n", eph_bds.toes, toc_bds);
     return false;
   }
   eph_bds.f1 = merge_two_s(f1p3, f1p4, 18) * P2_50;
@@ -971,9 +971,9 @@ static bool decode_bds_d2_eph(const uint8_t *buff, eph_t *eph) {
   eph_bds.omg = merge_two_s(omgp9, omgp10, 5) * P2_31 * SC2RAD;
 
   eph_bds.ttr = bdt2gpst(bdt2time(eph_bds.week, sow1)); /* bdt -> gpst */
-  if (eph_bds.toes > sow1 + 302400.0)
+  if (eph_bds.toes > sow1 + 302400.0L)
     eph_bds.week++;
-  else if (eph_bds.toes < sow1 - 302400.0)
+  else if (eph_bds.toes < sow1 - 302400.0L)
     eph_bds.week--;
   eph_bds.toe = bdt2gpst(bdt2time(eph_bds.week, eph_bds.toes));
   eph_bds.toc = bdt2gpst(bdt2time(eph_bds.week, toc_bds));
@@ -983,7 +983,7 @@ static bool decode_bds_d2_eph(const uint8_t *buff, eph_t *eph) {
   return true;
 }
 /* decode BDS D2 UTC parameters ----------------------------------------------*/
-static bool decode_bds_d2_utc(const uint8_t *buff, double *utc) {
+static bool decode_bds_d2_utc(const uint8_t *buff, long double *utc) {
   int i = 8 * 38 * 10; /* subframe 5 pase 102 */
 
   trace(4, "decode_bds_d2_utc:\n");
@@ -1013,12 +1013,12 @@ static bool decode_bds_d2_utc(const uint8_t *buff, double *utc) {
  *                                 buff[342-379]: subframe 1 page 10
  *                                 buff[380-417]: subframe 5 page 102
  *          eph_t    *eph    IO  BDS D2 ephemeris       (NULL: not output)
- *          double   *utc    IO  BDS D2 UTC parameters  (NULL: not output)
+ *          long double   *utc    IO  BDS D2 UTC parameters  (NULL: not output)
  *                                 utc[0-2]: A0,A1,tot,WNt
  *                                 utc[4-7]: dt_LS,WN_LSF,DN,dt_LSF
  * return : status (true:ok,false:error)
  *-----------------------------------------------------------------------------*/
-extern bool decode_bds_d2(const uint8_t *buff, eph_t *eph, double *utc) {
+extern bool decode_bds_d2(const uint8_t *buff, eph_t *eph, long double *utc) {
   trace(4, "decode_bds_d2:\n");
 
   if (eph && !decode_bds_d2_eph(buff, eph)) return false;
@@ -1084,11 +1084,11 @@ static bool decode_glostr_eph(const uint8_t *buff, geph_t *geph) {
   int tk_s = getbitu(buff, i, 1) * 30;
   i += 1;
   geph_t geph_glo = {0};
-  geph_glo.vel[0] = getbitg(buff, i, 24) * P2_20 * 1E3;
+  geph_glo.vel[0] = getbitg(buff, i, 24) * P2_20 * 1E3L;
   i += 24;
-  geph_glo.acc[0] = getbitg(buff, i, 5) * P2_30 * 1E3;
+  geph_glo.acc[0] = getbitg(buff, i, 5) * P2_30 * 1E3L;
   i += 5;
-  geph_glo.pos[0] = getbitg(buff, i, 27) * P2_11 * 1E3;
+  geph_glo.pos[0] = getbitg(buff, i, 27) * P2_11 * 1E3L;
   i += 27 + 4;
 
   /* frame 2 */
@@ -1100,11 +1100,11 @@ static bool decode_glostr_eph(const uint8_t *buff, geph_t *geph) {
   i += 1;
   int tb = getbitu(buff, i, 7);
   i += 7 + 5;
-  geph_glo.vel[1] = getbitg(buff, i, 24) * P2_20 * 1E3;
+  geph_glo.vel[1] = getbitg(buff, i, 24) * P2_20 * 1E3L;
   i += 24;
-  geph_glo.acc[1] = getbitg(buff, i, 5) * P2_30 * 1E3;
+  geph_glo.acc[1] = getbitg(buff, i, 5) * P2_30 * 1E3L;
   i += 5;
-  geph_glo.pos[1] = getbitg(buff, i, 27) * P2_11 * 1E3;
+  geph_glo.pos[1] = getbitg(buff, i, 27) * P2_11 * 1E3L;
   i += 27 + 4;
 
   /* frame 3 */
@@ -1118,11 +1118,11 @@ static bool decode_glostr_eph(const uint8_t *buff, geph_t *geph) {
   i += 2;
   int ln = getbitu(buff, i, 1);
   i += 1;
-  geph_glo.vel[2] = getbitg(buff, i, 24) * P2_20 * 1E3;
+  geph_glo.vel[2] = getbitg(buff, i, 24) * P2_20 * 1E3L;
   i += 24;
-  geph_glo.acc[2] = getbitg(buff, i, 5) * P2_30 * 1E3;
+  geph_glo.acc[2] = getbitg(buff, i, 5) * P2_30 * 1E3L;
   i += 5;
-  geph_glo.pos[2] = getbitg(buff, i, 27) * P2_11 * 1E3;
+  geph_glo.pos[2] = getbitg(buff, i, 27) * P2_11 * 1E3L;
   i += 27 + 4;
 
   /* frame 4 */
@@ -1155,26 +1155,26 @@ static bool decode_glostr_eph(const uint8_t *buff, geph_t *geph) {
   geph_glo.frq = 0; /* set default */
   geph_glo.iode = tb;
   int week;
-  double tow = time2gpst(gpst2utc(geph->tof), &week);
-  double tod = fmod(tow, 86400.0);
+  long double tow = time2gpst(gpst2utc(geph->tof), &week);
+  long double tod = fmodl(tow, 86400.0L);
   tow -= tod;
-  double tof = tk_h * 3600.0 + tk_m * 60.0 + tk_s - 10800.0; /* lt->utc */
-  if (tof < tod - 43200.0)
-    tof += 86400.0;
-  else if (tof > tod + 43200.0)
-    tof -= 86400.0;
+  long double tof = tk_h * 3600.0L + tk_m * 60.0L + tk_s - 10800.0L; /* lt->utc */
+  if (tof < tod - 43200.0L)
+    tof += 86400.0L;
+  else if (tof > tod + 43200.0L)
+    tof -= 86400.0L;
   geph_glo.tof = utc2gpst(gpst2time(week, tow + tof));
-  double toe = tb * 900.0 - 10800.0; /* lt->utc */
-  if (toe < tod - 43200.0)
-    toe += 86400.0;
-  else if (toe > tod + 43200.0)
-    toe -= 86400.0;
+  long double toe = tb * 900.0L - 10800.0L; /* lt->utc */
+  if (toe < tod - 43200.0L)
+    toe += 86400.0L;
+  else if (toe > tod + 43200.0L)
+    toe -= 86400.0L;
   geph_glo.toe = utc2gpst(gpst2time(week, tow + toe)); /* utc->gpst */
   *geph = geph_glo;
   return true;
 }
 /* decode GLONASS UTC parameters ---------------------------------------------*/
-static bool decode_glostr_utc(const uint8_t *buff, double *utc) {
+static bool decode_glostr_utc(const uint8_t *buff, long double *utc) {
   trace(4, "decode_glostr_utc:\n");
 
   int i = 1 + 80 * 4; /* frame 5 */
@@ -1185,7 +1185,7 @@ static bool decode_glostr_utc(const uint8_t *buff, double *utc) {
   utc[0] = getbits(buff, i, 32) * P2_31;
   i += 32 + 1 + 6;                       /* tau_C */
   utc[1] = getbits(buff, i, 22) * P2_30; /* tau_GPS */
-  utc[2] = utc[3] = utc[4] = utc[5] = utc[6] = utc[7] = 0.0;
+  utc[2] = utc[3] = utc[4] = utc[5] = utc[6] = utc[7] = 0.0L;
   return true;
 }
 /* decode GLONASS navigation data strings --------------------------------------
@@ -1198,14 +1198,14 @@ static bool decode_glostr_utc(const uint8_t *buff, double *utc) {
  *                                 buff[30-39]: string 4
  *                                 buff[40-49]: string 5
  *          geph_t *geph     IO  GLONASS ephemeris      (NULL: not output)
- *          double *utc      IO  GLONASS UTC parameters (NULL: not output)
+ *          long double *utc      IO  GLONASS UTC parameters (NULL: not output)
  *                                 utc[0]  : A0 (=-tau_C)
  *                                 utc[1-7]: reserved
  * return : status (true:ok,false:error)
  * notes  : geph->tof should be set to frame time within 1/2 day before calling
  *          geph->frq is set to 0
  *-----------------------------------------------------------------------------*/
-extern bool decode_glostr(const uint8_t *buff, geph_t *geph, double *utc) {
+extern bool decode_glostr(const uint8_t *buff, geph_t *geph, long double *utc) {
   trace(4, "decode_glostr:\n");
 
   if (geph && !decode_glostr_eph(buff, geph)) return false;
@@ -1218,7 +1218,7 @@ static bool decode_frame_eph(const uint8_t *buff, eph_t *eph) {
 
   int i = 48;
   i = 240 * 0 + 24; /* subframe 1 */
-  double tow1 = getbitu(buff, i, 17) * 6.0;
+  long double tow1 = getbitu(buff, i, 17) * 6.0L;
   i += 17 + 2;
   int id1 = getbitu(buff, i, 3);
   i += 3 + 2;
@@ -1239,7 +1239,7 @@ static bool decode_frame_eph(const uint8_t *buff, eph_t *eph) {
   i += 8;
   int iodc1 = getbitu(buff, i, 8);
   i += 8;
-  int toc = getbitu(buff, i, 16) * 16.0;
+  int toc = getbitu(buff, i, 16) * 16.0L;
   i += 16;
   eph_sat.f2 = getbits(buff, i, 8) * P2_55;
   i += 8;
@@ -1248,7 +1248,7 @@ static bool decode_frame_eph(const uint8_t *buff, eph_t *eph) {
   eph_sat.f0 = getbits(buff, i, 22) * P2_31;
 
   i = 240 * 1 + 24; /* subframe 2 */
-  double tow2 = getbitu(buff, i, 17) * 6.0;
+  long double tow2 = getbitu(buff, i, 17) * 6.0L;
   i += 17 + 2;
   int id2 = getbitu(buff, i, 3);
   i += 3 + 2;
@@ -1266,14 +1266,14 @@ static bool decode_frame_eph(const uint8_t *buff, eph_t *eph) {
   i += 32;
   eph_sat.cus = getbits(buff, i, 16) * P2_29;
   i += 16;
-  double sqrtA = getbitu(buff, i, 32) * P2_19;
+  long double sqrtA = getbitu(buff, i, 32) * P2_19;
   i += 32;
-  eph_sat.toes = getbitu(buff, i, 16) * 16.0;
+  eph_sat.toes = getbitu(buff, i, 16) * 16.0L;
   i += 16;
-  eph_sat.fit = getbitu(buff, i, 1) ? 0.0 : 4.0; /* 0:4hr,1:>4hr */
+  eph_sat.fit = getbitu(buff, i, 1) ? 0.0L : 4.0L; /* 0:4hr,1:>4hr */
 
   i = 240 * 2 + 24; /* subframe 3 */
-  double tow3 = getbitu(buff, i, 17) * 6.0;
+  long double tow3 = getbitu(buff, i, 17) * 6.0L;
   i += 17 + 2;
   int id3 = getbitu(buff, i, 3);
   i += 3 + 2;
@@ -1297,7 +1297,7 @@ static bool decode_frame_eph(const uint8_t *buff, eph_t *eph) {
 
   eph_sat.A = sqrtA * sqrtA;
   eph_sat.iodc = (iodc0 << 8) + iodc1;
-  eph_sat.tgd[0] = (tgd == -128) ? 0.0 : tgd * P2_31; /* ref [4] */
+  eph_sat.tgd[0] = (tgd == -128) ? 0.0L : tgd * P2_31; /* ref [4] */
 
   /* test subframe ids */
   if (id1 != 1 || id2 != 2 || id3 != 3) {
@@ -1311,9 +1311,9 @@ static bool decode_frame_eph(const uint8_t *buff, eph_t *eph) {
   }
   eph_sat.week = adjgpsweek(week);
   eph_sat.ttr = gpst2time(eph_sat.week, tow1);
-  if (eph_sat.toes < tow1 - 302400.0)
+  if (eph_sat.toes < tow1 - 302400.0L)
     eph_sat.week++;
-  else if (eph_sat.toes > tow1 + 302400.0)
+  else if (eph_sat.toes > tow1 + 302400.0L)
     eph_sat.week--;
   eph_sat.toe = gpst2time(eph_sat.week, eph_sat.toes);
   eph_sat.toc = gpst2time(eph_sat.week, toc);
@@ -1325,21 +1325,21 @@ static void decode_alm_sat(const uint8_t *buff, int type, alm_t *alm) {
   trace(4, "decode_alm_sat:\n");
 
   /* type=0:GPS,1:QZS-QZO,2:QZS-GEO */
-  double e_ref = (type == 0) ? 0.0 : ((type == 1) ? 0.06 : 0.0);
-  double i_ref = (type == 0) ? 0.3 : ((type == 1) ? 0.25 : 0.0);
+  long double e_ref = (type == 0) ? 0.0L : ((type == 1) ? 0.06L : 0.0L);
+  long double i_ref = (type == 0) ? 0.3L : ((type == 1) ? 0.25L : 0.0L);
 
   int i = 50;
   alm->e = getbits(buff, i, 16) * P2_21 + e_ref;
   i += 16;
-  alm->toas = getbitu(buff, i, 8) * 4096.0;
+  alm->toas = getbitu(buff, i, 8) * 4096.0L;
   i += 8;
-  double deltai = getbits(buff, i, 16) * P2_19;
+  long double deltai = getbits(buff, i, 16) * P2_19;
   i += 16;
   alm->OMGd = getbits(buff, i, 16) * P2_38 * SC2RAD;
   i += 16;
   alm->svh = getbitu(buff, i, 8);
   i += 8;
-  double sqrtA = getbitu(buff, i, 24) * P2_11;
+  long double sqrtA = getbitu(buff, i, 24) * P2_11;
   i += 24;
   alm->OMG0 = getbits(buff, i, 24) * P2_23 * SC2RAD;
   i += 24;
@@ -1448,7 +1448,7 @@ static bool decode_frame_alm(const uint8_t *buff, alm_t *alm) {
   return ret;
 }
 /* decode GPS/QZSS iono parameters -------------------------------------------*/
-static bool decode_frame_ion(const uint8_t *buff, double *ion) {
+static bool decode_frame_ion(const uint8_t *buff, long double *ion) {
   trace(4, "decode_frame_ion:\n");
 
   /* subframe 4/5 and svid=56 (page18) (wide area for QZSS) */
@@ -1477,7 +1477,7 @@ static bool decode_frame_ion(const uint8_t *buff, double *ion) {
   return false;
 }
 /* decode GPS/QZSS UTC parameters --------------------------------------------*/
-static bool decode_frame_utc(const uint8_t *buff, double *utc) {
+static bool decode_frame_utc(const uint8_t *buff, long double *utc) {
   trace(4, "decode_frame_utc:\n");
 
   /* subframe 4/5 and svid=56 (page18) */
@@ -1516,17 +1516,18 @@ static bool decode_frame_utc(const uint8_t *buff, double *utc) {
  *          eph_t *eph       IO  GPS/QZSS ephemeris       (NULL: not output)
  *          alm_t *alm       IO  GPS/QZSS almanac/health  (NULL: not output)
  *                                 alm[sat-1]: almanac/health (sat=sat no)
- *          double *ion      IO  GPS/QZSS iono parameters (NULL: not output)
+ *          long double *ion      IO  GPS/QZSS iono parameters (NULL: not output)
  *                                 ion[0-3]: alpha_0,...,alpha_3
  *                                 ion[4-7]: beta_0,...,beta_3
- *          double *utc      IO  GPST/QZSS UTC parameters (NULL: not output)
+ *          long double *utc      IO  GPST/QZSS UTC parameters (NULL: not output)
  *                                 utc[0-3]: A0,A1,tot,WNt(8bit)
  *                                 utc[4-7]: dt_LS,WN_LSF(8bit),DN,dt_LSF
  * return : status (true:ok,false:error or no data)
  * notes  : use CPU time to resolve modulo 1024 ambiguity of the week number
  *          see ref [1]
  *-----------------------------------------------------------------------------*/
-extern bool decode_frame(const uint8_t *buff, eph_t *eph, alm_t *alm, double *ion, double *utc) {
+extern bool decode_frame(const uint8_t *buff, eph_t *eph, alm_t *alm, long double *ion,
+                         long double *utc) {
   trace(4, "decode_frame:\n");
 
   if (eph && !decode_frame_eph(buff, eph)) return false;
@@ -1555,13 +1556,13 @@ extern int init_raw(raw_t *raw, int format) {
     for (int j = 0; j < 380; j++) raw->subfrm[i][j] = 0;
     for (int j = 0; j < NFREQ + NEXOBS; j++) {
       raw->tobs[i][j] = time0;
-      raw->lockt[i][j] = 0.0;
+      raw->lockt[i][j] = 0.0L;
       raw->halfc[i][j] = 0;
     }
-    raw->icpp[i] = raw->off[i] = raw->prCA[i] = raw->dpCA[i] = 0.0;
+    raw->icpp[i] = raw->off[i] = raw->prCA[i] = raw->dpCA[i] = 0.0L;
   }
   for (int i = 0; i < MAXOBS; i++) raw->freqn[i] = 0;
-  raw->icpc = 0.0;
+  raw->icpc = 0.0L;
   raw->nbyte = raw->len = 0;
   raw->iod = raw->flag = raw->tbase = raw->outtype = 0;
   raw->tod = -1;
@@ -1626,9 +1627,9 @@ extern int init_raw(raw_t *raw, int format) {
   raw->sta.rectype[0] = raw->sta.recver[0] = raw->sta.recsno[0] = '\0';
   raw->sta.antsetup = raw->sta.itrf = raw->sta.deltype = 0;
   for (int i = 0; i < 3; i++) {
-    raw->sta.pos[i] = raw->sta.del[i] = 0.0;
+    raw->sta.pos[i] = raw->sta.del[i] = 0.0L;
   }
-  raw->sta.hgt = 0.0;
+  raw->sta.hgt = 0.0L;
 
   /* initialize receiver dependent data */
   raw->format = format;

@@ -47,7 +47,7 @@
 #include "rtklib.h"
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
-#define SQRT(x) ((x) <= 0.0 || (x) != (x) ? 0.0 : sqrt(x))
+#define SQRT(x) ((x) <= 0.0L || (x) != (x) ? 0.0L : sqrtl(x))
 
 #define MAXPRCDAYS 100   /* max days of continuous processing */
 #define MAXINFILE 1000   /* max number of input files */
@@ -71,8 +71,8 @@ static int reverse = 0;                         /* analysis direction (0:forward
 static int aborts = 0;                          /* abort status */
 static sol_t *solf;                             /* forward solutions */
 static sol_t *solb;                             /* backward solutions */
-static double *rbf;                             /* forward base positions */
-static double *rbb;                             /* backward base positions */
+static long double *rbf;                        /* forward base positions */
+static long double *rbb;                        /* backward base positions */
 static int isolf = 0;                           /* current forward solutions index */
 static int isolb = 0;                           /* current backward solutions index */
 static char proc_rov[64] = "";                  /* rover for current processing */
@@ -100,25 +100,25 @@ static int checkbrk(const char *format, ...) {
   return showmsg(buff);
 }
 /* output reference position -------------------------------------------------*/
-static void outrpos(FILE *fp, const double *r, const solopt_t *opt) {
+static void outrpos(FILE *fp, const long double *r, const solopt_t *opt) {
   const char *sep = opt->sep;
 
   trace(3, "outrpos :\n");
 
   if (opt->posf == SOLF_LLH || opt->posf == SOLF_ENU) {
-    double pos[3];
+    long double pos[3];
     ecef2pos(r, pos);
     if (opt->degf) {
-      double dms1[3], dms2[3];
+      long double dms1[3], dms2[3];
       deg2dms(pos[0] * R2D, dms1, 5);
       deg2dms(pos[1] * R2D, dms2, 5);
-      fprintf(fp, "%3.0f%s%02.0f%s%08.5f%s%4.0f%s%02.0f%s%08.5f%s%10.4f", dms1[0], sep, dms1[1],
-              sep, dms1[2], sep, dms2[0], sep, dms2[1], sep, dms2[2], sep, pos[2]);
+      fprintf(fp, "%3.0Lf%s%02.0Lf%s%08.5Lf%s%4.0Lf%s%02.0Lf%s%08.5Lf%s%10.4Lf", dms1[0], sep,
+              dms1[1], sep, dms1[2], sep, dms2[0], sep, dms2[1], sep, dms2[2], sep, pos[2]);
     } else {
-      fprintf(fp, "%13.9f%s%14.9f%s%10.4f", pos[0] * R2D, sep, pos[1] * R2D, sep, pos[2]);
+      fprintf(fp, "%13.9Lf%s%14.9Lf%s%10.4Lf", pos[0] * R2D, sep, pos[1] * R2D, sep, pos[2]);
     }
   } else if (opt->posf == SOLF_XYZ) {
-    fprintf(fp, "%14.4f%s%14.4f%s%14.4f", r[0], sep, r[1], sep, r[2]);
+    fprintf(fp, "%14.4Lf%s%14.4Lf%s%14.4Lf", r[0], sep, r[1], sep, r[2]);
   }
 }
 /* output header -------------------------------------------------------------*/
@@ -151,22 +151,22 @@ static void outheader(FILE *fp, const char **file, int n, const prcopt_t *popt,
     gtime_t ts = obss.data[i].time;
     gtime_t te = obss.data[j].time;
     int w1, w2;
-    double t1 = time2gpst(ts, &w1);
-    double t2 = time2gpst(te, &w2);
+    long double t1 = time2gpst(ts, &w1);
+    long double t2 = time2gpst(te, &w2);
     if (sopt->times >= 1) {
       ts = gpst2utc(ts);
       te = gpst2utc(te);
     }
     if (sopt->times == 2) {
-      ts = timeadd(ts, 9 * 3600.0);
-      te = timeadd(te, 9 * 3600.0);
+      ts = timeadd(ts, 9 * 3600.0L);
+      te = timeadd(te, 9 * 3600.0L);
     }
     char s2[40], s3[40];
     time2str(ts, s2, 1);
     time2str(te, s3, 1);
     const char *s1[] = {"GPST", "UTC", "JST"};
-    fprintf(fp, "%s obs start : %s %s (week%04d %8.1fs)\n", COMMENTH, s2, s1[sopt->times], w1, t1);
-    fprintf(fp, "%s obs end   : %s %s (week%04d %8.1fs)\n", COMMENTH, s3, s1[sopt->times], w2, t2);
+    fprintf(fp, "%s obs start : %s %s (week%04d %8.1Lfs)\n", COMMENTH, s2, s1[sopt->times], w1, t1);
+    fprintf(fp, "%s obs end   : %s %s (week%04d %8.1Lfs)\n", COMMENTH, s3, s1[sopt->times], w2, t2);
   }
   if (sopt->outopt) {
     outprcopt(fp, popt);
@@ -189,7 +189,7 @@ static int nextobsf(const obs_t *obs, int *i, int rcv) {
   int n;
   for (n = 0; *i + n < obs->n; n++) {
     if (obs->data[*i + n].rcv != rcv) break;
-    double tt = timediff(obs->data[*i + n].time, obs->data[*i].time);
+    long double tt = timediff(obs->data[*i + n].time, obs->data[*i].time);
     if (tt > DTTOL) break;
   }
   return n;
@@ -200,7 +200,7 @@ static int nextobsb(const obs_t *obs, int *i, int rcv) {
   int n;
   for (n = 0; *i - n >= 0; n++) {
     if (obs->data[*i - n].rcv != rcv) break;
-    double tt = timediff(obs->data[*i - n].time, obs->data[*i].time);
+    long double tt = timediff(obs->data[*i - n].time, obs->data[*i].time);
     if (tt < -DTTOL) break;
   }
   return n;
@@ -225,13 +225,13 @@ static void update_rtcm_ssr(gtime_t time) {
   if (!fp_rtcm) return;
 
   /* read rtcm file until current time */
-  while (timediff(rtcm.time, time) < 1E-3) {
+  while (timediff(rtcm.time, time) < 1E-3L) {
     if (input_rtcm3f(&rtcm, fp_rtcm) < -1) break;
 
     /* update ssr corrections */
     for (int i = 0; i < MAXSAT; i++) {
       if (!rtcm.ssr[i].update || rtcm.ssr[i].iod[0] != rtcm.ssr[i].iod[1] ||
-          timediff(time, rtcm.ssr[i].t0[0]) < -1E-3)
+          timediff(time, rtcm.ssr[i].t0[0]) < -1E-3L)
         continue;
       navs.ssr[i] = rtcm.ssr[i];
       rtcm.ssr[i].update = 0;
@@ -269,10 +269,10 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt) {
         }
       } else {
         /* Find the closest iobsr timestamp, before or after iobsu. */
-        double dt = fabs(timediff(obss.data[iobsr].time, obss.data[iobsu].time));
+        long double dt = fabsl(timediff(obss.data[iobsr].time, obss.data[iobsu].time));
         int i = iobsr, nr = nextobsf(&obss, &i, 2);
         while (nr > 0) {
-          double dt_next = fabs(timediff(obss.data[i].time, obss.data[iobsu].time));
+          long double dt_next = fabsl(timediff(obss.data[i].time, obss.data[iobsu].time));
           if (dt_next > dt) break;
           dt = dt_next;
           iobsr = i;
@@ -293,7 +293,7 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt) {
       if (getbitu(sbss.msgs[isbs].msg, 8, 6) != 9) { /* Except for geo nav */
         sbsupdatecorr(sbss.msgs + isbs, &navs);
       }
-      if (timediff(time, obs[0].time) > -1.0 - DTTOL) break;
+      if (timediff(time, obs[0].time) > -1.0L - DTTOL) break;
       isbs++;
     }
     /* Update rtcm ssr corrections */
@@ -316,10 +316,10 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt) {
         }
       } else {
         /* Find the closest iobsr timestamp, before or after iobsu. */
-        double dt = fabs(timediff(obss.data[iobsr].time, obss.data[iobsu].time));
+        long double dt = fabsl(timediff(obss.data[iobsr].time, obss.data[iobsu].time));
         int i = iobsr, nr = nextobsb(&obss, &i, 2);
         while (nr > 0) {
-          double dt_next = fabs(timediff(obss.data[i].time, obss.data[iobsu].time));
+          long double dt_next = fabsl(timediff(obss.data[i].time, obss.data[iobsu].time));
           if (dt_next > dt) break;
           dt = dt_next;
           iobsr = i;
@@ -339,7 +339,7 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt) {
       if (getbitu(sbss.msgs[isbs].msg, 8, 6) != 9) { /* Except for geo nav */
         sbsupdatecorr(sbss.msgs + isbs, &navs);
       }
-      if (timediff(time, obs[0].time) < 1.0 + DTTOL) break;
+      if (timediff(time, obs[0].time) < 1.0L + DTTOL) break;
       isbs--;
     }
   }
@@ -347,11 +347,11 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt) {
 }
 /* output to file message of invalid time mark -------------------------------*/
 static void outinvalidtm(FILE *fptm, const solopt_t *opt, const gtime_t tm) {
-  const double secondsInAWeek = 604800;
+  const long double secondsInAWeek = 604800;
 
   gtime_t time = tm;
   if (opt->times >= TIMES_UTC) time = gpst2utc(time);
-  if (opt->times == TIMES_JST) time = timeadd(time, 9 * 3600.0);
+  if (opt->times == TIMES_JST) time = timeadd(time, 9 * 3600.0L);
 
   int timeu = opt->timeu < 0 ? 0 : (opt->timeu > 20 ? 20 : opt->timeu);
   char s[100];
@@ -359,12 +359,12 @@ static void outinvalidtm(FILE *fptm, const solopt_t *opt, const gtime_t tm) {
     time2str(time, s, timeu);
   else {
     int week;
-    double gpst = time2gpst(time, &week);
-    if (secondsInAWeek - gpst < 0.5 / pow(10.0, timeu)) {
+    long double gpst = time2gpst(time, &week);
+    if (secondsInAWeek - gpst < 0.5L / powl(10.0L, timeu)) {
       week++;
-      gpst = 0.0;
+      gpst = 0.0L;
     }
-    rtksnprintf(s, sizeof(s), "%4d   %*.*f", week, 6 + (timeu <= 0 ? 0 : timeu + 1), timeu, gpst);
+    rtksnprintf(s, sizeof(s), "%4d   %*.*Lf", week, 6 + (timeu <= 0 ? 0 : timeu + 1), timeu, gpst);
   }
   rtkstrcat(s, sizeof(s), "   Q=0, Time mark is not valid\n");
 
@@ -401,8 +401,8 @@ static void corr_phase_bias_ssr(obsd_t *obs, int n, const nav_t *nav) {
     for (int j = 0; j < NFREQ; j++) {
       uint8_t code = obs[i].code[j];
 
-      double freq = sat2freq(obs[i].sat, code, nav);
-      if (freq == 0.0) continue;
+      long double freq = sat2freq(obs[i].sat, code, nav);
+      if (freq == 0.0L) continue;
 
       /* correct phase bias (cyc) */
       obs[i].L[j] -= nav->ssr[obs[i].sat - 1].pbias[code - 1] * freq / CLIGHT;
@@ -424,7 +424,7 @@ static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
 
   int nobs, n, num = 0;
   sol_t sol = {{0}}, oldsol = {{0}}, newsol = {{0}};
-  double rb[3] = {0};
+  long double rb[3] = {0};
   obsd_t *obs_ptr = (obsd_t *)malloc(sizeof(obsd_t) * MAXOBS * 2); /* for rover and base */
   while ((nobs = inputobs(obs_ptr, rtk->sol.stat, popt)) >= 0) {
     /* exclude satellites */
@@ -455,7 +455,7 @@ static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
       } else if (time.time == 0 || pri[rtk->sol.stat] <= pri[sol.stat]) {
         sol = rtk->sol;
         for (int i = 0; i < 3; i++) rb[i] = rtk->rb[i];
-        if (time.time == 0 || timediff(rtk->sol.time, time) < 0.0) {
+        if (time.time == 0 || timediff(rtk->sol.time, time) < 0.0L) {
           time = rtk->sol.time;
         }
       }
@@ -486,7 +486,7 @@ static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
       isolb++;
     }
   }
-  if (mode == SOLMODE_SINGLE_DIR && solstatic && time.time != 0.0) {
+  if (mode == SOLMODE_SINGLE_DIR && solstatic && time.time != 0.0L) {
     sol.time = time;
     outsol(fp, &sol, rb, sopt);
   }
@@ -494,24 +494,24 @@ static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
   free(obs_ptr); /* moved from stack to heap to kill a stack overflow warning */
 }
 /* validation of combined solutions ------------------------------------------*/
-static bool valcomb(const sol_t *solf, const sol_t *solb, const double *rbf, const double *rbb,
-                    const prcopt_t *popt) {
+static bool valcomb(const sol_t *solf, const sol_t *solb, const long double *rbf,
+                    const long double *rbb, const prcopt_t *popt) {
   trace(4, "valcomb :\n");
 
   /* compare forward and backward solution */
-  double dr[3], var[3];
+  long double dr[3], var[3];
   for (int i = 0; i < 3; i++) {
     dr[i] = solf->rr[i] - solb->rr[i];
     if (popt->mode == PMODE_MOVEB) dr[i] -= (rbf[i] - rbb[i]);
-    var[i] = (double)solf->qr[i] + (double)solb->qr[i];
+    var[i] = solf->qr[i] + solb->qr[i];
   }
   for (int i = 0; i < 3; i++) {
-    if (dr[i] * dr[i] <= 16.0 * var[i]) continue; /* ok if in 4-sigma */
+    if (dr[i] * dr[i] <= 16.0L * var[i]) continue; /* ok if in 4-sigma */
 
     char tstr[40];
     time2str(solf->time, tstr, 2);
-    trace(2, "degrade fix to float: %s dr=%.3f %.3f %.3f std=%.3f %.3f %.3f\n", tstr + 11, dr[0],
-          dr[1], dr[2], SQRT(var[0]), SQRT(var[1]), SQRT(var[2]));
+    trace(2, "degrade fix to float: %s dr=%.3Lf %.3Lf %.3Lf std=%.3Lf %.3Lf %.3Lf\n", tstr + 11,
+          dr[0], dr[1], dr[2], SQRT(var[0]), SQRT(var[1]), SQRT(var[2]));
     return false;
   }
   return true;
@@ -527,11 +527,11 @@ static void combres(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
                           popt->mode == PMODE_PPP_STATIC);
 
   int num = 0;
-  double rbs[3] = {0}, rb[3] = {0};
+  long double rbs[3] = {0}, rb[3] = {0};
   sol_t sols = {{0}}, sol = {{0}}, oldsol = {{0}}, newsol = {{0}};
   gtime_t time = {0};
   for (int i = 0, j = isolb - 1; i < isolf && j >= 0; i++, j--) {
-    double tt = timediff(solf[i].time, solb[j].time);
+    long double tt = timediff(solf[i].time, solb[j].time);
     if (tt < -DTTOL) {
       sols = solf[i];
       for (int k = 0; k < 3; k++) rbs[k] = rbf[k + i * 3];
@@ -548,13 +548,13 @@ static void combres(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
       for (int k = 0; k < 3; k++) rbs[k] = rbb[k + j * 3];
     } else {
       sols = solf[i];
-      sols.time = timeadd(sols.time, -tt / 2.0);
+      sols.time = timeadd(sols.time, -tt / 2.0L);
 
       if ((popt->mode == PMODE_KINEMA || popt->mode == PMODE_MOVEB) && sols.stat == SOLQ_FIX) {
         /* degrade fix to float if validation failed */
         if (!valcomb(solf + i, solb + j, rbf + i * 3, rbb + j * 3, popt)) sols.stat = SOLQ_FLOAT;
       }
-      double Qf[9], Qb[9];
+      long double Qf[9], Qb[9];
       for (int k = 0; k < 3; k++) {
         Qf[k + k * 3] = solf[i].qr[k];
         Qb[k + k * 3] = solb[j].qr[k];
@@ -566,23 +566,23 @@ static void combres(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
       Qb[5] = Qb[7] = solb[j].qr[4];
       Qb[2] = Qb[6] = solb[j].qr[5];
 
-      double Qs[9];
+      long double Qs[9];
       if (popt->mode == PMODE_MOVEB) {
-        double rr_f[3], rr_b[3];
+        long double rr_f[3], rr_b[3];
         for (int k = 0; k < 3; k++) rr_f[k] = solf[i].rr[k] - rbf[k + i * 3];
         for (int k = 0; k < 3; k++) rr_b[k] = solb[j].rr[k] - rbb[k + j * 3];
-        double rr_s[3];
+        long double rr_s[3];
         if (smoother(rr_f, Qf, rr_b, Qb, 3, rr_s, Qs)) continue;
         for (int k = 0; k < 3; k++) sols.rr[k] = rbs[k] + rr_s[k];
       } else {
         if (smoother(solf[i].rr, Qf, solb[j].rr, Qb, 3, sols.rr, Qs)) continue;
       }
-      sols.qr[0] = (float)Qs[0];
-      sols.qr[1] = (float)Qs[4];
-      sols.qr[2] = (float)Qs[8];
-      sols.qr[3] = (float)Qs[1];
-      sols.qr[4] = (float)Qs[5];
-      sols.qr[5] = (float)Qs[2];
+      sols.qr[0] = Qs[0];
+      sols.qr[1] = Qs[4];
+      sols.qr[2] = Qs[8];
+      sols.qr[3] = Qs[1];
+      sols.qr[4] = Qs[5];
+      sols.qr[5] = Qs[2];
 
       /* smoother for velocity solution */
       if (popt->dynamics) {
@@ -597,12 +597,12 @@ static void combres(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
         Qb[5] = Qb[7] = solb[j].qv[4];
         Qb[2] = Qb[6] = solb[j].qv[5];
         if (smoother(solf[i].rr + 3, Qf, solb[j].rr + 3, Qb, 3, sols.rr + 3, Qs)) continue;
-        sols.qv[0] = (float)Qs[0];
-        sols.qv[1] = (float)Qs[4];
-        sols.qv[2] = (float)Qs[8];
-        sols.qv[3] = (float)Qs[1];
-        sols.qv[4] = (float)Qs[5];
-        sols.qv[5] = (float)Qs[2];
+        sols.qv[0] = Qs[0];
+        sols.qv[1] = Qs[4];
+        sols.qv[2] = Qs[8];
+        sols.qv[3] = Qs[1];
+        sols.qv[4] = Qs[5];
+        sols.qv[5] = Qs[2];
       }
     }
     if (!solstatic) {
@@ -610,11 +610,11 @@ static void combres(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
     } else if (time.time == 0 || pri[sols.stat] <= pri[sol.stat]) {
       sol = sols;
       for (int k = 0; k < 3; k++) rb[k] = rbs[k];
-      if (time.time == 0 || timediff(sols.time, time) < 0.0) {
+      if (time.time == 0 || timediff(sols.time, time) < 0.0L) {
         time = sols.time;
       }
     }
-    if (iitm < nitm && timediff(invalidtm[iitm], sols.time) < 0.0) {
+    if (iitm < nitm && timediff(invalidtm[iitm], sols.time) < 0.0L) {
       outinvalidtm(fptm, sopt, invalidtm[iitm]);
       iitm++;
     }
@@ -627,7 +627,7 @@ static void combres(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
     }
     oldsol = sols;
   }
-  if (solstatic && time.time != 0.0) {
+  if (solstatic && time.time != 0.0L) {
     sol.time = time;
     outsol(fp, &sol, rb, sopt);
   }
@@ -695,8 +695,9 @@ static void freepreceph(nav_t *nav, sbs_t *sbs) {
   free_rtcm(&rtcm);
 }
 /* read obs and nav data -----------------------------------------------------*/
-static bool readobsnav(gtime_t ts, gtime_t te, double ti, const char **infile, const int *index,
-                       int n, const prcopt_t *prcopt, obs_t *obs, nav_t *nav, sta_t *sta) {
+static bool readobsnav(gtime_t ts, gtime_t te, long double ti, const char **infile,
+                       const int *index, int n, const prcopt_t *prcopt, obs_t *obs, nav_t *nav,
+                       sta_t *sta) {
   char tstr[40];
   trace(3, "readobsnav: ts=%s n=%d\n", time2str(ts, tstr, 0), n);
 
@@ -788,10 +789,11 @@ static void freeobsnav(obs_t *obs, nav_t *nav) {
   }
 }
 /* average of single position ------------------------------------------------*/
-static bool avepos(double *ra, int rcv, const obs_t *obs, const nav_t *nav, const prcopt_t *opt) {
+static bool avepos(long double *ra, int rcv, const obs_t *obs, const nav_t *nav,
+                   const prcopt_t *opt) {
   trace(3, "avepos: rcv=%d obs.n=%d\n", rcv, obs->n);
 
-  for (int i = 0; i < 3; i++) ra[i] = 0.0;
+  for (int i = 0; i < 3; i++) ra[i] = 0.0L;
 
   int n = 0, m;
   for (int iobs = 0; (m = nextobsf(obs, &iobs, rcv)) > 0; iobs += m) {
@@ -802,7 +804,7 @@ static bool avepos(double *ra, int rcv, const obs_t *obs, const nav_t *nav, cons
       if ((satsys(data[j].sat, NULL) & opt->navsys) && opt->exsats[data[j].sat - 1] != 1) j++;
     }
     gtime_t ts = {0};
-    if (j <= 0 || !screent(data[0].time, ts, ts, 1.0)) continue; /* only 1 hz */
+    if (j <= 0 || !screent(data[0].time, ts, ts, 1.0L)) continue; /* only 1 hz */
 
     /* Messages are disarded. */
     char msg[128];
@@ -821,7 +823,7 @@ static bool avepos(double *ra, int rcv, const obs_t *obs, const nav_t *nav, cons
   return true;
 }
 /* station position from file ------------------------------------------------*/
-static bool getstapos(const char *file, const char *name, double *r) {
+static bool getstapos(const char *file, const char *name, long double *r) {
   trace(3, "getstapos: file=%s name=%s\n", file, name);
 
   FILE *fp = fopen(file, "r");
@@ -834,9 +836,9 @@ static bool getstapos(const char *file, const char *name, double *r) {
     char *p = strchr(buff, '%');
     if (p) *p = '\0';
 
-    double pos[3];
+    long double pos[3];
     char sname[256];
-    if (sscanf(buff, "%lf %lf %lf %255s", pos, pos + 1, pos + 2, sname) < 4) continue;
+    if (sscanf(buff, "%Lf %Lf %Lf %255s", pos, pos + 1, pos + 2, sname) < 4) continue;
 
     const char *q;
     for (p = sname, q = name; *p && *q; p++, q++) {
@@ -859,7 +861,7 @@ static bool antpos(prcopt_t *opt, int rcvno, const obs_t *obs, const nav_t *nav,
                    const char *posfile) {
   trace(3, "antpos  : rcvno=%d\n", rcvno);
 
-  double *rr = rcvno == 1 ? opt->ru : opt->rb;
+  long double *rr = rcvno == 1 ? opt->ru : opt->rb;
   int postype = rcvno == 1 ? opt->rovpos : opt->refpos;
   if (postype == POSOPT_SINGLE) { /* average of single position */
     if (!avepos(rr, rcvno, obs, nav, opt)) {
@@ -873,8 +875,8 @@ static bool antpos(prcopt_t *opt, int rcvno, const obs_t *obs, const nav_t *nav,
       return false;
     }
   } else if (postype == POSOPT_RINEX) { /* get from rinex header */
-    double dr[3] = {0};
-    if (norm(stas[rcvno == 1 ? 0 : 1].pos, 3) <= 0.0) {
+    long double dr[3] = {0};
+    if (norm(stas[rcvno == 1 ? 0 : 1].pos, 3) <= 0.0L) {
       showmsg("error : no position in rinex header");
       trace(1, "no position in rinex header\n");
       return false;
@@ -882,10 +884,10 @@ static bool antpos(prcopt_t *opt, int rcvno, const obs_t *obs, const nav_t *nav,
     /* add antenna delta unless already done in antpcv() */
     if (!strcmp(opt->anttype[rcvno], "*")) {
       if (stas[rcvno == 1 ? 0 : 1].deltype == 0) { /* enu */
-        double del[3];
+        long double del[3];
         for (int i = 0; i < 3; i++) del[i] = stas[rcvno == 1 ? 0 : 1].del[i];
         del[2] += stas[rcvno == 1 ? 0 : 1].hgt;
-        double pos[3];
+        long double pos[3];
         ecef2pos(stas[rcvno == 1 ? 0 : 1].pos, pos);
         enu2ecef(pos, del, dr);
       } else { /* xyz */
@@ -970,10 +972,10 @@ static void setpcv(gtime_t time, prcopt_t *popt, nav_t *nav, const pcvs_t *pcvs,
     if (!strcmp(popt->anttype[i], "*")) { /* set by station parameters */
       rtkstrcpy(popt->anttype[i], sizeof(popt->anttype[i]), sta[i].antdes);
       if (sta[i].deltype == 1) { /* xyz */
-        if (norm(sta[i].pos, 3) > 0.0) {
-          double pos[3];
+        if (norm(sta[i].pos, 3) > 0.0L) {
+          long double pos[3];
           ecef2pos(sta[i].pos, pos);
-          double del[3];
+          long double del[3];
           ecef2enu(pos, sta[i].del, del);
           for (int j = 0; j < 3; j++) popt->antdel[i][j] = del[j];
         }
@@ -1043,9 +1045,9 @@ static void namefiletm(char *outfiletm, size_t size, const char *outfile) {
   rtkstrcat(outfiletm, size, "_events.pos");
 }
 /* execute processing session ------------------------------------------------*/
-static bool execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt, const solopt_t *sopt,
-                    const filopt_t *fopt, int flag, const char **infile, const int *index, int n,
-                    const char *outfile) {
+static bool execses(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt,
+                    const solopt_t *sopt, const filopt_t *fopt, int flag, const char **infile,
+                    const int *index, int n, const char *outfile) {
   trace(3, "execses : n=%d outfile=%s\n", n, outfile);
 
   rtk_t *rtk_ptr =
@@ -1193,8 +1195,8 @@ static bool execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt, con
   } else { /* combined or combined with no phase reset */
     solf = (sol_t *)malloc(sizeof(sol_t) * nepoch);
     solb = (sol_t *)malloc(sizeof(sol_t) * nepoch);
-    rbf = (double *)malloc(sizeof(double) * nepoch * 3);
-    rbb = (double *)malloc(sizeof(double) * nepoch * 3);
+    rbf = (long double *)malloc(sizeof(long double) * nepoch * 3);
+    rbb = (long double *)malloc(sizeof(long double) * nepoch * 3);
 
     if (solf && solb) {
       isolf = isolb = 0;
@@ -1237,9 +1239,9 @@ static bool execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt, con
   return aborts ? true : false;
 }
 /* execute processing session for each rover ---------------------------------*/
-static bool execses_r(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt, const solopt_t *sopt,
-                      const filopt_t *fopt, int flag, const char **infile, const int *index, int n,
-                      const char *outfile, const char *rov) {
+static bool execses_r(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt,
+                      const solopt_t *sopt, const filopt_t *fopt, int flag, const char **infile,
+                      const int *index, int n, const char *outfile, const char *rov) {
   trace(3, "execses_r: n=%d outfile=%s\n", n, outfile);
 
   gtime_t t0 = {0};
@@ -1298,9 +1300,10 @@ static bool execses_r(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt, c
   return stat;
 }
 /* execute processing session for each base station --------------------------*/
-static bool execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt, const solopt_t *sopt,
-                      const filopt_t *fopt, int flag, const char **infile, const int *index, int n,
-                      const char *outfile, const char *rov, const char *base) {
+static bool execses_b(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt,
+                      const solopt_t *sopt, const filopt_t *fopt, int flag, const char **infile,
+                      const int *index, int n, const char *outfile, const char *rov,
+                      const char *base) {
   trace(3, "execses_b: n=%d outfile=%s\n", n, outfile);
 
   /* read prec ephemeris and sbas data */
@@ -1370,8 +1373,8 @@ static bool execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt, c
  * post-processing positioning
  * args   : gtime_t ts       I   processing start time (ts.time==0: no limit)
  *        : gtime_t te       I   processing end time   (te.time==0: no limit)
- *          double ti        I   processing interval  (s) (0:all)
- *          double tu        I   processing unit time (s) (0:all)
+ *          long double ti        I   processing interval  (s) (0:all)
+ *          long double tu        I   processing unit time (s) (0:all)
  *          prcopt_t *popt   I   processing options
  *          solopt_t *sopt   I   solution options
  *          filopt_t *fopt   I   file options
@@ -1409,10 +1412,10 @@ static bool execses_b(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt, c
  *
  *          ssr corrections are valid only for forward estimation.
  *-----------------------------------------------------------------------------*/
-extern int postpos(gtime_t ts, gtime_t te, double ti, double tu, const prcopt_t *popt,
+extern int postpos(gtime_t ts, gtime_t te, long double ti, long double tu, const prcopt_t *popt,
                    const solopt_t *sopt, const filopt_t *fopt, const char **infile, int n,
                    const char *outfile, const char *rov, const char *base) {
-  trace(3, "postpos : ti=%.0f tu=%.0f n=%d outfile=%s\n", ti, tu, n, outfile);
+  trace(3, "postpos : ti=%.0Lf tu=%.0Lf n=%d outfile=%s\n", ti, tu, n, outfile);
 
   int index[MAXINFILE] = {0};
   bool stat = false;
@@ -1421,8 +1424,8 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu, const prcopt_t 
   /* open processing session */
   if (!openses(popt, sopt, fopt, &navs, &pcvss, &pcvsr)) return -1;
 
-  if (ts.time != 0 && te.time != 0 && tu >= 0.0) {
-    if (timediff(te, ts) < 0.0) {
+  if (ts.time != 0 && te.time != 0 && tu >= 0.0L) {
+    if (timediff(te, ts) < 0.0L) {
       showmsg("error : no period");
       closeses(&navs, &pcvss, &pcvsr);
       return 0;
@@ -1434,19 +1437,19 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu, const prcopt_t 
         return -1;
       }
     }
-    if (tu == 0.0 || tu > 86400.0 * MAXPRCDAYS) tu = 86400.0 * MAXPRCDAYS;
+    if (tu == 0.0L || tu > 86400.0L * MAXPRCDAYS) tu = 86400.0L * MAXPRCDAYS;
     settspan(ts, te);
-    double tunit = tu < 86400.0 ? tu : 86400.0;
+    long double tunit = tu < 86400.0L ? tu : 86400.0L;
     int week;
-    double tss = tunit * (int)floor(time2gpst(ts, &week) / tunit);
+    long double tss = tunit * (int)floorl(time2gpst(ts, &week) / tunit);
     int flag = 1;
 
     for (int i = 0;; i++) { /* for each periods */
       gtime_t tts = gpst2time(week, tss + i * tu);
       gtime_t tte = timeadd(tts, tu - DTTOL);
-      if (timediff(tts, te) > 0.0) break;
-      if (timediff(tts, ts) < 0.0) tts = ts;
-      if (timediff(tte, te) > 0.0) tte = te;
+      if (timediff(tts, te) > 0.0L) break;
+      if (timediff(tts, ts) < 0.0L) tts = ts;
+      if (timediff(tte, te) > 0.0L) tte = te;
 
       rtkstrcpy(proc_rov, sizeof(proc_rov), "");
       rtkstrcpy(proc_base, sizeof(proc_base), "");
@@ -1466,9 +1469,9 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu, const prcopt_t 
           gtime_t ttte = tte;
           if (ext && (!strcmp(ext, ".sp3") || !strcmp(ext, ".SP3") || !strcmp(ext, ".eph") ||
                       !strcmp(ext, ".EPH"))) {
-            ttte = timeadd(ttte, 3600.0);
+            ttte = timeadd(ttte, 3600.0L);
           } else if (strstr(infile[j], "brdc")) {
-            ttte = timeadd(ttte, 7200.0);
+            ttte = timeadd(ttte, 7200.0L);
           }
           nf += reppaths(infile[j], ifile + nf, FNSIZE, MAXINFILE - nf, tts, ttte, "", "");
         }

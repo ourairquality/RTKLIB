@@ -9,8 +9,7 @@ SRC    = ../../../../src
 INCLUDE= -I$(SRC)
 OPTIONS= -DTRACE -DENAGLO -DENAQZS -DENAGAL -DENACMP -DENAIRN -DNFREQ=3 -DNEXOBS=3
 
-CFLAGS = -std=c99 -O3 -pedantic -Wall -Wno-unused-but-set-variable $(INCLUDE) $(OPTIONS) -g
-
+CFLAGS = -std=c99 -O3 -pedantic -Wall -Wno-unused-but-set-variable -Wint-in-bool-context -Wextra -Wdouble-promotion $(INCLUDE) $(OPTIONS) -g
 LDLIBS = -lm -lrt
 
 all  : convbin

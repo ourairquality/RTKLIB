@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
   int outalt = 0, outtime = 0, qflg = 0, tcolor = 5, pcolor = 5, gpx = 0;
   char *infile[32];
   const char *outfile = "";
-  double offset[3] = {0.0}, tint = 0.0;
+  long double offset[3] = {0.0L}, tint = 0.0L;
   gtime_t ts = {0}, te = {0};
 
   int n = 0;
@@ -59,21 +59,21 @@ int main(int argc, char **argv) {
     if (!strcmp(argv[i], "-o") && i + 1 < argc)
       outfile = argv[++i];
     else if (!strcmp(argv[i], "-ts") && i + 2 < argc) {
-      double es[6] = {2000, 1, 1};
-      sscanf(argv[++i], "%lf/%lf/%lf", es, es + 1, es + 2);
-      sscanf(argv[++i], "%lf:%lf:%lf", es + 3, es + 4, es + 5);
+      long double es[6] = {2000, 1, 1};
+      sscanf(argv[++i], "%Lf/%Lf/%Lf", es, es + 1, es + 2);
+      sscanf(argv[++i], "%Lf:%Lf:%Lf", es + 3, es + 4, es + 5);
       ts = epoch2time(es);
     } else if (!strcmp(argv[i], "-te") && i + 2 < argc) {
-      double ee[6] = {2000, 1, 1};
-      sscanf(argv[++i], "%lf/%lf/%lf", ee, ee + 1, ee + 2);
-      sscanf(argv[++i], "%lf:%lf:%lf", ee + 3, ee + 4, ee + 5);
+      long double ee[6] = {2000, 1, 1};
+      sscanf(argv[++i], "%Lf/%Lf/%Lf", ee, ee + 1, ee + 2);
+      sscanf(argv[++i], "%Lf:%Lf:%Lf", ee + 3, ee + 4, ee + 5);
       te = epoch2time(ee);
     } else if (!strcmp(argv[i], "-c") && i + 1 < argc)
       tcolor = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-p") && i + 1 < argc)
       pcolor = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-f") && i + 3 < argc) {
-      for (int j = 0; j < 3; j++) offset[j] = atof(argv[++i]);
+      for (int j = 0; j < 3; j++) offset[j] = strtold(argv[++i], NULL);
     } else if (!strcmp(argv[i], "-a"))
       outalt = 1;
     else if (!strcmp(argv[i], "-ag"))
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[i], "-tu"))
       outtime = 2;
     else if (!strcmp(argv[i], "-i") && i + i < argc)
-      tint = atof(argv[++i]);
+      tint = strtold(argv[++i], NULL);
     else if (!strcmp(argv[i], "-q") && i + i < argc)
       qflg = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-gpx"))

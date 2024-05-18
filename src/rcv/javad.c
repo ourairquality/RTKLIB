@@ -215,33 +215,33 @@ static int checksum(uint8_t *buff, int len) {
   return cs == buff[len - 1];
 }
 /* adjust weekly rollover of GPS time ----------------------------------------*/
-static gtime_t adjweek(gtime_t time, double tow) {
-  double tow_p;
+static gtime_t adjweek(gtime_t time, long double tow) {
+  long double tow_p;
   int week;
   tow_p = time2gpst(time, &week);
-  if (tow < tow_p - 302400.0)
-    tow += 604800.0;
-  else if (tow > tow_p + 302400.0)
-    tow -= 604800.0;
+  if (tow < tow_p - 302400.0L)
+    tow += 604800.0L;
+  else if (tow > tow_p + 302400.0L)
+    tow -= 604800.0L;
   return gpst2time(week, tow);
 }
 /* adjust daily rollover of time ---------------------------------------------*/
-static gtime_t adjday(gtime_t time, double tod) {
-  double ep[6], tod_p;
+static gtime_t adjday(gtime_t time, long double tod) {
+  long double ep[6], tod_p;
   time2epoch(time, ep);
-  tod_p = ep[3] * 3600.0 + ep[4] * 60.0 + ep[5];
-  if (tod < tod_p - 43200.0)
-    tod += 86400.0;
-  else if (tod > tod_p + 43200.0)
-    tod -= 86400.0;
-  ep[3] = ep[4] = ep[5] = 0.0;
+  tod_p = ep[3] * 3600.0L + ep[4] * 60.0L + ep[5];
+  if (tod < tod_p - 43200.0L)
+    tod += 86400.0L;
+  else if (tod > tod_p + 43200.0L)
+    tod -= 86400.0L;
+  ep[3] = ep[4] = ep[5] = 0.0L;
   return timeadd(epoch2time(ep), tod);
 }
 /* set time tag --------------------------------------------------------------*/
 static bool settag(obsd_t *data, gtime_t time) {
   char s1[40], s2[40];
 
-  if (data->time.time != 0 && fabs(timediff(data->time, time)) > 5E-4) {
+  if (data->time.time != 0 && fabsl(timediff(data->time, time)) > 5E-4L) {
     time2str(data->time, s1, 4);
     time2str(time, s2, 4);
     trace(2, "time inconsistent: time=%s %s sat=%2d\n", s1, s2, data->sat);
@@ -269,13 +269,13 @@ static int flushobuf(raw_t *raw) {
   for (i = 0; i < MAXOBS; i++) {
     raw->obuf.data[i].time = time0;
     for (j = 0; j < NFREQ + NEXOBS; j++) {
-      raw->obuf.data[i].L[j] = raw->obuf.data[i].P[j] = 0.0;
-      raw->obuf.data[i].D[j] = 0.0;
+      raw->obuf.data[i].L[j] = raw->obuf.data[i].P[j] = 0.0L;
+      raw->obuf.data[i].D[j] = 0.0L;
       raw->obuf.data[i].SNR[j] = raw->obuf.data[i].LLI[j] = 0;
       raw->obuf.data[i].code[j] = CODE_NONE;
     }
   }
-  for (i = 0; i < MAXSAT; i++) raw->prCA[i] = raw->dpCA[i] = 0.0;
+  for (i = 0; i < MAXSAT; i++) raw->prCA[i] = raw->dpCA[i] = 0.0L;
   return n > 0 ? 1 : 0;
 }
 /* decode [~~] receiver time -------------------------------------------------*/
@@ -298,7 +298,7 @@ static int decode_RT(raw_t *raw) {
   /* update receiver time */
   time = raw->time;
   if (raw->tbase >= 1) time = gpst2utc(time); /* GPST->UTC */
-  time = adjday(time, raw->tod * 0.001);
+  time = adjday(time, raw->tod * 0.001L);
   if (raw->tbase >= 1) time = utc2gpst(time); /* UTC->GPST */
   raw->time = time;
 
@@ -334,7 +334,7 @@ static int decode_ET(raw_t *raw) {
 }
 /* decode [RD] receiver date -------------------------------------------------*/
 static int decode_RD(raw_t *raw) {
-  double ep[6] = {0};
+  long double ep[6] = {0};
   uint8_t *p = raw->buff + 5;
 
   if (!checksum(raw->buff, raw->len)) {
@@ -354,14 +354,14 @@ static int decode_RD(raw_t *raw) {
   raw->tbase = U1(p);
 
   if (raw->outtype) {
-    rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " %04.0f/%02.0f/%02.0f base=%d", ep[0], ep[1],
-                 ep[2], raw->tbase);
+    rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " %04.0Lf/%02.0Lf/%02.0Lf base=%d", ep[0],
+                 ep[1], ep[2], raw->tbase);
   }
   if (raw->tod < 0) {
     trace(2, "javad RD lack of preceding RT\n");
     return 0;
   }
-  raw->time = timeadd(epoch2time(ep), raw->tod * 0.001);
+  raw->time = timeadd(epoch2time(ep), raw->tod * 0.001L);
   if (raw->tbase >= 1) raw->time = utc2gpst(raw->time); /* UTC->GPST */
 
   char tstr[40];
@@ -490,7 +490,7 @@ static int decode_IA(raw_t *raw) {
 /* decode GPS/Galileo/QZSS/Beidou ephemeris ----------------------------------*/
 static int decode_eph(raw_t *raw, int sys) {
   eph_t eph = {0};
-  double toc, sqrtA, tt;
+  long double toc, sqrtA, tt;
   int sat, prn, tow, flag, week, navtype, sigtype, set = 0;
   int eph_sel = 3; /* Galileo ephemeris selection */
   uint8_t *p = raw->buff + 5;
@@ -516,52 +516,52 @@ static int decode_eph(raw_t *raw, int sys) {
   p += 1;
   week = I2(p);
   p += 2;
-  eph.tgd[0] = R4(p);
+  eph.tgd[0] = (long double)R4(p);
   p += 4;
-  eph.f2 = R4(p);
+  eph.f2 = (long double)R4(p);
   p += 4;
-  eph.f1 = R4(p);
+  eph.f1 = (long double)R4(p);
   p += 4;
-  eph.f0 = R4(p);
+  eph.f0 = (long double)R4(p);
   p += 4;
   eph.toes = I4(p);
   p += 4;
   eph.iode = I2(p);
   p += 2;
-  sqrtA = R8(p);
+  sqrtA = (long double)R8(p);
   p += 8;
-  eph.e = R8(p);
+  eph.e = (long double)R8(p);
   p += 8;
-  eph.M0 = R8(p) * SC2RAD;
+  eph.M0 = (long double)R8(p) * SC2RAD;
   p += 8;
-  eph.OMG0 = R8(p) * SC2RAD;
+  eph.OMG0 = (long double)R8(p) * SC2RAD;
   p += 8;
-  eph.i0 = R8(p) * SC2RAD;
+  eph.i0 = (long double)R8(p) * SC2RAD;
   p += 8;
-  eph.omg = R8(p) * SC2RAD;
+  eph.omg = (long double)R8(p) * SC2RAD;
   p += 8;
-  eph.deln = R4(p) * SC2RAD;
+  eph.deln = (long double)R4(p) * SC2RAD;
   p += 4;
-  eph.OMGd = R4(p) * SC2RAD;
+  eph.OMGd = (long double)R4(p) * SC2RAD;
   p += 4;
-  eph.idot = R4(p) * SC2RAD;
+  eph.idot = (long double)R4(p) * SC2RAD;
   p += 4;
-  eph.crc = R4(p);
+  eph.crc = (long double)R4(p);
   p += 4;
-  eph.crs = R4(p);
+  eph.crs = (long double)R4(p);
   p += 4;
-  eph.cuc = R4(p);
+  eph.cuc = (long double)R4(p);
   p += 4;
-  eph.cus = R4(p);
+  eph.cus = (long double)R4(p);
   p += 4;
-  eph.cic = R4(p);
+  eph.cic = (long double)R4(p);
   p += 4;
-  eph.cis = R4(p);
+  eph.cis = (long double)R4(p);
   p += 4;
   eph.A = sqrtA * sqrtA;
 
   if (raw->outtype) {
-    rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " prn=%3d iode=%3d iodc=%3d toes=%6.0f", prn,
+    rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " prn=%3d iode=%3d iodc=%3d toes=%6.0Lf", prn,
                  eph.iode, eph.iodc, eph.toes);
   }
   if (sys == SYS_GPS || sys == SYS_QZS || sys == SYS_IRN) {
@@ -577,9 +577,9 @@ static int decode_eph(raw_t *raw, int sys) {
 
     /* for week-handover problem */
     tt = timediff(eph.toe, raw->time);
-    if (tt < -302400.0)
+    if (tt < -302400.0L)
       eph.week++;
-    else if (tt > 302400.0)
+    else if (tt > 302400.0L)
       eph.week--;
     eph.toe = gpst2time(eph.week, eph.toes);
 
@@ -590,9 +590,9 @@ static int decode_eph(raw_t *raw, int sys) {
       trace(2, "javad ephemeris satellite error: sys=%d prn=%d\n", sys, prn);
       return -1;
     }
-    eph.tgd[0] = R4(p);
+    eph.tgd[0] = (long double)R4(p);
     p += 4; /* BGD: E1-E5A (s) */
-    eph.tgd[1] = R4(p);
+    eph.tgd[1] = (long double)R4(p);
     p += 4 + 13;     /* BGD: E1-E5B (s) */
     navtype = U1(p); /* navtype: 0:E1B(INAV),1:E5A(FNAV) */
                      /*          3:GIOVE E1B,4:GIOVE E5A */
@@ -608,9 +608,9 @@ static int decode_eph(raw_t *raw, int sys) {
 
     /* for week-handover problem */
     tt = timediff(eph.toe, raw->time);
-    if (tt < -302400.0)
+    if (tt < -302400.0L)
       eph.week++;
-    else if (tt > 302400.0)
+    else if (tt > 302400.0L)
       eph.week--;
     eph.toe = gpst2time(eph.week, eph.toes);
 
@@ -621,7 +621,7 @@ static int decode_eph(raw_t *raw, int sys) {
       trace(2, "javad ephemeris satellite error: sys=%d prn=%d\n", sys, prn);
       return -1;
     }
-    eph.tgd[1] = R4(p);
+    eph.tgd[1] = (long double)R4(p);
     p += 4;          /* TGD2 (s) */
     sigtype = U1(p); /* signal type: 0:B1,1:B2,2:B3 */
     eph.code = (sigtype == 0) ? 1 : ((sigtype == 1) ? 3 : ((sigtype == 2) ? 5 : 0));
@@ -633,7 +633,7 @@ static int decode_eph(raw_t *raw, int sys) {
     return 0;
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (timediff(raw->nav.eph[sat - 1][set].toe, eph.toe) == 0.0 &&
+    if (timediff(raw->nav.eph[sat - 1][set].toe, eph.toe) == 0.0L &&
         raw->nav.eph[sat - 1][set].iode == eph.iode && raw->nav.eph[sat - 1][set].iodc == eph.iodc)
       return 0; /* unchanged */
   }
@@ -658,7 +658,7 @@ static int decode_GE(raw_t *raw) {
 /* decode [NE] GLONASS ephemeris ---------------------------------------------*/
 static int decode_NE(raw_t *raw) {
   geph_t geph = {0};
-  double tt;
+  long double tt;
   int prn, tk, tb;
   uint8_t *p = raw->buff + 5;
 
@@ -679,34 +679,34 @@ static int decode_NE(raw_t *raw) {
     p += 1; /* MSB of Bn */
     geph.age = U1(p);
     p += 1 + 1;
-    geph.pos[0] = R8(p) * 1E3;
+    geph.pos[0] = (long double)R8(p) * 1E3L;
     p += 8;
-    geph.pos[1] = R8(p) * 1E3;
+    geph.pos[1] = (long double)R8(p) * 1E3L;
     p += 8;
-    geph.pos[2] = R8(p) * 1E3;
+    geph.pos[2] = (long double)R8(p) * 1E3L;
     p += 8;
-    geph.vel[0] = R4(p) * 1E3;
+    geph.vel[0] = (long double)R4(p) * 1E3L;
     p += 4;
-    geph.vel[1] = R4(p) * 1E3;
+    geph.vel[1] = (long double)R4(p) * 1E3L;
     p += 4;
-    geph.vel[2] = R4(p) * 1E3;
+    geph.vel[2] = (long double)R4(p) * 1E3L;
     p += 4;
-    geph.acc[0] = R4(p) * 1E3;
+    geph.acc[0] = (long double)R4(p) * 1E3L;
     p += 4;
-    geph.acc[1] = R4(p) * 1E3;
+    geph.acc[1] = (long double)R4(p) * 1E3L;
     p += 4;
-    geph.acc[2] = R4(p) * 1E3;
+    geph.acc[2] = (long double)R4(p) * 1E3L;
     p += 4 + 8;
-    geph.taun = R4(p);
+    geph.taun = (long double)R4(p);
     p += 4;
-    geph.gamn = R4(p);
+    geph.gamn = (long double)R4(p);
     p += 4;
   } else {
     trace(2, "javad NE length error: len=%d\n", raw->len);
     return -1;
   }
   if (raw->len >= 93) { /* firmware v 3.2.0 [1] */
-    geph.dtaun = R4(p);
+    geph.dtaun = (long double)R4(p);
     p += 4;
     geph.sva = U1(p);
   }
@@ -720,13 +720,13 @@ static int decode_NE(raw_t *raw) {
   }
   if (raw->time.time == 0) return 0;
   geph.iode = (tb / 900) & 0x7F;
-  geph.toe = utc2gpst(adjday(raw->time, tb - 10800.0));
-  geph.tof = utc2gpst(adjday(raw->time, tk - 10800.0));
+  geph.toe = utc2gpst(adjday(raw->time, tb - 10800.0L));
+  geph.tof = utc2gpst(adjday(raw->time, tk - 10800.0L));
 
   /* check illegal ephemeris by toe */
   tt = timediff(raw->time, geph.toe);
-  if (fabs(tt) > 3600.0) {
-    trace(3, "javad NE illegal toe: prn=%2d tt=%6.0f\n", prn, tt);
+  if (fabsl(tt) > 3600.0L) {
+    trace(3, "javad NE illegal toe: prn=%2d tt=%6.0Lf\n", prn, tt);
     return 0;
   }
   /* check illegal ephemeris by frequency number consistency */
@@ -736,7 +736,7 @@ static int decode_NE(raw_t *raw) {
     return -1;
   }
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (fabs(timediff(geph.toe, raw->nav.geph[prn - 1][0].toe)) < 1.0 &&
+    if (fabsl(timediff(geph.toe, raw->nav.geph[prn - 1][0].toe)) < 1.0L &&
         geph.svh == raw->nav.geph[prn - 1][0].svh)
       return 0; /* unchanged */
   }
@@ -779,20 +779,20 @@ static int decode_WE(raw_t *raw) {
   tod = U4(p);
   p += 4;
   for (i = 0; i < 3; i++) {
-    seph.pos[i] = R8(p);
+    seph.pos[i] = (long double)R8(p);
     p += 8;
   }
   for (i = 0; i < 3; i++) {
-    seph.vel[i] = R4(p);
+    seph.vel[i] = (long double)R4(p);
     p += 4;
   }
   for (i = 0; i < 3; i++) {
-    seph.acc[i] = R4(p);
+    seph.acc[i] = (long double)R4(p);
     p += 4;
   }
-  seph.af0 = R4(p);
+  seph.af0 = (long double)R4(p);
   p += 4;
-  seph.af1 = R4(p);
+  seph.af1 = (long double)R4(p);
   p += 4;
   tow = U4(p);
   p += 4;
@@ -809,7 +809,7 @@ static int decode_WE(raw_t *raw) {
   seph.t0 = adjday(seph.tof, tod);
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (fabs(timediff(seph.t0, raw->nav.seph[prn - MINPRNSBS][0].t0)) < 1.0 &&
+    if (fabsl(timediff(seph.t0, raw->nav.seph[prn - MINPRNSBS][0].t0)) < 1.0L &&
         seph.sva == raw->nav.seph[prn - MINPRNSBS][0].sva)
       return 0; /* unchanged */
   }
@@ -866,9 +866,9 @@ static int decode_UO(raw_t *raw) {
     trace(2, "javad UO length error: len=%d\n", raw->len);
     return -1;
   }
-  raw->nav.utc_gps[0] = R8(p);
+  raw->nav.utc_gps[0] = (long double)R8(p);
   p += 8;
-  raw->nav.utc_gps[1] = R4(p);
+  raw->nav.utc_gps[1] = (long double)R4(p);
   p += 4;
   raw->nav.utc_gps[2] = U4(p);
   p += 4;
@@ -916,7 +916,7 @@ static int decode_IO(raw_t *raw) {
   }
   p += 4 + 2;
   for (i = 0; i < 8; i++) {
-    raw->nav.ion_gps[i] = R4(p);
+    raw->nav.ion_gps[i] = (long double)R4(p);
     p += 4;
   }
   return 9;
@@ -938,24 +938,24 @@ static int decode_L1eph(int sat, raw_t *raw) {
   return 2;
 }
 /* UTC 8-bit week -> full week -----------------------------------------------*/
-static void adj_utcweek(gtime_t time, double *utc) {
+static void adj_utcweek(gtime_t time, long double *utc) {
   int week;
 
   time2gpst(time, &week);
   utc[3] += week / 256 * 256;
   if (utc[3] < week - 127)
-    utc[3] += 256.0;
+    utc[3] += 256.0L;
   else if (utc[3] > week + 127)
-    utc[3] -= 256.0;
+    utc[3] -= 256.0L;
   utc[5] += utc[3] / 256 * 256;
   if (utc[5] < utc[3] - 127)
-    utc[5] += 256.0;
+    utc[5] += 256.0L;
   else if (utc[5] > utc[3] + 127)
-    utc[5] -= 256.0;
+    utc[5] -= 256.0L;
 }
 /* decode L1 ION/UTC parameters ----------------------------------------------*/
 static int decode_L1ionutc(int sat, raw_t *raw) {
-  double ion[8], utc[8];
+  long double ion[8], utc[8];
   int sys = satsys(sat, NULL);
 
   if (!decode_frame(raw->subfrm[sat - 1], NULL, NULL, ion, utc)) return 0;
@@ -1263,9 +1263,9 @@ static int decode_WD(raw_t *raw) {
     raw->sbsmsg.week = 0;
   } else {
     tow_p = (int)time2gpst(raw->time, &week);
-    if (tow < tow_p - 302400.0)
+    if (tow < tow_p - 302400.0L)
       week++;
-    else if (tow > tow_p + 302400.0)
+    else if (tow > tow_p + 302400.0L)
       week--;
     raw->sbsmsg.week = week;
   }
@@ -1276,7 +1276,7 @@ static int decode_WD(raw_t *raw) {
 /* decode [R*] pseudoranges --------------------------------------------------*/
 static int decode_Rx(raw_t *raw, char sig) {
   uint8_t *p = raw->buff + 5;
-  double pr, prm;
+  long double pr, prm;
   int i, idx, code, sat, sys;
 
   if (!is_meas(sig) || raw->tod < 0 || raw->obuf.n == 0) return 0;
@@ -1290,9 +1290,9 @@ static int decode_Rx(raw_t *raw, char sig) {
     return -1;
   }
   for (i = 0; i < raw->obuf.n && i < MAXOBS; i++) {
-    pr = R8(p);
+    pr = (long double)R8(p);
     p += 8;
-    if (pr == 0.0) continue;
+    if (pr == 0.0L) continue;
 
     sat = raw->obuf.data[i].sat;
     if (!(sys = satsys(sat, NULL))) continue;
@@ -1314,7 +1314,7 @@ static int decode_Rx(raw_t *raw, char sig) {
 /* decode [r*] short pseudoranges --------------------------------------------*/
 static int decode_rx(raw_t *raw, char sig) {
   uint8_t *p = raw->buff + 5;
-  double prm;
+  long double prm;
   int i, idx, code, pr, sat, sys;
 
   if (!is_meas(sig) || raw->tod < 0 || raw->obuf.n == 0) return 0;
@@ -1339,17 +1339,17 @@ static int decode_rx(raw_t *raw, char sig) {
     }
     /*                             Ksys  Asys */
     if (sys == SYS_SBS)
-      prm = (pr * 1E-11 + 0.125) * CLIGHT; /* [6] */
+      prm = (pr * 1E-11L + 0.125L) * CLIGHT; /* [6] */
     else if (sys == SYS_QZS)
-      prm = (pr * 2E-11 + 0.125) * CLIGHT; /* [3] */
+      prm = (pr * 2E-11L + 0.125L) * CLIGHT; /* [3] */
     else if (sys == SYS_CMP)
-      prm = (pr * 2E-11 + 0.105) * CLIGHT; /* [4] */
+      prm = (pr * 2E-11L + 0.105L) * CLIGHT; /* [4] */
     else if (sys == SYS_GAL)
-      prm = (pr * 2E-11 + 0.085) * CLIGHT; /* [7] */
+      prm = (pr * 2E-11L + 0.085L) * CLIGHT; /* [7] */
     else if (sys == SYS_IRN)
-      prm = (pr * 2E-11 + 0.105) * CLIGHT; /* [6] */
+      prm = (pr * 2E-11L + 0.105L) * CLIGHT; /* [6] */
     else
-      prm = (pr * 1E-11 + 0.075) * CLIGHT;
+      prm = (pr * 1E-11L + 0.075L) * CLIGHT;
 
     if (sig == 'c') raw->prCA[sat - 1] = prm;
 
@@ -1366,7 +1366,7 @@ static int decode_rx(raw_t *raw, char sig) {
 /* decode [*R] relative pseudoranges -----------------------------------------*/
 static int decode_xR(raw_t *raw, char sig) {
   uint8_t *p = raw->buff + 5;
-  float pr;
+  long double pr;
   int i, idx, code, sat, sys;
 
   if (!is_meas(sig) || raw->tod < 0 || raw->obuf.n == 0) return 0;
@@ -1380,12 +1380,12 @@ static int decode_xR(raw_t *raw, char sig) {
     return -1;
   }
   for (i = 0; i < raw->obuf.n && i < MAXOBS; i++) {
-    pr = R4(p);
+    pr = (long double)R4(p);
     p += 4;
-    if (pr == 0.0) continue;
+    if (pr == 0.0L) continue;
 
     sat = raw->obuf.data[i].sat;
-    if (!(sys = satsys(sat, NULL)) || raw->prCA[sat - 1] == 0.0) continue;
+    if (!(sys = satsys(sat, NULL)) || raw->prCA[sat - 1] == 0.0L) continue;
 
     if ((idx = sig2idx(sys, sig, &code)) < 0) continue;
 
@@ -1400,7 +1400,7 @@ static int decode_xR(raw_t *raw, char sig) {
 /* decode [*r] short relative pseudoranges -----------------------------------*/
 static int decode_xr(raw_t *raw, char sig) {
   uint8_t *p = raw->buff + 5;
-  double prm;
+  long double prm;
   int16_t pr;
   int i, idx, code, sat, sys;
 
@@ -1420,9 +1420,9 @@ static int decode_xr(raw_t *raw, char sig) {
     if (pr == (int16_t)0x7FFF) continue;
 
     sat = raw->obuf.data[i].sat;
-    if (!(sys = satsys(sat, NULL)) || raw->prCA[sat - 1] == 0.0) continue;
+    if (!(sys = satsys(sat, NULL)) || raw->prCA[sat - 1] == 0.0L) continue;
 
-    prm = (pr * 1E-11 + 2E-7) * CLIGHT + raw->prCA[sat - 1];
+    prm = (pr * 1E-11L + 2E-7L) * CLIGHT + raw->prCA[sat - 1];
 
     if ((idx = sig2idx(sys, sig, &code)) < 0) continue;
 
@@ -1437,7 +1437,7 @@ static int decode_xr(raw_t *raw, char sig) {
 /* decode [P*] carrier phases ------------------------------------------------*/
 static int decode_Px(raw_t *raw, char sig) {
   uint8_t *p = raw->buff + 5;
-  double cp;
+  long double cp;
   int i, idx, code, sys;
 
   if (!is_meas(sig) || raw->tod < 0 || raw->obuf.n == 0) return 0;
@@ -1451,9 +1451,9 @@ static int decode_Px(raw_t *raw, char sig) {
     return -1;
   }
   for (i = 0; i < raw->obuf.n && i < MAXOBS; i++) {
-    cp = R8(p);
+    cp = (long double)R8(p);
     p += 8;
-    if (cp == 0.0) continue;
+    if (cp == 0.0L) continue;
 
     if (!(sys = satsys(raw->obuf.data[i].sat, NULL))) continue;
 
@@ -1494,7 +1494,7 @@ static int decode_px(raw_t *raw, char sig) {
 
     if ((idx = checkpri(sys, code, raw->opt, idx)) >= 0) {
       if (!settag(raw->obuf.data + i, raw->time)) continue;
-      raw->obuf.data[i].L[idx] = cp / 1024.0;
+      raw->obuf.data[i].L[idx] = cp / 1024.0L;
       raw->obuf.data[i].code[idx] = (uint8_t)code;
     }
   }
@@ -1503,7 +1503,7 @@ static int decode_px(raw_t *raw, char sig) {
 /* decode [*P] short relative carrier phases ---------------------------------*/
 static int decode_xP(raw_t *raw, char sig) {
   uint8_t *p = raw->buff + 5;
-  double cp, rcp, freq;
+  long double cp, rcp, freq;
   int i, idx, code, sat, sys;
 
   if (!is_meas(sig) || raw->tod < 0 || raw->obuf.n == 0) return 0;
@@ -1517,12 +1517,12 @@ static int decode_xP(raw_t *raw, char sig) {
     return -1;
   }
   for (i = 0; i < raw->obuf.n && i < MAXOBS; i++) {
-    rcp = R4(p);
+    rcp = (long double)R4(p);
     p += 4;
-    if (rcp == 0.0) continue;
+    if (rcp == 0.0L) continue;
 
     sat = raw->obuf.data[i].sat;
-    if (!(sys = satsys(sat, NULL)) || raw->prCA[sat - 1] == 0.0) continue;
+    if (!(sys = satsys(sat, NULL)) || raw->prCA[sat - 1] == 0.0L) continue;
 
     if ((idx = sig2idx(sys, sig, &code)) < 0) continue;
 
@@ -1541,7 +1541,7 @@ static int decode_xP(raw_t *raw, char sig) {
 /* decode [*p] short relative carrier phases ---------------------------------*/
 static int decode_xp(raw_t *raw, char sig) {
   uint8_t *p = raw->buff + 5;
-  double cp, freq;
+  long double cp, freq;
   int i, idx, code, rcp, sat, sys;
 
   if (!is_meas(sig) || raw->tod < 0 || raw->obuf.n == 0) return 0;
@@ -1560,7 +1560,7 @@ static int decode_xp(raw_t *raw, char sig) {
     if (rcp == 0x7FFFFFFF) continue;
 
     sat = raw->obuf.data[i].sat;
-    if (!(sys = satsys(sat, NULL)) || raw->prCA[sat - 1] == 0.0) continue;
+    if (!(sys = satsys(sat, NULL)) || raw->prCA[sat - 1] == 0.0L) continue;
 
     if ((idx = sig2idx(sys, sig, &code)) < 0) continue;
 
@@ -1579,7 +1579,7 @@ static int decode_xp(raw_t *raw, char sig) {
 /* decode [D*] doppler -------------------------------------------------------*/
 static int decode_Dx(raw_t *raw, char sig) {
   uint8_t *p = raw->buff + 5;
-  double dop;
+  long double dop;
   int i, idx, code, dp, sat, sys;
 
   if (!is_meas(sig) || raw->tod < 0 || raw->obuf.n == 0) return 0;
@@ -1600,7 +1600,7 @@ static int decode_Dx(raw_t *raw, char sig) {
     sat = raw->obuf.data[i].sat;
     if (!(sys = satsys(sat, NULL))) continue;
 
-    dop = -dp * 1E-4;
+    dop = -dp * 1E-4L;
 
     if (sig == 'C') raw->dpCA[sat - 1] = dop;
 
@@ -1608,7 +1608,7 @@ static int decode_Dx(raw_t *raw, char sig) {
 
     if ((idx = checkpri(sys, code, raw->opt, idx)) >= 0) {
       if (!settag(raw->obuf.data + i, raw->time)) continue;
-      raw->obuf.data[i].D[idx] = (float)dop;
+      raw->obuf.data[i].D[idx] = dop;
     }
   }
   return 0;
@@ -1616,7 +1616,7 @@ static int decode_Dx(raw_t *raw, char sig) {
 /* decode [*d] short relative doppler ----------------------------------------*/
 static int decode_xd(raw_t *raw, char sig) {
   uint8_t *p = raw->buff + 5;
-  double dop, f1, fn;
+  long double dop, f1, fn;
   int16_t rdp;
   int i, idx, code, sat, sys;
 
@@ -1636,7 +1636,7 @@ static int decode_xd(raw_t *raw, char sig) {
     if (rdp == (int16_t)0x7FFF) continue;
 
     sat = raw->obuf.data[i].sat;
-    if (!(sys = satsys(sat, NULL)) || raw->dpCA[sat - 1] == 0.0) continue;
+    if (!(sys = satsys(sat, NULL)) || raw->dpCA[sat - 1] == 0.0L) continue;
 
     if ((idx = sig2idx(sys, sig, &code)) < 0) continue;
 
@@ -1644,9 +1644,9 @@ static int decode_xd(raw_t *raw, char sig) {
       if (!settag(raw->obuf.data + i, raw->time)) continue;
       f1 = code2freq(sys, CODE_L1X, raw->freqn[i]);
       fn = code2freq(sys, code, raw->freqn[i]);
-      dop = (-rdp + raw->dpCA[sat - 1] * 1E4) * fn / f1 * 1E-4;
+      dop = (-rdp + raw->dpCA[sat - 1] * 1E4L) * fn / f1 * 1E-4L;
 
-      raw->obuf.data[i].D[idx] = (float)dop;
+      raw->obuf.data[i].D[idx] = dop;
     }
   }
   return 0;
@@ -1678,7 +1678,7 @@ static int decode_Ex(raw_t *raw, char sig) {
 
     if ((idx = checkpri(sys, code, raw->opt, idx)) >= 0) {
       if (!settag(raw->obuf.data + i, raw->time)) continue;
-      raw->obuf.data[i].SNR[idx] = (uint16_t)(cnr / SNR_UNIT + 0.5);
+      raw->obuf.data[i].SNR[idx] = (uint16_t)(cnr / SNR_UNIT + 0.5L);
     }
   }
   return 0;
@@ -1710,7 +1710,7 @@ static int decode_xE(raw_t *raw, char sig) {
 
     if ((idx = checkpri(sys, code, raw->opt, idx)) >= 0) {
       if (!settag(raw->obuf.data + i, raw->time)) continue;
-      raw->obuf.data[i].SNR[idx] = (uint16_t)(cnr * 0.25 / SNR_UNIT + 0.5);
+      raw->obuf.data[i].SNR[idx] = (uint16_t)(cnr * 0.25L / SNR_UNIT + 0.5L);
     }
   }
   return 0;

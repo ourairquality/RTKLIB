@@ -53,11 +53,11 @@
 
 #define SQR(x) ((x) * (x))
 
-#define NMAX 10         /* order of polynomial interpolation */
-#define MAXDTE 900.0    /* max time difference to ephem time (s) */
-#define EXTERR_CLK 1E-3 /* extrapolation error for clock (m/s) */
-#define EXTERR_EPH 5E-7 /* extrapolation error for ephem (m/s^2) */
-#define MAX_BIAS_SYS 4  /* # of constellations supported */
+#define NMAX 10          /* order of polynomial interpolation */
+#define MAXDTE 900.0L    /* max time difference to ephem time (s) */
+#define EXTERR_CLK 1E-3L /* extrapolation error for clock (m/s) */
+#define EXTERR_EPH 5E-7L /* extrapolation error for ephem (m/s^2) */
+#define MAX_BIAS_SYS 4   /* # of constellations supported */
 
 /* table to translate code to code bias table index  */
 static int8_t code_bias_ix[MAX_BIAS_SYS][MAXCODE];
@@ -107,7 +107,7 @@ static int code2sys(char code) {
   return SYS_NONE;
 }
 /* read SP3 header -----------------------------------------------------------*/
-static int readsp3h(FILE *fp, gtime_t *time, char *type, int *sats, double *bfact, char *tsys,
+static int readsp3h(FILE *fp, gtime_t *time, char *type, int *sats, long double *bfact, char *tsys,
                     size_t tsize) {
   int i = 0, k = 0, ns = 0, nl = 5;
 
@@ -160,8 +160,8 @@ static bool addpeph(nav_t *nav, const peph_t *peph) {
   return true;
 }
 /* read SP3 body -------------------------------------------------------------*/
-static void readsp3b(FILE *fp, char type, int *sats, int ns, const double *bfact, const char *tsys,
-                     int index, int opt, nav_t *nav) {
+static void readsp3b(FILE *fp, char type, int *sats, int ns, const long double *bfact,
+                     const char *tsys, int index, int opt, nav_t *nav) {
   int n = ns * (type == 'P' ? 1 : 2);
 
   trace(3, "readsp3b: type=%c ns=%d index=%d opt=%d\n", type, ns, index, opt);
@@ -182,14 +182,14 @@ static void readsp3b(FILE *fp, char type, int *sats, int ns, const double *bfact
 
     for (int i = 0; i < MAXSAT; i++) {
       for (int j = 0; j < 4; j++) {
-        peph.pos[i][j] = 0.0;
-        peph.std[i][j] = 0.0f;
-        peph.vel[i][j] = 0.0;
-        peph.vst[i][j] = 0.0f;
+        peph.pos[i][j] = 0.0L;
+        peph.std[i][j] = 0.0L;
+        peph.vel[i][j] = 0.0L;
+        peph.vst[i][j] = 0.0L;
       }
       for (int j = 0; j < 3; j++) {
-        peph.cov[i][j] = 0.0f;
-        peph.vco[i][j] = 0.0f;
+        peph.cov[i][j] = 0.0L;
+        peph.vco[i][j] = 0.0L;
       }
     }
     int pred_o = 0, pred_c = 0, v = 0;
@@ -217,25 +217,25 @@ static void readsp3b(FILE *fp, char type, int *sats, int ns, const double *bfact
         if (j == 3 && (opt & 1) && pred_c) continue;
         if (j == 3 && (opt & 2) && !pred_c) continue;
 
-        double val = str2num(buff, 4 + j * 14, 14);
-        double std = str2num(buff, 61 + j * 3, j < 3 ? 2 : 3);
+        long double val = str2num(buff, 4 + j * 14, 14);
+        long double std = str2num(buff, 61 + j * 3, j < 3 ? 2 : 3);
 
         if (buff[0] == 'P') { /* position */
-          if (val != 0.0 && fabs(val - 999999.999999) >= 1E-6) {
-            peph.pos[sat - 1][j] = val * (j < 3 ? 1000.0 : 1E-6);
+          if (val != 0.0L && fabsl(val - 999999.999999L) >= 1E-6L) {
+            peph.pos[sat - 1][j] = val * (j < 3 ? 1000.0L : 1E-6L);
             v = 1; /* valid epoch */
           }
-          double base = bfact[j < 3 ? 0 : 1];
-          if (base > 0.0 && std > 0.0) {
-            peph.std[sat - 1][j] = (float)(pow(base, std) * (j < 3 ? 1E-3 : 1E-12));
+          long double base = bfact[j < 3 ? 0 : 1];
+          if (base > 0.0L && std > 0.0L) {
+            peph.std[sat - 1][j] = powl(base, std) * (j < 3 ? 1E-3L : 1E-12L);
           }
         } else if (v) { /* velocity */
-          if (val != 0.0 && fabs(val - 999999.999999) >= 1E-6) {
-            peph.vel[sat - 1][j] = val * (j < 3 ? 0.1 : 1E-10);
+          if (val != 0.0L && fabsl(val - 999999.999999L) >= 1E-6L) {
+            peph.vel[sat - 1][j] = val * (j < 3 ? 0.1L : 1E-10L);
           }
-          double base = bfact[j < 3 ? 0 : 1];
-          if (base > 0.0 && std > 0.0) {
-            peph.vst[sat - 1][j] = (float)(pow(base, std) * (j < 3 ? 1E-7 : 1E-16));
+          long double base = bfact[j < 3 ? 0 : 1];
+          if (base > 0.0L && std > 0.0L) {
+            peph.vst[sat - 1][j] = powl(base, std) * (j < 3 ? 1E-7L : 1E-16L);
           }
         }
       }
@@ -248,8 +248,8 @@ static void readsp3b(FILE *fp, char type, int *sats, int ns, const double *bfact
 /* compare precise ephemeris -------------------------------------------------*/
 static int cmppeph(const void *p1, const void *p2) {
   const peph_t *q1 = (peph_t *)p1, *q2 = (peph_t *)p2;
-  double tt = timediff(q1->time, q2->time);
-  return tt < -1E-9 ? -1 : (tt > 1E-9 ? 1 : q1->index - q2->index);
+  long double tt = timediff(q1->time, q2->time);
+  return tt < -1E-9L ? -1 : (tt > 1E-9L ? 1 : q1->index - q2->index);
 }
 /* combine precise ephemeris -------------------------------------------------*/
 static void combpeph(nav_t *nav, int opt) {
@@ -261,9 +261,9 @@ static void combpeph(nav_t *nav, int opt) {
 
   int i = 0;
   for (int j = 1; j < nav->ne; j++) {
-    if (fabs(timediff(nav->peph[i].time, nav->peph[j].time)) < 1E-9) {
+    if (fabsl(timediff(nav->peph[i].time, nav->peph[j].time)) < 1E-9L) {
       for (int k = 0; k < MAXSAT; k++) {
-        if (norm(nav->peph[j].pos[k], 4) <= 0.0) continue;
+        if (norm(nav->peph[j].pos[k], 4) <= 0.0L) continue;
         for (int m = 0; m < 4; m++) nav->peph[i].pos[k][m] = nav->peph[j].pos[k][m];
         for (int m = 0; m < 4; m++) nav->peph[i].std[k][m] = nav->peph[j].std[k][m];
         for (int m = 0; m < 4; m++) nav->peph[i].vel[k][m] = nav->peph[j].vel[k][m];
@@ -321,7 +321,7 @@ extern void readsp3(const char *file, nav_t *nav, int opt) {
     gtime_t time = {0};
     char type = ' ', tsys[4] = "";
     int sats[MAXSAT] = {0};
-    double bfact[2] = {0};
+    long double bfact[2] = {0};
     int ns = readsp3h(fp, &time, &type, sats, bfact, tsys, sizeof(tsys));
 
     /* read sp3 body */
@@ -380,8 +380,8 @@ static bool readdcbf(const char *file, nav_t *nav, const sta_t *sta) {
     char str1[32], str2[32] = "";
     if (!type || sscanf(buff, "%31s %31s", str1, str2) < 1) continue;
 
-    double cbias = str2num(buff, 26, 9);
-    if (cbias == 0.0) continue;
+    long double cbias = str2num(buff, 26, 9);
+    if (cbias == 0.0L) continue;
 
     if (sta && (!strcmp(str1, "G") || !strcmp(str1, "R"))) { /* receiver DCB */
       int i;
@@ -390,13 +390,13 @@ static bool readdcbf(const char *file, nav_t *nav, const sta_t *sta) {
       }
       if (i < MAXRCV) {
         int j = !strcmp(str1, "G") ? 0 : 1;
-        nav->rbias[i][j][type - 1] = cbias * 1E-9 * CLIGHT; /* ns -> m */
+        nav->rbias[i][j][type - 1] = cbias * 1E-9L * CLIGHT; /* ns -> m */
       }
     } else {
       int sat = satid2no(str1);
       if (sat) {
         /* satellite dcb */
-        nav->cbias[sat - 1][type - 1][0] = cbias * 1E-9 * CLIGHT; /* ns -> m */
+        nav->cbias[sat - 1][type - 1][0] = cbias * 1E-9L * CLIGHT; /* ns -> m */
       }
     }
   }
@@ -445,8 +445,8 @@ static bool readbiaf(const char *file, nav_t *nav) {
     char bias[6] = "", svn[6] = "", prn[6] = "", obs1[6] = "", obs2[6];
     if (sscanf(buff, "%4s %5s %4s %4s %4s", bias, svn, prn, obs1, obs2) < 5) continue;
     if (obs1[0] != 'C') continue; /* skip phase biases for now */
-    double cbias = str2num(buff, 70, 21);
-    if (cbias == 0.0) continue;
+    long double cbias = str2num(buff, 70, 21);
+    if (cbias == 0.0L) continue;
     int sat = satid2no(prn);
     int sys = satsys(sat, NULL);
     /* other code biases are L1/L2, Galileo is L1/L5 */
@@ -466,9 +466,9 @@ static bool readbiaf(const char *file, nav_t *nav) {
       /* observed signal bias */
       if (bias_ix1 == 0) {                        /* this is ref code */
         for (int i = 0; i < MAX_CODE_BIASES; i++) /* adjust all other codes by ref code bias */
-          nav->cbias[sat - 1][freq][i] += cbias * 1E-9 * CLIGHT; /* ns -> m */
+          nav->cbias[sat - 1][freq][i] += cbias * 1E-9L * CLIGHT; /* ns -> m */
       } else {
-        nav->cbias[sat - 1][freq][bias_ix1 - 1] -= cbias * 1E-9 * CLIGHT; /* ns -> m */
+        nav->cbias[sat - 1][freq][bias_ix1 - 1] -= cbias * 1E-9L * CLIGHT; /* ns -> m */
       }
     } else if (strcmp(bias, "DSB") == 0) {
       /* differential signal bias */
@@ -476,10 +476,10 @@ static bool readbiaf(const char *file, nav_t *nav) {
       int code2 = obs2code(&obs2[1]);
       if (!code2) continue; /* skip if code not valid */
       int bias_ix2 = code2bias_ix(sys, code2);
-      if (bias_ix1 == 0)                                                  /* this is ref code */
-        nav->cbias[sat - 1][freq][bias_ix2 - 1] = cbias * 1E-9 * CLIGHT;  /* ns -> m */
-      else if (bias_ix2 == 0)                                             /* this is ref code */
-        nav->cbias[sat - 1][freq][bias_ix1 - 1] = -cbias * 1E-9 * CLIGHT; /* ns -> m */
+      if (bias_ix1 == 0)                                                   /* this is ref code */
+        nav->cbias[sat - 1][freq][bias_ix2 - 1] = cbias * 1E-9L * CLIGHT;  /* ns -> m */
+      else if (bias_ix2 == 0)                                              /* this is ref code */
+        nav->cbias[sat - 1][freq][bias_ix1 - 1] = -cbias * 1E-9L * CLIGHT; /* ns -> m */
     }
   }
   fclose(fp);
@@ -505,7 +505,7 @@ extern bool readdcb(const char *file, nav_t *nav, const sta_t *sta) {
   for (int i = 0; i < MAXSAT; i++)
     for (int j = 0; j < MAX_CODE_BIAS_FREQS; j++)
       for (int k = 0; k < MAX_CODE_BIASES; k++) {
-        nav->cbias[i][j][k] = 0.0;
+        nav->cbias[i][j][k] = 0.0L;
       }
   char *efiles[MAXEXFILE] = {0};
   for (int i = 0; i < MAXEXFILE; i++) {
@@ -529,7 +529,7 @@ extern bool readdcb(const char *file, nav_t *nav, const sta_t *sta) {
   return dcb_ok;
 }
 /* polynomial interpolation by Neville's algorithm ---------------------------*/
-static double interppol(const double *x, double *y, int n) {
+static long double interppol(const long double *x, long double *y, int n) {
   for (int j = 1; j < n; j++) {
     for (int i = 0; i < n - j; i++) {
       y[i] = (x[i + j] * y[i] - x[i] * y[i + 1]) / (x[i + j] - x[i]);
@@ -538,12 +538,12 @@ static double interppol(const double *x, double *y, int n) {
   return y[0];
 }
 /* satellite position by precise ephemeris -----------------------------------*/
-static bool pephpos(gtime_t time, int sat, const nav_t *nav, double *rs, double *dts, double *vare,
-                    double *varc) {
+static bool pephpos(gtime_t time, int sat, const nav_t *nav, long double *rs, long double *dts,
+                    long double *vare, long double *varc) {
   char tstr[40];
   trace(4, "pephpos : time=%s sat=%2d\n", time2str(time, tstr, 3), sat);
 
-  rs[0] = rs[1] = rs[2] = dts[0] = 0.0;
+  rs[0] = rs[1] = rs[2] = dts[0] = 0.0L;
 
   if (nav->ne < NMAX + 1 || timediff(time, nav->peph[0].time) < -MAXDTE ||
       timediff(time, nav->peph[nav->ne - 1].time) > MAXDTE) {
@@ -554,7 +554,7 @@ static bool pephpos(gtime_t time, int sat, const nav_t *nav, double *rs, double 
   int i = 0;
   for (int j = nav->ne - 1; i < j;) {
     int k = (i + j) / 2;
-    if (timediff(nav->peph[k].time, time) < 0.0)
+    if (timediff(nav->peph[k].time, time) < 0.0L)
       i = k + 1;
     else
       j = k;
@@ -568,67 +568,67 @@ static bool pephpos(gtime_t time, int sat, const nav_t *nav, double *rs, double 
   else if (i + NMAX >= nav->ne)
     i = nav->ne - NMAX - 1;
 
-  double t[NMAX + 1];
+  long double t[NMAX + 1];
   for (int j = 0; j <= NMAX; j++) {
     t[j] = timediff(nav->peph[i + j].time, time);
-    if (norm(nav->peph[i + j].pos[sat - 1], 3) <= 0.0) {
+    if (norm(nav->peph[i + j].pos[sat - 1], 3) <= 0.0L) {
       trace(3, "prec ephem outage %s sat=%2d\n", time2str(time, tstr, 0), sat);
       return false;
     }
   }
-  double p[3][NMAX + 1];
+  long double p[3][NMAX + 1];
   for (int j = 0; j <= NMAX; j++) {
-    const double *pos = nav->peph[i + j].pos[sat - 1];
+    const long double *pos = nav->peph[i + j].pos[sat - 1];
     /* correction for earth rotation ver.2.4.0 */
-    double sinl = sin(OMGE * t[j]);
-    double cosl = cos(OMGE * t[j]);
-    p[0][j] = cosl * pos[0] - sinl * pos[1];
-    p[1][j] = sinl * pos[0] + cosl * pos[1];
+    long double sinll = sinl(OMGE * t[j]);
+    long double cosll = cosl(OMGE * t[j]);
+    p[0][j] = cosll * pos[0] - sinll * pos[1];
+    p[1][j] = sinll * pos[0] + cosll * pos[1];
     p[2][j] = pos[2];
   }
   for (int i2 = 0; i2 < 3; i2++) {
     rs[i2] = interppol(t, p[i2], NMAX + 1);
   }
-  double std = 0.0;
+  long double std = 0.0L;
   if (vare) {
-    double s[3];
+    long double s[3];
     for (int i2 = 0; i2 < 3; i2++) s[i2] = nav->peph[index].std[sat - 1][i2];
     std = norm(s, 3);
 
     /* extrapolation error for orbit */
-    if (t[0] > 0.0)
-      std += EXTERR_EPH * SQR(t[0]) / 2.0;
-    else if (t[NMAX] < 0.0)
-      std += EXTERR_EPH * SQR(t[NMAX]) / 2.0;
+    if (t[0] > 0.0L)
+      std += EXTERR_EPH * SQR(t[0]) / 2.0L;
+    else if (t[NMAX] < 0.0L)
+      std += EXTERR_EPH * SQR(t[NMAX]) / 2.0L;
     *vare = SQR(std);
   }
   /* linear interpolation for clock */
-  double c[2];
+  long double c[2];
   t[0] = timediff(time, nav->peph[index].time);
   t[1] = timediff(time, nav->peph[index + 1].time);
   c[0] = nav->peph[index].pos[sat - 1][3];
   c[1] = nav->peph[index + 1].pos[sat - 1][3];
 
-  if (t[0] <= 0.0) {
-    if ((dts[0] = c[0]) != 0.0) {
+  if (t[0] <= 0.0L) {
+    if ((dts[0] = c[0]) != 0.0L) {
       std = nav->peph[index].std[sat - 1][3] * CLIGHT - EXTERR_CLK * t[0];
     }
-  } else if (t[1] >= 0.0) {
-    if ((dts[0] = c[1]) != 0.0) {
+  } else if (t[1] >= 0.0L) {
+    if ((dts[0] = c[1]) != 0.0L) {
       std = nav->peph[index + 1].std[sat - 1][3] * CLIGHT + EXTERR_CLK * t[1];
     }
-  } else if (c[0] != 0.0 && c[1] != 0.0) {
+  } else if (c[0] != 0.0L && c[1] != 0.0L) {
     dts[0] = (c[1] * t[0] - c[0] * t[1]) / (t[0] - t[1]);
     i = t[0] < -t[1] ? 0 : 1;
-    std = nav->peph[index + i].std[sat - 1][3] + EXTERR_CLK * fabs(t[i]);
+    std = nav->peph[index + i].std[sat - 1][3] + EXTERR_CLK * fabsl(t[i]);
   } else {
-    dts[0] = 0.0;
+    dts[0] = 0.0L;
   }
   if (varc) *varc = SQR(std);
   return true;
 }
 /* satellite clock by precise clock ------------------------------------------*/
-static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts, double *varc) {
+static int pephclk(gtime_t time, int sat, const nav_t *nav, long double *dts, long double *varc) {
   char tstr[40];
   trace(4, "pephclk : time=%s sat=%2d\n", time2str(time, tstr, 3), sat);
 
@@ -641,7 +641,7 @@ static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts, double 
   int i = 0;
   for (int j = nav->nc - 1; i < j;) {
     int k = (i + j) / 2;
-    if (timediff(nav->pclk[k].time, time) < 0.0)
+    if (timediff(nav->pclk[k].time, time) < 0.0L)
       i = k + 1;
     else
       j = k;
@@ -649,23 +649,23 @@ static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts, double 
   int index = i <= 0 ? 0 : i - 1;
 
   /* linear interpolation for clock */
-  double t[2], c[2];
+  long double t[2], c[2];
   t[0] = timediff(time, nav->pclk[index].time);
   t[1] = timediff(time, nav->pclk[index + 1].time);
   c[0] = nav->pclk[index].clk[sat - 1][0];
   c[1] = nav->pclk[index + 1].clk[sat - 1][0];
 
-  double std;
-  if (t[0] <= 0.0) {
-    if ((dts[0] = c[0]) == 0.0) return false;
+  long double std;
+  if (t[0] <= 0.0L) {
+    if ((dts[0] = c[0]) == 0.0L) return false;
     std = nav->pclk[index].std[sat - 1][0] * CLIGHT - EXTERR_CLK * t[0];
-  } else if (t[1] >= 0.0) {
-    if ((dts[0] = c[1]) == 0.0) return false;
+  } else if (t[1] >= 0.0L) {
+    if ((dts[0] = c[1]) == 0.0L) return false;
     std = nav->pclk[index + 1].std[sat - 1][0] * CLIGHT + EXTERR_CLK * t[1];
-  } else if (c[0] != 0.0 && c[1] != 0.0) {
+  } else if (c[0] != 0.0L && c[1] != 0.0L) {
     dts[0] = (c[1] * t[0] - c[0] * t[1]) / (t[0] - t[1]);
     i = t[0] < -t[1] ? 0 : 1;
-    std = nav->pclk[index + i].std[sat - 1][0] * CLIGHT + EXTERR_CLK * fabs(t[i]);
+    std = nav->pclk[index + i].std[sat - 1][0] * CLIGHT + EXTERR_CLK * fabsl(t[i]);
   } else {
     trace(3, "prec clock outage %s sat=%2d\n", time2str(time, tstr, 0), sat);
     return false;
@@ -676,11 +676,11 @@ static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts, double 
 /* satellite antenna phase center offset ---------------------------------------
  * compute satellite antenna phase center offset in ecef
  * args   : gtime_t time       I   time (gpst)
- *          double *rs         I   satellite position and velocity (ecef)
+ *          long double *rs         I   satellite position and velocity (ecef)
  *                                 {x,y,z,vx,vy,vz} (m|m/s)
  *          int    sat         I   satellite number
  *          nav_t  *nav        I   navigation data
- *          double *dant       O   satellite antenna phase center offset (ecef)
+ *          long double *dant       O   satellite antenna phase center offset (ecef)
  *                                 {dx,dy,dz} (m) (iono-free LC value)
  * return : none
  * notes  : iono-free LC frequencies defined as follows:
@@ -690,34 +690,35 @@ static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts, double 
  *            BDS      : B1I-B2I
  *            NavIC    : L5-S
  *-----------------------------------------------------------------------------*/
-extern void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav, double *dant) {
+extern void satantoff(gtime_t time, const long double *rs, int sat, const nav_t *nav,
+                      long double *dant) {
   char tstr[40];
   trace(4, "satantoff: time=%s sat=%2d\n", time2str(time, tstr, 3), sat);
 
-  dant[0] = dant[1] = dant[2] = 0.0;
+  dant[0] = dant[1] = dant[2] = 0.0L;
 
   /* sun position in ecef */
-  double rsun[3], gmst;
-  const double erpv[5] = {0};
+  long double rsun[3], gmst;
+  const long double erpv[5] = {0};
   sunmoonpos(gpst2utc(time), erpv, rsun, NULL, &gmst);
 
   /* unit vectors of satellite fixed coordinates */
-  double r[3];
+  long double r[3];
   for (int i = 0; i < 3; i++) r[i] = -rs[i];
-  double ez[3];
+  long double ez[3];
   if (!normv3(r, ez)) return;
   for (int i = 0; i < 3; i++) r[i] = rsun[i] - rs[i];
-  double es[3];
+  long double es[3];
   if (!normv3(r, es)) return;
   cross3(ez, es, r);
-  double ey[3];
+  long double ey[3];
   if (!normv3(r, ey)) return;
-  double ex[3];
+  long double ex[3];
   cross3(ey, ez, ex);
 
   /* iono-free LC coefficients */
   int sys = satsys(sat, NULL);
-  double freq[2];
+  long double freq[2];
   if (sys == SYS_GPS || sys == SYS_QZS) { /* L1-L2 */
     freq[0] = FREQL1;
     freq[1] = FREQL2;
@@ -736,14 +737,14 @@ extern void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
   } else
     return;
 
-  double C1 = SQR(freq[0]) / (SQR(freq[0]) - SQR(freq[1]));
-  double C2 = -SQR(freq[1]) / (SQR(freq[0]) - SQR(freq[1]));
+  long double C1 = SQR(freq[0]) / (SQR(freq[0]) - SQR(freq[1]));
+  long double C2 = -SQR(freq[1]) / (SQR(freq[0]) - SQR(freq[1]));
 
   /* iono-free LC */
   const pcv_t *pcv = nav->pcvs + sat - 1;
   for (int i = 0; i < 3; i++) {
-    double dant1 = pcv->off[0][0] * ex[i] + pcv->off[0][1] * ey[i] + pcv->off[0][2] * ez[i];
-    double dant2 = pcv->off[1][0] * ex[i] + pcv->off[1][1] * ey[i] + pcv->off[1][2] * ez[i];
+    long double dant1 = pcv->off[0][0] * ex[i] + pcv->off[0][1] * ey[i] + pcv->off[0][2] * ez[i];
+    long double dant2 = pcv->off[1][0] * ex[i] + pcv->off[1][1] * ey[i] + pcv->off[1][2] * ez[i];
     dant[i] = C1 * dant1 + C2 * dant2;
   }
 }
@@ -754,10 +755,10 @@ extern void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
  *          nav_t  *nav        I   navigation data
  *          int    opt         I   sat position option
  *                                 (0: center of mass, 1: antenna phase center)
- *          double *rs         O   sat position and velocity (ecef)
+ *          long double *rs         O   sat position and velocity (ecef)
  *                                 {x,y,z,vx,vy,vz} (m|m/s)
- *          double *dts        O   sat clock {bias,drift} (s|s/s)
- *          double *var        IO  sat position and clock error variance (m)
+ *          long double *dts        O   sat clock {bias,drift} (s|s/s)
+ *          long double *var        IO  sat position and clock error variance (m)
  *                                 (NULL: no output)
  * return : status (true:ok,false:error or data outage)
  * notes  : clock includes relativistic correction but does not contain code bias
@@ -765,26 +766,26 @@ extern void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
  *          nav->nc must be set by calling readsp3(), readrnx() or readrnxt()
  *          if precise clocks are not set, clocks in sp3 are used instead
  *-----------------------------------------------------------------------------*/
-extern bool peph2pos(gtime_t time, int sat, const nav_t *nav, int opt, double *rs, double *dts,
-                     double *var) {
+extern bool peph2pos(gtime_t time, int sat, const nav_t *nav, int opt, long double *rs,
+                     long double *dts, long double *var) {
   char tstr[40];
   trace(4, "peph2pos: time=%s sat=%2d opt=%d\n", time2str(time, tstr, 3), sat, opt);
 
   if (sat <= 0 || MAXSAT < sat) return false;
 
   /* satellite position and clock bias */
-  double rss[3], dtss[1], vare = 0.0, varc = 0.0;
+  long double rss[3], dtss[1], vare = 0.0L, varc = 0.0L;
   if (!pephpos(time, sat, nav, rss, dtss, &vare, &varc) || !pephclk(time, sat, nav, dtss, &varc))
     return false;
 
-  double tt = 1E-3;
+  long double tt = 1E-3L;
   gtime_t time_tt = timeadd(time, tt);
-  double rst[3], dtst[1];
+  long double rst[3], dtst[1];
   if (!pephpos(time_tt, sat, nav, rst, dtst, NULL, NULL) || !pephclk(time_tt, sat, nav, dtst, NULL))
     return false;
 
   /* satellite antenna offset correction */
-  double dant[3] = {0};
+  long double dant[3] = {0};
   if (opt) {
     satantoff(time, rss, sat, nav, dant);
   }
@@ -793,11 +794,11 @@ extern bool peph2pos(gtime_t time, int sat, const nav_t *nav, int opt, double *r
     rs[i + 3] = (rst[i] - rss[i]) / tt;
   }
   /* relativistic effect correction */
-  if (dtss[0] != 0.0) {
-    dts[0] = dtss[0] - 2.0 * dot3(rs, rs + 3) / CLIGHT / CLIGHT;
+  if (dtss[0] != 0.0L) {
+    dts[0] = dtss[0] - 2.0L * dot3(rs, rs + 3) / CLIGHT / CLIGHT;
     dts[1] = (dtst[0] - dtss[0]) / tt;
   } else { /* no precise clock */
-    dts[0] = dts[1] = 0.0;
+    dts[0] = dts[1] = 0.0L;
   }
   if (var) *var = vare + varc;
 

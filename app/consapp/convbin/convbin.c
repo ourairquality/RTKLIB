@@ -393,7 +393,7 @@ static bool get_filetime(const char *file, gtime_t *time) {
     if (fread(buff, 64, 1, fp) == 1 && !strncmp((char *)buff, "TIMETAG", 7) &&
         fread(&time_time, 4, 1, fp) == 1) {
       time->time = time_time;
-      time->sec = 0.0;
+      time->sec = 0.0L;
       fclose(fp);
       return true;
     }
@@ -403,7 +403,7 @@ static bool get_filetime(const char *file, gtime_t *time) {
   struct stat st;
   struct tm *tm;
   if (!stat(path, &st) && (tm = gmtime(&st.st_mtime))) {
-    double ep[6];
+    long double ep[6];
     ep[0] = tm->tm_year + 1900;
     ep[1] = tm->tm_mon + 1;
     ep[2] = tm->tm_mday;
@@ -421,36 +421,36 @@ static int cmdopts(int argc, char **argv, rnxopt_t *opt, char **ifile, char **of
   opt->rnxver = 304;
   opt->obstype = OBSTYPE_PR | OBSTYPE_CP;
   opt->navsys = SYS_GPS | SYS_GLO | SYS_GAL | SYS_QZS | SYS_SBS | SYS_CMP | SYS_IRN;
-  opt->ttol = 0.005;
+  opt->ttol = 0.005L;
 
   for (int i = 0; i < 6; i++)
     for (int j = 0; j < 64; j++) opt->mask[i][j] = '1';
 
-  double span = 0.0;
+  long double span = 0.0L;
   char *fmt = "";
   int nf = 5, nc = 2, format = -1;
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-ts") && i + 2 < argc) {
-      double eps[] = {1980, 1, 1, 0, 0, 0};
-      sscanf(argv[++i], "%lf/%lf/%lf", eps, eps + 1, eps + 2);
-      sscanf(argv[++i], "%lf:%lf:%lf", eps + 3, eps + 4, eps + 5);
+      long double eps[] = {1980, 1, 1, 0, 0, 0};
+      sscanf(argv[++i], "%Lf/%Lf/%Lf", eps, eps + 1, eps + 2);
+      sscanf(argv[++i], "%Lf:%Lf:%Lf", eps + 3, eps + 4, eps + 5);
       opt->ts = epoch2time(eps);
     } else if (!strcmp(argv[i], "-te") && i + 2 < argc) {
-      double epe[] = {2037, 12, 31, 0, 0, 0};
-      sscanf(argv[++i], "%lf/%lf/%lf", epe, epe + 1, epe + 2);
-      sscanf(argv[++i], "%lf:%lf:%lf", epe + 3, epe + 4, epe + 5);
+      long double epe[] = {2037, 12, 31, 0, 0, 0};
+      sscanf(argv[++i], "%Lf/%Lf/%Lf", epe, epe + 1, epe + 2);
+      sscanf(argv[++i], "%Lf:%Lf:%Lf", epe + 3, epe + 4, epe + 5);
       opt->te = epoch2time(epe);
     } else if (!strcmp(argv[i], "-tr") && i + 2 < argc) {
-      double epr[] = {2010, 1, 1, 0, 0, 0};
-      sscanf(argv[++i], "%lf/%lf/%lf", epr, epr + 1, epr + 2);
-      sscanf(argv[++i], "%lf:%lf:%lf", epr + 3, epr + 4, epr + 5);
+      long double epr[] = {2010, 1, 1, 0, 0, 0};
+      sscanf(argv[++i], "%Lf/%Lf/%Lf", epr, epr + 1, epr + 2);
+      sscanf(argv[++i], "%Lf:%Lf:%Lf", epr + 3, epr + 4, epr + 5);
       opt->trtcm = epoch2time(epr);
     } else if (!strcmp(argv[i], "-ti") && i + 1 < argc) {
-      opt->tint = atof(argv[++i]);
+      opt->tint = strtold(argv[++i], NULL);
     } else if (!strcmp(argv[i], "-tt") && i + 1 < argc) {
-      opt->ttol = atof(argv[++i]);
+      opt->ttol = strtold(argv[++i], NULL);
     } else if (!strcmp(argv[i], "-span") && i + 1 < argc) {
-      span = atof(argv[++i]);
+      span = strtold(argv[++i], NULL);
     } else if (!strcmp(argv[i], "-r") && i + 1 < argc) {
       fmt = argv[++i];
     } else if (!strcmp(argv[i], "-ro") && i + 1 < argc) {
@@ -491,17 +491,17 @@ static int cmdopts(int argc, char **argv, rnxopt_t *opt, char **ifile, char **of
       rtkstrcpy(buff, sizeof(buff), argv[++i]);
       char *r, *p = strtok_r(buff, "/", &r);
       for (int j = 0; j < 3 && p; j++, p = strtok_r(NULL, "/", &r)) {
-        opt->apppos[j] = atof(p);
+        opt->apppos[j] = strtold(p, NULL);
       }
     } else if (!strcmp(argv[i], "-hd") && i + 1 < argc) {
       char buff[256];
       rtkstrcpy(buff, sizeof(buff), argv[++i]);
       char *r, *p = strtok_r(buff, "/", &r);
       for (int j = 0; j < 3 && p; j++, p = strtok_r(NULL, "/", &r)) {
-        opt->antdel[j] = atof(p);
+        opt->antdel[j] = strtold(p, NULL);
       }
     } else if (!strcmp(argv[i], "-v") && i + 1 < argc) {
-      opt->rnxver = (int)(atof(argv[++i]) * 100.0);
+      opt->rnxver = (int)(strtold(argv[++i], NULL) * 100.0L);
     } else if (!strcmp(argv[i], "-od")) {
       opt->obstype |= OBSTYPE_DOP;
     } else if (!strcmp(argv[i], "-os")) {
@@ -571,8 +571,8 @@ static int cmdopts(int argc, char **argv, rnxopt_t *opt, char **ifile, char **of
     else
       *ifile = argv[i];
   }
-  if (span > 0.0 && opt->ts.time) {
-    opt->te = timeadd(opt->ts, span * 3600.0 - 1e-3);
+  if (span > 0.0L && opt->ts.time) {
+    opt->te = timeadd(opt->ts, span * 3600.0L - 1e-3L);
   }
   if (nf >= 1) opt->freqtype |= FREQTYPE_L1;
   if (nf >= 2) opt->freqtype |= FREQTYPE_L2;

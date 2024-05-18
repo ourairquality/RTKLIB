@@ -112,9 +112,9 @@
 #define ID_RGEB 32 /* oem3 range measurement */
 #define ID_RGED 65 /* oem3 range compressed */
 
-#define WL1 0.1902936727984
-#define WL2 0.2442102134246
-#define MAXVAL 8388608.0
+#define WL1 0.1902936727984L
+#define WL2 0.2442102134246L
+#define MAXVAL 8388608.0L
 #define OFF_FRQNO -7 /* F/W ver.3.620 */
 
 #define SQR(x) ((x) * (x))
@@ -160,31 +160,31 @@ static uint8_t chksum(const uint8_t *buff, int len) {
   return sum;
 }
 /* adjust weekly rollover of GPS time ----------------------------------------*/
-static gtime_t adjweek(gtime_t time, double tow) {
-  double tow_p;
+static gtime_t adjweek(gtime_t time, long double tow) {
+  long double tow_p;
   int week;
   tow_p = time2gpst(time, &week);
-  if (tow < tow_p - 302400.0)
-    tow += 604800.0;
-  else if (tow > tow_p + 302400.0)
-    tow -= 604800.0;
+  if (tow < tow_p - 302400.0L)
+    tow += 604800.0L;
+  else if (tow > tow_p + 302400.0L)
+    tow -= 604800.0L;
   return gpst2time(week, tow);
 }
 /* UTC 8-bit week -> full week -----------------------------------------------*/
-static void adj_utcweek(gtime_t time, double *utc) {
+static void adj_utcweek(gtime_t time, long double *utc) {
   int week;
 
   time2gpst(time, &week);
   utc[3] += week / 256 * 256;
   if (utc[3] < week - 127)
-    utc[3] += 256.0;
+    utc[3] += 256.0L;
   else if (utc[3] > week + 127)
-    utc[3] -= 256.0;
+    utc[3] -= 256.0L;
   utc[5] += utc[3] / 256 * 256;
   if (utc[5] < utc[3] - 127)
-    utc[5] += 256.0;
+    utc[5] += 256.0L;
   else if (utc[5] > utc[3] + 127)
-    utc[5] -= 256.0;
+    utc[5] -= 256.0L;
 }
 /* get observation data index ------------------------------------------------*/
 static int obsindex(obs_t *obs, gtime_t time, int sat) {
@@ -197,8 +197,8 @@ static int obsindex(obs_t *obs, gtime_t time, int sat) {
   obs->data[i].time = time;
   obs->data[i].sat = sat;
   for (j = 0; j < NFREQ + NEXOBS; j++) {
-    obs->data[i].L[j] = obs->data[i].P[j] = 0.0;
-    obs->data[i].D[j] = 0.0;
+    obs->data[i].L[j] = obs->data[i].P[j] = 0.0L;
+    obs->data[i].D[j] = 0.0L;
     obs->data[i].SNR[j] = obs->data[i].LLI[j] = 0;
     obs->data[i].code[j] = CODE_NONE;
   }
@@ -206,9 +206,10 @@ static int obsindex(obs_t *obs, gtime_t time, int sat) {
   return i;
 }
 /* URA value (m) to URA index ------------------------------------------------*/
-static int uraindex(double value) {
-  static const double ura_eph[] = {2.4,  3.4,   4.85,  6.85,  9.65,   13.65,  24.0,   48.0,
-                                   96.0, 192.0, 384.0, 768.0, 1536.0, 3072.0, 6144.0, 0.0};
+static int uraindex(long double value) {
+  static const long double ura_eph[] = {2.4L,    3.4L,    4.85L,   6.85L,  9.65L,  13.65L,
+                                        24.0L,   48.0L,   96.0L,   192.0L, 384.0L, 768.0L,
+                                        1536.0L, 3072.0L, 6144.0L, 0.0L};
   int i;
   for (i = 0; i < 15; i++)
     if (ura_eph[i] >= value) break;
@@ -413,10 +414,10 @@ static int checkpri(const char *opt, int sys, int code, int idx) {
 static int decode_rangecmpb(raw_t *raw) {
   uint8_t *p = raw->buff + OEM4HLEN;
   char *q;
-  double psr, adr, adr_rolls, lockt, tt, dop, snr, freq, glo_bias = 0.0;
+  long double psr, adr, adr_rolls, lockt, tt, dop, snr, freq, glo_bias = 0.0L;
   int i, index, nobs, prn, sat, sys, code, idx, track, plock, clock, parity, halfc, lli;
 
-  if ((q = strstr(raw->opt, "-GLOBIAS="))) sscanf(q, "-GLOBIAS=%lf", &glo_bias);
+  if ((q = strstr(raw->opt, "-GLOBIAS="))) sscanf(q, "-GLOBIAS=%Lf", &glo_bias);
 
   nobs = U4(p);
   if (raw->len < OEM4HLEN + 4 + nobs * 24) {
@@ -446,22 +447,22 @@ static int decode_rangecmpb(raw_t *raw) {
 
     if ((idx = checkpri(raw->opt, sys, code, idx)) < 0) continue;
 
-    dop = exsign(U4(p + 4) & 0xFFFFFFF, 28) / 256.0;
-    psr = (U4(p + 7) >> 4) / 128.0 + U1(p + 11) * 2097152.0;
+    dop = exsign(U4(p + 4) & 0xFFFFFFF, 28) / 256.0L;
+    psr = (U4(p + 7) >> 4) / 128.0L + U1(p + 11) * 2097152.0L;
 
-    if ((freq = sat2freq(sat, (uint8_t)code, &raw->nav)) != 0.0) {
-      adr = I4(p + 12) / 256.0;
+    if ((freq = sat2freq(sat, (uint8_t)code, &raw->nav)) != 0.0L) {
+      adr = I4(p + 12) / 256.0L;
       adr_rolls = (psr * freq / CLIGHT + adr) / MAXVAL;
-      adr = -adr + MAXVAL * floor(adr_rolls + (adr_rolls <= 0 ? -0.5 : 0.5));
+      adr = -adr + MAXVAL * floorl(adr_rolls + (adr_rolls <= 0 ? -0.5L : 0.5L));
       if (sys == SYS_GLO) adr += glo_bias * freq / CLIGHT;
     } else {
-      adr = 1e-9;
+      adr = 1e-9L;
     }
-    lockt = (U4(p + 18) & 0x1FFFFF) / 32.0; /* lock time */
+    lockt = (U4(p + 18) & 0x1FFFFF) / 32.0L; /* lock time */
 
     if (raw->tobs[sat - 1][idx].time != 0) {
       tt = timediff(raw->time, raw->tobs[sat - 1][idx]);
-      lli = (lockt < 65535.968 && lockt - raw->lockt[sat - 1][idx] + 0.05 <= tt) ? LLI_SLIP : 0;
+      lli = (lockt < 65535.968L && lockt - raw->lockt[sat - 1][idx] + 0.05L <= tt) ? LLI_SLIP : 0;
     } else {
       lli = 0;
     }
@@ -471,18 +472,18 @@ static int decode_rangecmpb(raw_t *raw) {
     raw->lockt[sat - 1][idx] = lockt;
     raw->halfc[sat - 1][idx] = halfc;
 
-    snr = ((U2(p + 20) & 0x3FF) >> 5) + 20.0;
-    if (!clock) psr = 0.0;       /* code unlock */
-    if (!plock) adr = dop = 0.0; /* phase unlock */
+    snr = ((U2(p + 20) & 0x3FF) >> 5) + 20.0L;
+    if (!clock) psr = 0.0L;       /* code unlock */
+    if (!plock) adr = dop = 0.0L; /* phase unlock */
 
-    if (fabs(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
+    if (fabsl(timediff(raw->obs.data[0].time, raw->time)) > 1E-9L) {
       raw->obs.n = 0;
     }
     if ((index = obsindex(&raw->obs, raw->time, sat)) >= 0) {
       raw->obs.data[index].L[idx] = adr;
       raw->obs.data[index].P[idx] = psr;
-      raw->obs.data[index].D[idx] = (float)dop;
-      raw->obs.data[index].SNR[idx] = (uint16_t)(snr / SNR_UNIT + 0.5);
+      raw->obs.data[index].D[idx] = dop;
+      raw->obs.data[index].SNR[idx] = (uint16_t)(snr / SNR_UNIT + 0.5L);
       raw->obs.data[index].LLI[idx] = (uint8_t)lli;
       raw->obs.data[index].code[idx] = (uint8_t)code;
     }
@@ -493,11 +494,11 @@ static int decode_rangecmpb(raw_t *raw) {
 static int decode_rangeb(raw_t *raw) {
   uint8_t *p = raw->buff + OEM4HLEN;
   char *q;
-  double psr, adr, dop, snr, lockt, tt, freq, glo_bias = 0.0;
+  long double psr, adr, dop, snr, lockt, tt, freq, glo_bias = 0.0L;
   int i, index, nobs, prn, sat, sys, code, idx, track, plock, clock, parity, halfc, lli;
   int gfrq;
 
-  if ((q = strstr(raw->opt, "-GLOBIAS="))) sscanf(q, "-GLOBIAS=%lf", &glo_bias);
+  if ((q = strstr(raw->opt, "-GLOBIAS="))) sscanf(q, "-GLOBIAS=%Lf", &glo_bias);
 
   nobs = U4(p);
   if (raw->len < OEM4HLEN + 4 + nobs * 44) {
@@ -528,11 +529,11 @@ static int decode_rangeb(raw_t *raw) {
     if ((idx = checkpri(raw->opt, sys, code, idx)) < 0) continue;
 
     gfrq = U2(p + 2); /* GLONASS FCN+8 */
-    psr = R8(p + 4);
-    adr = R8(p + 16);
-    dop = R4(p + 28);
-    snr = R4(p + 32);
-    lockt = R4(p + 36);
+    psr = (long double)R8(p + 4);
+    adr = (long double)R8(p + 16);
+    dop = (long double)R4(p + 28);
+    snr = (long double)R4(p + 32);
+    lockt = (long double)R4(p + 36);
 
     if (sys == SYS_GLO) {
       freq = sat2freq(sat, (uint8_t)code, &raw->nav);
@@ -543,7 +544,7 @@ static int decode_rangeb(raw_t *raw) {
     }
     if (raw->tobs[sat - 1][idx].time != 0) {
       tt = timediff(raw->time, raw->tobs[sat - 1][idx]);
-      lli = lockt - raw->lockt[sat - 1][idx] + 0.05 <= tt ? LLI_SLIP : 0;
+      lli = lockt - raw->lockt[sat - 1][idx] + 0.05L <= tt ? LLI_SLIP : 0;
     } else {
       lli = 0;
     }
@@ -553,17 +554,17 @@ static int decode_rangeb(raw_t *raw) {
     raw->lockt[sat - 1][idx] = lockt;
     raw->halfc[sat - 1][idx] = halfc;
 
-    if (!clock) psr = 0.0;       /* code unlock */
-    if (!plock) adr = dop = 0.0; /* phase unlock */
+    if (!clock) psr = 0.0L;       /* code unlock */
+    if (!plock) adr = dop = 0.0L; /* phase unlock */
 
-    if (fabs(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
+    if (fabsl(timediff(raw->obs.data[0].time, raw->time)) > 1E-9L) {
       raw->obs.n = 0;
     }
     if ((index = obsindex(&raw->obs, raw->time, sat)) >= 0) {
       raw->obs.data[index].L[idx] = -adr;
       raw->obs.data[index].P[idx] = psr;
-      raw->obs.data[index].D[idx] = (float)dop;
-      raw->obs.data[index].SNR[idx] = (uint16_t)(snr / SNR_UNIT + 0.5);
+      raw->obs.data[index].D[idx] = dop;
+      raw->obs.data[index].SNR[idx] = (uint16_t)(snr / SNR_UNIT + 0.5L);
       raw->obs.data[index].LLI[idx] = (uint8_t)lli;
       raw->obs.data[index].code[idx] = (uint8_t)code;
     }
@@ -613,15 +614,15 @@ static int decode_ionutcb(raw_t *raw) {
     trace(2, "oem4 ionutcb length error: len=%d\n", raw->len);
     return -1;
   }
-  for (i = 0; i < 8; i++) raw->nav.ion_gps[i] = R8(p + i * 8);
-  raw->nav.utc_gps[0] = R8(p + 72);  /* A0 */
-  raw->nav.utc_gps[1] = R8(p + 80);  /* A1 */
-  raw->nav.utc_gps[2] = U4(p + 68);  /* tot */
-  raw->nav.utc_gps[3] = U4(p + 64);  /* WNt */
-  raw->nav.utc_gps[4] = I4(p + 96);  /* dt_LS */
-  raw->nav.utc_gps[5] = U4(p + 88);  /* WN_LSF */
-  raw->nav.utc_gps[6] = U4(p + 92);  /* DN */
-  raw->nav.utc_gps[7] = I4(p + 100); /* dt_LSF */
+  for (i = 0; i < 8; i++) raw->nav.ion_gps[i] = (long double)R8(p + i * 8);
+  raw->nav.utc_gps[0] = (long double)R8(p + 72); /* A0 */
+  raw->nav.utc_gps[1] = (long double)R8(p + 80); /* A1 */
+  raw->nav.utc_gps[2] = U4(p + 68);              /* tot */
+  raw->nav.utc_gps[3] = U4(p + 64);              /* WNt */
+  raw->nav.utc_gps[4] = I4(p + 96);              /* dt_LS */
+  raw->nav.utc_gps[5] = U4(p + 88);              /* WN_LSF */
+  raw->nav.utc_gps[6] = U4(p + 92);              /* DN */
+  raw->nav.utc_gps[7] = I4(p + 100);             /* dt_LSF */
   return 9;
 }
 /* decode RAWWAASFRAMEB ------------------------------------------------------*/
@@ -652,7 +653,7 @@ static int decode_rawsbasframeb(raw_t *raw) { return decode_rawwaasframeb(raw); 
 static int decode_gloephemerisb(raw_t *raw) {
   uint8_t *p = raw->buff + OEM4HLEN;
   geph_t geph = {0};
-  double tow, tof, toff;
+  long double tow, tof, toff;
   int prn, sat, week;
 
   if (raw->len < OEM4HLEN + 144) {
@@ -670,34 +671,34 @@ static int decode_gloephemerisb(raw_t *raw) {
   }
   geph.frq = U2(p + 2) + OFF_FRQNO;
   week = U2(p + 6);
-  tow = floor(U4(p + 8) / 1000.0 + 0.5); /* rounded to integer sec */
+  tow = floorl(U4(p + 8) / 1000.0L + 0.5L); /* rounded to integer sec */
   toff = U4(p + 12);
   geph.iode = U4(p + 20) & 0x7F;
   geph.svh = (U4(p + 24) < 4) ? 0 : 1; /* 0:healthy,1:unhealthy */
-  geph.pos[0] = R8(p + 28);
-  geph.pos[1] = R8(p + 36);
-  geph.pos[2] = R8(p + 44);
-  geph.vel[0] = R8(p + 52);
-  geph.vel[1] = R8(p + 60);
-  geph.vel[2] = R8(p + 68);
-  geph.acc[0] = R8(p + 76);
-  geph.acc[1] = R8(p + 84);
-  geph.acc[2] = R8(p + 92);
-  geph.taun = R8(p + 100);
-  geph.dtaun = R8(p + 108);
-  geph.gamn = R8(p + 116);
+  geph.pos[0] = (long double)R8(p + 28);
+  geph.pos[1] = (long double)R8(p + 36);
+  geph.pos[2] = (long double)R8(p + 44);
+  geph.vel[0] = (long double)R8(p + 52);
+  geph.vel[1] = (long double)R8(p + 60);
+  geph.vel[2] = (long double)R8(p + 68);
+  geph.acc[0] = (long double)R8(p + 76);
+  geph.acc[1] = (long double)R8(p + 84);
+  geph.acc[2] = (long double)R8(p + 92);
+  geph.taun = (long double)R8(p + 100);
+  geph.dtaun = (long double)R8(p + 108);
+  geph.gamn = (long double)R8(p + 116);
   tof = U4(p + 124) - toff; /* glonasst->gpst */
   geph.age = U4(p + 136);
   geph.toe = gpst2time(week, tow);
-  tof += floor(tow / 86400.0) * 86400;
-  if (tof < tow - 43200.0)
-    tof += 86400.0;
-  else if (tof > tow + 43200.0)
-    tof -= 86400.0;
+  tof += floorl(tow / 86400.0L) * 86400;
+  if (tof < tow - 43200.0L)
+    tof += 86400.0L;
+  else if (tof > tow + 43200.0L)
+    tof -= 86400.0L;
   geph.tof = gpst2time(week, tof);
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (fabs(timediff(geph.toe, raw->nav.geph[prn - 1][0].toe)) < 1.0 &&
+    if (fabsl(timediff(geph.toe, raw->nav.geph[prn - 1][0].toe)) < 1.0L &&
         geph.svh == raw->nav.geph[prn - 1][0].svh)
       return 0; /* unchanged */
   }
@@ -744,7 +745,7 @@ static int decode_qzssrawephemb(raw_t *raw) {
 /* decode QZSSRAWSUBFRAMEB ---------------------------------------------------*/
 static int decode_qzssrawsubframeb(raw_t *raw) {
   eph_t eph = {0};
-  double ion[8], utc[8];
+  long double ion[8], utc[8];
   uint8_t *p = raw->buff + OEM4HLEN;
   int prn, sat, id;
 
@@ -796,9 +797,9 @@ static int decode_qzssionutcb(raw_t *raw) {
     trace(2, "oem4 qzssionutcb length error: len=%d\n", raw->len);
     return -1;
   }
-  for (i = 0; i < 8; i++) raw->nav.ion_qzs[i] = R8(p + i * 8);
-  raw->nav.utc_qzs[0] = R8(p + 72);
-  raw->nav.utc_qzs[1] = R8(p + 80);
+  for (i = 0; i < 8; i++) raw->nav.ion_qzs[i] = (long double)R8(p + i * 8);
+  raw->nav.utc_qzs[0] = (long double)R8(p + 72);
+  raw->nav.utc_qzs[1] = (long double)R8(p + 80);
   raw->nav.utc_qzs[2] = U4(p + 68);
   raw->nav.utc_qzs[3] = U4(p + 64);
   raw->nav.utc_qzs[4] = I4(p + 96);
@@ -808,7 +809,7 @@ static int decode_qzssionutcb(raw_t *raw) {
 static int decode_galephemerisb(raw_t *raw) {
   eph_t eph = {0};
   uint8_t *p = raw->buff + OEM4HLEN;
-  double tow, sqrtA, af0_fnav, af1_fnav, af2_fnav, af0_inav, af1_inav, af2_inav, tt;
+  long double tow, sqrtA, af0_fnav, af1_fnav, af2_fnav, af0_inav, af1_inav, af2_inav, tt;
   int prn, sat, week, rcv_fnav, rcv_inav, svh_e1b, svh_e5a, svh_e5b, dvs_e1b, dvs_e5a;
   int dvs_e5b, toc_fnav, toc_inav, set, sel_eph = 3; /* 1:I/NAV+2:F/NAV */
 
@@ -843,55 +844,55 @@ static int decode_galephemerisb(raw_t *raw) {
   p += 4; /* IODNav */
   eph.toes = U4(p);
   p += 4;
-  sqrtA = R8(p);
+  sqrtA = (long double)R8(p);
   p += 8;
-  eph.deln = R8(p);
+  eph.deln = (long double)R8(p);
   p += 8;
-  eph.M0 = R8(p);
+  eph.M0 = (long double)R8(p);
   p += 8;
-  eph.e = R8(p);
+  eph.e = (long double)R8(p);
   p += 8;
-  eph.omg = R8(p);
+  eph.omg = (long double)R8(p);
   p += 8;
-  eph.cuc = R8(p);
+  eph.cuc = (long double)R8(p);
   p += 8;
-  eph.cus = R8(p);
+  eph.cus = (long double)R8(p);
   p += 8;
-  eph.crc = R8(p);
+  eph.crc = (long double)R8(p);
   p += 8;
-  eph.crs = R8(p);
+  eph.crs = (long double)R8(p);
   p += 8;
-  eph.cic = R8(p);
+  eph.cic = (long double)R8(p);
   p += 8;
-  eph.cis = R8(p);
+  eph.cis = (long double)R8(p);
   p += 8;
-  eph.i0 = R8(p);
+  eph.i0 = (long double)R8(p);
   p += 8;
-  eph.idot = R8(p);
+  eph.idot = (long double)R8(p);
   p += 8;
-  eph.OMG0 = R8(p);
+  eph.OMG0 = (long double)R8(p);
   p += 8;
-  eph.OMGd = R8(p);
+  eph.OMGd = (long double)R8(p);
   p += 8;
   toc_fnav = U4(p);
   p += 4;
-  af0_fnav = R8(p);
+  af0_fnav = (long double)R8(p);
   p += 8;
-  af1_fnav = R8(p);
+  af1_fnav = (long double)R8(p);
   p += 8;
-  af2_fnav = R8(p);
+  af2_fnav = (long double)R8(p);
   p += 8;
   toc_inav = U4(p);
   p += 4;
-  af0_inav = R8(p);
+  af0_inav = (long double)R8(p);
   p += 8;
-  af1_inav = R8(p);
+  af1_inav = (long double)R8(p);
   p += 8;
-  af2_inav = R8(p);
+  af2_inav = (long double)R8(p);
   p += 8;
-  eph.tgd[0] = R8(p);
-  p += 8;             /* BGD: E5A-E1 (s) */
-  eph.tgd[1] = R8(p); /* BGD: E5B-E1 (s) */
+  eph.tgd[0] = (long double)R8(p);
+  p += 8;                          /* BGD: E5A-E1 (s) */
+  eph.tgd[1] = (long double)R8(p); /* BGD: E5B-E1 (s) */
 
   if (!(sat = satno(SYS_GAL, prn))) {
     trace(2, "oemv galephemeris satellite error: prn=%d\n", prn);
@@ -918,9 +919,9 @@ static int decode_galephemerisb(raw_t *raw) {
   eph.toe = gpst2time(eph.week, eph.toes);
 
   tt = timediff(eph.toe, raw->time);
-  if (tt < -302400.0)
+  if (tt < -302400.0L)
     eph.week++;
-  else if (tt > 302400.0)
+  else if (tt > 302400.0L)
     eph.week--;
   eph.toe = gpst2time(eph.week, eph.toes);
   eph.toc = adjweek(raw->time, set ? toc_fnav : toc_inav);
@@ -928,8 +929,8 @@ static int decode_galephemerisb(raw_t *raw) {
 
   if (!strstr(raw->opt, "-EPHALL")) {
     if (eph.iode == raw->nav.eph[sat - 1][set].iode &&
-        timediff(eph.toe, raw->nav.eph[sat - 1][set].toe) == 0.0 &&
-        timediff(eph.toc, raw->nav.eph[sat - 1][set].toc) == 0.0) {
+        timediff(eph.toe, raw->nav.eph[sat - 1][set].toe) == 0.0L &&
+        timediff(eph.toc, raw->nav.eph[sat - 1][set].toc) == 0.0L) {
       return 0; /* unchanged */
     }
   }
@@ -941,16 +942,16 @@ static int decode_galephemerisb(raw_t *raw) {
 /* decode GALCLOCKB ----------------------------------------------------------*/
 static int decode_galclockb(raw_t *raw) {
   uint8_t *p = raw->buff + OEM4HLEN;
-  double a0, a1, a0g, a1g;
+  long double a0, a1, a0g, a1g;
   int dtls, tot, wnt, wnlsf, dn, dtlsf, t0g, wn0g;
 
   if (raw->len < OEM4HLEN + 64) {
     trace(2, "oem4 galclockb length error: len=%d\n", raw->len);
     return -1;
   }
-  a0 = R8(p);
+  a0 = (long double)R8(p);
   p += 8;
-  a1 = R8(p);
+  a1 = (long double)R8(p);
   p += 8;
   dtls = I4(p);
   p += 4;
@@ -964,9 +965,9 @@ static int decode_galclockb(raw_t *raw) {
   p += 4;
   dtlsf = U4(p);
   p += 4;
-  a0g = R8(p);
+  a0g = (long double)R8(p);
   p += 8;
-  a1g = R8(p);
+  a1g = (long double)R8(p);
   p += 8;
   t0g = U4(p);
   p += 4;
@@ -984,18 +985,18 @@ static int decode_galclockb(raw_t *raw) {
 /* decode GALIONOB -----------------------------------------------------------*/
 static int decode_galionob(raw_t *raw) {
   uint8_t *p = raw->buff + OEM4HLEN;
-  double ai[3];
+  long double ai[3];
   int i, sf[5];
 
   if (raw->len < OEM4HLEN + 29) {
     trace(2, "oem4 galionob length error: len=%d\n", raw->len);
     return -1;
   }
-  ai[0] = R8(p);
+  ai[0] = (long double)R8(p);
   p += 8;
-  ai[1] = R8(p);
+  ai[1] = (long double)R8(p);
   p += 8;
-  ai[2] = R8(p);
+  ai[2] = (long double)R8(p);
   p += 8;
   sf[0] = U1(p);
   p += 1;
@@ -1014,7 +1015,7 @@ static int decode_galionob(raw_t *raw) {
 static int decode_bdsephemerisb(raw_t *raw) {
   eph_t eph = {0};
   uint8_t *p = raw->buff + OEM4HLEN;
-  double ura, sqrtA;
+  long double ura, sqrtA;
   int prn, sat, toc;
 
   if (raw->len < OEM4HLEN + 196) {
@@ -1025,57 +1026,57 @@ static int decode_bdsephemerisb(raw_t *raw) {
   p += 4;
   eph.week = U4(p);
   p += 4;
-  ura = R8(p);
+  ura = (long double)R8(p);
   p += 8;
   eph.svh = U4(p) & 1;
   p += 4;
-  eph.tgd[0] = R8(p);
+  eph.tgd[0] = (long double)R8(p);
   p += 8; /* TGD1 for B1 (s) */
-  eph.tgd[1] = R8(p);
+  eph.tgd[1] = (long double)R8(p);
   p += 8; /* TGD2 for B2 (s) */
   eph.iodc = U4(p);
   p += 4; /* AODC */
   toc = U4(p);
   p += 4;
-  eph.f0 = R8(p);
+  eph.f0 = (long double)R8(p);
   p += 8;
-  eph.f1 = R8(p);
+  eph.f1 = (long double)R8(p);
   p += 8;
-  eph.f2 = R8(p);
+  eph.f2 = (long double)R8(p);
   p += 8;
   eph.iode = U4(p);
   p += 4; /* AODE */
   eph.toes = U4(p);
   p += 4;
-  sqrtA = R8(p);
+  sqrtA = (long double)R8(p);
   p += 8;
-  eph.e = R8(p);
+  eph.e = (long double)R8(p);
   p += 8;
-  eph.omg = R8(p);
+  eph.omg = (long double)R8(p);
   p += 8;
-  eph.deln = R8(p);
+  eph.deln = (long double)R8(p);
   p += 8;
-  eph.M0 = R8(p);
+  eph.M0 = (long double)R8(p);
   p += 8;
-  eph.OMG0 = R8(p);
+  eph.OMG0 = (long double)R8(p);
   p += 8;
-  eph.OMGd = R8(p);
+  eph.OMGd = (long double)R8(p);
   p += 8;
-  eph.i0 = R8(p);
+  eph.i0 = (long double)R8(p);
   p += 8;
-  eph.idot = R8(p);
+  eph.idot = (long double)R8(p);
   p += 8;
-  eph.cuc = R8(p);
+  eph.cuc = (long double)R8(p);
   p += 8;
-  eph.cus = R8(p);
+  eph.cus = (long double)R8(p);
   p += 8;
-  eph.crc = R8(p);
+  eph.crc = (long double)R8(p);
   p += 8;
-  eph.crs = R8(p);
+  eph.crs = (long double)R8(p);
   p += 8;
-  eph.cic = R8(p);
+  eph.cic = (long double)R8(p);
   p += 8;
-  eph.cis = R8(p);
+  eph.cis = (long double)R8(p);
 
   if (!(sat = satno(SYS_CMP, prn))) {
     trace(2, "oemv bdsephemeris satellite error: prn=%d\n", prn);
@@ -1092,8 +1093,8 @@ static int decode_bdsephemerisb(raw_t *raw) {
   eph.ttr = raw->time;
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (timediff(raw->nav.eph[sat - 1][0].toe, eph.toe) == 0.0 &&
-        timediff(raw->nav.eph[sat - 1][0].toc, eph.toc) == 0.0)
+    if (timediff(raw->nav.eph[sat - 1][0].toe, eph.toe) == 0.0L &&
+        timediff(raw->nav.eph[sat - 1][0].toc, eph.toc) == 0.0L)
       return 0;
   }
   raw->nav.eph[sat - 1][0] = eph;
@@ -1105,7 +1106,7 @@ static int decode_bdsephemerisb(raw_t *raw) {
 static int decode_navicephemerisb(raw_t *raw) {
   eph_t eph = {0};
   uint8_t *p = raw->buff + OEM4HLEN;
-  double sqrtA;
+  long double sqrtA;
   int prn, sat, toc, rsv, l5_health, s_health, alert, autonav;
 
   if (raw->len < OEM4HLEN + 204) {
@@ -1116,19 +1117,19 @@ static int decode_navicephemerisb(raw_t *raw) {
   p += 4;
   eph.week = U4(p);
   p += 4;
-  eph.f0 = R8(p);
+  eph.f0 = (long double)R8(p);
   p += 8;
-  eph.f1 = R8(p);
+  eph.f1 = (long double)R8(p);
   p += 8;
-  eph.f2 = R8(p);
+  eph.f2 = (long double)R8(p);
   p += 8;
   eph.sva = U4(p);
   p += 4; /* URA index */
   toc = U4(p);
   p += 4;
-  eph.tgd[0] = R8(p);
+  eph.tgd[0] = (long double)R8(p);
   p += 8; /* TGD */
-  eph.deln = R8(p);
+  eph.deln = (long double)R8(p);
   p += 8;
   eph.iode = U4(p);
   p += 4; /* IODEC */
@@ -1138,37 +1139,37 @@ static int decode_navicephemerisb(raw_t *raw) {
   p += 4;
   s_health = U4(p) & 1;
   p += 4;
-  eph.cuc = R8(p);
+  eph.cuc = (long double)R8(p);
   p += 8;
-  eph.cus = R8(p);
+  eph.cus = (long double)R8(p);
   p += 8;
-  eph.cic = R8(p);
+  eph.cic = (long double)R8(p);
   p += 8;
-  eph.cis = R8(p);
+  eph.cis = (long double)R8(p);
   p += 8;
-  eph.crc = R8(p);
+  eph.crc = (long double)R8(p);
   p += 8;
-  eph.crs = R8(p);
+  eph.crs = (long double)R8(p);
   p += 8;
-  eph.idot = R8(p);
+  eph.idot = (long double)R8(p);
   p += 8;
   rsv = U4(p);
   p += 4;
-  eph.M0 = R8(p);
+  eph.M0 = (long double)R8(p);
   p += 8;
   eph.toes = U4(p);
   p += 4;
-  eph.e = R8(p);
+  eph.e = (long double)R8(p);
   p += 8;
-  sqrtA = R8(p);
+  sqrtA = (long double)R8(p);
   p += 8;
-  eph.OMG0 = R8(p);
+  eph.OMG0 = (long double)R8(p);
   p += 8;
-  eph.omg = R8(p);
+  eph.omg = (long double)R8(p);
   p += 8;
-  eph.OMGd = R8(p);
+  eph.OMGd = (long double)R8(p);
   p += 8;
-  eph.i0 = R8(p);
+  eph.i0 = (long double)R8(p);
   p += 8;
   rsv = U4(p);
   p += 4;
@@ -1195,10 +1196,10 @@ static int decode_navicephemerisb(raw_t *raw) {
   eph.toe = gpst2time(eph.week, eph.toes);
   eph.toc = gpst2time(eph.week, toc);
   eph.ttr = raw->time;
-  eph.tgd[1] = 0.0;
+  eph.tgd[1] = 0.0L;
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (timediff(raw->nav.eph[sat - 1][0].toe, eph.toe) == 0.0 &&
+    if (timediff(raw->nav.eph[sat - 1][0].toe, eph.toe) == 0.0L &&
         raw->nav.eph[sat - 1][0].iode == eph.iode)
       return 0; /* unchanged */
   }
@@ -1210,11 +1211,11 @@ static int decode_navicephemerisb(raw_t *raw) {
 /* decode RGEB ---------------------------------------------------------------*/
 static int decode_rgeb(raw_t *raw) {
   uint8_t *p = raw->buff + OEM3HLEN;
-  double tow, psr, adr, tt, lockt, dop, snr;
+  long double tow, psr, adr, tt, lockt, dop, snr;
   int i, week, nobs, prn, sat, stat, sys, parity, lli, index, freq;
 
   week = adjgpsweek(U4(p));
-  tow = R8(p + 4);
+  tow = (long double)R8(p + 4);
   nobs = U4(p + 12);
   raw->time = gpst2time(week, tow);
 
@@ -1224,22 +1225,22 @@ static int decode_rgeb(raw_t *raw) {
   }
   for (i = 0, p += 20; i < nobs; i++, p += 44) {
     prn = U4(p);
-    psr = R8(p + 4);
-    adr = R8(p + 16);
-    dop = R4(p + 28);
-    snr = R4(p + 32);
-    lockt = R4(p + 36);        /* lock time (s) */
-    stat = I4(p + 40);         /* tracking status */
-    freq = (stat >> 20) & 1;   /* L1:0,L2:1 */
-    sys = (stat >> 15) & 7;    /* satellite sys (0:GPS,1:GLONASS,2:WAAS) */
-    parity = (stat >> 10) & 1; /* parity known */
+    psr = (long double)R8(p + 4);
+    adr = (long double)R8(p + 16);
+    dop = (long double)R4(p + 28);
+    snr = (long double)R4(p + 32);
+    lockt = (long double)R4(p + 36); /* lock time (s) */
+    stat = I4(p + 40);               /* tracking status */
+    freq = (stat >> 20) & 1;         /* L1:0,L2:1 */
+    sys = (stat >> 15) & 7;          /* satellite sys (0:GPS,1:GLONASS,2:WAAS) */
+    parity = (stat >> 10) & 1;       /* parity known */
     if (!(sat = satno(sys == 1 ? SYS_GLO : (sys == 2 ? SYS_SBS : SYS_GPS), prn))) {
       trace(2, "oem3 regb satellite number error: sys=%d prn=%d\n", sys, prn);
       continue;
     }
     if (raw->tobs[sat - 1][freq].time != 0) {
       tt = timediff(raw->time, raw->tobs[sat - 1][freq]);
-      lli = lockt - raw->lockt[sat - 1][freq] + 0.05 < tt || parity != raw->halfc[sat - 1][freq];
+      lli = lockt - raw->lockt[sat - 1][freq] + 0.05L < tt || parity != raw->halfc[sat - 1][freq];
     } else {
       lli = 0;
     }
@@ -1248,15 +1249,15 @@ static int decode_rgeb(raw_t *raw) {
     raw->lockt[sat - 1][freq] = lockt;
     raw->halfc[sat - 1][freq] = parity;
 
-    if (fabs(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
+    if (fabsl(timediff(raw->obs.data[0].time, raw->time)) > 1E-9L) {
       raw->obs.n = 0;
     }
     if ((index = obsindex(&raw->obs, raw->time, sat)) >= 0) {
       raw->obs.data[index].L[freq] = -adr; /* flip sign */
       raw->obs.data[index].P[freq] = psr;
-      raw->obs.data[index].D[freq] = (float)dop;
+      raw->obs.data[index].D[freq] = dop;
       raw->obs.data[index].SNR[freq] =
-          0.0 <= snr && snr < 255.0 ? (uint16_t)(snr / SNR_UNIT + 0.5) : 0;
+          0.0L <= snr && snr < 255.0L ? (uint16_t)(snr / SNR_UNIT + 0.5L) : 0;
       raw->obs.data[index].LLI[freq] = (uint8_t)lli;
       raw->obs.data[index].code[freq] = freq == 0 ? CODE_L1C : CODE_L2P;
     }
@@ -1267,12 +1268,12 @@ static int decode_rgeb(raw_t *raw) {
 static int decode_rged(raw_t *raw) {
   uint32_t word;
   uint8_t *p = raw->buff + OEM3HLEN;
-  double tow, psrh, psrl, psr, adr, adr_rolls, tt, lockt, dop;
+  long double tow, psrh, psrl, psr, adr, adr_rolls, tt, lockt, dop;
   int i, week, nobs, prn, sat, stat, sys, parity, lli, index, freq, snr;
 
   nobs = U2(p);
   week = adjgpsweek(U2(p + 2));
-  tow = U4(p + 4) / 100.0;
+  tow = U4(p + 4) / 100.0L;
   raw->time = gpst2time(week, tow);
   if (raw->len != OEM3HLEN + 12 + nobs * 20) {
     trace(2, "oem3 regd length error: len=%d nobs=%d\n", raw->len, nobs);
@@ -1282,11 +1283,11 @@ static int decode_rged(raw_t *raw) {
     word = U4(p);
     prn = word & 0x3F;
     snr = ((word >> 6) & 0x1F) + 20;
-    lockt = (word >> 11) / 32.0;
-    adr = -I4(p + 4) / 256.0;
+    lockt = (word >> 11) / 32.0L;
+    adr = -I4(p + 4) / 256.0L;
     word = U4(p + 8);
     psrh = word & 0xF;
-    dop = exsign(word >> 4, 28) / 256.0;
+    dop = exsign(word >> 4, 28) / 256.0L;
     psrl = U4(p + 12);
     stat = U4(p + 16) >> 8;
     freq = (stat >> 20) & 1;   /* L1:0,L2:1 */
@@ -1296,13 +1297,13 @@ static int decode_rged(raw_t *raw) {
       trace(2, "oem3 regd satellite number error: sys=%d prn=%d\n", sys, prn);
       continue;
     }
-    psr = (psrh * 4294967296.0 + psrl) / 128.0;
-    adr_rolls = floor((psr / (freq == 0 ? WL1 : WL2) - adr) / MAXVAL + 0.5);
+    psr = (psrh * 4294967296.0L + psrl) / 128.0L;
+    adr_rolls = floorl((psr / (freq == 0 ? WL1 : WL2) - adr) / MAXVAL + 0.5L);
     adr = adr + MAXVAL * adr_rolls;
 
     if (raw->tobs[sat - 1][freq].time != 0) {
       tt = timediff(raw->time, raw->tobs[sat - 1][freq]);
-      lli = lockt - raw->lockt[sat - 1][freq] + 0.05 < tt || parity != raw->halfc[sat - 1][freq];
+      lli = lockt - raw->lockt[sat - 1][freq] + 0.05L < tt || parity != raw->halfc[sat - 1][freq];
     } else {
       lli = 0;
     }
@@ -1311,14 +1312,14 @@ static int decode_rged(raw_t *raw) {
     raw->lockt[sat - 1][freq] = lockt;
     raw->halfc[sat - 1][freq] = parity;
 
-    if (fabs(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
+    if (fabsl(timediff(raw->obs.data[0].time, raw->time)) > 1E-9L) {
       raw->obs.n = 0;
     }
     if ((index = obsindex(&raw->obs, raw->time, sat)) >= 0) {
       raw->obs.data[index].L[freq] = adr;
       raw->obs.data[index].P[freq] = psr;
-      raw->obs.data[index].D[freq] = (float)dop;
-      raw->obs.data[index].SNR[freq] = (uint16_t)(snr / SNR_UNIT + 0.5);
+      raw->obs.data[index].D[freq] = dop;
+      raw->obs.data[index].SNR[freq] = (uint16_t)(snr / SNR_UNIT + 0.5L);
       raw->obs.data[index].LLI[freq] = (uint8_t)lli;
       raw->obs.data[index].code[freq] = freq == 0 ? CODE_L1C : CODE_L2P;
     }
@@ -1356,13 +1357,13 @@ static int decode_repb(raw_t *raw) {
 /* decode FRMB --------------------------------------------------------------*/
 static int decode_frmb(raw_t *raw) {
   uint8_t *p = raw->buff + OEM3HLEN;
-  double tow;
+  long double tow;
   int i, week, prn, nbit;
 
   trace(3, "decode_frmb: len=%d\n", raw->len);
 
   week = adjgpsweek(U4(p));
-  tow = R8(p + 4);
+  tow = (long double)R8(p + 4);
   prn = U4(p + 12);
   nbit = U4(p + 20);
   raw->time = gpst2time(week, tow);
@@ -1386,7 +1387,7 @@ static int decode_ionb(raw_t *raw) {
     trace(2, "oem3 ionb length error: len=%d\n", raw->len);
     return -1;
   }
-  for (i = 0; i < 8; i++) raw->nav.ion_gps[i] = R8(p + i * 8);
+  for (i = 0; i < 8; i++) raw->nav.ion_gps[i] = (long double)R8(p + i * 8);
   return 9;
 }
 /* decode UTCB ---------------------------------------------------------------*/
@@ -1397,8 +1398,8 @@ static int decode_utcb(raw_t *raw) {
     trace(2, "oem3 utcb length error: len=%d\n", raw->len);
     return -1;
   }
-  raw->nav.utc_gps[0] = R8(p);
-  raw->nav.utc_gps[1] = R8(p + 8);
+  raw->nav.utc_gps[0] = (long double)R8(p);
+  raw->nav.utc_gps[1] = (long double)R8(p + 8);
   raw->nav.utc_gps[2] = U4(p + 16);
   raw->nav.utc_gps[3] = adjgpsweek(U4(p + 20));
   raw->nav.utc_gps[4] = I4(p + 28);
@@ -1406,7 +1407,7 @@ static int decode_utcb(raw_t *raw) {
 }
 /* decode NovAtel OEM4/V/6/7 message -----------------------------------------*/
 static int decode_oem4(raw_t *raw) {
-  double tow;
+  long double tow;
   char tstr[40];
   int msg, stat, week, type = U2(raw->buff + 4);
 
@@ -1426,7 +1427,7 @@ static int decode_oem4(raw_t *raw) {
     return 0;
   }
   week = adjgpsweek(week);
-  tow = U4(raw->buff + 16) * 0.001;
+  tow = U4(raw->buff + 16) * 0.001L;
   raw->time = gpst2time(week, tow);
   if (msg != 0) return 0;
 

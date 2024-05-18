@@ -81,14 +81,14 @@ static int exsign(unsigned int v, int bits) {
   return (int)(v & (1 << (bits - 1)) ? v | (~0u << bits) : v);
 }
 /* adjust weekly rollover of gps time ----------------------------------------*/
-static gtime_t adjweek(gtime_t time, double tow) {
-  double tow_p;
+static gtime_t adjweek(gtime_t time, long double tow) {
+  long double tow_p;
   int week;
   tow_p = time2gpst(time, &week);
-  if (tow < tow_p - 302400.0)
-    tow += 604800.0;
-  else if (tow > tow_p + 302400.0)
-    tow -= 604800.0;
+  if (tow < tow_p - 302400.0L)
+    tow += 604800.0L;
+  else if (tow > tow_p + 302400.0L)
+    tow -= 604800.0L;
   return gpst2time(week, tow);
 }
 /* get observation data index ------------------------------------------------*/
@@ -102,8 +102,8 @@ static int obsindex(obs_t *obs, gtime_t time, int sat) {
   obs->data[i].time = time;
   obs->data[i].sat = sat;
   for (j = 0; j < NFREQ + NEXOBS; j++) {
-    obs->data[i].L[j] = obs->data[i].P[j] = 0.0;
-    obs->data[i].D[j] = 0.0;
+    obs->data[i].L[j] = obs->data[i].P[j] = 0.0L;
+    obs->data[i].D[j] = 0.0L;
     obs->data[i].SNR[j] = obs->data[i].LLI[j] = 0;
     obs->data[i].code[j] = CODE_NONE;
   }
@@ -312,7 +312,7 @@ static int checkpri(const char *opt, int sys, int code, int freq) {
 }
 /* decode rangecmpb ----------------------------------------------------------*/
 static int decode_rangecmpb(raw_t *raw) {
-  double psr, adr, adr_rolls, lockt, tt, dop, snr, wavelen;
+  long double psr, adr, adr_rolls, lockt, tt, dop, snr, wavelen;
   int i, index, nobs, prn, sat, sys, code, freq, pos;
   int track, plock, clock, parity, halfc, lli;
   unsigned char *p = raw->buff + CNAVHLEN;
@@ -348,7 +348,7 @@ static int decode_rangecmpb(raw_t *raw) {
     dop = exsign(U4(p + 4) & 0xFFFFFFF, 28) / 256.0;
     psr = (U4(p + 7) >> 4) / 128.0 + U1(p + 11) * 2097152.0;
 
-    if ((wavelen = satwavelen(sat, freq, &raw->nav)) <= 0.0) {
+    if ((wavelen = satwavelen(sat, freq, &raw->nav)) <= 0.0L) {
       if (sys == SYS_GLO)
         wavelen = CLIGHT / (freq == 0 ? FREQ1_GLO : FREQ2_GLO);
       else
@@ -356,7 +356,7 @@ static int decode_rangecmpb(raw_t *raw) {
     }
     adr = I4(p + 12) / 256.0;
     adr_rolls = (psr / wavelen + adr) / MAXVAL;
-    adr = -adr + MAXVAL * floor(adr_rolls + (adr_rolls <= 0 ? -0.5 : 0.5));
+    adr = -adr + MAXVAL * floorl(adr_rolls + (adr_rolls <= 0 ? -0.5 : 0.5));
 
     lockt = (U4(p + 18) & 0x1FFFFF) / 32.0; /* lock time */
     if (lockt < 2) parity = 0;              /* pseudo-parity */
@@ -378,19 +378,19 @@ static int decode_rangecmpb(raw_t *raw) {
     raw->lockt[sat - 1][pos] = lockt;
     raw->halfc[sat - 1][pos] = halfc;
 
-    snr = ((U2(p + 20) & 0x3FF) >> 5) + 20.0;
-    if ((sys != SYS_GAL && !clock) || (sys == SYS_GAL && !plock)) psr = 0.0; /* code unlock */
-    if (!plock) adr = dop = 0.0;                                             /* phase unlock */
+    snr = ((U2(p + 20) & 0x3FF) >> 5) + 20.0L;
+    if ((sys != SYS_GAL && !clock) || (sys == SYS_GAL && !plock)) psr = 0.0L; /* code unlock */
+    if (!plock) adr = dop = 0.0L;                                             /* phase unlock */
 
-    if (fabs(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
+    if (fabsl(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
       raw->obs.n = 0;
     }
     if ((index = obsindex(&raw->obs, raw->time, sat)) >= 0) {
       raw->obs.data[index].L[pos] = adr;
       raw->obs.data[index].P[pos] = psr;
-      raw->obs.data[index].D[pos] = (float)dop;
+      raw->obs.data[index].D[pos] = dop;
       raw->obs.data[index].SNR[pos] =
-          0.0 <= snr && snr < 255.0 ? (unsigned char)(snr * 4.0 + 0.5) : 0;
+          0.0L <= snr && snr < 255.0 ? (unsigned char)(snr * 4.0 + 0.5) : 0;
       raw->obs.data[index].LLI[pos] = (unsigned char)lli;
       raw->obs.data[index].code[pos] = code;
 #if 0
@@ -406,7 +406,7 @@ static int decode_rangecmpb(raw_t *raw) {
 }
 /* decode rangeb -------------------------------------------------------------*/
 static int decode_rangeb(raw_t *raw) {
-  double psr, adr, dop, snr, lockt, tt;
+  long double psr, adr, dop, snr, lockt, tt;
   int i, index, nobs, prn, sat, sys, code, freq, pos;
   int track, plock, clock, parity, halfc, lli, gfrq;
   unsigned char *p = raw->buff + CNAVHLEN;
@@ -464,18 +464,18 @@ static int decode_rangeb(raw_t *raw) {
     raw->lockt[sat - 1][pos] = lockt;
     raw->halfc[sat - 1][pos] = halfc;
 
-    if (!clock) psr = 0.0;       /* code unlock */
-    if (!plock) adr = dop = 0.0; /* phase unlock */
+    if (!clock) psr = 0.0L;       /* code unlock */
+    if (!plock) adr = dop = 0.0L; /* phase unlock */
 
-    if (fabs(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
+    if (fabsl(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
       raw->obs.n = 0;
     }
     if ((index = obsindex(&raw->obs, raw->time, sat)) >= 0) {
       raw->obs.data[index].L[pos] = -adr;
       raw->obs.data[index].P[pos] = psr;
-      raw->obs.data[index].D[pos] = (float)dop;
+      raw->obs.data[index].D[pos] = dop;
       raw->obs.data[index].SNR[pos] =
-          0.0 <= snr && snr < 255.0 ? (unsigned char)(snr * 4.0 + 0.5) : 0;
+          0.0L <= snr && snr < 255.0 ? (unsigned char)(snr * 4.0 + 0.5) : 0;
       raw->obs.data[index].LLI[pos] = (unsigned char)lli;
       raw->obs.data[index].code[pos] = code;
 #if 0
@@ -574,7 +574,7 @@ static int decode_rawsbasframeb(raw_t *raw) {
 static int decode_gloephemerisb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
   geph_t geph = {0};
-  double tow, tof, toff;
+  long double tow, tof, toff;
   int prn, sat, week;
 
   trace(3, "decode_gloephemerisb: len=%d\n", raw->len);
@@ -594,7 +594,7 @@ static int decode_gloephemerisb(raw_t *raw) {
   }
   geph.frq = U2(p + 2) + OFF_FRQNO;
   week = U2(p + 6);
-  tow = floor(U4(p + 8) / 1000.0 + 0.5); /* rounded to integer sec */
+  tow = floorl(U4(p + 8) / 1000.0L + 0.5); /* rounded to integer sec */
   toff = U4(p + 12);
   geph.iode = U4(p + 20) & 0x7F;
   geph.svh = U4(p + 24);
@@ -612,15 +612,15 @@ static int decode_gloephemerisb(raw_t *raw) {
   tof = U4(p + 124) - toff; /* glonasst->gpst */
   geph.age = U4(p + 136);
   geph.toe = gpst2time(week, tow);
-  tof += floor(tow / 86400.0) * 86400;
-  if (tof < tow - 43200.0)
-    tof += 86400.0;
-  else if (tof > tow + 43200.0)
-    tof -= 86400.0;
+  tof += floorl(tow / 86400.0L) * 86400;
+  if (tof < tow - 43200.0L)
+    tof += 86400.0L;
+  else if (tof > tow + 43200.0L)
+    tof -= 86400.0L;
   geph.tof = gpst2time(week, tof);
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (fabs(timediff(geph.toe, raw->nav.geph[prn - 1].toe)) < 1.0 &&
+    if (fabsl(timediff(geph.toe, raw->nav.geph[prn - 1].toe)) < 1.0 &&
         geph.svh == raw->nav.geph[prn - 1].svh)
       return 0; /* unchanged */
   }
@@ -731,7 +731,7 @@ static int decode_qzssionutcb(raw_t *raw) {
 static int decode_galephemerisb(raw_t *raw) {
   eph_t eph = {0};
   unsigned char *p = raw->buff + CNAVHLEN;
-  double tow, sqrtA, af0_fnav, af1_fnav, af2_fnav, af0_inav, af1_inav, af2_inav, tt;
+  long double tow, sqrtA, af0_fnav, af1_fnav, af2_fnav, af0_inav, af1_inav, af2_inav, tt;
   int prn, rcv_fnav, rcv_inav, svh_e1b, svh_e5a, svh_e5b, dvs_e1b, dvs_e5a, dvs_e5b;
   int toc_fnav, toc_inav, week, sel_nav = 0;
 
@@ -833,7 +833,7 @@ static int decode_galephemerisb(raw_t *raw) {
   eph.code = sel_nav ? 2 : 1; /* data source 1:I/NAV E1B,2:F/NAV E5a-I */
 
   if (raw->outtype) {
-    rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " prn=%3d iod=%3d toes=%6.0f", prn, eph.iode,
+    rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " prn=%3d iod=%3d toes=%6.0Lf", prn, eph.iode,
                  eph.toes);
   }
   if (!(eph.sat = satno(SYS_GAL, prn))) {
@@ -846,9 +846,9 @@ static int decode_galephemerisb(raw_t *raw) {
 
   /* for week-handover problem */
   tt = timediff(eph.toe, raw->time);
-  if (tt < -302400.0)
+  if (tt < -302400.0L)
     eph.week++;
-  else if (tt > 302400.0)
+  else if (tt > 302400.0L)
     eph.week--;
   eph.toe = gpst2time(eph.week, eph.toes);
   eph.toc = adjweek(eph.toe, sel_nav ? toc_fnav : toc_inav);
@@ -866,7 +866,7 @@ static int decode_galephemerisb(raw_t *raw) {
 static int decode_galalmanacb(raw_t *raw) {
   alm_t alm = {0};
   unsigned char *p = raw->buff + CNAVHLEN;
-  double dsqrtA, sqrtA = sqrt(29601297.0);
+  long double dsqrtA, sqrtA = sqrtl(29601297.0L);
   int prn, rcv_fnav, rcv_inav, svh_e1b, svh_e5a, svh_e5b, ioda;
 
   trace(3, "decode_galalmanacb: len=%d\n", raw->len);
@@ -924,7 +924,7 @@ static int decode_galalmanacb(raw_t *raw) {
 /* decode galclockb ----------------------------------------------------------*/
 static int decode_galclockb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
-  double a0, a1, a0g, a1g;
+  long double a0, a1, a0g, a1g;
   int leaps, tot, wnt, wnlsf, dn, dtlsf, t0g, wn0g;
 
   trace(3, "decode_galclockb: len=%d\n", raw->len);
@@ -966,7 +966,7 @@ static int decode_galclockb(raw_t *raw) {
 /* decode galionob -----------------------------------------------------------*/
 static int decode_galionob(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
-  double ai[3];
+  long double ai[3];
   int i, sf[5];
 
   trace(3, "decode_galionob: len=%d\n", raw->len);
@@ -1106,7 +1106,7 @@ static int decode_rawcnavframeb(raw_t *raw) {
 static int decode_bdsephemerisb(raw_t *raw) {
   eph_t eph = {0};
   unsigned char *p = raw->buff + CNAVHLEN;
-  double ura, sqrtA;
+  long double ura, sqrtA;
   int prn, toc;
 
   trace(3, "decode_bdsephemerisb: len=%d\n", raw->len);
@@ -1174,7 +1174,7 @@ static int decode_bdsephemerisb(raw_t *raw) {
   eph.sva = uraindex(ura);
 
   if (raw->outtype) {
-    rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " prn=%3d iod=%3d toes=%6.0f", prn, eph.iode,
+    rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " prn=%3d iod=%3d toes=%6.0Lf", prn, eph.iode,
                  eph.toes);
   }
   if (!(eph.sat = satno(SYS_CMP, prn))) {
@@ -1186,7 +1186,7 @@ static int decode_bdsephemerisb(raw_t *raw) {
   eph.ttr = raw->time;
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (timediff(raw->nav.eph[eph.sat - 1].toe, eph.toe) == 0.0 &&
+    if (timediff(raw->nav.eph[eph.sat - 1].toe, eph.toe) == 0.0L &&
         raw->nav.eph[eph.sat - 1].iode == eph.iode && raw->nav.eph[eph.sat - 1].iodc == eph.iodc)
       return 0; /* unchanged */
   }
@@ -1197,7 +1197,7 @@ static int decode_bdsephemerisb(raw_t *raw) {
 
 /* decode cnav message -------------------------------------------------------*/
 static int decode_cnav(raw_t *raw) {
-  double tow;
+  long double tow;
   int msg, week, type = U2(raw->buff + 4);
 
   trace(3, "decode_cnav: type=%3d len=%d\n", type, raw->len);

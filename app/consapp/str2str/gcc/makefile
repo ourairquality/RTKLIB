@@ -8,7 +8,7 @@ SRC    = ../../../../src
 CTARGET=
 
 OPTION = -DENAGLO -DENAGAL -DENAQZS -DENACMP -DENAIRN -DTRACE -DNFREQ=3 -DNEXOBS=3 -DSVR_REUSEADDR
-CFLAGS = -std=c99 -Wall -O3 -pedantic -Wno-unused-but-set-variable -I$(SRC) $(OPTION) $(CTARGET) -g
+CFLAGS = -std=c99 -Wall -O3 -pedantic -Wno-unused-but-set-variable  -Wint-in-bool-context -Wextra -Wdouble-promotion -I$(SRC) $(OPTION) $(CTARGET) -g
 LDLIBS  = -lm -lrt -lpthread
 
 all        : str2str

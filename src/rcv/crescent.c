@@ -41,8 +41,8 @@
 #define ID_CRESEPH 95    /* hemis msg id: bin 95 raw ephemeris */
 #define ID_CRESRAW 96    /* hemis msg id: bin 96 raw phase and code */
 
-#define SNR2CN0_L1 30.0 /* hemis snr to c/n0 offset (db) L1 */
-#define SNR2CN0_L2 30.0 /* hemis snr to c/n0 offset (db) L2 */
+#define SNR2CN0_L1 30.0L /* hemis snr to c/n0 offset (db) L1 */
+#define SNR2CN0_L2 30.0L /* hemis snr to c/n0 offset (db) L2 */
 
 /* get fields (little-endian) ------------------------------------------------*/
 #define U1(p) (*((uint8_t *)(p)))
@@ -92,7 +92,7 @@ static int chksum(const uint8_t *buff, int len) {
 /* decode bin 1 position/velocity ---------------------------------------------*/
 static int decode_crespos(raw_t *raw) {
   int ns, week, mode;
-  double tow, pos[3], vel[3], std;
+  long double tow, pos[3], vel[3], std;
   char tstr[40];
   uint8_t *p = raw->buff + 8;
 
@@ -104,24 +104,24 @@ static int decode_crespos(raw_t *raw) {
   }
   ns = U1(p + 1);
   week = U2(p + 2);
-  tow = R8(p + 4);
-  pos[0] = R8(p + 12);
-  pos[1] = R8(p + 20);
-  pos[2] = R4(p + 28);
-  vel[0] = R4(p + 32);
-  vel[1] = R4(p + 36);
-  vel[2] = R4(p + 40);
-  std = R4(p + 44);
+  tow = (long double)R8(p + 4);
+  pos[0] = (long double)R8(p + 12);
+  pos[1] = (long double)R8(p + 20);
+  pos[2] = (long double)R4(p + 28);
+  vel[0] = (long double)R4(p + 32);
+  vel[1] = (long double)R4(p + 36);
+  vel[2] = (long double)R4(p + 40);
+  std = (long double)R4(p + 44);
   mode = U2(p + 48);
   time2str(gpst2time(week, tow), tstr, 3);
-  trace(3, "$BIN1 %s %13.9f %14.9f %10.4f %4d %3d %.3f\n", tstr, pos[0], pos[1], pos[2],
+  trace(3, "$BIN1 %s %13.9Lf %14.9Lf %10.4Lf %4d %3d %.3Lf\n", tstr, pos[0], pos[1], pos[2],
         mode == 6 ? 1 : (mode > 4 ? 2 : (mode > 1 ? 5 : 0)), ns, std);
   return 0;
 }
 /* decode bin 96 raw phase and code ------------------------------------------*/
 static int decode_cresraw(raw_t *raw) {
   gtime_t time;
-  double tow, tows, toff = 0.0, cp, pr, dop, snr, freq = FREQL1;
+  long double tow, tows, toff = 0.0L, cp, pr, dop, snr, freq = FREQL1;
   int i, j, n, prn, sat, week, word2, lli = 0;
   uint32_t word1, sn, sc;
   uint8_t *p = raw->buff + 8;
@@ -133,8 +133,8 @@ static int decode_cresraw(raw_t *raw) {
     return -1;
   }
   week = U2(p + 2);
-  tow = R8(p + 4);
-  tows = floor(tow * 1000.0 + 0.5) / 1000.0; /* round by 1ms */
+  tow = (long double)R8(p + 4);
+  tows = floorl(tow * 1000.0L + 0.5L) / 1000.0L; /* round by 1ms */
   time = gpst2time(week, tows);
 
   /* time tag offset correction */
@@ -149,30 +149,30 @@ static int decode_cresraw(raw_t *raw) {
       trace(2, "creasent bin 96 satellite number error: prn=%d\n", prn);
       continue;
     }
-    pr = R8(p + 8) - toff;
-    cp = R8(p + 16) - toff;
-    if (!(word2 & 1)) cp = 0.0; /* invalid phase */
+    pr = (long double)R8(p + 8) - toff;
+    cp = (long double)R8(p + 16) - toff;
+    if (!(word2 & 1)) cp = 0.0L; /* invalid phase */
     sn = (word1 >> 8) & 0xFF;
-    snr = sn == 0 ? 0.0 : 10.0 * log10(0.8192 * sn) + SNR2CN0_L1;
+    snr = sn == 0 ? 0.0L : 10.0L * log10l(0.8192L * sn) + SNR2CN0_L1;
     sc = (uint32_t)(word1 >> 24);
     if (raw->time.time != 0) {
       lli = (int)((uint8_t)sc - (uint8_t)raw->lockt[sat - 1][0]) > 0;
     }
     raw->lockt[sat - 1][0] = (uint8_t)sc;
-    dop = word2 / 16 / 4096.0;
+    dop = word2 / 16 / 4096.0L;
 
     raw->obs.data[n].time = time;
     raw->obs.data[n].sat = sat;
     raw->obs.data[n].P[0] = pr;
     raw->obs.data[n].L[0] = cp * freq / CLIGHT;
-    raw->obs.data[n].D[0] = -(float)(dop * freq / CLIGHT);
-    raw->obs.data[n].SNR[0] = (uint16_t)(snr / SNR_UNIT + 0.5);
+    raw->obs.data[n].D[0] = -(dop * freq / CLIGHT);
+    raw->obs.data[n].SNR[0] = (uint16_t)(snr / SNR_UNIT + 0.5L);
     raw->obs.data[n].LLI[0] = (uint8_t)lli;
     raw->obs.data[n].code[0] = CODE_L1C;
 
     for (j = 1; j < NFREQ; j++) {
-      raw->obs.data[n].L[j] = raw->obs.data[n].P[j] = 0.0;
-      raw->obs.data[n].D[j] = 0.0;
+      raw->obs.data[n].L[j] = raw->obs.data[n].P[j] = 0.0L;
+      raw->obs.data[n].D[j] = 0.0L;
       raw->obs.data[n].SNR[j] = raw->obs.data[n].LLI[j] = 0;
       raw->obs.data[n].code[j] = CODE_NONE;
     }
@@ -185,8 +185,8 @@ static int decode_cresraw(raw_t *raw) {
 /* decode bin 76 dual-freq raw phase and code --------------------------------*/
 static int decode_cresraw2(raw_t *raw) {
   gtime_t time;
-  double tow, tows, toff = 0.0, cp[2] = {0}, pr1, pr[2] = {0}, dop[2] = {0}, snr[2] = {0};
-  double freq[2] = {FREQL1, FREQL2};
+  long double tow, tows, toff = 0.0L, cp[2] = {0}, pr1, pr[2] = {0}, dop[2] = {0}, snr[2] = {0};
+  long double freq[2] = {FREQL1, FREQL2};
   int i, j, n = 0, prn, sat, week, lli[2] = {0};
   uint32_t word1, word2, word3, sc, sn;
   uint8_t *p = raw->buff + 8;
@@ -197,16 +197,16 @@ static int decode_cresraw2(raw_t *raw) {
     trace(2, "crescent bin 76 message length error: len=%d\n", raw->len);
     return -1;
   }
-  tow = R8(p);
+  tow = (long double)R8(p);
   week = U2(p + 8);
-  tows = floor(tow * 1000.0 + 0.5) / 1000.0; /* round by 1ms */
+  tows = floorl(tow * 1000.0L + 0.5L) / 1000.0L; /* round by 1ms */
   time = gpst2time(week, tows);
 
   /* time tag offset correction */
   if (strstr(raw->opt, "-TTCORR")) {
     toff = CLIGHT * (tows - tow);
   }
-  if (fabs(timediff(time, raw->time)) < 1e-9) {
+  if (fabsl(timediff(time, raw->time)) < 1e-9L) {
     n = raw->obs.n;
   }
   for (i = 0, p += 16; i < 15 && n < MAXOBS; i++) {
@@ -216,13 +216,13 @@ static int decode_cresraw2(raw_t *raw) {
       trace(2, "creasent bin 76 satellite number error: prn=%d\n", prn);
       continue;
     }
-    pr1 = (word1 >> 13) * 256.0; /* upper 19bit of L1CA pseudorange */
+    pr1 = (word1 >> 13) * 256.0L; /* upper 19bit of L1CA pseudorange */
 
     word1 = U4(p + 144 + 12 * i); /* L1CASatObs */
     word2 = U4(p + 148 + 12 * i);
     word3 = U4(p + 152 + 12 * i);
     sn = word1 & 0xFFF;
-    snr[0] = sn == 0 ? 0.0 : 10.0 * log10(0.1024 * sn) + SNR2CN0_L1;
+    snr[0] = sn == 0 ? 0.0L : 10.0L * log10l(0.1024L * sn) + SNR2CN0_L1;
     sc = (uint32_t)(word1 >> 24);
     if (raw->time.time != 0) {
       lli[0] = (int)((uint8_t)sc - (uint8_t)raw->lockt[sat - 1][0]) > 0;
@@ -231,22 +231,22 @@ static int decode_cresraw2(raw_t *raw) {
     }
     lli[0] |= ((word1 >> 12) & 7) ? 2 : 0;
     raw->lockt[sat - 1][0] = (uint8_t)sc;
-    dop[0] = ((word2 >> 1) & 0x7FFFFF) / 512.0;
+    dop[0] = ((word2 >> 1) & 0x7FFFFF) / 512.0L;
     if ((word2 >> 24) & 1) dop[0] = -dop[0];
-    pr[0] = pr1 + (word3 & 0xFFFF) / 256.0;
-    cp[0] = floor(pr[0] * freq[0] / CLIGHT / 8192.0) * 8192.0;
-    cp[0] += ((word2 & 0xFE000000) + ((word3 & 0xFFFF0000) >> 7)) / 524288.0;
-    if (cp[0] - pr[0] * freq[0] / CLIGHT < -4096.0)
-      cp[0] += 8192.0;
-    else if (cp[0] - pr[0] * freq[0] / CLIGHT > 4096.0)
-      cp[0] -= 8192.0;
+    pr[0] = pr1 + (word3 & 0xFFFF) / 256.0L;
+    cp[0] = floorl(pr[0] * freq[0] / CLIGHT / 8192.0L) * 8192.0L;
+    cp[0] += ((word2 & 0xFE000000) + ((word3 & 0xFFFF0000) >> 7)) / 524288.0L;
+    if (cp[0] - pr[0] * freq[0] / CLIGHT < -4096.0L)
+      cp[0] += 8192.0L;
+    else if (cp[0] - pr[0] * freq[0] / CLIGHT > 4096.0L)
+      cp[0] -= 8192.0L;
 
     if (i < 12) {
       word1 = U4(p + 12 * i); /* L2PSatObs */
       word2 = U4(p + 4 + 12 * i);
       word3 = U4(p + 8 + 12 * i);
       sn = word1 & 0xFFF;
-      snr[1] = sn == 0 ? 0.0 : 10.0 * log10(0.1164 * sn) + SNR2CN0_L2;
+      snr[1] = sn == 0 ? 0.0L : 10.0L * log10l(0.1164L * sn) + SNR2CN0_L2;
       sc = (uint32_t)(word1 >> 24);
       if (raw->time.time == 0) {
         lli[1] = (int)((uint8_t)sc - (uint8_t)raw->lockt[sat - 1][1]) > 0;
@@ -255,37 +255,37 @@ static int decode_cresraw2(raw_t *raw) {
       }
       lli[1] |= ((word1 >> 12) & 7) ? 2 : 0;
       raw->lockt[sat - 1][1] = (uint8_t)sc;
-      dop[1] = ((word2 >> 1) & 0x7FFFFF) / 512.0;
+      dop[1] = ((word2 >> 1) & 0x7FFFFF) / 512.0L;
       if ((word2 >> 24) & 1) dop[1] = -dop[1];
-      pr[1] = (word3 & 0xFFFF) / 256.0;
-      if (pr[1] != 0.0) {
+      pr[1] = (word3 & 0xFFFF) / 256.0L;
+      if (pr[1] != 0.0L) {
         pr[1] += pr1;
-        if (pr[1] - pr[0] < -128.0)
-          pr[1] += 256.0;
-        else if (pr[1] - pr[0] > 128.0)
-          pr[1] -= 256.0;
-        cp[1] = floor(pr[1] * freq[1] / CLIGHT / 8192.0) * 8192.0;
-        cp[1] += ((word2 & 0xFE000000) + ((word3 & 0xFFFF0000) >> 7)) / 524288.0;
-        if (cp[1] - pr[1] * freq[1] / CLIGHT < -4096.0)
-          cp[1] += 8192.0;
-        else if (cp[1] - pr[1] * freq[1] / CLIGHT > 4096.0)
-          cp[1] -= 8192.0;
+        if (pr[1] - pr[0] < -128.0L)
+          pr[1] += 256.0L;
+        else if (pr[1] - pr[0] > 128.0L)
+          pr[1] -= 256.0L;
+        cp[1] = floorl(pr[1] * freq[1] / CLIGHT / 8192.0L) * 8192.0L;
+        cp[1] += ((word2 & 0xFE000000) + ((word3 & 0xFFFF0000) >> 7)) / 524288.0L;
+        if (cp[1] - pr[1] * freq[1] / CLIGHT < -4096.0L)
+          cp[1] += 8192.0L;
+        else if (cp[1] - pr[1] * freq[1] / CLIGHT > 4096.0L)
+          cp[1] -= 8192.0L;
       } else
-        cp[1] = 0.0;
+        cp[1] = 0.0L;
     }
     raw->obs.data[n].time = time;
     raw->obs.data[n].sat = sat;
     for (j = 0; j < NFREQ; j++) {
       if (j == 0 || (j == 1 && i < 12)) {
-        raw->obs.data[n].P[j] = pr[j] == 0.0 ? 0.0 : pr[j] - toff;
-        raw->obs.data[n].L[j] = cp[j] == 0.0 ? 0.0 : cp[j] - toff * freq[j] / CLIGHT;
-        raw->obs.data[n].D[j] = -(float)dop[j];
-        raw->obs.data[n].SNR[j] = (uint16_t)(snr[j] / SNR_UNIT + 0.5);
+        raw->obs.data[n].P[j] = pr[j] == 0.0L ? 0.0L : pr[j] - toff;
+        raw->obs.data[n].L[j] = cp[j] == 0.0L ? 0.0L : cp[j] - toff * freq[j] / CLIGHT;
+        raw->obs.data[n].D[j] = -dop[j];
+        raw->obs.data[n].SNR[j] = (uint16_t)(snr[j] / SNR_UNIT + 0.5L);
         raw->obs.data[n].LLI[j] = (uint8_t)lli[j];
         raw->obs.data[n].code[j] = j == 0 ? CODE_L1C : CODE_L2P;
       } else {
-        raw->obs.data[n].L[j] = raw->obs.data[n].P[j] = 0.0;
-        raw->obs.data[n].D[j] = 0.0;
+        raw->obs.data[n].L[j] = raw->obs.data[n].P[j] = 0.0L;
+        raw->obs.data[n].D[j] = 0.0L;
         raw->obs.data[n].SNR[j] = raw->obs.data[n].LLI[j] = 0;
         raw->obs.data[n].code[j] = CODE_NONE;
       }
@@ -344,17 +344,17 @@ static int decode_cresionutc(raw_t *raw) {
     trace(2, "crescent bin 94 message length error: len=%d\n", raw->len);
     return -1;
   }
-  for (i = 0; i < 8; i++) raw->nav.ion_gps[i] = R8(p + i * 8);
-  raw->nav.utc_gps[0] = R8(p + 64);
-  raw->nav.utc_gps[1] = R8(p + 72);
-  raw->nav.utc_gps[2] = (double)U4(p + 80);
-  raw->nav.utc_gps[3] = (double)U2(p + 84);
+  for (i = 0; i < 8; i++) raw->nav.ion_gps[i] = (long double)R8(p + i * 8);
+  raw->nav.utc_gps[0] = (long double)R8(p + 64);
+  raw->nav.utc_gps[1] = (long double)R8(p + 72);
+  raw->nav.utc_gps[2] = (long double)U4(p + 80);
+  raw->nav.utc_gps[3] = (long double)U2(p + 84);
   raw->nav.utc_gps[4] = I2(p + 90);
   return 9;
 }
 /* decode bin 80 waas messages -----------------------------------------------*/
 static int decode_creswaas(raw_t *raw) {
-  double tow;
+  long double tow;
   uint32_t word;
   int i, j, k, prn;
   uint8_t *p = raw->buff + 8;
@@ -373,9 +373,9 @@ static int decode_creswaas(raw_t *raw) {
   raw->sbsmsg.prn = prn;
   raw->sbsmsg.tow = U4(p + 4);
   tow = time2gpst(raw->time, &raw->sbsmsg.week);
-  if (raw->sbsmsg.tow < tow - 302400.0)
+  if (raw->sbsmsg.tow < tow - 302400.0L)
     raw->sbsmsg.week++;
-  else if (raw->sbsmsg.tow > tow + 302400.0)
+  else if (raw->sbsmsg.tow > tow + 302400.0L)
     raw->sbsmsg.week--;
 
   for (i = k = 0; i < 8 && k < 29; i++) {
@@ -388,8 +388,8 @@ static int decode_creswaas(raw_t *raw) {
 /* decode bin 66 glonass L1/L2 code and carrier phase ------------------------*/
 static int decode_cresgloraw(raw_t *raw) {
   gtime_t time;
-  double tow, tows, toff = 0.0, cp[2] = {0}, pr1, pr[2] = {0}, dop[2] = {0}, snr[2] = {0};
-  double freq[2];
+  long double tow, tows, toff = 0.0L, cp[2] = {0}, pr1, pr[2] = {0}, dop[2] = {0}, snr[2] = {0};
+  long double freq[2];
   int i, j, n = 0, prn, sat, week, lli[2] = {0};
   uint32_t word1, word2, word3, sc, sn;
   uint8_t *p = raw->buff + 8;
@@ -402,16 +402,16 @@ static int decode_cresgloraw(raw_t *raw) {
     trace(2, "crescent bin 66 message length error: len=%d\n", raw->len);
     return -1;
   }
-  tow = R8(p);
+  tow = (long double)R8(p);
   week = U2(p + 8);
-  tows = floor(tow * 1000.0 + 0.5) / 1000.0; /* round by 1ms */
+  tows = floorl(tow * 1000.0L + 0.5L) / 1000.0L; /* round by 1ms */
   time = gpst2time(week, tows);
 
   /* time tag offset correction */
   if (strstr(raw->opt, "-TTCORR")) {
     toff = CLIGHT * (tows - tow);
   }
-  if (fabs(timediff(time, raw->time)) < 1e-9) {
+  if (fabsl(timediff(time, raw->time)) < 1e-9L) {
     n = raw->obs.n;
   }
   for (i = 0, p += 16; i < 12 && n < MAXOBS; i++) {
@@ -421,7 +421,7 @@ static int decode_cresgloraw(raw_t *raw) {
       trace(2, "creasent bin 66 satellite number error: prn=%d\n", prn);
       continue;
     }
-    pr1 = (word1 >> 13) * 256.0; /* upper 19bit of L1CA pseudorange */
+    pr1 = (word1 >> 13) * 256.0L; /* upper 19bit of L1CA pseudorange */
 
     freq[0] = sat2freq(sat, CODE_L1C, &raw->nav);
     freq[1] = sat2freq(sat, CODE_L2C, &raw->nav);
@@ -431,7 +431,7 @@ static int decode_cresgloraw(raw_t *raw) {
     word2 = U4(p + 4 + 12 * i);
     word3 = U4(p + 8 + 12 * i);
     sn = word1 & 0xFFF;
-    snr[0] = sn == 0 ? 0.0 : 10.0 * log10(0.1024 * sn) + SNR2CN0_L1;
+    snr[0] = sn == 0 ? 0.0L : 10.0L * log10l(0.1024L * sn) + SNR2CN0_L1;
     sc = (uint32_t)(word1 >> 24);
     if (raw->time.time != 0) {
       lli[0] = (int)((uint8_t)sc - (uint8_t)raw->lockt[sat - 1][0]) > 0;
@@ -440,22 +440,22 @@ static int decode_cresgloraw(raw_t *raw) {
     }
     lli[0] |= ((word1 >> 12) & 7) ? 2 : 0;
     raw->lockt[sat - 1][0] = (uint8_t)sc;
-    dop[0] = ((word2 >> 1) & 0x7FFFFF) / 512.0;
+    dop[0] = ((word2 >> 1) & 0x7FFFFF) / 512.0L;
     if ((word2 >> 24) & 1) dop[0] = -dop[0];
-    pr[0] = pr1 + (word3 & 0xFFFF) / 256.0;
-    cp[0] = floor(pr[0] * freq[0] / CLIGHT / 8192.0) * 8192.0;
-    cp[0] += ((word2 & 0xFE000000) + ((word3 & 0xFFFF0000) >> 7)) / 524288.0;
-    if (cp[0] - pr[0] * freq[0] / CLIGHT < -4096.0)
-      cp[0] += 8192.0;
-    else if (cp[0] - pr[0] * freq[0] / CLIGHT > 4096.0)
-      cp[0] -= 8192.0;
+    pr[0] = pr1 + (word3 & 0xFFFF) / 256.0L;
+    cp[0] = floorl(pr[0] * freq[0] / CLIGHT / 8192.0L) * 8192.0L;
+    cp[0] += ((word2 & 0xFE000000) + ((word3 & 0xFFFF0000) >> 7)) / 524288.0L;
+    if (cp[0] - pr[0] * freq[0] / CLIGHT < -4096.0L)
+      cp[0] += 8192.0L;
+    else if (cp[0] - pr[0] * freq[0] / CLIGHT > 4096.0L)
+      cp[0] -= 8192.0L;
 
     /* L2Obs */
     word1 = U4(p + 144 + 12 * i);
     word2 = U4(p + 148 + 12 * i);
     word3 = U4(p + 152 + 12 * i);
     sn = word1 & 0xFFF;
-    snr[1] = sn == 0 ? 0.0 : 10.0 * log10(0.1164 * sn) + SNR2CN0_L2;
+    snr[1] = sn == 0 ? 0.0L : 10.0L * log10l(0.1164L * sn) + SNR2CN0_L2;
     sc = (uint32_t)(word1 >> 24);
     if (raw->time.time == 0) {
       lli[1] = (int)((uint8_t)sc - (uint8_t)raw->lockt[sat - 1][1]) > 0;
@@ -464,35 +464,35 @@ static int decode_cresgloraw(raw_t *raw) {
     }
     lli[1] |= ((word1 >> 12) & 7) ? 2 : 0;
     raw->lockt[sat - 1][1] = (uint8_t)sc;
-    dop[1] = ((word2 >> 1) & 0x7FFFFF) / 512.0;
+    dop[1] = ((word2 >> 1) & 0x7FFFFF) / 512.0L;
     if ((word2 >> 24) & 1) dop[1] = -dop[1];
-    pr[1] = (word3 & 0xFFFF) / 256.0;
-    if (pr[1] != 0.0) {
+    pr[1] = (word3 & 0xFFFF) / 256.0L;
+    if (pr[1] != 0.0L) {
       pr[1] += pr1;
-      if (pr[1] - pr[0] < -128.0)
-        pr[1] += 256.0;
-      else if (pr[1] - pr[0] > 128.0)
-        pr[1] -= 256.0;
-      cp[1] = floor(pr[1] * freq[1] / CLIGHT / 8192.0) * 8192.0;
-      cp[1] += ((word2 & 0xFE000000) + ((word3 & 0xFFFF0000) >> 7)) / 524288.0;
-      if (cp[1] - pr[1] * freq[1] / CLIGHT < -4096.0)
-        cp[1] += 8192.0;
-      else if (cp[1] - pr[1] * freq[1] / CLIGHT > 4096.0)
-        cp[1] -= 8192.0;
+      if (pr[1] - pr[0] < -128.0L)
+        pr[1] += 256.0L;
+      else if (pr[1] - pr[0] > 128.0L)
+        pr[1] -= 256.0L;
+      cp[1] = floorl(pr[1] * freq[1] / CLIGHT / 8192.0L) * 8192.0L;
+      cp[1] += ((word2 & 0xFE000000) + ((word3 & 0xFFFF0000) >> 7)) / 524288.0L;
+      if (cp[1] - pr[1] * freq[1] / CLIGHT < -4096.0L)
+        cp[1] += 8192.0L;
+      else if (cp[1] - pr[1] * freq[1] / CLIGHT > 4096.0L)
+        cp[1] -= 8192.0L;
     }
     raw->obs.data[n].time = time;
     raw->obs.data[n].sat = sat;
     for (j = 0; j < NFREQ; j++) {
       if (j == 0 || (j == 1 && i < 12)) {
-        raw->obs.data[n].P[j] = pr[j] == 0.0 ? 0.0 : pr[j] - toff;
-        raw->obs.data[n].L[j] = cp[j] == 0.0 ? 0.0 : cp[j] - toff * freq[j] / CLIGHT;
-        raw->obs.data[n].D[j] = -(float)dop[j];
-        raw->obs.data[n].SNR[j] = (uint16_t)(snr[j] / SNR_UNIT + 0.5);
+        raw->obs.data[n].P[j] = pr[j] == 0.0L ? 0.0L : pr[j] - toff;
+        raw->obs.data[n].L[j] = cp[j] == 0.0L ? 0.0L : cp[j] - toff * freq[j] / CLIGHT;
+        raw->obs.data[n].D[j] = -dop[j];
+        raw->obs.data[n].SNR[j] = (uint16_t)(snr[j] / SNR_UNIT + 0.5L);
         raw->obs.data[n].LLI[j] = (uint8_t)lli[j];
         raw->obs.data[n].code[j] = j == 0 ? CODE_L1C : CODE_L2P;
       } else {
-        raw->obs.data[n].L[j] = raw->obs.data[n].P[j] = 0.0;
-        raw->obs.data[n].D[j] = 0.0;
+        raw->obs.data[n].L[j] = raw->obs.data[n].P[j] = 0.0L;
+        raw->obs.data[n].D[j] = 0.0L;
         raw->obs.data[n].SNR[j] = raw->obs.data[n].LLI[j] = 0;
         raw->obs.data[n].code[j] = CODE_NONE;
       }

@@ -27,7 +27,7 @@
 #define ID_BDSEPHEMERIS 1696 /* message id: tersus beidou ephemeris BX306 */
 #define ID_BD2EPHEM 1047     /* message id: tersus beidou ephemeris BX305 */
 
-#define MAXVAL 8388608.0
+#define MAXVAL 8388608.0L
 
 #define OFF_FRQNO -7 /* offset of glonass freq number */
 
@@ -64,14 +64,14 @@ static int exsign(unsigned int v, int bits) {
   return (int)(v & (1 << (bits - 1)) ? v | (~0u << bits) : v);
 }
 /* adjust weekly rollover of gps time ----------------------------------------*/
-static gtime_t adjweek(gtime_t time, double tow) {
-  double tow_p;
+static gtime_t adjweek(gtime_t time, long double tow) {
+  long double tow_p;
   int week;
   tow_p = time2gpst(time, &week);
-  if (tow < tow_p - 302400.0)
-    tow += 604800.0;
-  else if (tow > tow_p + 302400.0)
-    tow -= 604800.0;
+  if (tow < tow_p - 302400.0L)
+    tow += 604800.0L;
+  else if (tow > tow_p + 302400.0L)
+    tow -= 604800.0L;
   return gpst2time(week, tow);
 }
 /* get observation data index ------------------------------------------------*/
@@ -85,8 +85,8 @@ static int obsindex(obs_t *obs, gtime_t time, int sat) {
   obs->data[i].time = time;
   obs->data[i].sat = sat;
   for (j = 0; j < NFREQ + NEXOBS; j++) {
-    obs->data[i].L[j] = obs->data[i].P[j] = 0.0;
-    obs->data[i].D[j] = 0.0;
+    obs->data[i].L[j] = obs->data[i].P[j] = 0.0L;
+    obs->data[i].D[j] = 0.0L;
     obs->data[i].SNR[j] = obs->data[i].LLI[j] = 0;
     obs->data[i].code[j] = CODE_NONE;
   }
@@ -283,7 +283,7 @@ static int checkpri(const char *opt, int sys, int code, int freq) {
 }
 /* decode rangeb -------------------------------------------------------------*/
 static int decode_rangeb(raw_t *raw) {
-  double psr, adr, dop, snr, lockt, tt;
+  long double psr, adr, dop, snr, lockt, tt;
   char *msg;
   int i, index, nobs, prn, sat, sys, code, freq, pos;
   int track, plock, clock, parity, halfc, lli, gfrq;
@@ -334,7 +334,7 @@ static int decode_rangeb(raw_t *raw) {
     }
     if (raw->tobs[sat - 1][pos].time != 0) {
       tt = timediff(raw->time, raw->tobs[sat - 1][pos]);
-      lli = lockt - raw->lockt[sat - 1][pos] + 0.05 <= tt ? LLI_SLIP : 0;
+      lli = lockt - raw->lockt[sat - 1][pos] + 0.05L <= tt ? LLI_SLIP : 0;
     } else {
       lli = 0;
     }
@@ -344,18 +344,19 @@ static int decode_rangeb(raw_t *raw) {
     raw->lockt[sat - 1][pos] = lockt;
     raw->halfc[sat - 1][pos] = halfc;
 
-    if (!clock) psr = 0.0;       /* code unlock */
-    if (!plock) adr = dop = 0.0; /* phase unlock */
+    if (!clock) psr = 0.0L;       /* code unlock */
+    if (!plock) adr = dop = 0.0L; /* phase unlock */
 
-    if (fabs(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
+    if (fabsl(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
       raw->obs.n = 0;
     }
     if ((index = obsindex(&raw->obs, raw->time, sat)) >= 0) {
       raw->obs.data[index].L[pos] = -adr;
       raw->obs.data[index].P[pos] = psr;
-      raw->obs.data[index].D[pos] = (float)dop;
-      raw->obs.data[index].SNR[pos] =
-          0.0 <= snr && snr < 255.0 ? (unsigned char)(snr * 4.0 + 0.5) : 0;
+      raw->obs.data[index].D[pos] = dop;
+      raw->obs.data[index].SNR[pos] = 0.0L <= snr && snr < 255.0L ? (unsigned char)(snr * 4.0L
+                                                                                    : +0.5L)
+                                                                  : 0;
       raw->obs.data[index].LLI[pos] = (unsigned char)lli;
       raw->obs.data[index].code[pos] = code;
     }
@@ -364,7 +365,7 @@ static int decode_rangeb(raw_t *raw) {
 }
 /* decode rangecmpb ----------------------------------------------------------*/
 static int decode_rangecmpb(raw_t *raw) {
-  double psr, adr, adr_rolls, lockt, tt, dop, snr, wavelen;
+  long double psr, adr, adr_rolls, lockt, tt, dop, snr, wavelen;
   int i, index, nobs, prn, sat, sys, code, freq, pos;
   int track, plock, clock, parity, halfc, lli;
   char *msg;
@@ -401,24 +402,24 @@ static int decode_rangecmpb(raw_t *raw) {
     }
     if (sys == SYS_GLO && !parity) continue; /* invalid if GLO parity unknown */
 
-    dop = exsign(U4(p + 4) & 0xFFFFFFF, 28) / 256.0;
-    psr = (U4(p + 7) >> 4) / 128.0 + U1(p + 11) * 2097152.0;
+    dop = exsign(U4(p + 4) & 0xFFFFFFF, 28) / 256.0L;
+    psr = (U4(p + 7) >> 4) / 128.0L + U1(p + 11) * 2097152.0L;
 
-    if ((wavelen = satwavelen(sat, freq, &raw->nav)) <= 0.0) {
+    if ((wavelen = satwavelen(sat, freq, &raw->nav)) <= 0.0L) {
       if (sys == SYS_GLO)
         wavelen = CLIGHT / (freq == 0 ? FREQ1_GLO : FREQ2_GLO);
       else
         wavelen = lam_carr[freq];
     }
-    adr = I4(p + 12) / 256.0;
+    adr = I4(p + 12) / 256.0L;
     adr_rolls = (psr / wavelen + adr) / MAXVAL;
-    adr = -adr + MAXVAL * floor(adr_rolls + (adr_rolls <= 0 ? -0.5 : 0.5));
+    adr = -adr + MAXVAL * floorl(adr_rolls + (adr_rolls <= 0 ? -0.5L : 0.5L));
 
-    lockt = (U4(p + 18) & 0x1FFFFF) / 32.0; /* lock time */
+    lockt = (U4(p + 18) & 0x1FFFFF) / 32.0L; /* lock time */
 
     if (raw->tobs[sat - 1][pos].time != 0) {
       tt = timediff(raw->time, raw->tobs[sat - 1][pos]);
-      lli = (lockt < 65535.968 && lockt - raw->lockt[sat - 1][pos] + 0.05 <= tt) ? LLI_SLIP : 0;
+      lli = (lockt < 65535.968 && lockt - raw->lockt[sat - 1][pos] + 0.05L <= tt) ? LLI_SLIP : 0;
     } else {
       lli = 0;
     }
@@ -428,26 +429,26 @@ static int decode_rangecmpb(raw_t *raw) {
     raw->lockt[sat - 1][pos] = lockt;
     raw->halfc[sat - 1][pos] = halfc;
 
-    snr = ((U2(p + 20) & 0x3FF) >> 5) + 20.0;
-    if (!clock) psr = 0.0;       /* code unlock */
-    if (!plock) adr = dop = 0.0; /* phase unlock */
+    snr = ((U2(p + 20) & 0x3FF) >> 5) + 20.0L;
+    if (!clock) psr = 0.0L;       /* code unlock */
+    if (!plock) adr = dop = 0.0L; /* phase unlock */
 
-    if (fabs(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
+    if (fabsl(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
       raw->obs.n = 0;
     }
     if ((index = obsindex(&raw->obs, raw->time, sat)) >= 0) {
       raw->obs.data[index].L[pos] = adr;
       raw->obs.data[index].P[pos] = psr;
-      raw->obs.data[index].D[pos] = (float)dop;
+      raw->obs.data[index].D[pos] = dop;
       raw->obs.data[index].SNR[pos] =
-          0.0 <= snr && snr < 255.0 ? (unsigned char)(snr * 4.0 + 0.5) : 0;
+          0.0L <= snr && snr < 255.0L ? (unsigned char)(snr * 4.0L + 0.5L) : 0;
       raw->obs.data[index].LLI[pos] = (unsigned char)lli;
       raw->obs.data[index].code[pos] = code;
     }
 #if 0 /* for debug */
     char tstr[40];
     trace(3,
-          "sys=%d prn=%3d cp=%12.5f lli=%2d plock=%2d clock=%2d lockt=%4.2f halfc=%2d parity=%2d "
+          "sys=%d prn=%3d cp=%12.5Lf lli=%2d plock=%2d clock=%2d lockt=%4.2Lf halfc=%2d parity=%2d "
           "ts=%s\n",
           sys, prn, adr, lli, plock, clock, lockt, halfc, parity, time2str(raw->tobs, tstr, 3));
 #endif
@@ -459,7 +460,7 @@ static int decode_gpsephemb(raw_t *raw) {
   unsigned char *p = raw->buff + TERSUSHLEN;
   eph_t eph = {0};
   char *msg;
-  double tow, toc, n, ura, tt;
+  long double tow, toc, n, ura, tt;
   int prn, week, zweek, iode2, as;
 
   trace(3, "decode_gpsephemb: len=%d\n", raw->len);
@@ -548,9 +549,9 @@ static int decode_gpsephemb(raw_t *raw) {
   eph.week = adjgpsweek(week);
   eph.toe = gpst2time(eph.week, eph.toes);
   tt = timediff(eph.toe, raw->time);
-  if (tt < -302400.0)
+  if (tt < -302400.0L)
     eph.week++;
-  else if (tt > 302400.0)
+  else if (tt > 302400.0L)
     eph.week--;
   eph.toe = gpst2time(eph.week, eph.toes);
   eph.toc = gpst2time(eph.week, toc);
@@ -558,7 +559,7 @@ static int decode_gpsephemb(raw_t *raw) {
   eph.sva = uraindex(ura);
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (timediff(raw->nav.eph[eph.sat - 1].toe, eph.toe) == 0.0 &&
+    if (timediff(raw->nav.eph[eph.sat - 1].toe, eph.toe) == 0.0L &&
         raw->nav.eph[eph.sat - 1].iode == eph.iode && raw->nav.eph[eph.sat - 1].iodc == eph.iodc)
       return 0; /* unchanged */
   }
@@ -571,7 +572,7 @@ static int decode_gloephemerisb(raw_t *raw) {
   unsigned char *p = raw->buff + TERSUSHLEN;
   geph_t geph = {0};
   char *msg;
-  double tow, tof, toff;
+  long double tow, tof, toff;
   int prn, sat, week;
 
   trace(3, "decode_gloephemerisb: len=%d\n", raw->len);
@@ -591,7 +592,7 @@ static int decode_gloephemerisb(raw_t *raw) {
   }
   geph.frq = U2(p + 2) + OFF_FRQNO;
   week = U2(p + 6);
-  tow = floor(U4(p + 8) / 1000.0 + 0.5); /* rounded to integer sec */
+  tow = floorl(U4(p + 8) / 1000.0L + 0.5L); /* rounded to integer sec */
   toff = U4(p + 12);
   geph.iode = U4(p + 20) & 0x7F;
   geph.svh = U4(p + 24);
@@ -609,15 +610,15 @@ static int decode_gloephemerisb(raw_t *raw) {
   tof = U4(p + 124) - toff; /* glonasst->gpst */
   geph.age = U4(p + 136);
   geph.toe = gpst2time(week, tow);
-  tof += floor(tow / 86400.0) * 86400;
-  if (tof < tow - 43200.0)
-    tof += 86400.0;
-  else if (tof > tow + 43200.0)
-    tof -= 86400.0;
+  tof += floorl(tow / 86400.0L) * 86400;
+  if (tof < tow - 43200.0L)
+    tof += 86400.0L;
+  else if (tof > tow + 43200.0L)
+    tof -= 86400.0L;
   geph.tof = gpst2time(week, tof);
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (fabs(timediff(geph.toe, raw->nav.geph[prn - 1].toe)) < 1.0 &&
+    if (fabsl(timediff(geph.toe, raw->nav.geph[prn - 1].toe)) < 1.0L &&
         geph.svh == raw->nav.geph[prn - 1].svh)
       return 0; /* unchanged */
   }
@@ -630,7 +631,7 @@ static int decode_gloephemerisb(raw_t *raw) {
 static int decode_bdsephemerisb(raw_t *raw) {
   eph_t eph = {0};
   unsigned char *p = raw->buff + TERSUSHLEN;
-  double ura, sqrtA;
+  long double ura, sqrtA;
   char *msg;
   int prn, toc;
 
@@ -699,7 +700,7 @@ static int decode_bdsephemerisb(raw_t *raw) {
   eph.sva = uraindex(ura);
 
   if (raw->outtype) {
-    rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " prn=%3d iod=%3d toes=%6.0f", prn, eph.iode,
+    rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " prn=%3d iod=%3d toes=%6.0Lf", prn, eph.iode,
                  eph.toes);
   }
   if (!(eph.sat = satno(SYS_CMP, prn))) {
@@ -711,7 +712,7 @@ static int decode_bdsephemerisb(raw_t *raw) {
   eph.ttr = raw->time;
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (timediff(raw->nav.eph[eph.sat - 1].toe, eph.toe) == 0.0 &&
+    if (timediff(raw->nav.eph[eph.sat - 1].toe, eph.toe) == 0.0L &&
         raw->nav.eph[eph.sat - 1].iode == eph.iode && raw->nav.eph[eph.sat - 1].iodc == eph.iodc)
       return 0; /* unchanged */
   }
@@ -745,7 +746,7 @@ static int decode_ionutcb(raw_t *raw) {
 }
 /* decode tersus message -----------------------------------------------------*/
 static int decode_tersus(raw_t *raw) {
-  double tow;
+  long double tow;
   int msg, week, type = U2(raw->buff + 4);
 
   trace(3, "decode_tersus: type=%3d len=%d\n", type, raw->len);
@@ -760,7 +761,7 @@ static int decode_tersus(raw_t *raw) {
     return -1;
   }
   week = adjgpsweek(week);
-  tow = U4(raw->buff + 16) * 0.001;
+  tow = U4(raw->buff + 16) * 0.001L;
   raw->time = gpst2time(week, tow);
 
   if (raw->outtype) {

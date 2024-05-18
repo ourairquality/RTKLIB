@@ -40,7 +40,7 @@
  * history : 2007/01/12 1.0 new
  *           2007/03/06 1.1 input initial rover pos of pntpos()
  *                          update only effective states of filter()
- *                          fix bug of atan2() domain error
+ *                          fix bug of atan2l() domain error
  *           2007/04/11 1.2 add function antmodel()
  *                          add gdop mask for pntpos()
  *                          change constant MAXDTOE value
@@ -162,49 +162,52 @@
 #define POLYCRC24Q 0x1864CFBu /* CRC24Q polynomial */
 
 #define SQR(x) ((x) * (x))
-#define MAX_VAR_EPH SQR(300.0) /* max variance eph to reject satellite (m^2) */
+#define MAX_VAR_EPH SQR(300.0L) /* max variance eph to reject satellite (m^2) */
 
-static const double gpst0[] = {1980, 1, 6, 0, 0, 0}; /* gps time reference */
-static const double gst0[] = {1999, 8, 22, 0, 0, 0}; /* galileo system time reference */
-static const double bdt0[] = {2006, 1, 1, 0, 0, 0};  /* beidou time reference */
+static const long double gpst0[] = {1980, 1, 6, 0, 0, 0}; /* gps time reference */
+static const long double gst0[] = {1999, 8, 22, 0, 0, 0}; /* galileo system time reference */
+static const long double bdt0[] = {2006, 1, 1, 0, 0, 0};  /* beidou time reference */
 
-static double leaps[MAXLEAPS + 1][7] = {/* leap seconds (y,m,d,h,m,s,utc-gpst) */
-                                        {2017, 1, 1, 0, 0, 0, -18},
-                                        {2015, 7, 1, 0, 0, 0, -17},
-                                        {2012, 7, 1, 0, 0, 0, -16},
-                                        {2009, 1, 1, 0, 0, 0, -15},
-                                        {2006, 1, 1, 0, 0, 0, -14},
-                                        {1999, 1, 1, 0, 0, 0, -13},
-                                        {1997, 7, 1, 0, 0, 0, -12},
-                                        {1996, 1, 1, 0, 0, 0, -11},
-                                        {1994, 7, 1, 0, 0, 0, -10},
-                                        {1993, 7, 1, 0, 0, 0, -9},
-                                        {1992, 7, 1, 0, 0, 0, -8},
-                                        {1991, 1, 1, 0, 0, 0, -7},
-                                        {1990, 1, 1, 0, 0, 0, -6},
-                                        {1988, 1, 1, 0, 0, 0, -5},
-                                        {1985, 7, 1, 0, 0, 0, -4},
-                                        {1983, 7, 1, 0, 0, 0, -3},
-                                        {1982, 7, 1, 0, 0, 0, -2},
-                                        {1981, 7, 1, 0, 0, 0, -1},
-                                        {0}};
-const double chisqr[100] = {/* chi-sqr(n) (alpha=0.001) */
-                            10.8, 13.8, 16.3, 18.5, 20.5, 22.5, 24.3, 26.1, 27.9, 29.6, 31.3, 32.9,
-                            34.5, 36.1, 37.7, 39.3, 40.8, 42.3, 43.8, 45.3, 46.8, 48.3, 49.7, 51.2,
-                            52.6, 54.1, 55.5, 56.9, 58.3, 59.7, 61.1, 62.5, 63.9, 65.2, 66.6, 68.0,
-                            69.3, 70.7, 72.1, 73.4, 74.7, 76.0, 77.3, 78.6, 80.0, 81.3, 82.6, 84.0,
-                            85.4, 86.7, 88.0, 89.3, 90.6, 91.9, 93.3, 94.7, 96.0, 97.4, 98.7, 100,
-                            101,  102,  103,  104,  105,  107,  108,  109,  110,  112,  113,  114,
-                            115,  116,  118,  119,  120,  122,  123,  125,  126,  127,  128,  129,
-                            131,  132,  133,  134,  135,  137,  138,  139,  140,  142,  143,  144,
-                            145,  147,  148,  149};
+static long double leaps[MAXLEAPS + 1][7] = {/* leap seconds (y,m,d,h,m,s,utc-gpst) */
+                                             {2017, 1, 1, 0, 0, 0, -18},
+                                             {2015, 7, 1, 0, 0, 0, -17},
+                                             {2012, 7, 1, 0, 0, 0, -16},
+                                             {2009, 1, 1, 0, 0, 0, -15},
+                                             {2006, 1, 1, 0, 0, 0, -14},
+                                             {1999, 1, 1, 0, 0, 0, -13},
+                                             {1997, 7, 1, 0, 0, 0, -12},
+                                             {1996, 1, 1, 0, 0, 0, -11},
+                                             {1994, 7, 1, 0, 0, 0, -10},
+                                             {1993, 7, 1, 0, 0, 0, -9},
+                                             {1992, 7, 1, 0, 0, 0, -8},
+                                             {1991, 1, 1, 0, 0, 0, -7},
+                                             {1990, 1, 1, 0, 0, 0, -6},
+                                             {1988, 1, 1, 0, 0, 0, -5},
+                                             {1985, 7, 1, 0, 0, 0, -4},
+                                             {1983, 7, 1, 0, 0, 0, -3},
+                                             {1982, 7, 1, 0, 0, 0, -2},
+                                             {1981, 7, 1, 0, 0, 0, -1},
+                                             {0}};
+const long double chisqr[100] = {/* chi-sqr(n) (alpha=0.001) */
+                                 10.8L, 13.8L, 16.3L, 18.5L, 20.5L, 22.5L, 24.3L, 26.1L, 27.9L,
+                                 29.6L, 31.3L, 32.9L, 34.5L, 36.1L, 37.7L, 39.3L, 40.8L, 42.3L,
+                                 43.8L, 45.3L, 46.8L, 48.3L, 49.7L, 51.2L, 52.6L, 54.1L, 55.5L,
+                                 56.9L, 58.3L, 59.7L, 61.1L, 62.5L, 63.9L, 65.2L, 66.6L, 68.0L,
+                                 69.3L, 70.7L, 72.1L, 73.4L, 74.7L, 76.0L, 77.3L, 78.6L, 80.0L,
+                                 81.3L, 82.6L, 84.0L, 85.4L, 86.7L, 88.0L, 89.3L, 90.6L, 91.9L,
+                                 93.3L, 94.7L, 96.0L, 97.4L, 98.7L, 100L,  101L,  102L,  103L,
+                                 104L,  105L,  107L,  108L,  109L,  110L,  112L,  113L,  114L,
+                                 115L,  116L,  118L,  119L,  120L,  122L,  123L,  125L,  126L,
+                                 127L,  128L,  129L,  131L,  132L,  133L,  134L,  135L,  137L,
+                                 138L,  139L,  140L,  142L,  143L,  144L,  145L,  147L,  148L,
+                                 149L};
 const prcopt_t prcopt_default = {
     /* defaults processing options */
     PMODE_KINEMA,
     SOLTYPE_FORWARD, /* mode,soltype */
     2,
     SYS_GPS | SYS_GLO | SYS_GAL, /* nf, navsys */
-    15.0 * D2R,
+    15.0L * D2R,
     {{0, 0}}, /* elmin,snrmask */
     0,
     3,
@@ -229,21 +232,22 @@ const prcopt_t prcopt_default = {
     0,
     0, /* niter,codesmooth,intpref,sbascorr,sbassatsel */
     0,
-    0,                                               /* rovpos,refpos */
-    {300.0, 300.0, 300.0},                           /* eratio[] */
-    {100.0, 0.003, 0.003, 0.0, 1.0, 52.0, 0.0, 0.0}, /* err[-,base,el,bl,dop,snr_max,snr,rcverr] */
-    {30.0, 0.03, 0.3},                               /* std[] */
-    {1E-4, 1E-3, 1E-4, 1E-1, 1E-2, 0.0},             /* prn[] */
-    5E-12,                                           /* sclkstab */
-    {3.0, 0.25, 0.0, 1E-9, 1E-5, 3.0, 3.0, 0.0},     /* thresar */
-    0.0,
-    0.0,
-    0.05,
+    0,                        /* rovpos,refpos */
+    {300.0L, 300.0L, 300.0L}, /* eratio[] */
+    {100.0L, 0.003L, 0.003L, 0.0L, 1.0L, 52.0L, 0.0L,
+     0.0L},                                    /* err[-,base,el,bl,dop,snr_max,snr,rcverr] */
+    {30.0L, 0.03L, 0.3L},                      /* std[] */
+    {1E-4L, 1E-3L, 1E-4L, 1E-1L, 1E-2L, 0.0L}, /* prn[] */
+    5E-12L,                                    /* sclkstab */
+    {3.0L, 0.25L, 0.0L, 1E-9L, 1E-5L, 3.0L, 3.0L, 0.0L}, /* thresar */
+    0.0L,
+    0.0L,
+    0.05L,
     0, /* elmaskar,elmaskhold,thresslip,thresdop, */
-    0.1,
-    0.01,
-    30.0,        /* varholdamb,gainholdamb,maxtdif */
-    {5.0, 30.0}, /* maxinno {phase,code} */
+    0.1L,
+    0.01L,
+    30.0L,         /* varholdamb,gainholdamb,maxtdif */
+    {5.0L, 30.0L}, /* maxinno {phase,code} */
     {0},
     {0},
     {0},      /* baseline,ru,rb */
@@ -256,11 +260,23 @@ const prcopt_t prcopt_default = {
 };
 const solopt_t solopt_default = {
     /* defaults solution output options */
-    SOLF_LLH,   TIMES_GPST, 1, 3,          /* posf,times,timef,timeu */
-    0,          1,          0, 0, 0, 0, 0, /* degf,outhead,outopt,outvel,datum,height,geoid */
-    0,          0,          0,             /* solstatic,sstat,trace */
-    {0.0, 0.0},                            /* nmeaintv */
-    " ",        ""                         /* separator/program name */
+    SOLF_LLH,
+    TIMES_GPST,
+    1,
+    3, /* posf,times,timef,timeu */
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0, /* degf,outhead,outopt,outvel,datum,height,geoid */
+    0,
+    0,
+    0,            /* solstatic,sstat,trace */
+    {0.0L, 0.0L}, /* nmeaintv */
+    " ",
+    "" /* separator/program name */
 };
 const char *formatstrs[32] = {                        /* stream format strings */
                               "RTCM 2",               /*  0 */
@@ -372,16 +388,16 @@ static const uint32_t tbl_CRC24Q[] = {
 #define dgetrs_ dgetrs
 #endif
 #ifdef LAPACK
-extern void dgemm_(char *, char *, int *, int *, int *, double *, double *, int *, double *, int *,
-                   double *, double *, int *);
-extern void dgetrf_(int *, int *, double *, int *, int *, int *);
-extern void dgetri_(int *, double *, int *, int *, double *, int *, int *);
-extern void dgetrs_(char *, int *, int *, double *, int *, int *, double *, int *, int *);
+extern void dgemm_(char *, char *, int *, int *, int *, long double *, long double *, int *,
+                   long double *, int *, long double *, long double *, int *);
+extern void dgetrf_(int *, int *, long double *, int *, int *, int *);
+extern void dgetri_(int *, long double *, int *, int *, long double *, int *, int *);
+extern void dgetrs_(char *, int *, int *, long double *, int *, int *, long double *, int *, int *);
 #endif
 
 #ifdef IERS_MODEL
-extern int gmf_(double *mjd, double *lat, double *lon, double *hgt, double *zd, double *gmfh,
-                double *gmfw);
+extern int gmf_(long double *mjd, long double *lat, long double *lon, long double *hgt,
+                long double *zd, long double *gmfh, long double *gmfw);
 #endif
 
 /* fatal error ---------------------------------------------------------------*/
@@ -581,12 +597,12 @@ extern void satno2id(int sat, char id[8]) {
 /* test excluded satellite -----------------------------------------------------
  * test excluded satellite
  * args   : int    sat       I   satellite number
- *          double var       I   variance of ephemeris (m^2)
+ *          long double var       I   variance of ephemeris (m^2)
  *          int    svh       I   sv health flag
  *          prcopt_t *opt    I   processing options (NULL: not used)
  * return : status (true:excluded,false:not excluded)
  *-----------------------------------------------------------------------------*/
-extern bool satexclude(int sat, double var, int svh, const prcopt_t *opt) {
+extern bool satexclude(int sat, long double var, int svh, const prcopt_t *opt) {
   if (svh < 0) return true; /* ephemeris unavailable */
 
   int sys = satsys(sat, NULL);
@@ -601,7 +617,7 @@ extern bool satexclude(int sat, double var, int svh, const prcopt_t *opt) {
     return true;
   }
   if (var > MAX_VAR_EPH) {
-    trace(3, "invalid ura satellite: sat=%3d ura=%.2f\n", sat, sqrt(var));
+    trace(3, "invalid ura satellite: sat=%3d ura=%.2Lf\n", sat, sqrtl(var));
     return true;
   }
   return false;
@@ -610,25 +626,25 @@ extern bool satexclude(int sat, double var, int svh, const prcopt_t *opt) {
  * test SNR mask
  * args   : int    base      I   rover or base-station (0:rover,1:base station)
  *          int    idx       I   frequency index (0:L1,1:L2,2:L3,...)
- *          double el        I   elevation angle (rad)
- *          double snr       I   C/N0 (dBHz)
+ *          long double el        I   elevation angle (rad)
+ *          long double snr       I   C/N0 (dBHz)
  *          snrmask_t *mask  I   SNR mask
  * return : status (true:masked,false:unmasked)
  *-----------------------------------------------------------------------------*/
-extern bool testsnr(int base, int idx, double el, double snr, const snrmask_t *mask) {
+extern bool testsnr(int base, int idx, long double el, long double snr, const snrmask_t *mask) {
   if (!mask->ena[base] || idx < 0 || idx >= NFREQ) return false;
 
-  double a = (el * R2D + 5.0) / 10.0;
-  int i = (int)floor(a);
+  long double a = (el * R2D + 5.0L) / 10.0L;
+  int i = (int)floorl(a);
   a -= i;
 
-  double minsnr;
+  long double minsnr;
   if (i < 1)
     minsnr = mask->mask[idx][0];
   else if (i > 8)
     minsnr = mask->mask[idx][8];
   else
-    minsnr = (1.0 - a) * mask->mask[idx][i - 1] + a * mask->mask[idx][i];
+    minsnr = (1.0L - a) * mask->mask[idx][i - 1] + a * mask->mask[idx][i];
 
   return snr < minsnr;
 }
@@ -656,7 +672,7 @@ extern char *code2obs(uint8_t code) {
   return obscodes[code];
 }
 /* GPS obs code to frequency -------------------------------------------------*/
-static int code2freq_GPS(uint8_t code, double *freq) {
+static int code2freq_GPS(uint8_t code, long double *freq) {
   const char *obs = code2obs(code);
 
   switch (obs[0]) {
@@ -673,7 +689,7 @@ static int code2freq_GPS(uint8_t code, double *freq) {
   return -1;
 }
 /* GLONASS obs code to frequency ---------------------------------------------*/
-static int code2freq_GLO(uint8_t code, int fcn, double *freq) {
+static int code2freq_GLO(uint8_t code, int fcn, long double *freq) {
   const char *obs = code2obs(code);
 
   if (fcn < -7 || fcn > 6) return -1;
@@ -698,7 +714,7 @@ static int code2freq_GLO(uint8_t code, int fcn, double *freq) {
   return -1;
 }
 /* Galileo obs code to frequency ---------------------------------------------*/
-static int code2freq_GAL(uint8_t code, double *freq) {
+static int code2freq_GAL(uint8_t code, long double *freq) {
   const char *obs = code2obs(code);
 
   switch (obs[0]) {
@@ -721,7 +737,7 @@ static int code2freq_GAL(uint8_t code, double *freq) {
   return -1;
 }
 /* QZSS obs code to frequency ------------------------------------------------*/
-static int code2freq_QZS(uint8_t code, double *freq) {
+static int code2freq_QZS(uint8_t code, long double *freq) {
   const char *obs = code2obs(code);
 
   switch (obs[0]) {
@@ -741,7 +757,7 @@ static int code2freq_QZS(uint8_t code, double *freq) {
   return -1;
 }
 /* SBAS obs code to frequency ------------------------------------------------*/
-static int code2freq_SBS(uint8_t code, double *freq) {
+static int code2freq_SBS(uint8_t code, long double *freq) {
   const char *obs = code2obs(code);
 
   switch (obs[0]) {
@@ -755,7 +771,7 @@ static int code2freq_SBS(uint8_t code, double *freq) {
   return -1;
 }
 /* BDS obs code to frequency -------------------------------------------------*/
-static int code2freq_BDS(uint8_t code, double *freq) {
+static int code2freq_BDS(uint8_t code, long double *freq) {
   const char *obs = code2obs(code);
 
   switch (obs[0]) {
@@ -781,7 +797,7 @@ static int code2freq_BDS(uint8_t code, double *freq) {
   return -1;
 }
 /* NavIC obs code to frequency -----------------------------------------------*/
-static int code2freq_IRN(uint8_t code, double *freq) {
+static int code2freq_IRN(uint8_t code, long double *freq) {
   const char *obs = code2obs(code);
 
   switch (obs[0]) {
@@ -810,7 +826,7 @@ static int code2freq_IRN(uint8_t code, double *freq) {
  *            NavIC     L5     S     -     -     -
  *-----------------------------------------------------------------------------*/
 extern int code2idx(int sys, uint8_t code) {
-  double freq;
+  long double freq;
 
   switch (sys) {
     case SYS_GPS:
@@ -837,8 +853,8 @@ extern int code2idx(int sys, uint8_t code) {
  *          int    fcn       I   frequency channel number for GLONASS
  * return : carrier frequency (Hz) (0.0: error)
  *-----------------------------------------------------------------------------*/
-extern double code2freq(int sys, uint8_t code, int fcn) {
-  double freq = 0.0;
+extern long double code2freq(int sys, uint8_t code, int fcn) {
+  long double freq = 0.0L;
 
   switch (sys) {
     case SYS_GPS:
@@ -872,13 +888,13 @@ extern double code2freq(int sys, uint8_t code, int fcn) {
  *          nav_t  *nav_t    I   navigation data for GLONASS (NULL: not used)
  * return : carrier frequency (Hz) (0.0: error)
  *-----------------------------------------------------------------------------*/
-extern double sat2freq(int sat, uint8_t code, const nav_t *nav) {
+extern long double sat2freq(int sat, uint8_t code, const nav_t *nav) {
   int prn;
   int sys = satsys(sat, &prn);
 
   int fcn = 0;
   if (sys == SYS_GLO) {
-    if (!nav) return 0.0;
+    if (!nav) return 0.0L;
     /* First non-empty entry */
     int i;
     for (i = 0; i < nav->ng[prn - 1]; i++) {
@@ -889,7 +905,7 @@ extern double sat2freq(int sat, uint8_t code, const nav_t *nav) {
     } else if (nav->glo_fcn[prn - 1] > 0) {
       fcn = nav->glo_fcn[prn - 1] - 8;
     } else
-      return 0.0;
+      return 0.0L;
   }
   return code2freq(sys, code, fcn);
 }
@@ -1133,9 +1149,9 @@ extern bool decode_word(uint32_t word, uint8_t data[4]) {
  * args   : int    n,m       I   number of rows and columns of matrix
  * return : matrix pointer (if n<=0 or m<=0, return NULL)
  *-----------------------------------------------------------------------------*/
-extern double *mat(int n, int m) {
+extern long double *mat(int n, int m) {
   if (n <= 0 || m <= 0) return NULL;
-  double *p = (double *)malloc(sizeof(double) * n * m);
+  long double *p = (long double *)malloc(sizeof(long double) * n * m);
   if (!p) {
     fatalerr("matrix memory allocation error: n=%d,m=%d\n", n, m);
   }
@@ -1159,15 +1175,15 @@ extern int *imat(int n, int m) {
  * args   : int    n,m       I   number of rows and columns of matrix
  * return : matrix pointer (if n<=0 or m<=0, return NULL)
  *-----------------------------------------------------------------------------*/
-extern double *zeros(int n, int m) {
+extern long double *zeros(int n, int m) {
   if (n <= 0 || m <= 0) return NULL;
 
 #if NOCALLOC
-  double *p = mat(n, m);
+  long double *p = mat(n, m);
   if (p)
-    for (n = n * m - 1; n >= 0; n--) p[n] = 0.0;
+    for (n = n * m - 1; n >= 0; n--) p[n] = 0.0L;
 #else
-  double *p = (double *)calloc(sizeof(double), n * m);
+  long double *p = (long double *)calloc(sizeof(long double), n * m);
   if (!p) {
     fatalerr("matrix memory allocation error: n=%d,m=%d\n", n, m);
   }
@@ -1179,33 +1195,33 @@ extern double *zeros(int n, int m) {
  * args   : int    n         I   number of rows and columns of matrix
  * return : matrix pointer (if n<=0, return NULL)
  *-----------------------------------------------------------------------------*/
-extern double *eye(int n) {
-  double *p = zeros(n, n);
+extern long double *eye(int n) {
+  long double *p = zeros(n, n);
   if (p)
-    for (int i = 0; i < n; i++) p[i + i * n] = 1.0;
+    for (int i = 0; i < n; i++) p[i + i * n] = 1.0L;
   return p;
 }
 
 /* outer product of 3d vectors -------------------------------------------------
  * outer product of 3d vectors
- * args   : double *a,*b     I   vector a,b (3 x 1)
- *          double *c        O   outer product (a x b) (3 x 1)
+ * args   : long double *a,*b     I   vector a,b (3 x 1)
+ *          long double *c        O   outer product (a x b) (3 x 1)
  * return : none
  *-----------------------------------------------------------------------------*/
-extern void cross3(const double *a, const double *b, double *c) {
+extern void cross3(const long double *a, const long double *b, long double *c) {
   c[0] = a[1] * b[2] - a[2] * b[1];
   c[1] = a[2] * b[0] - a[0] * b[2];
   c[2] = a[0] * b[1] - a[1] * b[0];
 }
 /* normalize 3d vector ---------------------------------------------------------
  * normalize 3d vector
- * args   : double *a        I   vector a (3 x 1)
- *          double *b        O   normalized vector (3 x 1) || b || = 1
+ * args   : long double *a        I   vector a (3 x 1)
+ *          long double *b        O   normalized vector (3 x 1) || b || = 1
  * return : status (true:ok,false:error)
  *-----------------------------------------------------------------------------*/
-extern bool normv3(const double *a, double *b) {
-  double r = norm(a, 3);
-  if (r <= 0.0) return false;
+extern bool normv3(const long double *a, long double *b) {
+  long double r = norm(a, 3);
+  if (r <= 0.0L) return false;
   b[0] = a[0] / r;
   b[1] = a[1] / r;
   b[2] = a[2] / r;
@@ -1219,48 +1235,48 @@ extern bool normv3(const double *a, double *b) {
  * multiply matrix by matrix (C=A*B)
  * args   : char   *tr       I  transpose flags ("N":normal,"T":transpose)
  *          int    n,k,m     I  size of (transposed) matrix A,B
- *          double *A,*B     I  (transposed) matrix A (n x m), B (m x k)
- *          double *C        O matrix C (n x k)
+ *          long double *A,*B     I  (transposed) matrix A (n x m), B (m x k)
+ *          long double *C        O matrix C (n x k)
  * return : none
  *-----------------------------------------------------------------------------*/
-extern void matmul(const char *tr, int n, int k, int m, const double *A, const double *B,
-                   double *C) {
+extern void matmul(const char *tr, int n, int k, int m, const long double *A, const long double *B,
+                   long double *C) {
   int lda = tr[0] == 'T' ? m : n, ldb = tr[1] == 'T' ? k : m;
-  const double alpha = 1, beta = 0;
+  const long double alpha = 1, beta = 0;
 
-  dgemm_((char *)tr, (char *)tr + 1, &n, &k, &m, &alpha, (double *)A, &lda, (double *)B, &ldb,
-         &beta, C, &n);
+  dgemm_((char *)tr, (char *)tr + 1, &n, &k, &m, &alpha, (long double *)A, &lda, (long double *)B,
+         &ldb, &beta, C, &n);
 }
 /* multiply matrix (wrapper of blas dgemm) -------------------------------------
  * multiply matrix by matrix (C=C+A*B)
  *-----------------------------------------------------------------------------*/
-extern void matmulp(const char *tr, int n, int k, int m, const double *A, const double *B,
-                    double *C) {
+extern void matmulp(const char *tr, int n, int k, int m, const long double *A, const long double *B,
+                    long double *C) {
   int lda = tr[0] == 'T' ? m : n, ldb = tr[1] == 'T' ? k : m;
-  const double alpha = 1, beta = 1;
+  const long double alpha = 1, beta = 1;
 
-  dgemm_((char *)tr, (char *)tr + 1, &n, &k, &m, &alpha, (double *)A, &lda, (double *)B, &ldb,
-         &beta, C, &n);
+  dgemm_((char *)tr, (char *)tr + 1, &n, &k, &m, &alpha, (long double *)A, &lda, (long double *)B,
+         &ldb, &beta, C, &n);
 }
 /* multiply matrix (wrapper of blas dgemm) -------------------------------------
  * multiply matrix by matrix (C=C-A*B)
  *-----------------------------------------------------------------------------*/
-extern void matmulm(const char *tr, int n, int k, int m, const double *A, const double *B,
-                    double *C) {
+extern void matmulm(const char *tr, int n, int k, int m, const long double *A, const long double *B,
+                    long double *C) {
   int lda = tr[0] == 'T' ? m : n, ldb = tr[1] == 'T' ? k : m;
-  const double alpha = -1, beta = 1;
+  const long double alpha = -1, beta = 1;
 
-  dgemm_((char *)tr, (char *)tr + 1, &n, &k, &m, &alpha, (double *)A, &lda, (double *)B, &ldb,
-         &beta, C, &n);
+  dgemm_((char *)tr, (char *)tr + 1, &n, &k, &m, &alpha, (long double *)A, &lda, (long double *)B,
+         &ldb, &beta, C, &n);
 }
 /* inverse of matrix -----------------------------------------------------------
  * inverse of matrix (A=A^-1)
- * args   : double *A        IO  matrix (n x n)
+ * args   : long double *A        IO  matrix (n x n)
  *          int    n         I   size of matrix A
  * return : status (0:ok,0>:error)
  *-----------------------------------------------------------------------------*/
-extern int matinv(double *A, int n) {
-  double *work = mat(lwork, 1);
+extern int matinv(long double *A, int n) {
+  long double *work = mat(lwork, 1);
   int *ipiv = imat(n, 1);
   dgetrf_(&n, &n, A, &n, ipiv, &info);
   int info, lwork = n * 16;
@@ -1272,16 +1288,17 @@ extern int matinv(double *A, int n) {
 /* solve linear equation -------------------------------------------------------
  * solve linear equation (X=A\Y or X=A'\Y)
  * args   : char   *tr       I   transpose flag ("N":normal,"T":transpose)
- *          double *A        I   input matrix A (n x n)
- *          double *Y        I   input matrix Y (n x m)
+ *          long double *A        I   input matrix A (n x n)
+ *          long double *Y        I   input matrix Y (n x m)
  *          int    n,m       I   size of matrix A,Y
- *          double *X        O   X=A\Y or X=A'\Y (n x m)
+ *          long double *X        O   X=A\Y or X=A'\Y (n x m)
  * return : status (0:ok,0>:error)
  * notes  : matrix stored by column-major order (fortran convention)
  *          X can be same as Y
  *-----------------------------------------------------------------------------*/
-extern int solve(const char *tr, const double *A, const double *Y, int n, int m, double *X) {
-  double *B = mat(n, n);
+extern int solve(const char *tr, const long double *A, const long double *Y, int n, int m,
+                 long double *X) {
+  long double *B = mat(n, n);
   matcpy(B, A, n, n);
   matcpy(X, Y, n, m);
   int info;
@@ -1296,15 +1313,15 @@ extern int solve(const char *tr, const double *A, const double *Y, int n, int m,
 #else /* without LAPACK/BLAS or MKL */
 
 /* multiply matrix -----------------------------------------------------------*/
-extern void matmul(const char *tr, int n, int k, int m, const double *A, const double *B,
-                   double *C) {
+extern void matmul(const char *tr, int n, int k, int m, const long double *A, const long double *B,
+                   long double *C) {
   int f = (tr[0] != 'N') * 2 + (tr[1] != 'N');
 
   switch (f) {
     case 0: /* NN */
       for (int j = 0; j < k; j++) {
         for (int i = 0; i < n; i++) {
-          double d = 0.0;
+          long double d = 0.0L;
           for (int x = 0; x < m; x++) d += A[i + x * n] * B[x + j * m];
           C[i + j * n] = d;
         }
@@ -1313,7 +1330,7 @@ extern void matmul(const char *tr, int n, int k, int m, const double *A, const d
     case 1: /* NT */
       for (int j = 0; j < k; j++) {
         for (int i = 0; i < n; i++) {
-          double d = 0.0;
+          long double d = 0.0L;
           for (int x = 0; x < m; x++) d += A[i + x * n] * B[j + x * k];
           C[i + j * n] = d;
         }
@@ -1322,7 +1339,7 @@ extern void matmul(const char *tr, int n, int k, int m, const double *A, const d
     case 2: /* TN */
       for (int j = 0; j < k; j++) {
         for (int i = 0; i < n; i++) {
-          double d = 0.0;
+          long double d = 0.0L;
           for (int x = 0; x < m; x++) d += A[x + i * m] * B[x + j * m];
           C[i + j * n] = d;
         }
@@ -1331,7 +1348,7 @@ extern void matmul(const char *tr, int n, int k, int m, const double *A, const d
     case 3: /* TT */
       for (int j = 0; j < k; j++) {
         for (int i = 0; i < n; i++) {
-          double d = 0.0;
+          long double d = 0.0L;
           for (int x = 0; x < m; x++) d += A[x + i * m] * B[j + x * k];
           C[i + j * n] = d;
         }
@@ -1339,15 +1356,15 @@ extern void matmul(const char *tr, int n, int k, int m, const double *A, const d
       break;
   }
 }
-extern void matmulp(const char *tr, int n, int k, int m, const double *A, const double *B,
-                    double *C) {
+extern void matmulp(const char *tr, int n, int k, int m, const long double *A, const long double *B,
+                    long double *C) {
   int f = (tr[0] != 'N') * 2 + (tr[1] != 'N');
 
   switch (f) {
     case 0: /* NN */
       for (int j = 0; j < k; j++) {
         for (int i = 0; i < n; i++) {
-          double d = 0.0;
+          long double d = 0.0L;
           for (int x = 0; x < m; x++) d += A[i + x * n] * B[x + j * m];
           C[i + j * n] += d;
         }
@@ -1356,7 +1373,7 @@ extern void matmulp(const char *tr, int n, int k, int m, const double *A, const 
     case 1: /* NT */
       for (int j = 0; j < k; j++) {
         for (int i = 0; i < n; i++) {
-          double d = 0.0;
+          long double d = 0.0L;
           for (int x = 0; x < m; x++) d += A[i + x * n] * B[j + x * k];
           C[i + j * n] += d;
         }
@@ -1365,7 +1382,7 @@ extern void matmulp(const char *tr, int n, int k, int m, const double *A, const 
     case 2: /* TN */
       for (int j = 0; j < k; j++) {
         for (int i = 0; i < n; i++) {
-          double d = 0.0;
+          long double d = 0.0L;
           for (int x = 0; x < m; x++) d += A[x + i * m] * B[x + j * m];
           C[i + j * n] += d;
         }
@@ -1374,7 +1391,7 @@ extern void matmulp(const char *tr, int n, int k, int m, const double *A, const 
     case 3: /* TT */
       for (int j = 0; j < k; j++) {
         for (int i = 0; i < n; i++) {
-          double d = 0.0;
+          long double d = 0.0L;
           for (int x = 0; x < m; x++) d += A[x + i * m] * B[j + x * k];
           C[i + j * n] += d;
         }
@@ -1382,15 +1399,15 @@ extern void matmulp(const char *tr, int n, int k, int m, const double *A, const 
       break;
   }
 }
-extern void matmulm(const char *tr, int n, int k, int m, const double *A, const double *B,
-                    double *C) {
+extern void matmulm(const char *tr, int n, int k, int m, const long double *A, const long double *B,
+                    long double *C) {
   int f = (tr[0] != 'N') * 2 + (tr[1] != 'N');
 
   switch (f) {
     case 0: /* NN */
       for (int j = 0; j < k; j++) {
         for (int i = 0; i < n; i++) {
-          double d = 0.0;
+          long double d = 0.0L;
           for (int x = 0; x < m; x++) d += A[i + x * n] * B[x + j * m];
           C[i + j * n] -= d;
         }
@@ -1399,7 +1416,7 @@ extern void matmulm(const char *tr, int n, int k, int m, const double *A, const 
     case 1: /* NT */
       for (int j = 0; j < k; j++) {
         for (int i = 0; i < n; i++) {
-          double d = 0.0;
+          long double d = 0.0L;
           for (int x = 0; x < m; x++) d += A[i + x * n] * B[j + x * k];
           C[i + j * n] -= d;
         }
@@ -1408,7 +1425,7 @@ extern void matmulm(const char *tr, int n, int k, int m, const double *A, const 
     case 2: /* TN */
       for (int j = 0; j < k; j++) {
         for (int i = 0; i < n; i++) {
-          double d = 0.0;
+          long double d = 0.0L;
           for (int x = 0; x < m; x++) d += A[x + i * m] * B[x + j * m];
           C[i + j * n] -= d;
         }
@@ -1417,7 +1434,7 @@ extern void matmulm(const char *tr, int n, int k, int m, const double *A, const 
     case 3: /* TT */
       for (int j = 0; j < k; j++) {
         for (int i = 0; i < n; i++) {
-          double d = 0.0;
+          long double d = 0.0L;
           for (int x = 0; x < m; x++) d += A[x + i * m] * B[j + x * k];
           C[i + j * n] -= d;
         }
@@ -1426,17 +1443,17 @@ extern void matmulm(const char *tr, int n, int k, int m, const double *A, const 
   }
 }
 /* LU decomposition ----------------------------------------------------------*/
-static int ludcmp(double *A, int n, int *indx, double *d) {
-  double *vv = mat(n, 1);
-  *d = 1.0;
+static int ludcmp(long double *A, int n, int *indx, long double *d) {
+  long double *vv = mat(n, 1);
+  *d = 1.0L;
   for (int i = 0; i < n; i++) {
-    double big = 0.0;
+    long double big = 0.0L;
     for (int j = 0; j < n; j++) {
-      double tmp = fabs(A[i + j * n]);
+      long double tmp = fabsl(A[i + j * n]);
       if (tmp > big) big = tmp;
     }
-    if (big > 0.0)
-      vv[i] = 1.0 / big;
+    if (big > 0.0L)
+      vv[i] = 1.0L / big;
     else {
       free(vv);
       return -1;
@@ -1444,17 +1461,17 @@ static int ludcmp(double *A, int n, int *indx, double *d) {
   }
   for (int j = 0; j < n; j++) {
     for (int i = 0; i < j; i++) {
-      double s = A[i + j * n];
+      long double s = A[i + j * n];
       for (int k = 0; k < i; k++) s -= A[i + k * n] * A[k + j * n];
       A[i + j * n] = s;
     }
     int imax = 0;
-    double big = 0.0;
+    long double big = 0.0L;
     for (int i = j; i < n; i++) {
-      double s = A[i + j * n];
+      long double s = A[i + j * n];
       for (int k = 0; k < j; k++) s -= A[i + k * n] * A[k + j * n];
       A[i + j * n] = s;
-      double tmp = vv[i] * fabs(s);
+      long double tmp = vv[i] * fabsl(s);
       if (tmp >= big) {
         big = tmp;
         imax = i;
@@ -1462,7 +1479,7 @@ static int ludcmp(double *A, int n, int *indx, double *d) {
     }
     if (j != imax) {
       for (int k = 0; k < n; k++) {
-        double tmp = A[imax + k * n];
+        long double tmp = A[imax + k * n];
         A[imax + k * n] = A[j + k * n];
         A[j + k * n] = tmp;
       }
@@ -1470,12 +1487,12 @@ static int ludcmp(double *A, int n, int *indx, double *d) {
       vv[imax] = vv[j];
     }
     indx[j] = imax;
-    if (A[j + j * n] == 0.0) {
+    if (A[j + j * n] == 0.0L) {
       free(vv);
       return -1;
     }
     if (j != n - 1) {
-      double tmp = 1.0 / A[j + j * n];
+      long double tmp = 1.0L / A[j + j * n];
       for (int i = j + 1; i < n; i++) A[i + j * n] *= tmp;
     }
   }
@@ -1483,10 +1500,10 @@ static int ludcmp(double *A, int n, int *indx, double *d) {
   return 0;
 }
 /* LU back-substitution ------------------------------------------------------*/
-static void lubksb(const double *A, int n, const int *indx, double *b) {
+static void lubksb(const long double *A, int n, const int *indx, long double *b) {
   for (int i = 0, ii = -1; i < n; i++) {
     int ip = indx[i];
-    double s = b[ip];
+    long double s = b[ip];
     b[ip] = b[i];
     if (ii >= 0)
       for (int j = ii; j < i; j++) s -= A[i + j * n] * b[j];
@@ -1495,16 +1512,16 @@ static void lubksb(const double *A, int n, const int *indx, double *b) {
     b[i] = s;
   }
   for (int i = n - 1; i >= 0; i--) {
-    double s = b[i];
+    long double s = b[i];
     for (int j = i + 1; j < n; j++) s -= A[i + j * n] * b[j];
     b[i] = s / A[i + i * n];
   }
 }
 /* inverse of matrix ---------------------------------------------------------*/
-extern int matinv(double *A, int n) {
-  double *B = mat(n, n);
+extern int matinv(long double *A, int n) {
+  long double *B = mat(n, n);
   matcpy(B, A, n, n);
-  double d;
+  long double d;
   int *indx = imat(n, 1);
   if (ludcmp(B, n, indx, &d)) {
     free(indx);
@@ -1512,8 +1529,8 @@ extern int matinv(double *A, int n) {
     return -1;
   }
   for (int j = 0; j < n; j++) {
-    for (int i = 0; i < n; i++) A[i + j * n] = 0.0;
-    A[j + j * n] = 1.0;
+    for (int i = 0; i < n; i++) A[i + j * n] = 0.0L;
+    A[j + j * n] = 1.0L;
     lubksb(B, n, indx, A + j * n);
   }
   free(indx);
@@ -1521,8 +1538,9 @@ extern int matinv(double *A, int n) {
   return 0;
 }
 /* solve linear equation -----------------------------------------------------*/
-extern int solve(const char *tr, const double *A, const double *Y, int n, int m, double *X) {
-  double *B = mat(n, n);
+extern int solve(const char *tr, const long double *A, const long double *Y, int n, int m,
+                 long double *X) {
+  long double *B = mat(n, n);
   matcpy(B, A, n, n);
   int info = matinv(B, n);
   if (!info) matmul(tr[0] == 'N' ? "NN" : "TN", n, m, n, B, Y, X);
@@ -1535,18 +1553,19 @@ extern int solve(const char *tr, const double *A, const double *Y, int n, int m,
 
 /* least square estimation -----------------------------------------------------
  * least square estimation by solving normal equation (x=(A*A')^-1*A*y)
- * args   : double *A        I   transpose of (weighted) design matrix (n x m)
- *          double *y        I   (weighted) measurements (m x 1)
+ * args   : long double *A        I   transpose of (weighted) design matrix (n x m)
+ *          long double *y        I   (weighted) measurements (m x 1)
  *          int    n,m       I   number of parameters and measurements (n<=m)
- *          double *x        O   estimated parameters (n x 1)
- *          double *Q        O   estimated parameters covariance matrix (n x n)
+ *          long double *x        O   estimated parameters (n x 1)
+ *          long double *Q        O   estimated parameters covariance matrix (n x n)
  * return : status (0:ok,0>:error)
  * notes  : for weighted least square, replace A and y by A*w and w*y (w=W^(1/2))
  *          matrix stored by column-major order (fortran convention)
  *-----------------------------------------------------------------------------*/
-extern int lsq(const double *A, const double *y, int n, int m, double *x, double *Q) {
+extern int lsq(const long double *A, const long double *y, int n, int m, long double *x,
+               long double *Q) {
   if (m < n) return -1;
-  double *Ay = mat(n, 1);
+  long double *Ay = mat(n, 1);
   matmul("NN", n, 1, m, A, y, Ay); /* Ay=A*y */
   matmul("NT", n, n, m, A, A, Q);  /* Q=A*A' */
   int info = matinv(Q, n);
@@ -1559,22 +1578,22 @@ extern int lsq(const double *A, const double *y, int n, int m, double *x, double
  *
  *   K=P*H*(H'*P*H+R)^-1, xp=x+K*v, Pp=(I-K*H')*P
  *
- * args   : double *x        IO  states vector (n x 1)
- *          double *P        I   covariance matrix of states (n x n)
- *          double *H        I   transpose of design matrix (n x m)
- *          double *v        I   innovation (measurement - model) (m x 1)
- *          double *R        IX  covariance matrix of measurement error (m x m)
+ * args   : long double *x        IO  states vector (n x 1)
+ *          long double *P        I   covariance matrix of states (n x n)
+ *          long double *H        I   transpose of design matrix (n x m)
+ *          long double *v        I   innovation (measurement - model) (m x 1)
+ *          long double *R        IX  covariance matrix of measurement error (m x m)
  *          int    n,m       I   number of states and measurements
- *          double *Pp       O   covariance matrix of states after update (n x n)
+ *          long double *Pp       O   covariance matrix of states after update (n x n)
  * return : status (0:ok,<0:error)
  * notes  : matrix stored by column-major order (fortran convention)
  *          if state x[i]==0.0, not updates state x[i]/P[i+i*n]
  *          The x array is not modified on error.
  *          The R input matrix is destructively modified, even on error.
  *-----------------------------------------------------------------------------*/
-extern int filter_(double *x, const double *P, const double *H, const double *v, double *R, int n,
-                   int m, double *Pp) {
-  double *PH = mat(n, m), *K = mat(n, m), *I = eye(n);
+extern int filter_(long double *x, const long double *P, const long double *H, const long double *v,
+                   long double *R, int n, int m, long double *Pp) {
+  long double *PH = mat(n, m), *K = mat(n, m), *I = eye(n);
   int info;
 
   matmul("NN", n, m, n, P, H, PH); /* P*H */
@@ -1591,13 +1610,14 @@ extern int filter_(double *x, const double *P, const double *H, const double *v,
   free(I);
   return info;
 }
-extern int filter(double *x, double *P, const double *H, const double *v, double *R, int n, int m) {
+extern int filter(long double *x, long double *P, const long double *H, const long double *v,
+                  long double *R, int n, int m) {
   /* Create list of non-zero states */
   int *ix = imat(n, 1);
   int k = 0;
   for (int i = 0; i < n; i++)
-    if (x[i] != 0.0 && P[i + i * n] > 0.0) ix[k++] = i;
-  double *x_ = mat(k, 1), *P_ = mat(k, k), *Pp_ = mat(k, k), *H_ = mat(k, m);
+    if (x[i] != 0.0L && P[i + i * n] > 0.0L) ix[k++] = i;
+  long double *x_ = mat(k, 1), *P_ = mat(k, k), *Pp_ = mat(k, k), *H_ = mat(k, m);
   /* Compress array by removing zero elements to save computation time */
   for (int i = 0; i < k; i++) x_[i] = x[ix[i]];
   for (int j = 0; j < k; j++)
@@ -1624,20 +1644,20 @@ extern int filter(double *x, double *P, const double *H, const double *v, double
  *
  *   xs=Qs*(Qf^-1*xf+Qb^-1*xb), Qs=(Qf^-1+Qb^-1)^-1)
  *
- * args   : double *xf       I   forward solutions (n x 1)
- * args   : double *Qf       I   forward solutions covariance matrix (n x n)
- *          double *xb       I   backward solutions (n x 1)
- *          double *Qb       I   backward solutions covariance matrix (n x n)
+ * args   : long double *xf       I   forward solutions (n x 1)
+ * args   : long double *Qf       I   forward solutions covariance matrix (n x n)
+ *          long double *xb       I   backward solutions (n x 1)
+ *          long double *Qb       I   backward solutions covariance matrix (n x n)
  *          int    n         I   number of solutions
- *          double *xs       O   smoothed solutions (n x 1)
- *          double *Qs       O   smoothed solutions covariance matrix (n x n)
+ *          long double *xs       O   smoothed solutions (n x 1)
+ *          long double *Qs       O   smoothed solutions covariance matrix (n x n)
  * return : status (0:ok,0>:error)
  * notes  : see reference [4] 5.2
  *          matrix stored by column-major order (fortran convention)
  *-----------------------------------------------------------------------------*/
-extern int smoother(const double *xf, const double *Qf, const double *xb, const double *Qb, int n,
-                    double *xs, double *Qs) {
-  double *invQf = mat(n, n), *invQb = mat(n, n), *xx = mat(n, 1);
+extern int smoother(const long double *xf, const long double *Qf, const long double *xb,
+                    const long double *Qb, int n, long double *xs, long double *Qs) {
+  long double *invQf = mat(n, n), *invQb = mat(n, n), *xx = mat(n, 1);
 
   matcpy(invQf, Qf, n, n);
   matcpy(invQb, Qb, n, n);
@@ -1658,20 +1678,20 @@ extern int smoother(const double *xf, const double *Qf, const double *xb, const 
 }
 /* print matrix ----------------------------------------------------------------
  * print matrix to stdout
- * args   : double *A        I   matrix A (n x m)
+ * args   : long double *A        I   matrix A (n x m)
  *          int    n,m       I   number of rows and columns of A
  *          int    p,q       I   total columns, columns under decimal point
  *         (FILE  *fp        I   output file pointer)
  * return : none
  * notes  : matrix stored by column-major order (fortran convention)
  *-----------------------------------------------------------------------------*/
-extern void matfprint(const double A[], int n, int m, int p, int q, FILE *fp) {
+extern void matfprint(const long double A[], int n, int m, int p, int q, FILE *fp) {
   for (int i = 0; i < n; i++) {
-    for (int j = 0; j < m; j++) fprintf(fp, " %*.*f", p, q, A[i + j * n]);
+    for (int j = 0; j < m; j++) fprintf(fp, " %*.*Lf", p, q, A[i + j * n]);
     fprintf(fp, "\n");
   }
 }
-extern void matprint(const double A[], int n, int m, int p, int q) {
+extern void matprint(const long double A[], int n, int m, int p, int q) {
   matfprint(A, n, m, p, q, stdout);
 }
 
@@ -1866,12 +1886,12 @@ extern void rtkcatprintf(char *str, size_t size, const char *format, ...) {
  *          int    i,n       I   substring position and width
  * return : converted number (0.0:error)
  *-----------------------------------------------------------------------------*/
-extern double str2num(const char *s, int i, int n) {
+extern long double str2num(const char *s, int i, int n) {
   char str[256];
-  if (i < 0 || (int)sizeof(str) - 1 < n) return 0.0;
+  if (i < 0 || (int)sizeof(str) - 1 < n) return 0.0L;
   /* Special case i==0, skipping the strlen check.
    * Note: Could usefully use strnlen(s,i) here */
-  if (i > 0 && (int)strlen(s) < i) return 0.0;
+  if (i > 0 && (int)strlen(s) < i) return 0.0L;
 
   char *p = str;
   for (s += i; --n >= 0; s++) {
@@ -1880,7 +1900,7 @@ extern double str2num(const char *s, int i, int n) {
     *p++ = ((c | 0x20) == 'd') ? 'E' : c;
   }
   *p = '\0';
-  return strtod(str, NULL);
+  return strtold(str, NULL);
 }
 /* string to time --------------------------------------------------------------
  * convert substring in string to gtime_t struct
@@ -1895,20 +1915,20 @@ extern int str2time(const char *s, int i, int n, gtime_t *t) {
   char *p = str;
   for (s += i; *s && --n >= 0;) *p++ = *s++;
   *p = '\0';
-  double ep[6];
-  if (sscanf(str, "%lf %lf %lf %lf %lf %lf", ep, ep + 1, ep + 2, ep + 3, ep + 4, ep + 5) < 6)
+  long double ep[6];
+  if (sscanf(str, "%Lf %Lf %Lf %Lf %Lf %Lf", ep, ep + 1, ep + 2, ep + 3, ep + 4, ep + 5) < 6)
     return -1;
-  if (ep[0] < 100.0) ep[0] += ep[0] < 80.0 ? 2000.0 : 1900.0;
+  if (ep[0] < 100.0L) ep[0] += ep[0] < 80.0L ? 2000.0L : 1900.0L;
   *t = epoch2time(ep);
   return 0;
 }
 /* convert calendar day/time to time -------------------------------------------
  * convert calendar day/time to gtime_t struct
- * args   : double *ep       I   day/time {year,month,day,hour,min,sec}
+ * args   : long double *ep       I   day/time {year,month,day,hour,min,sec}
  * return : gtime_t struct
  * notes  : proper in 1970-2037 or 1970-2099 (64bit time_t)
  *-----------------------------------------------------------------------------*/
-extern gtime_t epoch2time(const double *ep) {
+extern gtime_t epoch2time(const long double *ep) {
   const int doy[] = {1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335};
   gtime_t time = {0};
   int year = (int)ep[0], mon = (int)ep[1], day = (int)ep[2];
@@ -1918,7 +1938,7 @@ extern gtime_t epoch2time(const double *ep) {
   /* leap year if year%4==0 in 1901-2099 */
   int days = (year - 1970) * 365 + (year - 1969) / 4 + doy[mon - 1] + day - 2 +
              (year % 4 == 0 && mon >= 3 ? 1 : 0);
-  int sec = (int)floor(ep[5]);
+  int sec = (int)floorl(ep[5]);
   time.time = (time_t)days * 86400 + (int)ep[3] * 3600 + (int)ep[4] * 60 + sec;
   time.sec = ep[5] - sec;
   return time;
@@ -1926,11 +1946,11 @@ extern gtime_t epoch2time(const double *ep) {
 /* time to calendar day/time ---------------------------------------------------
  * convert gtime_t struct to calendar day/time
  * args   : gtime_t t        I   gtime_t struct
- *          double *ep       O   day/time {year,month,day,hour,min,sec}
+ *          long double *ep       O   day/time {year,month,day,hour,min,sec}
  * return : none
  * notes  : proper in 1970-2037 or 1970-2099 (64bit time_t)
  *-----------------------------------------------------------------------------*/
-extern void time2epoch(gtime_t t, double *ep) {
+extern void time2epoch(gtime_t t, long double *ep) {
   const int mday[] = {/* # of days in a month */
                       31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 28, 31, 30,
                       31, 30, 31, 31, 30, 31, 30, 31, 31, 29, 31, 30, 31, 30, 31, 31,
@@ -1953,27 +1973,27 @@ extern void time2epoch(gtime_t t, double *ep) {
   ep[5] = sec % 60 + t.sec;
 }
 /* same as above but output limited to n decimals for formatted output */
-extern void time2epoch_n(gtime_t t, double *ep, int n) {
+extern void time2epoch_n(gtime_t t, long double *ep, int n) {
   if (n < 0)
     n = 0;
   else if (n > 12)
     n = 12;
-  if (1.0 - t.sec < 0.5 / pow(10.0, n)) {
+  if (1.0L - t.sec < 0.5L / powl(10.0L, n)) {
     t.time++;
-    t.sec = 0.0;
+    t.sec = 0.0L;
   };
   time2epoch(t, ep);
 }
 /* gps time to time ------------------------------------------------------------
  * convert week and tow in gps time to gtime_t struct
  * args   : int    week      I   week number in gps time
- *          double sec       I   time of week in gps time (s)
+ *          long double sec       I   time of week in gps time (s)
  * return : gtime_t struct
  *-----------------------------------------------------------------------------*/
-extern gtime_t gpst2time(int week, double sec) {
+extern gtime_t gpst2time(int week, long double sec) {
   gtime_t t = epoch2time(gpst0);
 
-  if (sec < -1E9 || 1E9 < sec) sec = 0.0;
+  if (sec < -1E9L || 1E9L < sec) sec = 0.0L;
   t.time += (time_t)86400 * 7 * week + (int)sec;
   t.sec = sec - (int)sec;
   return t;
@@ -1984,22 +2004,22 @@ extern gtime_t gpst2time(int week, double sec) {
  *          int    *week     IO  week number in gps time (NULL: no output)
  * return : time of week in gps time (s)
  *-----------------------------------------------------------------------------*/
-extern double time2gpst(gtime_t t, int *week) {
+extern long double time2gpst(gtime_t t, int *week) {
   gtime_t t0 = epoch2time(gpst0);
   time_t sec = t.time - t0.time;
   int w = (int)(sec / (86400 * 7));
 
   if (week) *week = w;
-  return (double)(sec - (double)w * 86400 * 7) + t.sec;
+  return (long double)(sec - (long double)w * 86400 * 7) + t.sec;
 }
 /* galileo system time to time -------------------------------------------------
  * convert week and tow in galileo system time (gst) to gtime_t struct
  * args   : int    week      I   week number in gst
- *          double sec       I   time of week in gst (s)
+ *          long double sec       I   time of week in gst (s)
  * return : gtime_t struct
  *-----------------------------------------------------------------------------*/
-extern gtime_t gst2time(int week, double sec) {
-  if (sec < -1E9 || 1E9 < sec) sec = 0.0;
+extern gtime_t gst2time(int week, long double sec) {
+  if (sec < -1E9L || 1E9L < sec) sec = 0.0L;
   gtime_t t = epoch2time(gst0);
   t.time += (time_t)86400 * 7 * week + (int)sec;
   t.sec = sec - (int)sec;
@@ -2011,22 +2031,22 @@ extern gtime_t gst2time(int week, double sec) {
  *          int    *week     IO  week number in gst (NULL: no output)
  * return : time of week in gst (s)
  *-----------------------------------------------------------------------------*/
-extern double time2gst(gtime_t t, int *week) {
+extern long double time2gst(gtime_t t, int *week) {
   gtime_t t0 = epoch2time(gst0);
   time_t sec = t.time - t0.time;
   int w = (int)(sec / (86400 * 7));
 
   if (week) *week = w;
-  return (double)(sec - (double)w * 86400 * 7) + t.sec;
+  return (long double)(sec - (long double)w * 86400 * 7) + t.sec;
 }
 /* beidou time (bdt) to time ---------------------------------------------------
  * convert week and tow in beidou time (bdt) to gtime_t struct
  * args   : int    week      I   week number in bdt
- *          double sec       I   time of week in bdt (s)
+ *          long double sec       I   time of week in bdt (s)
  * return : gtime_t struct
  *-----------------------------------------------------------------------------*/
-extern gtime_t bdt2time(int week, double sec) {
-  if (sec < -1E9 || 1E9 < sec) sec = 0.0;
+extern gtime_t bdt2time(int week, long double sec) {
+  if (sec < -1E9L || 1E9L < sec) sec = 0.0L;
 
   gtime_t t = epoch2time(bdt0);
   t.time += (time_t)86400 * 7 * week + (int)sec;
@@ -2039,23 +2059,23 @@ extern gtime_t bdt2time(int week, double sec) {
  *          int    *week     IO  week number in bdt (NULL: no output)
  * return : time of week in bdt (s)
  *-----------------------------------------------------------------------------*/
-extern double time2bdt(gtime_t t, int *week) {
+extern long double time2bdt(gtime_t t, int *week) {
   gtime_t t0 = epoch2time(bdt0);
   time_t sec = t.time - t0.time;
   int w = (int)(sec / (86400 * 7));
 
   if (week) *week = w;
-  return (double)(sec - (double)w * 86400 * 7) + t.sec;
+  return (long double)(sec - (long double)w * 86400 * 7) + t.sec;
 }
 /* get current time in utc -----------------------------------------------------
  * get current time in utc
  * args   : none
  * return : current time in utc
  *-----------------------------------------------------------------------------*/
-static double timeoffset_ = 0.0; /* time offset (s) */
+static long double timeoffset_ = 0.0L; /* time offset (s) */
 
 extern gtime_t timeget(void) {
-  double ep[6] = {0};
+  long double ep[6] = {0};
 #ifdef WIN32
   SYSTEMTIME ts;
 
@@ -2065,7 +2085,7 @@ extern gtime_t timeget(void) {
   ep[2] = ts.wDay;
   ep[3] = ts.wHour;
   ep[4] = ts.wMinute;
-  ep[5] = ts.wSecond + ts.wMilliseconds * 1E-3;
+  ep[5] = ts.wSecond + ts.wMilliseconds * 1E-3L;
 #else
   struct timeval tv;
   struct tm *tt;
@@ -2075,7 +2095,7 @@ extern gtime_t timeget(void) {
     ep[2] = tt->tm_mday;
     ep[3] = tt->tm_hour;
     ep[4] = tt->tm_min;
-    ep[5] = tt->tm_sec + tv.tv_usec * 1E-6;
+    ep[5] = tt->tm_sec + tv.tv_usec * 1E-6L;
   }
 #endif
   gtime_t time = epoch2time(ep);
@@ -2099,7 +2119,7 @@ extern void timeset(gtime_t t) { timeoffset_ += timediff(t, timeget()); }
  * args   : none
  * return : none
  *-----------------------------------------------------------------------------*/
-extern void timereset(void) { timeoffset_ = 0.0; }
+extern void timereset(void) { timeoffset_ = 0.0L; }
 /* read leap seconds table by text -------------------------------------------*/
 static int read_leaps_text(FILE *fp) {
   rewind(fp);
@@ -2128,9 +2148,9 @@ static int read_leaps_usno(FILE *fp) {
   int n = 0;
   while (fgets(buff, sizeof(buff), fp) && n < MAXLEAPS) {
     char month[32] = {'\0'};
-    double jd, tai_utc;
+    long double jd, tai_utc;
     int y, d;
-    if (sscanf(buff, "%d %31s %d =JD %lf TAI-UTC= %lf", &y, month, &d, &jd, &tai_utc) < 5) continue;
+    if (sscanf(buff, "%d %31s %d =JD %Lf TAI-UTC= %Lf", &y, month, &d, &jd, &tai_utc) < 5) continue;
     if (y < 1980) continue;
     int m;
     for (m = 1; m <= 12; m++)
@@ -2139,7 +2159,7 @@ static int read_leaps_usno(FILE *fp) {
     ls[n][0] = y;
     ls[n][1] = m;
     ls[n][2] = d;
-    ls[n++][6] = (char)(19.0 - tai_utc);
+    ls[n++][6] = (char)(19.0L - tai_utc);
   }
   for (int i = 0; i < n; i++)
     for (int j = 0; j < 7; j++) {
@@ -2168,7 +2188,7 @@ extern bool read_leaps(const char *file) {
     fclose(fp);
     return false;
   }
-  for (int i = 0; i < 7; i++) leaps[n][i] = 0.0;
+  for (int i = 0; i < 7; i++) leaps[n][i] = 0.0L;
   fclose(fp);
   return true;
 }
@@ -2181,7 +2201,7 @@ extern bool read_leaps(const char *file) {
 extern gtime_t gpst2utc(gtime_t t) {
   for (int i = 0; leaps[i][0] > 0; i++) {
     gtime_t tu = timeadd(t, leaps[i][6]);
-    if (timediff(tu, epoch2time(leaps[i])) >= 0.0) return tu;
+    if (timediff(tu, epoch2time(leaps[i])) >= 0.0L) return tu;
   }
   return t;
 }
@@ -2193,7 +2213,7 @@ extern gtime_t gpst2utc(gtime_t t) {
  *-----------------------------------------------------------------------------*/
 extern gtime_t utc2gpst(gtime_t t) {
   for (int i = 0; leaps[i][0] > 0; i++) {
-    if (timediff(t, epoch2time(leaps[i])) >= 0.0) return timeadd(t, -leaps[i][6]);
+    if (timediff(t, epoch2time(leaps[i])) >= 0.0L) return timeadd(t, -leaps[i][6]);
   }
   return t;
 }
@@ -2205,42 +2225,42 @@ extern gtime_t utc2gpst(gtime_t t) {
  *          no leap seconds in BDT
  *          ignore slight time offset under 100 ns
  *-----------------------------------------------------------------------------*/
-extern gtime_t gpst2bdt(gtime_t t) { return timeadd(t, -14.0); }
+extern gtime_t gpst2bdt(gtime_t t) { return timeadd(t, -14.0L); }
 /* bdt to gpstime --------------------------------------------------------------
  * convert bdt (beidou navigation satellite system time) to gpstime
  * args   : gtime_t t        I   time expressed in bdt
  * return : time expressed in gpstime
  * notes  : see gpst2bdt()
  *-----------------------------------------------------------------------------*/
-extern gtime_t bdt2gpst(gtime_t t) { return timeadd(t, 14.0); }
+extern gtime_t bdt2gpst(gtime_t t) { return timeadd(t, 14.0L); }
 /* time to day and sec -------------------------------------------------------*/
-static double time2sec(gtime_t time, gtime_t *day) {
-  double ep[6], sec;
+static long double time2sec(gtime_t time, gtime_t *day) {
+  long double ep[6], sec;
   time2epoch(time, ep);
-  sec = ep[3] * 3600.0 + ep[4] * 60.0 + ep[5];
-  ep[3] = ep[4] = ep[5] = 0.0;
+  sec = ep[3] * 3600.0L + ep[4] * 60.0L + ep[5];
+  ep[3] = ep[4] = ep[5] = 0.0L;
   *day = epoch2time(ep);
   return sec;
 }
 /* utc to gmst -----------------------------------------------------------------
  * convert utc to gmst (Greenwich mean sidereal time)
  * args   : gtime_t t        I   time expressed in utc
- *          double ut1_utc   I   UT1-UTC (s)
+ *          long double ut1_utc   I   UT1-UTC (s)
  * return : gmst (rad)
  *-----------------------------------------------------------------------------*/
-extern double utc2gmst(gtime_t t, double ut1_utc) {
-  const double ep2000[] = {2000, 1, 1, 12, 0, 0};
+extern long double utc2gmst(gtime_t t, long double ut1_utc) {
+  const long double ep2000[] = {2000, 1, 1, 12, 0, 0};
 
   gtime_t tut = timeadd(t, ut1_utc);
   gtime_t tut0;
-  double ut = time2sec(tut, &tut0);
-  double t1 = timediff(tut0, epoch2time(ep2000)) / 86400.0 / 36525.0;
-  double t2 = t1 * t1;
-  double t3 = t2 * t1;
-  double gmst0 = 24110.54841 + 8640184.812866 * t1 + 0.093104 * t2 - 6.2E-6 * t3;
-  double gmst = gmst0 + 1.002737909350795 * ut;
+  long double ut = time2sec(tut, &tut0);
+  long double t1 = timediff(tut0, epoch2time(ep2000)) / 86400.0L / 36525.0L;
+  long double t2 = t1 * t1;
+  long double t3 = t2 * t1;
+  long double gmst0 = 24110.54841L + 8640184.812866L * t1 + 0.093104L * t2 - 6.2E-6L * t3;
+  long double gmst = gmst0 + 1.002737909350795L * ut;
 
-  return fmod(gmst, 86400.0) * PI / 43200.0; /* 0 <= gmst <= 2*PI */
+  return fmodl(gmst, 86400.0L) * PI / 43200.0L; /* 0 <= gmst <= 2*PI */
 }
 /* time to string --------------------------------------------------------------
  * convert gtime_t struct to string
@@ -2254,14 +2274,14 @@ extern char *time2str(gtime_t t, char s[40], int n) {
     n = 0;
   else if (n > 12)
     n = 12;
-  if (1.0 - t.sec < 0.5 / pow(10.0, n)) {
+  if (1.0L - t.sec < 0.5L / powl(10.0L, n)) {
     t.time++;
-    t.sec = 0.0;
+    t.sec = 0.0L;
   };
-  double ep[6];
+  long double ep[6];
   time2epoch(t, ep);
-  rtksnprintf(s, 40, "%04.0f/%02.0f/%02.0f %02.0f:%02.0f:%0*.*f", ep[0], ep[1], ep[2], ep[3], ep[4],
-              n <= 0 ? 2 : n + 3, n <= 0 ? 0 : n, ep[5]);
+  rtksnprintf(s, 40, "%04.0Lf/%02.0Lf/%02.0Lf %02.0Lf:%02.0Lf:%0*.*Lf", ep[0], ep[1], ep[2], ep[3],
+              ep[4], n <= 0 ? 2 : n + 3, n <= 0 ? 0 : n, ep[5]);
   return s;
 }
 /* time to day of year ---------------------------------------------------------
@@ -2269,12 +2289,12 @@ extern char *time2str(gtime_t t, char s[40], int n) {
  * args   : gtime_t t        I   gtime_t struct
  * return : day of year (days)
  *-----------------------------------------------------------------------------*/
-extern double time2doy(gtime_t t) {
-  double ep[6];
+extern long double time2doy(gtime_t t) {
+  long double ep[6];
   time2epoch(t, ep);
-  ep[1] = ep[2] = 1.0;
-  ep[3] = ep[4] = ep[5] = 0.0;
-  return timediff(t, epoch2time(ep)) / 86400.0 + 1.0;
+  ep[1] = ep[2] = 1.0L;
+  ep[3] = ep[4] = ep[5] = 0.0L;
+  return timediff(t, epoch2time(ep)) / 86400.0L + 1.0L;
 }
 /* adjust gps week number ------------------------------------------------------
  * adjust gps week number using cpu time
@@ -2334,333 +2354,335 @@ extern void sleepms(int ms) {
 }
 /* convert degree to deg-min-sec -----------------------------------------------
  * convert degree to degree-minute-second
- * args   : double deg       I   degree
- *          double *dms      O   degree-minute-second {deg,min,sec}
+ * args   : long double deg       I   degree
+ *          long double *dms      O   degree-minute-second {deg,min,sec}
  *          int    ndec      I   number of decimals of second
  * return : none
  *-----------------------------------------------------------------------------*/
-extern void deg2dms(double deg, double *dms, int ndec) {
-  double a = fabs(deg);
-  dms[0] = floor(a);
-  a = (a - dms[0]) * 60.0;
-  dms[1] = floor(a);
-  a = (a - dms[1]) * 60.0;
-  double unit = pow(0.1, ndec);
-  dms[2] = floor(a / unit + 0.5) * unit;
-  if (dms[2] >= 60.0) {
-    dms[2] = 0.0;
-    dms[1] += 1.0;
-    if (dms[1] >= 60.0) {
-      dms[1] = 0.0;
-      dms[0] += 1.0;
+extern void deg2dms(long double deg, long double *dms, int ndec) {
+  long double a = fabsl(deg);
+  dms[0] = floorl(a);
+  a = (a - dms[0]) * 60.0L;
+  dms[1] = floorl(a);
+  a = (a - dms[1]) * 60.0L;
+  long double unit = powl(0.1L, ndec);
+  dms[2] = floorl(a / unit + 0.5L) * unit;
+  if (dms[2] >= 60.0L) {
+    dms[2] = 0.0L;
+    dms[1] += 1.0L;
+    if (dms[1] >= 60.0L) {
+      dms[1] = 0.0L;
+      dms[0] += 1.0L;
     }
   }
-  double sign = deg < 0.0 ? -1.0 : 1.0;
+  long double sign = deg < 0.0L ? -1.0L : 1.0L;
   dms[0] *= sign;
 }
 /* convert deg-min-sec to degree -----------------------------------------------
  * convert degree-minute-second to degree
- * args   : double *dms      I   degree-minute-second {deg,min,sec}
+ * args   : long double *dms      I   degree-minute-second {deg,min,sec}
  * return : degree
  *-----------------------------------------------------------------------------*/
-extern double dms2deg(const double *dms) {
-  double sign = dms[0] < 0.0 ? -1.0 : 1.0;
-  return sign * (fabs(dms[0]) + dms[1] / 60.0 + dms[2] / 3600.0);
+extern long double dms2deg(const long double *dms) {
+  long double sign = dms[0] < 0.0L ? -1.0L : 1.0L;
+  return sign * (fabsl(dms[0]) + dms[1] / 60.0L + dms[2] / 3600.0L);
 }
 /* transform ecef to geodetic position -----------------------------------------
  * transform ecef position to geodetic position
- * args   : double *r        I   ecef position {x,y,z} (m)
- *          double *pos      O   geodetic position {lat,lon,h} (rad,m)
+ * args   : long double *r        I   ecef position {x,y,z} (m)
+ *          long double *pos      O   geodetic position {lat,lon,h} (rad,m)
  * return : none
  * notes  : WGS84, ellipsoidal height
  *-----------------------------------------------------------------------------*/
-extern void ecef2pos(const double *r, double *pos) {
-  double e2 = FE_WGS84 * (2.0 - FE_WGS84), r2 = dot2(r, r), v = RE_WGS84;
-  double z = r[2];
-  for (double zk = 0.0; fabs(z - zk) >= 1E-8;) {
+extern void ecef2pos(const long double *r, long double *pos) {
+  long double e2 = FE_WGS84 * (2.0L - FE_WGS84), r2 = dot2(r, r), v = RE_WGS84;
+  long double z = r[2];
+  for (long double zk = 0.0L; fabsl(z - zk) >= 1E-12L;) {
     zk = z;
-    double sinp = z / sqrt(r2 + z * z);
-    v = RE_WGS84 / sqrt(1.0 - e2 * sinp * sinp);
+    long double sinp = z / sqrtl(r2 + z * z);
+    v = RE_WGS84 / sqrtl(1.0L - e2 * sinp * sinp);
     z = r[2] + v * e2 * sinp;
   }
-  pos[0] = r2 > 1E-12 ? atan(z / sqrt(r2)) : (r[2] > 0.0 ? PI / 2.0 : -PI / 2.0);
-  pos[1] = r2 > 1E-12 ? atan2(r[1], r[0]) : 0.0;
-  pos[2] = sqrt(r2 + z * z) - v;
+  pos[0] = r2 > 1E-12L ? atanl(z / sqrtl(r2)) : (r[2] > 0.0L ? PI / 2.0L : -PI / 2.0L);
+  pos[1] = r2 > 1E-12L ? atan2l(r[1], r[0]) : 0.0L;
+  pos[2] = sqrtl(r2 + z * z) - v;
 }
 /* transform geodetic to ecef position -----------------------------------------
  * transform geodetic position to ecef position
- * args   : double *pos      I   geodetic position {lat,lon,h} (rad,m)
- *          double *r        O   ecef position {x,y,z} (m)
+ * args   : long double *pos      I   geodetic position {lat,lon,h} (rad,m)
+ *          long double *r        O   ecef position {x,y,z} (m)
  * return : none
  * notes  : WGS84, ellipsoidal height
  *-----------------------------------------------------------------------------*/
-extern void pos2ecef(const double *pos, double *r) {
-  double sinp = sin(pos[0]), cosp = cos(pos[0]), sinl = sin(pos[1]), cosl = cos(pos[1]);
-  double e2 = FE_WGS84 * (2.0 - FE_WGS84), v = RE_WGS84 / sqrt(1.0 - e2 * sinp * sinp);
+extern void pos2ecef(const long double *pos, long double *r) {
+  long double sinp = sinl(pos[0]), cosp = cosl(pos[0]), sinll = sinl(pos[1]), cosll = cosl(pos[1]);
+  long double e2 = FE_WGS84 * (2.0L - FE_WGS84), v = RE_WGS84 / sqrtl(1.0L - e2 * sinp * sinp);
 
-  r[0] = (v + pos[2]) * cosp * cosl;
-  r[1] = (v + pos[2]) * cosp * sinl;
-  r[2] = (v * (1.0 - e2) + pos[2]) * sinp;
+  r[0] = (v + pos[2]) * cosp * cosll;
+  r[1] = (v + pos[2]) * cosp * sinll;
+  r[2] = (v * (1.0L - e2) + pos[2]) * sinp;
 }
 /* ecef to local coordinate transformation matrix ------------------------------
  * compute ecef to local coordinate transformation matrix
- * args   : double *pos      I   geodetic position {lat,lon} (rad)
- *          double *E        O   ecef to local coord transformation matrix (3x3)
+ * args   : long double *pos      I   geodetic position {lat,lon} (rad)
+ *          long double *E        O   ecef to local coord transformation matrix (3x3)
  * return : none
  * notes  : matrix stored by column-major order (fortran convention)
  *-----------------------------------------------------------------------------*/
-extern void xyz2enu(const double *pos, double *E) {
-  double sinp = sin(pos[0]), cosp = cos(pos[0]), sinl = sin(pos[1]), cosl = cos(pos[1]);
+extern void xyz2enu(const long double *pos, long double *E) {
+  long double sinp = sinl(pos[0]), cosp = cosl(pos[0]), sinll = sinl(pos[1]), cosll = cosl(pos[1]);
 
-  E[0] = -sinl;
-  E[3] = cosl;
-  E[6] = 0.0;
-  E[1] = -sinp * cosl;
-  E[4] = -sinp * sinl;
+  E[0] = -sinll;
+  E[3] = cosll;
+  E[6] = 0.0L;
+  E[1] = -sinp * cosll;
+  E[4] = -sinp * sinll;
   E[7] = cosp;
-  E[2] = cosp * cosl;
-  E[5] = cosp * sinl;
+  E[2] = cosp * cosll;
+  E[5] = cosp * sinll;
   E[8] = sinp;
 }
 /* transform ecef vector to local tangential coordinate -------------------------
  * transform ecef vector to local tangential coordinate
- * args   : double *pos      I   geodetic position {lat,lon} (rad)
- *          double *r        I   vector in ecef coordinate {x,y,z}
- *          double *e        O   vector in local tangential coordinate {e,n,u}
+ * args   : long double *pos      I   geodetic position {lat,lon} (rad)
+ *          long double *r        I   vector in ecef coordinate {x,y,z}
+ *          long double *e        O   vector in local tangential coordinate {e,n,u}
  * return : none
  *-----------------------------------------------------------------------------*/
-extern void ecef2enu(const double *pos, const double *r, double *e) {
-  double E[9];
+extern void ecef2enu(const long double *pos, const long double *r, long double *e) {
+  long double E[9];
   xyz2enu(pos, E);
   matmul("NN", 3, 1, 3, E, r, e);
 }
 /* transform local vector to ecef coordinate -----------------------------------
  * transform local tangential coordinate vector to ecef
- * args   : double *pos      I   geodetic position {lat,lon} (rad)
- *          double *e        I   vector in local tangential coordinate {e,n,u}
- *          double *r        O   vector in ecef coordinate {x,y,z}
+ * args   : long double *pos      I   geodetic position {lat,lon} (rad)
+ *          long double *e        I   vector in local tangential coordinate {e,n,u}
+ *          long double *r        O   vector in ecef coordinate {x,y,z}
  * return : none
  *-----------------------------------------------------------------------------*/
-extern void enu2ecef(const double *pos, const double *e, double *r) {
-  double E[9];
+extern void enu2ecef(const long double *pos, const long double *e, long double *r) {
+  long double E[9];
   xyz2enu(pos, E);
   matmul("TN", 3, 1, 3, E, e, r);
 }
 /* transform covariance to local tangential coordinate --------------------------
  * transform ecef covariance to local tangential coordinate
- * args   : double *pos      I   geodetic position {lat,lon} (rad)
- *          double *P        I   covariance in ecef coordinate
- *          double *Q        O   covariance in local tangential coordinate
+ * args   : long double *pos      I   geodetic position {lat,lon} (rad)
+ *          long double *P        I   covariance in ecef coordinate
+ *          long double *Q        O   covariance in local tangential coordinate
  * return : none
  *-----------------------------------------------------------------------------*/
-extern void covenu(const double *pos, const double *P, double *Q) {
-  double E[9];
+extern void covenu(const long double *pos, const long double *P, long double *Q) {
+  long double E[9];
   xyz2enu(pos, E);
-  double EP[9];
+  long double EP[9];
   matmul("NN", 3, 3, 3, E, P, EP);
   matmul("NT", 3, 3, 3, EP, E, Q);
 }
 /* transform local enu coordinate covariance to xyz-ecef -----------------------
  * transform local enu covariance to xyz-ecef coordinate
- * args   : double *pos      I   geodetic position {lat,lon} (rad)
- *          double *Q        I   covariance in local enu coordinate
- *          double *P        O   covariance in xyz-ecef coordinate
+ * args   : long double *pos      I   geodetic position {lat,lon} (rad)
+ *          long double *Q        I   covariance in local enu coordinate
+ *          long double *P        O   covariance in xyz-ecef coordinate
  * return : none
  *-----------------------------------------------------------------------------*/
-extern void covecef(const double *pos, const double *Q, double *P) {
-  double E[9];
+extern void covecef(const long double *pos, const long double *Q, long double *P) {
+  long double E[9];
   xyz2enu(pos, E);
-  double EQ[9];
+  long double EQ[9];
   matmul("TN", 3, 3, 3, E, Q, EQ);
   matmul("NN", 3, 3, 3, EQ, E, P);
 }
 /* coordinate rotation matrix ------------------------------------------------*/
-#define Rx(t, X)                             \
-  do {                                       \
-    (X)[0] = 1.0;                            \
-    (X)[1] = (X)[2] = (X)[3] = (X)[6] = 0.0; \
-    (X)[4] = (X)[8] = cos(t);                \
-    (X)[7] = sin(t);                         \
-    (X)[5] = -(X)[7];                        \
+#define Rx(t, X)                              \
+  do {                                        \
+    (X)[0] = 1.0L;                            \
+    (X)[1] = (X)[2] = (X)[3] = (X)[6] = 0.0L; \
+    (X)[4] = (X)[8] = cosl(t);                \
+    (X)[7] = sinl(t);                         \
+    (X)[5] = -(X)[7];                         \
   } while (0)
 
-#define Ry(t, X)                             \
-  do {                                       \
-    (X)[4] = 1.0;                            \
-    (X)[1] = (X)[3] = (X)[5] = (X)[7] = 0.0; \
-    (X)[0] = (X)[8] = cos(t);                \
-    (X)[2] = sin(t);                         \
-    (X)[6] = -(X)[2];                        \
+#define Ry(t, X)                              \
+  do {                                        \
+    (X)[4] = 1.0L;                            \
+    (X)[1] = (X)[3] = (X)[5] = (X)[7] = 0.0L; \
+    (X)[0] = (X)[8] = cosl(t);                \
+    (X)[2] = sinl(t);                         \
+    (X)[6] = -(X)[2];                         \
   } while (0)
 
-#define Rz(t, X)                             \
-  do {                                       \
-    (X)[8] = 1.0;                            \
-    (X)[2] = (X)[5] = (X)[6] = (X)[7] = 0.0; \
-    (X)[0] = (X)[4] = cos(t);                \
-    (X)[3] = sin(t);                         \
-    (X)[1] = -(X)[3];                        \
+#define Rz(t, X)                              \
+  do {                                        \
+    (X)[8] = 1.0L;                            \
+    (X)[2] = (X)[5] = (X)[6] = (X)[7] = 0.0L; \
+    (X)[0] = (X)[4] = cosl(t);                \
+    (X)[3] = sinl(t);                         \
+    (X)[1] = -(X)[3];                         \
   } while (0)
 
 /* astronomical arguments: f={l,l',F,D,OMG} (rad) ----------------------------*/
-static void ast_args(double t, double *f) {
-  static const double fc[][5] = {/* coefficients for iau 1980 nutation */
-                                 {134.96340251, 1717915923.2178, 31.8792, 0.051635, -0.00024470},
-                                 {357.52910918, 129596581.0481, -0.5532, 0.000136, -0.00001149},
-                                 {93.27209062, 1739527262.8478, -12.7512, -0.001037, 0.00000417},
-                                 {297.85019547, 1602961601.2090, -6.3706, 0.006593, -0.00003169},
-                                 {125.04455501, -6962890.2665, 7.4722, 0.007702, -0.00005939}};
-  double tt[4];
+static void ast_args(long double t, long double *f) {
+  static const long double fc[][5] = {
+      /* coefficients for iau 1980 nutation */
+      {134.96340251L, 1717915923.2178L, 31.8792L, 0.051635L, -0.00024470L},
+      {357.52910918L, 129596581.0481L, -0.5532L, 0.000136L, -0.00001149L},
+      {93.27209062L, 1739527262.8478L, -12.7512L, -0.001037L, 0.00000417L},
+      {297.85019547L, 1602961601.2090L, -6.3706L, 0.006593L, -0.00003169L},
+      {125.04455501L, -6962890.2665L, 7.4722L, 0.007702L, -0.00005939L}};
+  long double tt[4];
   tt[0] = t;
   for (int i = 1; i < 4; i++) tt[i] = tt[i - 1] * t;
 
   for (int i = 0; i < 5; i++) {
-    f[i] = fc[i][0] * 3600.0;
+    f[i] = fc[i][0] * 3600.0L;
     for (int j = 0; j < 4; j++) f[i] += fc[i][j + 1] * tt[j];
-    f[i] = fmod(f[i] * AS2R, 2.0 * PI);
+    f[i] = fmodl(f[i] * AS2R, 2.0L * PI);
   }
 }
 /* iau 1980 nutation ---------------------------------------------------------*/
-static void nut_iau1980(double t, const double *f, double *dpsi, double *deps) {
-  static const double nut[106][10] = {{0, 0, 0, 0, 1, -6798.4, -171996, -174.2, 92025, 8.9},
-                                      {0, 0, 2, -2, 2, 182.6, -13187, -1.6, 5736, -3.1},
-                                      {0, 0, 2, 0, 2, 13.7, -2274, -0.2, 977, -0.5},
-                                      {0, 0, 0, 0, 2, -3399.2, 2062, 0.2, -895, 0.5},
-                                      {0, -1, 0, 0, 0, -365.3, -1426, 3.4, 54, -0.1},
-                                      {1, 0, 0, 0, 0, 27.6, 712, 0.1, -7, 0.0},
-                                      {0, 1, 2, -2, 2, 121.7, -517, 1.2, 224, -0.6},
-                                      {0, 0, 2, 0, 1, 13.6, -386, -0.4, 200, 0.0},
-                                      {1, 0, 2, 0, 2, 9.1, -301, 0.0, 129, -0.1},
-                                      {0, -1, 2, -2, 2, 365.2, 217, -0.5, -95, 0.3},
-                                      {-1, 0, 0, 2, 0, 31.8, 158, 0.0, -1, 0.0},
-                                      {0, 0, 2, -2, 1, 177.8, 129, 0.1, -70, 0.0},
-                                      {-1, 0, 2, 0, 2, 27.1, 123, 0.0, -53, 0.0},
-                                      {1, 0, 0, 0, 1, 27.7, 63, 0.1, -33, 0.0},
-                                      {0, 0, 0, 2, 0, 14.8, 63, 0.0, -2, 0.0},
-                                      {-1, 0, 2, 2, 2, 9.6, -59, 0.0, 26, 0.0},
-                                      {-1, 0, 0, 0, 1, -27.4, -58, -0.1, 32, 0.0},
-                                      {1, 0, 2, 0, 1, 9.1, -51, 0.0, 27, 0.0},
-                                      {-2, 0, 0, 2, 0, -205.9, -48, 0.0, 1, 0.0},
-                                      {-2, 0, 2, 0, 1, 1305.5, 46, 0.0, -24, 0.0},
-                                      {0, 0, 2, 2, 2, 7.1, -38, 0.0, 16, 0.0},
-                                      {2, 0, 2, 0, 2, 6.9, -31, 0.0, 13, 0.0},
-                                      {2, 0, 0, 0, 0, 13.8, 29, 0.0, -1, 0.0},
-                                      {1, 0, 2, -2, 2, 23.9, 29, 0.0, -12, 0.0},
-                                      {0, 0, 2, 0, 0, 13.6, 26, 0.0, -1, 0.0},
-                                      {0, 0, 2, -2, 0, 173.3, -22, 0.0, 0, 0.0},
-                                      {-1, 0, 2, 0, 1, 27.0, 21, 0.0, -10, 0.0},
-                                      {0, 2, 0, 0, 0, 182.6, 17, -0.1, 0, 0.0},
-                                      {0, 2, 2, -2, 2, 91.3, -16, 0.1, 7, 0.0},
-                                      {-1, 0, 0, 2, 1, 32.0, 16, 0.0, -8, 0.0},
-                                      {0, 1, 0, 0, 1, 386.0, -15, 0.0, 9, 0.0},
-                                      {1, 0, 0, -2, 1, -31.7, -13, 0.0, 7, 0.0},
-                                      {0, -1, 0, 0, 1, -346.6, -12, 0.0, 6, 0.0},
-                                      {2, 0, -2, 0, 0, -1095.2, 11, 0.0, 0, 0.0},
-                                      {-1, 0, 2, 2, 1, 9.5, -10, 0.0, 5, 0.0},
-                                      {1, 0, 2, 2, 2, 5.6, -8, 0.0, 3, 0.0},
-                                      {0, -1, 2, 0, 2, 14.2, -7, 0.0, 3, 0.0},
-                                      {0, 0, 2, 2, 1, 7.1, -7, 0.0, 3, 0.0},
-                                      {1, 1, 0, -2, 0, -34.8, -7, 0.0, 0, 0.0},
-                                      {0, 1, 2, 0, 2, 13.2, 7, 0.0, -3, 0.0},
-                                      {-2, 0, 0, 2, 1, -199.8, -6, 0.0, 3, 0.0},
-                                      {0, 0, 0, 2, 1, 14.8, -6, 0.0, 3, 0.0},
-                                      {2, 0, 2, -2, 2, 12.8, 6, 0.0, -3, 0.0},
-                                      {1, 0, 0, 2, 0, 9.6, 6, 0.0, 0, 0.0},
-                                      {1, 0, 2, -2, 1, 23.9, 6, 0.0, -3, 0.0},
-                                      {0, 0, 0, -2, 1, -14.7, -5, 0.0, 3, 0.0},
-                                      {0, -1, 2, -2, 1, 346.6, -5, 0.0, 3, 0.0},
-                                      {2, 0, 2, 0, 1, 6.9, -5, 0.0, 3, 0.0},
-                                      {1, -1, 0, 0, 0, 29.8, 5, 0.0, 0, 0.0},
-                                      {1, 0, 0, -1, 0, 411.8, -4, 0.0, 0, 0.0},
-                                      {0, 0, 0, 1, 0, 29.5, -4, 0.0, 0, 0.0},
-                                      {0, 1, 0, -2, 0, -15.4, -4, 0.0, 0, 0.0},
-                                      {1, 0, -2, 0, 0, -26.9, 4, 0.0, 0, 0.0},
-                                      {2, 0, 0, -2, 1, 212.3, 4, 0.0, -2, 0.0},
-                                      {0, 1, 2, -2, 1, 119.6, 4, 0.0, -2, 0.0},
-                                      {1, 1, 0, 0, 0, 25.6, -3, 0.0, 0, 0.0},
-                                      {1, -1, 0, -1, 0, -3232.9, -3, 0.0, 0, 0.0},
-                                      {-1, -1, 2, 2, 2, 9.8, -3, 0.0, 1, 0.0},
-                                      {0, -1, 2, 2, 2, 7.2, -3, 0.0, 1, 0.0},
-                                      {1, -1, 2, 0, 2, 9.4, -3, 0.0, 1, 0.0},
-                                      {3, 0, 2, 0, 2, 5.5, -3, 0.0, 1, 0.0},
-                                      {-2, 0, 2, 0, 2, 1615.7, -3, 0.0, 1, 0.0},
-                                      {1, 0, 2, 0, 0, 9.1, 3, 0.0, 0, 0.0},
-                                      {-1, 0, 2, 4, 2, 5.8, -2, 0.0, 1, 0.0},
-                                      {1, 0, 0, 0, 2, 27.8, -2, 0.0, 1, 0.0},
-                                      {-1, 0, 2, -2, 1, -32.6, -2, 0.0, 1, 0.0},
-                                      {0, -2, 2, -2, 1, 6786.3, -2, 0.0, 1, 0.0},
-                                      {-2, 0, 0, 0, 1, -13.7, -2, 0.0, 1, 0.0},
-                                      {2, 0, 0, 0, 1, 13.8, 2, 0.0, -1, 0.0},
-                                      {3, 0, 0, 0, 0, 9.2, 2, 0.0, 0, 0.0},
-                                      {1, 1, 2, 0, 2, 8.9, 2, 0.0, -1, 0.0},
-                                      {0, 0, 2, 1, 2, 9.3, 2, 0.0, -1, 0.0},
-                                      {1, 0, 0, 2, 1, 9.6, -1, 0.0, 0, 0.0},
-                                      {1, 0, 2, 2, 1, 5.6, -1, 0.0, 1, 0.0},
-                                      {1, 1, 0, -2, 1, -34.7, -1, 0.0, 0, 0.0},
-                                      {0, 1, 0, 2, 0, 14.2, -1, 0.0, 0, 0.0},
-                                      {0, 1, 2, -2, 0, 117.5, -1, 0.0, 0, 0.0},
-                                      {0, 1, -2, 2, 0, -329.8, -1, 0.0, 0, 0.0},
-                                      {1, 0, -2, 2, 0, 23.8, -1, 0.0, 0, 0.0},
-                                      {1, 0, -2, -2, 0, -9.5, -1, 0.0, 0, 0.0},
-                                      {1, 0, 2, -2, 0, 32.8, -1, 0.0, 0, 0.0},
-                                      {1, 0, 0, -4, 0, -10.1, -1, 0.0, 0, 0.0},
-                                      {2, 0, 0, -4, 0, -15.9, -1, 0.0, 0, 0.0},
-                                      {0, 0, 2, 4, 2, 4.8, -1, 0.0, 0, 0.0},
-                                      {0, 0, 2, -1, 2, 25.4, -1, 0.0, 0, 0.0},
-                                      {-2, 0, 2, 4, 2, 7.3, -1, 0.0, 1, 0.0},
-                                      {2, 0, 2, 2, 2, 4.7, -1, 0.0, 0, 0.0},
-                                      {0, -1, 2, 0, 1, 14.2, -1, 0.0, 0, 0.0},
-                                      {0, 0, -2, 0, 1, -13.6, -1, 0.0, 0, 0.0},
-                                      {0, 0, 4, -2, 2, 12.7, 1, 0.0, 0, 0.0},
-                                      {0, 1, 0, 0, 2, 409.2, 1, 0.0, 0, 0.0},
-                                      {1, 1, 2, -2, 2, 22.5, 1, 0.0, -1, 0.0},
-                                      {3, 0, 2, -2, 2, 8.7, 1, 0.0, 0, 0.0},
-                                      {-2, 0, 2, 2, 2, 14.6, 1, 0.0, -1, 0.0},
-                                      {-1, 0, 0, 0, 2, -27.3, 1, 0.0, -1, 0.0},
-                                      {0, 0, -2, 2, 1, -169.0, 1, 0.0, 0, 0.0},
-                                      {0, 1, 2, 0, 1, 13.1, 1, 0.0, 0, 0.0},
-                                      {-1, 0, 4, 0, 2, 9.1, 1, 0.0, 0, 0.0},
-                                      {2, 1, 0, -2, 0, 131.7, 1, 0.0, 0, 0.0},
-                                      {2, 0, 0, 2, 0, 7.1, 1, 0.0, 0, 0.0},
-                                      {2, 0, 2, -2, 1, 12.8, 1, 0.0, -1, 0.0},
-                                      {2, 0, -2, 0, 1, -943.2, 1, 0.0, 0, 0.0},
-                                      {1, -1, 0, -2, 0, -29.3, 1, 0.0, 0, 0.0},
-                                      {-1, 0, 0, 1, 1, -388.3, 1, 0.0, 0, 0.0},
-                                      {-1, -1, 0, 2, 1, 35.0, 1, 0.0, 0, 0.0},
-                                      {0, 1, 0, 1, 0, 27.3, 1, 0.0, 0, 0.0}};
+static void nut_iau1980(long double t, const long double *f, long double *dpsi, long double *deps) {
+  static const long double nut[106][10] = {
+      {0L, 0L, 0L, 0L, 1L, -6798.4L, -171996L, -174.2L, 92025L, 8.9L},
+      {0L, 0L, 2L, -2L, 2L, 182.6L, -13187L, -1.6L, 5736L, -3.1L},
+      {0L, 0L, 2L, 0L, 2L, 13.7L, -2274L, -0.2L, 977L, -0.5L},
+      {0L, 0L, 0L, 0L, 2L, -3399.2L, 2062L, 0.2L, -895L, 0.5L},
+      {0L, -1L, 0L, 0L, 0L, -365.3L, -1426L, 3.4L, 54L, -0.1L},
+      {1L, 0L, 0L, 0L, 0L, 27.6L, 712L, 0.1L, -7L, 0.0L},
+      {0L, 1L, 2L, -2L, 2L, 121.7L, -517L, 1.2L, 224L, -0.6L},
+      {0L, 0L, 2L, 0L, 1L, 13.6L, -386L, -0.4L, 200L, 0.0L},
+      {1L, 0L, 2L, 0L, 2L, 9.1L, -301L, 0.0L, 129L, -0.1L},
+      {0L, -1L, 2L, -2L, 2L, 365.2L, 217L, -0.5L, -95L, 0.3L},
+      {-1L, 0L, 0L, 2L, 0L, 31.8L, 158L, 0.0L, -1L, 0.0L},
+      {0L, 0L, 2L, -2L, 1L, 177.8L, 129L, 0.1L, -70L, 0.0L},
+      {-1L, 0L, 2L, 0L, 2L, 27.1L, 123L, 0.0L, -53L, 0.0L},
+      {1L, 0L, 0L, 0L, 1L, 27.7L, 63L, 0.1L, -33L, 0.0L},
+      {0L, 0L, 0L, 2L, 0L, 14.8L, 63L, 0.0L, -2L, 0.0L},
+      {-1L, 0L, 2L, 2L, 2L, 9.6L, -59L, 0.0L, 26L, 0.0L},
+      {-1L, 0L, 0L, 0L, 1L, -27.4L, -58L, -0.1L, 32L, 0.0L},
+      {1L, 0L, 2L, 0L, 1L, 9.1L, -51L, 0.0L, 27L, 0.0L},
+      {-2L, 0L, 0L, 2L, 0L, -205.9L, -48L, 0.0L, 1L, 0.0L},
+      {-2L, 0L, 2L, 0L, 1L, 1305.5L, 46L, 0.0L, -24L, 0.0L},
+      {0L, 0L, 2L, 2L, 2L, 7.1L, -38L, 0.0L, 16L, 0.0L},
+      {2L, 0L, 2L, 0L, 2L, 6.9L, -31L, 0.0L, 13L, 0.0L},
+      {2L, 0L, 0L, 0L, 0L, 13.8L, 29L, 0.0L, -1L, 0.0L},
+      {1L, 0L, 2L, -2L, 2L, 23.9L, 29L, 0.0L, -12L, 0.0L},
+      {0L, 0L, 2L, 0L, 0L, 13.6L, 26L, 0.0L, -1L, 0.0L},
+      {0L, 0L, 2L, -2L, 0L, 173.3L, -22L, 0.0L, 0L, 0.0L},
+      {-1L, 0L, 2L, 0L, 1L, 27.0L, 21L, 0.0L, -10L, 0.0L},
+      {0L, 2L, 0L, 0L, 0L, 182.6L, 17L, -0.1L, 0L, 0.0L},
+      {0L, 2L, 2L, -2L, 2L, 91.3L, -16L, 0.1L, 7L, 0.0L},
+      {-1L, 0L, 0L, 2L, 1L, 32.0L, 16L, 0.0L, -8L, 0.0L},
+      {0L, 1L, 0L, 0L, 1L, 386.0L, -15L, 0.0L, 9L, 0.0L},
+      {1L, 0L, 0L, -2L, 1L, -31.7L, -13L, 0.0L, 7L, 0.0L},
+      {0L, -1L, 0L, 0L, 1L, -346.6L, -12L, 0.0L, 6L, 0.0L},
+      {2L, 0L, -2L, 0L, 0L, -1095.2L, 11L, 0.0L, 0L, 0.0L},
+      {-1L, 0L, 2L, 2L, 1L, 9.5L, -10L, 0.0L, 5L, 0.0L},
+      {1L, 0L, 2L, 2L, 2L, 5.6L, -8L, 0.0L, 3L, 0.0L},
+      {0L, -1L, 2L, 0L, 2L, 14.2L, -7L, 0.0L, 3L, 0.0L},
+      {0L, 0L, 2L, 2L, 1L, 7.1L, -7L, 0.0L, 3L, 0.0L},
+      {1L, 1L, 0L, -2L, 0L, -34.8L, -7L, 0.0L, 0L, 0.0L},
+      {0L, 1L, 2L, 0L, 2L, 13.2L, 7L, 0.0L, -3L, 0.0L},
+      {-2L, 0L, 0L, 2L, 1L, -199.8L, -6L, 0.0L, 3L, 0.0L},
+      {0L, 0L, 0L, 2L, 1L, 14.8L, -6L, 0.0L, 3L, 0.0L},
+      {2L, 0L, 2L, -2L, 2L, 12.8L, 6L, 0.0L, -3L, 0.0L},
+      {1L, 0L, 0L, 2L, 0L, 9.6L, 6L, 0.0L, 0L, 0.0L},
+      {1L, 0L, 2L, -2L, 1L, 23.9L, 6L, 0.0L, -3L, 0.0L},
+      {0L, 0L, 0L, -2L, 1L, -14.7L, -5L, 0.0L, 3L, 0.0L},
+      {0L, -1L, 2L, -2L, 1L, 346.6L, -5L, 0.0L, 3L, 0.0L},
+      {2L, 0L, 2L, 0L, 1L, 6.9L, -5L, 0.0L, 3L, 0.0L},
+      {1L, -1L, 0L, 0L, 0L, 29.8L, 5L, 0.0L, 0L, 0.0L},
+      {1L, 0L, 0L, -1L, 0L, 411.8L, -4L, 0.0L, 0L, 0.0L},
+      {0L, 0L, 0L, 1L, 0L, 29.5L, -4L, 0.0L, 0L, 0.0L},
+      {0L, 1L, 0L, -2L, 0L, -15.4L, -4L, 0.0L, 0L, 0.0L},
+      {1L, 0L, -2L, 0L, 0L, -26.9L, 4L, 0.0L, 0L, 0.0L},
+      {2L, 0L, 0L, -2L, 1L, 212.3L, 4L, 0.0L, -2L, 0.0L},
+      {0L, 1L, 2L, -2L, 1L, 119.6L, 4L, 0.0L, -2L, 0.0L},
+      {1L, 1L, 0L, 0L, 0L, 25.6L, -3L, 0.0L, 0L, 0.0L},
+      {1L, -1L, 0L, -1L, 0L, -3232.9L, -3L, 0.0L, 0L, 0.0L},
+      {-1L, -1L, 2L, 2L, 2L, 9.8L, -3L, 0.0L, 1L, 0.0L},
+      {0L, -1L, 2L, 2L, 2L, 7.2L, -3L, 0.0L, 1L, 0.0L},
+      {1L, -1L, 2L, 0L, 2L, 9.4L, -3L, 0.0L, 1L, 0.0L},
+      {3L, 0L, 2L, 0L, 2L, 5.5L, -3L, 0.0L, 1L, 0.0L},
+      {-2L, 0L, 2L, 0L, 2L, 1615.7L, -3L, 0.0L, 1L, 0.0L},
+      {1L, 0L, 2L, 0L, 0L, 9.1L, 3L, 0.0L, 0L, 0.0L},
+      {-1L, 0L, 2L, 4L, 2L, 5.8L, -2L, 0.0L, 1L, 0.0L},
+      {1L, 0L, 0L, 0L, 2L, 27.8L, -2L, 0.0L, 1L, 0.0L},
+      {-1L, 0L, 2L, -2L, 1L, -32.6L, -2L, 0.0L, 1L, 0.0L},
+      {0L, -2L, 2L, -2L, 1L, 6786.3L, -2L, 0.0L, 1L, 0.0L},
+      {-2L, 0L, 0L, 0L, 1L, -13.7L, -2L, 0.0L, 1L, 0.0L},
+      {2L, 0L, 0L, 0L, 1L, 13.8L, 2L, 0.0L, -1L, 0.0L},
+      {3L, 0L, 0L, 0L, 0L, 9.2L, 2L, 0.0L, 0L, 0.0L},
+      {1L, 1L, 2L, 0L, 2L, 8.9L, 2L, 0.0L, -1L, 0.0L},
+      {0L, 0L, 2L, 1L, 2L, 9.3L, 2L, 0.0L, -1L, 0.0L},
+      {1L, 0L, 0L, 2L, 1L, 9.6L, -1L, 0.0L, 0L, 0.0L},
+      {1L, 0L, 2L, 2L, 1L, 5.6L, -1L, 0.0L, 1L, 0.0L},
+      {1L, 1L, 0L, -2L, 1L, -34.7L, -1L, 0.0L, 0L, 0.0L},
+      {0L, 1L, 0L, 2L, 0L, 14.2L, -1L, 0.0L, 0L, 0.0L},
+      {0L, 1L, 2L, -2L, 0L, 117.5L, -1L, 0.0L, 0L, 0.0L},
+      {0L, 1L, -2L, 2L, 0L, -329.8L, -1L, 0.0L, 0L, 0.0L},
+      {1L, 0L, -2L, 2L, 0L, 23.8L, -1L, 0.0L, 0L, 0.0L},
+      {1L, 0L, -2L, -2L, 0L, -9.5L, -1L, 0.0L, 0L, 0.0L},
+      {1L, 0L, 2L, -2L, 0L, 32.8L, -1L, 0.0L, 0L, 0.0L},
+      {1L, 0L, 0L, -4L, 0L, -10.1L, -1L, 0.0L, 0L, 0.0L},
+      {2L, 0L, 0L, -4L, 0L, -15.9L, -1L, 0.0L, 0L, 0.0L},
+      {0L, 0L, 2L, 4L, 2L, 4.8L, -1L, 0.0L, 0L, 0.0L},
+      {0L, 0L, 2L, -1L, 2L, 25.4L, -1L, 0.0L, 0L, 0.0L},
+      {-2L, 0L, 2L, 4L, 2L, 7.3L, -1L, 0.0L, 1L, 0.0L},
+      {2L, 0L, 2L, 2L, 2L, 4.7L, -1L, 0.0L, 0L, 0.0L},
+      {0L, -1L, 2L, 0L, 1L, 14.2L, -1L, 0.0L, 0L, 0.0L},
+      {0L, 0L, -2L, 0L, 1L, -13.6L, -1L, 0.0L, 0L, 0.0L},
+      {0L, 0L, 4L, -2L, 2L, 12.7L, 1L, 0.0L, 0L, 0.0L},
+      {0L, 1L, 0L, 0L, 2L, 409.2L, 1L, 0.0L, 0L, 0.0L},
+      {1L, 1L, 2L, -2L, 2L, 22.5L, 1L, 0.0L, -1L, 0.0L},
+      {3L, 0L, 2L, -2L, 2L, 8.7L, 1L, 0.0L, 0L, 0.0L},
+      {-2L, 0L, 2L, 2L, 2L, 14.6L, 1L, 0.0L, -1L, 0.0L},
+      {-1L, 0L, 0L, 0L, 2L, -27.3L, 1L, 0.0L, -1L, 0.0L},
+      {0L, 0L, -2L, 2L, 1L, -169.0L, 1L, 0.0L, 0L, 0.0L},
+      {0L, 1L, 2L, 0L, 1L, 13.1L, 1L, 0.0L, 0L, 0.0L},
+      {-1L, 0L, 4L, 0L, 2L, 9.1L, 1L, 0.0L, 0L, 0.0L},
+      {2L, 1L, 0L, -2L, 0L, 131.7L, 1L, 0.0L, 0L, 0.0L},
+      {2L, 0L, 0L, 2L, 0L, 7.1L, 1L, 0.0L, 0L, 0.0L},
+      {2L, 0L, 2L, -2L, 1L, 12.8L, 1L, 0.0L, -1L, 0.0L},
+      {2L, 0L, -2L, 0L, 1L, -943.2L, 1L, 0.0L, 0L, 0.0L},
+      {1L, -1L, 0L, -2L, 0L, -29.3L, 1L, 0.0L, 0L, 0.0L},
+      {-1L, 0L, 0L, 1L, 1L, -388.3L, 1L, 0.0L, 0L, 0.0L},
+      {-1L, -1L, 0L, 2L, 1L, 35.0L, 1L, 0.0L, 0L, 0.0L},
+      {0L, 1L, 0L, 1L, 0L, 27.3L, 1L, 0.0L, 0L, 0.0L}};
 
-  *dpsi = *deps = 0.0;
+  *dpsi = *deps = 0.0L;
 
   for (int i = 0; i < 106; i++) {
-    double ang = 0.0;
+    long double ang = 0.0L;
     for (int j = 0; j < 5; j++) ang += nut[i][j] * f[j];
-    *dpsi += (nut[i][6] + nut[i][7] * t) * sin(ang);
-    *deps += (nut[i][8] + nut[i][9] * t) * cos(ang);
+    *dpsi += (nut[i][6] + nut[i][7] * t) * sinl(ang);
+    *deps += (nut[i][8] + nut[i][9] * t) * cosl(ang);
   }
-  *dpsi *= 1E-4 * AS2R; /* 0.1 mas -> rad */
-  *deps *= 1E-4 * AS2R;
+  *dpsi *= 1E-4L * AS2R; /* 0.1 mas -> rad */
+  *deps *= 1E-4L * AS2R;
 }
 /* eci to ecef transformation matrix -------------------------------------------
  * compute eci to ecef transformation matrix
  * args   : gtime_t tutc     I   time in utc
- *          double *erpv     I   erp values {xp,yp,ut1_utc,lod} (rad,rad,s,s/d)
- *          double *U        O   eci to ecef transformation matrix (3 x 3)
- *          double *gmst     IO  greenwich mean sidereal time (rad)
+ *          long double *erpv     I   erp values {xp,yp,ut1_utc,lod} (rad,rad,s,s/d)
+ *          long double *U        O   eci to ecef transformation matrix (3 x 3)
+ *          long double *gmst     IO  greenwich mean sidereal time (rad)
  *                               (NULL: no output)
  * return : none
  * note   : see ref [3] chap 5
  *          not thread-safe
  *-----------------------------------------------------------------------------*/
-extern void eci2ecef(gtime_t tutc, const double *erpv, double *U, double *gmst) {
-  const double ep2000[] = {2000, 1, 1, 12, 0, 0};
+extern void eci2ecef(gtime_t tutc, const long double *erpv, long double *U, long double *gmst) {
+  const long double ep2000[] = {2000, 1, 1, 12, 0, 0};
   static gtime_t tutc_;
-  static double U_[9], gmst_;
+  static long double U_[9], gmst_;
 
   char tstr[40];
   trace(4, "eci2ecef: tutc=%s\n", time2str(tutc, tstr, 3));
 
   /* TODO is the cache useful? Is the tolerance good? */
-  if (fabs(timediff(tutc, tutc_)) < 0.01) { /* read cache */
+  if (fabsl(timediff(tutc, tutc_)) < 0.01L) { /* read cache */
     for (int i = 0; i < 9; i++) U[i] = U_[i];
     if (gmst) *gmst = gmst_;
     return;
@@ -2669,58 +2691,58 @@ extern void eci2ecef(gtime_t tutc, const double *erpv, double *U, double *gmst) 
 
   /* terrestrial time */
   gtime_t tgps = utc2gpst(tutc_);
-  double t = (timediff(tgps, epoch2time(ep2000)) + 19.0 + 32.184) / 86400.0 / 36525.0;
-  double t2 = t * t;
-  double t3 = t2 * t;
+  long double t = (timediff(tgps, epoch2time(ep2000)) + 19.0L + 32.184L) / 86400.0L / 36525.0L;
+  long double t2 = t * t;
+  long double t3 = t2 * t;
 
   /* astronomical arguments */
-  double f[5];
+  long double f[5];
   ast_args(t, f);
 
   /* iau 1976 precession */
-  double ze = (2306.2181 * t + 0.30188 * t2 + 0.017998 * t3) * AS2R;
-  double th = (2004.3109 * t - 0.42665 * t2 - 0.041833 * t3) * AS2R;
-  double z = (2306.2181 * t + 1.09468 * t2 + 0.018203 * t3) * AS2R;
-  double eps = (84381.448 - 46.8150 * t - 0.00059 * t2 + 0.001813 * t3) * AS2R;
-  double R1[9], R2[9], R3[9];
+  long double ze = (2306.2181L * t + 0.30188L * t2 + 0.017998L * t3) * AS2R;
+  long double th = (2004.3109L * t - 0.42665L * t2 - 0.041833L * t3) * AS2R;
+  long double z = (2306.2181L * t + 1.09468L * t2 + 0.018203L * t3) * AS2R;
+  long double eps = (84381.448L - 46.8150L * t - 0.00059L * t2 + 0.001813L * t3) * AS2R;
+  long double R1[9], R2[9], R3[9];
   Rz(-z, R1);
   Ry(th, R2);
   Rz(-ze, R3);
-  double R[9];
+  long double R[9];
   matmul("NN", 3, 3, 3, R1, R2, R);
-  double P[9];
+  long double P[9];
   matmul("NN", 3, 3, 3, R, R3, P); /* P=Rz(-z)*Ry(th)*Rz(-ze) */
 
   /* iau 1980 nutation */
-  double dpsi, deps;
+  long double dpsi, deps;
   nut_iau1980(t, f, &dpsi, &deps);
   Rx(-eps - deps, R1);
   Rz(-dpsi, R2);
   Rx(eps, R3);
   matmul("NN", 3, 3, 3, R1, R2, R);
-  double N[9];
+  long double N[9];
   matmul("NN", 3, 3, 3, R, R3, N); /* N=Rx(-eps)*Rz(-dspi)*Rx(eps) */
 
   /* greenwich aparent sidereal time (rad) */
   gmst_ = utc2gmst(tutc_, erpv[2]);
-  double gast = gmst_ + dpsi * cos(eps);
-  gast += (0.00264 * sin(f[4]) + 0.000063 * sin(2.0 * f[4])) * AS2R;
+  long double gast = gmst_ + dpsi * cosl(eps);
+  gast += (0.00264L * sinl(f[4]) + 0.000063L * sinl(2.0L * f[4])) * AS2R;
 
   /* eci to ecef transformation matrix */
   Ry(-erpv[0], R1);
   Rx(-erpv[1], R2);
   Rz(gast, R3);
-  double W[9];
+  long double W[9];
   matmul("NN", 3, 3, 3, R1, R2, W);
   matmul("NN", 3, 3, 3, W, R3, R); /* W=Ry(-xp)*Rx(-yp) */
-  double NP[9];
+  long double NP[9];
   matmul("NN", 3, 3, 3, N, P, NP);
   matmul("NN", 3, 3, 3, R, NP, U_); /* U=W*Rz(gast)*N*P */
 
   for (int i = 0; i < 9; i++) U[i] = U_[i];
   if (gmst) *gmst = gmst_;
 
-  trace(5, "gmst=%.12f gast=%.12f\n", gmst_, gast);
+  trace(5, "gmst=%.12Lf gast=%.12Lf\n", gmst_, gast);
   trace(5, "P=\n");
   tracemat(5, P, 3, 3, 15, 12);
   trace(5, "N=\n");
@@ -2731,14 +2753,14 @@ extern void eci2ecef(gtime_t tutc, const double *erpv, double *U, double *gmst) 
   tracemat(5, U, 3, 3, 15, 12);
 }
 /* decode antenna parameter field --------------------------------------------*/
-static int decodef(char *p, int n, double *v) {
-  for (int i = 0; i < n; i++) v[i] = 0.0;
+static int decodef(char *p, int n, long double *v) {
+  for (int i = 0; i < n; i++) v[i] = 0.0L;
 
   int i;
   char *q;
   p = strtok_r(p, " ", &q);
   for (i = 0; p && i < n; p = strtok_r(NULL, " ", &q)) {
-    v[i++] = atof(p) * 1E-3;
+    v[i++] = strtold(p, NULL) * 1E-3L;
   }
   return i;
 }
@@ -2777,7 +2799,7 @@ static bool readngspcv(const char *file, pcvs_t *pcvs) {
       pcv = pcv0;
       rtksetstr(pcv.type, sizeof(pcv.type), buff, 0, 61);
     } else if (n == 2) {
-      double neu[3];
+      long double neu[3];
       if (decodef(buff, 3, neu) < 3) continue;
       pcv.off[0][0] = neu[1];
       pcv.off[0][1] = neu[0];
@@ -2787,7 +2809,7 @@ static bool readngspcv(const char *file, pcvs_t *pcvs) {
     else if (n == 4)
       decodef(buff, 9, pcv.var[0] + 10);
     else if (n == 5) {
-      double neu[3];
+      long double neu[3];
       if (decodef(buff, 3, neu) < 3) continue;
       pcv.off[1][0] = neu[1];
       pcv.off[1][1] = neu[0];
@@ -2853,7 +2875,7 @@ static bool readantex(const char *file, pcvs_t *pcvs) {
       freq = 0;
     } else if (strstr(buff + 60, "NORTH / EAST / UP")) {
       if (freq < 1 || NFREQ < freq) continue;
-      double neu[3];
+      long double neu[3];
       if (decodef(buff, 3, neu) < 3) continue;
       pcv.off[freq - 1][0] = neu[pcv.sat ? 0 : 1]; /* x or e */
       pcv.off[freq - 1][1] = neu[pcv.sat ? 1 : 0]; /* y or n */
@@ -2893,7 +2915,7 @@ extern bool readpcv(const char *file, pcvs_t *pcvs) {
   }
   for (int i = 0; i < pcvs->n; i++) {
     pcv_t *pcv = pcvs->pcv + i;
-    trace(4, "sat=%2d type=%20s code=%s off=%8.4f %8.4f %8.4f  %8.4f %8.4f %8.4f\n", pcv->sat,
+    trace(4, "sat=%2d type=%20s code=%s off=%8.4Lf %8.4Lf %8.4Lf  %8.4Lf %8.4Lf %8.4Lf\n", pcv->sat,
           pcv->type, pcv->code, pcv->off[0][0], pcv->off[0][1], pcv->off[0][2], pcv->off[1][0],
           pcv->off[1][1], pcv->off[1][2]);
   }
@@ -2914,8 +2936,8 @@ extern pcv_t *searchpcv(int sat, const char *type, gtime_t time, const pcvs_t *p
     for (int i = 0; i < pcvs->n; i++) {
       pcv_t *pcv = pcvs->pcv + i;
       if (pcv->sat != sat) continue;
-      if (pcv->ts.time != 0 && timediff(pcv->ts, time) > 0.0) continue;
-      if (pcv->te.time != 0 && timediff(pcv->te, time) < 0.0) continue;
+      if (pcv->ts.time != 0 && timediff(pcv->ts, time) > 0.0L) continue;
+      if (pcv->te.time != 0 && timediff(pcv->te, time) < 0.0L) continue;
       return pcv;
     }
   } else {
@@ -2950,14 +2972,14 @@ extern pcv_t *searchpcv(int sat, const char *type, gtime_t time, const pcvs_t *p
  * args   : char  *file      I   station position file containing
  *                               lat(deg) lon(deg) height(m) name in a line
  *          char  *rcvs      I   station name
- *          double *pos      O   station position {lat,lon,h} (rad/m)
+ *          long double *pos      O   station position {lat,lon,h} (rad/m)
  *                               (all 0 if search error)
  * return : none
  *-----------------------------------------------------------------------------*/
-extern void readpos(const char *file, const char *rcv, double *pos) {
+extern void readpos(const char *file, const char *rcv, long double *pos) {
   trace(3, "readpos: file=%s\n", file);
 
-  static double poss[2048][3];
+  static long double poss[2048][3];
   static char stas[2048][16];
 
   FILE *fp = fopen(file, "r");
@@ -2970,7 +2992,7 @@ extern void readpos(const char *file, const char *rcv, double *pos) {
   while (np < 2048 && fgets(buff, sizeof(buff), fp)) {
     if (buff[0] == '%' || buff[0] == '#') continue;
     char str[256];
-    if (sscanf(buff, "%lf %lf %lf %255s", &poss[np][0], &poss[np][1], &poss[np][2], str) < 4)
+    if (sscanf(buff, "%Lf %Lf %Lf %255s", &poss[np][0], &poss[np][1], &poss[np][2], str) < 4)
       continue;
     rtksnprintf(stas[np++], sizeof(stas[0]), "%.15s", str);
   }
@@ -2983,16 +3005,16 @@ extern void readpos(const char *file, const char *rcv, double *pos) {
     pos[1] *= D2R;
     return;
   }
-  pos[0] = pos[1] = pos[2] = 0.0;
+  pos[0] = pos[1] = pos[2] = 0.0L;
 }
 /* read blq record -----------------------------------------------------------*/
-static bool readblqrecord(FILE *fp, double *odisp) {
+static bool readblqrecord(FILE *fp, long double *odisp) {
   char buff[256];
   int n = 0;
   while (fgets(buff, sizeof(buff), fp)) {
     if (!strncmp(buff, "$$", 2)) continue;
-    double v[11];
-    if (sscanf(buff, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", v, v + 1, v + 2, v + 3, v + 4,
+    long double v[11];
+    if (sscanf(buff, "%Lf %Lf %Lf %Lf %Lf %Lf %Lf %Lf %Lf %Lf %Lf", v, v + 1, v + 2, v + 3, v + 4,
                v + 5, v + 6, v + 7, v + 8, v + 9, v + 10) < 11)
       continue;
     for (int i = 0; i < 11; i++) odisp[n + i * 6] = v[i];
@@ -3004,10 +3026,10 @@ static bool readblqrecord(FILE *fp, double *odisp) {
  * read blq ocean tide loading parameters
  * args   : char   *file       I   BLQ ocean tide loading parameter file
  *          char   *sta        I   station name
- *          double *odisp      O   ocean tide loading parameters
+ *          long double *odisp      O   ocean tide loading parameters
  * return : status (true:ok,false:file open error)
  *-----------------------------------------------------------------------------*/
-extern bool readblq(const char *file, const char *sta, double *odisp) {
+extern bool readblq(const char *file, const char *sta, long double *odisp) {
   /* station name to upper case */
   char staname[17] = "";
   if (sscanf(sta, "%16s", staname) < 1) return 0;
@@ -3055,8 +3077,8 @@ extern bool readerp(const char *file, erp_t *erp) {
   }
   char buff[256];
   while (fgets(buff, sizeof(buff), fp)) {
-    double v[14] = {0};
-    if (sscanf(buff, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", v, v + 1, v + 2,
+    long double v[14] = {0};
+    if (sscanf(buff, "%Lf %Lf %Lf %Lf %Lf %Lf %Lf %Lf %Lf %Lf %Lf %Lf %Lf %Lf", v, v + 1, v + 2,
                v + 3, v + 4, v + 5, v + 6, v + 7, v + 8, v + 9, v + 10, v + 11, v + 12,
                v + 13) < 5) {
       continue;
@@ -3074,12 +3096,12 @@ extern bool readerp(const char *file, erp_t *erp) {
       erp->data = erp_data;
     }
     erp->data[erp->n].mjd = v[0];
-    erp->data[erp->n].xp = v[1] * 1E-6 * AS2R;
-    erp->data[erp->n].yp = v[2] * 1E-6 * AS2R;
-    erp->data[erp->n].ut1_utc = v[3] * 1E-7;
-    erp->data[erp->n].lod = v[4] * 1E-7;
-    erp->data[erp->n].xpr = v[12] * 1E-6 * AS2R;
-    erp->data[erp->n++].ypr = v[13] * 1E-6 * AS2R;
+    erp->data[erp->n].xp = v[1] * 1E-6L * AS2R;
+    erp->data[erp->n].yp = v[2] * 1E-6L * AS2R;
+    erp->data[erp->n].ut1_utc = v[3] * 1E-7L;
+    erp->data[erp->n].lod = v[4] * 1E-7L;
+    erp->data[erp->n].xpr = v[12] * 1E-6L * AS2R;
+    erp->data[erp->n++].ypr = v[13] * 1E-6L * AS2R;
   }
   fclose(fp);
   return true;
@@ -3088,20 +3110,20 @@ extern bool readerp(const char *file, erp_t *erp) {
  * get earth rotation parameter values
  * args   : erp_t  *erp        I   earth rotation parameters
  *          gtime_t time       I   time (gpst)
- *          double *erpv       O   erp values {xp,yp,ut1_utc,lod} (rad,rad,s,s/d)
+ *          long double *erpv       O   erp values {xp,yp,ut1_utc,lod} (rad,rad,s,s/d)
  * return : status (true:ok,false:error)
  *-----------------------------------------------------------------------------*/
-extern bool geterp(const erp_t *erp, gtime_t time, double *erpv) {
-  const double ep[] = {2000, 1, 1, 12, 0, 0};
+extern bool geterp(const erp_t *erp, gtime_t time, long double *erpv) {
+  const long double ep[] = {2000, 1, 1, 12, 0, 0};
 
   trace(4, "geterp:\n");
 
   if (erp->n <= 0) return false;
 
-  double mjd = 51544.5 + (timediff(gpst2utc(time), epoch2time(ep))) / 86400.0;
+  long double mjd = 51544.5L + (timediff(gpst2utc(time), epoch2time(ep))) / 86400.0L;
 
   if (mjd <= erp->data[0].mjd) {
-    double day = mjd - erp->data[0].mjd;
+    long double day = mjd - erp->data[0].mjd;
     erpv[0] = erp->data[0].xp + erp->data[0].xpr * day;
     erpv[1] = erp->data[0].yp + erp->data[0].ypr * day;
     erpv[2] = erp->data[0].ut1_utc - erp->data[0].lod * day;
@@ -3109,7 +3131,7 @@ extern bool geterp(const erp_t *erp, gtime_t time, double *erpv) {
     return true;
   }
   if (mjd >= erp->data[erp->n - 1].mjd) {
-    double day = mjd - erp->data[erp->n - 1].mjd;
+    long double day = mjd - erp->data[erp->n - 1].mjd;
     erpv[0] = erp->data[erp->n - 1].xp + erp->data[erp->n - 1].xpr * day;
     erpv[1] = erp->data[erp->n - 1].yp + erp->data[erp->n - 1].ypr * day;
     erpv[2] = erp->data[erp->n - 1].ut1_utc - erp->data[erp->n - 1].lod * day;
@@ -3124,16 +3146,16 @@ extern bool geterp(const erp_t *erp, gtime_t time, double *erpv) {
     else
       j = i;
   }
-  double a;
+  long double a;
   if (erp->data[j].mjd == erp->data[j + 1].mjd) {
-    a = 0.5;
+    a = 0.5L;
   } else {
     a = (mjd - erp->data[j].mjd) / (erp->data[j + 1].mjd - erp->data[j].mjd);
   }
-  erpv[0] = (1.0 - a) * erp->data[j].xp + a * erp->data[j + 1].xp;
-  erpv[1] = (1.0 - a) * erp->data[j].yp + a * erp->data[j + 1].yp;
-  erpv[2] = (1.0 - a) * erp->data[j].ut1_utc + a * erp->data[j + 1].ut1_utc;
-  erpv[3] = (1.0 - a) * erp->data[j].lod + a * erp->data[j + 1].lod;
+  erpv[0] = (1.0L - a) * erp->data[j].xp + a * erp->data[j + 1].xp;
+  erpv[1] = (1.0L - a) * erp->data[j].yp + a * erp->data[j + 1].yp;
+  erpv[2] = (1.0L - a) * erp->data[j].ut1_utc + a * erp->data[j + 1].ut1_utc;
+  erpv[3] = (1.0L - a) * erp->data[j].lod + a * erp->data[j + 1].lod;
   return true;
 }
 extern int navncnt(nav_t *nav) {
@@ -3292,8 +3314,8 @@ extern void uniqnav(nav_t *nav) {
 /* compare observation data -------------------------------------------------*/
 static int cmpobs(const void *p1, const void *p2) {
   obsd_t *q1 = (obsd_t *)p1, *q2 = (obsd_t *)p2;
-  double tt = timediff(q1->time, q2->time);
-  if (fabs(tt) > DTTOL) return tt < 0 ? -1 : 1;
+  long double tt = timediff(q1->time, q2->time);
+  if (fabsl(tt) > DTTOL) return tt < 0 ? -1 : 1;
   if (q1->rcv != q2->rcv) return (int)q1->rcv - (int)q2->rcv;
   return (int)q1->sat - (int)q2->sat;
 }
@@ -3313,7 +3335,7 @@ extern int sortobs(obs_t *obs) {
   int j = 0;
   for (int i = 0; i < obs->n; i++) {
     if (obs->data[i].sat != obs->data[j].sat || obs->data[i].rcv != obs->data[j].rcv ||
-        timediff(obs->data[i].time, obs->data[j].time) != 0.0) {
+        timediff(obs->data[i].time, obs->data[j].time) != 0.0L) {
       obs->data[++j] = obs->data[i];
     }
   }
@@ -3332,11 +3354,11 @@ extern int sortobs(obs_t *obs) {
  * args   : gtime_t time  I      time
  *          gtime_t ts    I      time start (ts.time==0:no screening by ts)
  *          gtime_t te    I      time end   (te.time==0:no screening by te)
- *          double  tint  I      time interval (s) (0.0:no screen by tint)
+ *          long double  tint  I      time interval (s) (0.0:no screen by tint)
  * return : true:on condition, false:not on condition
  *-----------------------------------------------------------------------------*/
-extern bool screent(gtime_t time, gtime_t ts, gtime_t te, double tint) {
-  return (tint <= 0.0 || fmod(time2gpst(time, NULL) + DTTOL, tint) <= DTTOL * 2.0) &&
+extern bool screent(gtime_t time, gtime_t ts, gtime_t te, long double tint) {
+  return (tint <= 0.0L || fmodl(time2gpst(time, NULL) + DTTOL, tint) <= DTTOL * 2.0L) &&
          (ts.time == 0 || timediff(time, ts) >= -DTTOL) &&
          (te.time == 0 || timediff(time, te) < DTTOL);
 }
@@ -3358,9 +3380,9 @@ extern bool readnav(const char *file, nav_t *nav) {
   char buff[4096];
   while (fgets(buff, sizeof(buff), fp)) {
     if (!strncmp(buff, "IONUTC", 6)) {
-      for (int i = 0; i < 8; i++) nav->ion_gps[i] = 0.0;
-      for (int i = 0; i < 8; i++) nav->utc_gps[i] = 0.0;
-      (void)sscanf(buff, "IONUTC,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",
+      for (int i = 0; i < 8; i++) nav->ion_gps[i] = 0.0L;
+      for (int i = 0; i < 8; i++) nav->utc_gps[i] = 0.0L;
+      (void)sscanf(buff, "IONUTC,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf",
                    &nav->ion_gps[0], &nav->ion_gps[1], &nav->ion_gps[2], &nav->ion_gps[3],
                    &nav->ion_gps[4], &nav->ion_gps[5], &nav->ion_gps[6], &nav->ion_gps[7],
                    &nav->utc_gps[0], &nav->utc_gps[1], &nav->utc_gps[2], &nav->utc_gps[3],
@@ -3380,8 +3402,8 @@ extern bool readnav(const char *file, nav_t *nav) {
       nav->geph[prn - 1][0].sat = sat;
       long toe_time = 0, tof_time = 0;
       (void)sscanf(p + 1,
-                   "%d,%d,%d,%d,%d,%ld,%ld,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,"
-                   "%lf,%lf,%lf,%lf",
+                   "%d,%d,%d,%d,%d,%ld,%ld,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,"
+                   "%Lf,%Lf,%Lf,%Lf",
                    &nav->geph[prn - 1][0].iode, &nav->geph[prn - 1][0].frq,
                    &nav->geph[prn - 1][0].svh, &nav->geph[prn - 1][0].sva,
                    &nav->geph[prn - 1][0].age, &toe_time, &tof_time, &nav->geph[prn - 1][0].pos[0],
@@ -3398,8 +3420,8 @@ extern bool readnav(const char *file, nav_t *nav) {
       nav->eph[sat - 1][0].sat = sat;
       long toe_time = 0, toc_time = 0, ttr_time = 0;
       (void)sscanf(p + 1,
-                   "%d,%d,%d,%d,%ld,%ld,%ld,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,"
-                   "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d",
+                   "%d,%d,%d,%d,%ld,%ld,%ld,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,"
+                   "%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%Lf,%d,%d",
                    &nav->eph[sat - 1][0].iode, &nav->eph[sat - 1][0].iodc,
                    &nav->eph[sat - 1][0].sva, &nav->eph[sat - 1][0].svh, &toe_time, &toc_time,
                    &ttr_time, &nav->eph[sat - 1][0].A, &nav->eph[sat - 1][0].e,
@@ -3430,9 +3452,9 @@ extern bool savenav(const char *file, const nav_t *nav) {
     char id[8];
     satno2id(nav->eph[i][0].sat, id);
     fprintf(fp,
-            "%s,%d,%d,%d,%d,%d,%d,%d,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
-            "%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
-            "%.14E,%.14E,%.14E,%.14E,%.14E,%d,%d\n",
+            "%s,%d,%d,%d,%d,%d,%d,%d,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,"
+            "%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,"
+            "%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%d,%d\n",
             id, nav->eph[i][0].iode, nav->eph[i][0].iodc, nav->eph[i][0].sva, nav->eph[i][0].svh,
             (int)nav->eph[i][0].toe.time, (int)nav->eph[i][0].toc.time,
             (int)nav->eph[i][0].ttr.time, nav->eph[i][0].A, nav->eph[i][0].e, nav->eph[i][0].i0,
@@ -3447,8 +3469,8 @@ extern bool savenav(const char *file, const nav_t *nav) {
     char id[8];
     satno2id(nav->geph[i][0].sat, id);
     fprintf(fp,
-            "%s,%d,%d,%d,%d,%d,%d,%d,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
-            "%.14E,%.14E,%.14E,%.14E,%.14E,%.14E\n",
+            "%s,%d,%d,%d,%d,%d,%d,%d,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,"
+            "%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE\n",
             id, nav->geph[i][0].iode, nav->geph[i][0].frq, nav->geph[i][0].svh, nav->geph[i][0].sva,
             nav->geph[i][0].age, (int)nav->geph[i][0].toe.time, (int)nav->geph[i][0].tof.time,
             nav->geph[i][0].pos[0], nav->geph[i][0].pos[1], nav->geph[i][0].pos[2],
@@ -3456,8 +3478,8 @@ extern bool savenav(const char *file, const nav_t *nav) {
             nav->geph[i][0].acc[0], nav->geph[i][0].acc[1], nav->geph[i][0].acc[2],
             nav->geph[i][0].taun, nav->geph[i][0].gamn, nav->geph[i][0].dtaun);
   }
-  /*fprintf(fp,"IONUTC,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
-             "%.14E,%.14E,%.14E,%.0f",
+  /*fprintf(fp,"IONUTC,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,%.14LE,"
+             "%.14LE,%.14LE,%.14LE,%.0Lf",
           nav->ion_gps[0],nav->ion_gps[1],nav->ion_gps[2],nav->ion_gps[3],
           nav->ion_gps[4],nav->ion_gps[5],nav->ion_gps[6],nav->ion_gps[7],
           nav->utc_gps[0],nav->utc_gps[1],nav->utc_gps[2],nav->utc_gps[3],
@@ -3756,13 +3778,13 @@ extern int reppath(const char *path, char *rpath, size_t size, gtime_t time, con
   if (*rov) stat |= repstr(rpath, size, "%r", rov);
   if (*base) stat |= repstr(rpath, size, "%b", base);
   if (time.time != 0) {
-    double ep[6];
+    long double ep[6];
     time2epoch(time, ep);
-    double ep0[6] = {2000, 1, 1, 0, 0, 0};
+    long double ep0[6] = {2000, 1, 1, 0, 0, 0};
     ep0[0] = ep[0];
     int week;
-    int dow = (int)floor(time2gpst(time, &week) / 86400.0);
-    int doy = (int)floor(timediff(time, epoch2time(ep0)) / 86400.0) + 1;
+    int dow = (int)floorl(time2gpst(time, &week) / 86400.0L);
+    int doy = (int)floorl(timediff(time, epoch2time(ep0)) / 86400.0L) + 1;
     char rep[64];
     rtksnprintf(rep, sizeof(rep), "%02d", ((int)ep[3] / 3) * 3);
     stat |= repstr(rpath, size, "%ha", rep);
@@ -3770,19 +3792,19 @@ extern int reppath(const char *path, char *rpath, size_t size, gtime_t time, con
     stat |= repstr(rpath, size, "%hb", rep);
     rtksnprintf(rep, sizeof(rep), "%02d", ((int)ep[3] / 12) * 12);
     stat |= repstr(rpath, size, "%hc", rep);
-    rtksnprintf(rep, sizeof(rep), "%04.0f", ep[0]);
+    rtksnprintf(rep, sizeof(rep), "%04.0Lf", ep[0]);
     stat |= repstr(rpath, size, "%Y", rep);
-    rtksnprintf(rep, sizeof(rep), "%02.0f", fmod(ep[0], 100.0));
+    rtksnprintf(rep, sizeof(rep), "%02.0Lf", fmodl(ep[0], 100.0L));
     stat |= repstr(rpath, size, "%y", rep);
-    rtksnprintf(rep, sizeof(rep), "%02.0f", ep[1]);
+    rtksnprintf(rep, sizeof(rep), "%02.0Lf", ep[1]);
     stat |= repstr(rpath, size, "%m", rep);
-    rtksnprintf(rep, sizeof(rep), "%02.0f", ep[2]);
+    rtksnprintf(rep, sizeof(rep), "%02.0Lf", ep[2]);
     stat |= repstr(rpath, size, "%d", rep);
-    rtksnprintf(rep, sizeof(rep), "%02.0f", ep[3]);
+    rtksnprintf(rep, sizeof(rep), "%02.0Lf", ep[3]);
     stat |= repstr(rpath, size, "%h", rep);
-    rtksnprintf(rep, sizeof(rep), "%02.0f", ep[4]);
+    rtksnprintf(rep, sizeof(rep), "%02.0Lf", ep[4]);
     stat |= repstr(rpath, size, "%M", rep);
-    rtksnprintf(rep, sizeof(rep), "%02.0f", floor(ep[5]));
+    rtksnprintf(rep, sizeof(rep), "%02.0Lf", floorl(ep[5]));
     stat |= repstr(rpath, size, "%S", rep);
     rtksnprintf(rep, sizeof(rep), "%03d", doy);
     stat |= repstr(rpath, size, "%n", rep);
@@ -3822,20 +3844,20 @@ extern int reppaths(const char *path, char *rpath[], size_t size, int nmax, gtim
                     const char *rov, const char *base) {
   trace(3, "reppaths: path =%s nmax=%d rov=%s base=%s\n", path, nmax, rov, base);
 
-  if (ts.time == 0 || te.time == 0 || timediff(ts, te) > 0.0) return 0;
+  if (ts.time == 0 || te.time == 0 || timediff(ts, te) > 0.0L) return 0;
 
-  double tint = 86400.0;
+  long double tint = 86400.0L;
   if (strstr(path, "%S") || strstr(path, "%M") || strstr(path, "%t"))
-    tint = 900.0;
+    tint = 900.0L;
   else if (strstr(path, "%h") || strstr(path, "%H"))
-    tint = 3600.0;
+    tint = 3600.0L;
 
   int week;
-  double tow = time2gpst(ts, &week);
-  gtime_t time = gpst2time(week, floor(tow / tint) * tint);
+  long double tow = time2gpst(ts, &week);
+  gtime_t time = gpst2time(week, floorl(tow / tint) * tint);
 
   int n = 0;
-  while (timediff(time, te) <= 0.0 && n < nmax) {
+  while (timediff(time, te) <= 0.0L && n < nmax) {
     reppath(path, rpath[n], size, time, rov, base);
     if (n == 0 || strcmp(rpath[n], rpath[n - 1])) n++;
     time = timeadd(time, tint);
@@ -3845,35 +3867,35 @@ extern int reppaths(const char *path, char *rpath[], size_t size, int nmax, gtim
 }
 /* geometric distance ----------------------------------------------------------
  * compute geometric distance and receiver-to-satellite unit vector
- * args   : double *rs       I   satellite position (ecef at transmission) (m)
- *          double *rr       I   receiver position (ecef at reception) (m)
- *          double *e        O   line-of-sight vector (ecef)
+ * args   : long double *rs       I   satellite position (ecef at transmission) (m)
+ *          long double *rr       I   receiver position (ecef at reception) (m)
+ *          long double *e        O   line-of-sight vector (ecef)
  * return : geometric distance (m) (0>:error/no satellite position)
  * notes  : distance includes sagnac effect correction
  *-----------------------------------------------------------------------------*/
-extern double geodist(const double *rs, const double *rr, double *e) {
-  if (norm(rs, 3) < RE_WGS84) return -1.0;
+extern long double geodist(const long double *rs, const long double *rr, long double *e) {
+  if (norm(rs, 3) < RE_WGS84) return -1.0L;
   for (int i = 0; i < 3; i++) e[i] = rs[i] - rr[i];
-  double r = norm(e, 3);
+  long double r = norm(e, 3);
   for (int i = 0; i < 3; i++) e[i] /= r;
   return r + OMGE * (rs[0] * rr[1] - rs[1] * rr[0]) / CLIGHT;
 }
 /* satellite azimuth/elevation angle -------------------------------------------
  * compute satellite azimuth/elevation angle
- * args   : double *pos      I   geodetic position {lat,lon,h} (rad,m)
- *          double *e        I   receiver-to-satellilte unit vevtor (ecef)
- *          double *azel     IO  azimuth/elevation {az,el} (rad) (NULL: no output)
+ * args   : long double *pos      I   geodetic position {lat,lon,h} (rad,m)
+ *          long double *e        I   receiver-to-satellilte unit vevtor (ecef)
+ *          long double *azel     IO  azimuth/elevation {az,el} (rad) (NULL: no output)
  *                               (0.0<=azel[0]<2*pi,-pi/2<=azel[1]<=pi/2)
  * return : elevation angle (rad)
  *-----------------------------------------------------------------------------*/
-extern double satazel(const double *pos, const double *e, double *azel) {
-  double az = 0.0, el = PI / 2.0;
+extern long double satazel(const long double *pos, const long double *e, long double *azel) {
+  long double az = 0.0L, el = PI / 2.0L;
   if (pos[2] > -RE_WGS84) {
-    double enu[3];
+    long double enu[3];
     ecef2enu(pos, e, enu);
-    az = dot2(enu, enu) < 1E-12 ? 0.0 : atan2(enu[0], enu[1]);
-    if (az < 0.0) az += 2 * PI;
-    el = asin(enu[2]);
+    az = dot2(enu, enu) < 1E-12L ? 0.0L : atan2l(enu[0], enu[1]);
+    if (az < 0.0L) az += 2.0L * PI;
+    el = asinl(enu[2]);
   }
   if (azel) {
     azel[0] = az;
@@ -3884,125 +3906,128 @@ extern double satazel(const double *pos, const double *e, double *azel) {
 /* compute dops ----------------------------------------------------------------
  * compute DOP (dilution of precision)
  * args   : int    ns        I   number of satellites
- *          double *azel     I   satellite azimuth/elevation angle (rad)
- *          double elmin     I   elevation cutoff angle (rad)
- *          double *dop      O   DOPs {GDOP,PDOP,HDOP,VDOP}
+ *          long double *azel     I   satellite azimuth/elevation angle (rad)
+ *          long double elmin     I   elevation cutoff angle (rad)
+ *          long double *dop      O   DOPs {GDOP,PDOP,HDOP,VDOP}
  * return : none
  * notes  : dop[0]-[3] return 0 in case of dop computation error
  *-----------------------------------------------------------------------------*/
-#define SQRT(x) ((x) < 0.0 || (x) != (x) ? 0.0 : sqrt(x))
+#define SQRTL(x) ((x) < 0.0L || (x) != (x) ? 0.0L : sqrtl(x))
 
-extern void dops(int ns, const double *azel, double elmin, double *dop) {
-  for (int i = 0; i < 4; i++) dop[i] = 0.0;
+extern void dops(int ns, const long double *azel, long double elmin, long double *dop) {
+  for (int i = 0; i < 4; i++) dop[i] = 0.0L;
   int n = 0;
-  double H[4 * MAXSAT];
+  long double H[4 * MAXSAT];
   for (int i = 0; i < ns && i < MAXSAT; i++) {
-    if (azel[1 + i * 2] < elmin || azel[1 + i * 2] <= 0.0) continue;
-    double cosel = cos(azel[1 + i * 2]);
-    double sinel = sin(azel[1 + i * 2]);
-    H[4 * n] = cosel * sin(azel[i * 2]);
-    H[1 + 4 * n] = cosel * cos(azel[i * 2]);
+    if (azel[1 + i * 2] < elmin || azel[1 + i * 2] <= 0.0L) continue;
+    long double cosel = cosl(azel[1 + i * 2]);
+    long double sinel = sinl(azel[1 + i * 2]);
+    H[4 * n] = cosel * sinl(azel[i * 2]);
+    H[1 + 4 * n] = cosel * cosl(azel[i * 2]);
     H[2 + 4 * n] = sinel;
-    H[3 + 4 * n++] = 1.0;
+    H[3 + 4 * n++] = 1.0L;
   }
   if (n < 4) return;
 
-  double Q[16];
+  long double Q[16];
   matmul("NT", 4, 4, n, H, H, Q);
   if (!matinv(Q, 4)) {
-    dop[0] = SQRT(Q[0] + Q[5] + Q[10] + Q[15]); /* GDOP */
-    dop[1] = SQRT(Q[0] + Q[5] + Q[10]);         /* PDOP */
-    dop[2] = SQRT(Q[0] + Q[5]);                 /* HDOP */
-    dop[3] = SQRT(Q[10]);                       /* VDOP */
+    dop[0] = SQRTL(Q[0] + Q[5] + Q[10] + Q[15]); /* GDOP */
+    dop[1] = SQRTL(Q[0] + Q[5] + Q[10]);         /* PDOP */
+    dop[2] = SQRTL(Q[0] + Q[5]);                 /* HDOP */
+    dop[3] = SQRTL(Q[10]);                       /* VDOP */
   }
 }
 /* ionosphere model ------------------------------------------------------------
  * compute ionospheric delay by broadcast ionosphere model (klobuchar model)
  * args   : gtime_t t        I   time (gpst)
- *          double *ion      I   iono model parameters {a0,a1,a2,a3,b0,b1,b2,b3}
- *          double *pos      I   receiver position {lat,lon,h} (rad,m)
- *          double *azel     I   azimuth/elevation angle {az,el} (rad)
+ *          long double *ion      I   iono model parameters {a0,a1,a2,a3,b0,b1,b2,b3}
+ *          long double *pos      I   receiver position {lat,lon,h} (rad,m)
+ *          long double *azel     I   azimuth/elevation angle {az,el} (rad)
  * return : ionospheric delay (L1) (m)
  *-----------------------------------------------------------------------------*/
-extern double ionmodel(gtime_t t, const double *ion, const double *pos, const double *azel) {
-  const double ion_default[] = {/* 2004/1/1 */
-                                0.1118E-07, -0.7451E-08, -0.5961E-07, 0.1192E-06,
-                                0.1167E+06, -0.2294E+06, -0.1311E+06, 0.1049E+07};
-  if (pos[2] < -1E3 || azel[1] <= 0) return 0.0;
-  if (norm(ion, 8) <= 0.0) ion = ion_default;
+extern long double ionmodel(gtime_t t, const long double *ion, const long double *pos,
+                            const long double *azel) {
+  const long double ion_default[] = {/* 2004/1/1 */
+                                     0.1118E-07L, -0.7451E-08L, -0.5961E-07L, 0.1192E-06L,
+                                     0.1167E+06L, -0.2294E+06L, -0.1311E+06L, 0.1049E+07L};
+  if (pos[2] < -1E3L || azel[1] <= 0) return 0.0L;
+  if (norm(ion, 8) <= 0.0L) ion = ion_default;
 
   /* earth centered angle (semi-circle) */
-  double psi = 0.0137 / (azel[1] / PI + 0.11) - 0.022;
+  long double psi = 0.0137L / (azel[1] / PI + 0.11L) - 0.022L;
 
   /* subionospheric latitude/longitude (semi-circle) */
-  double phi = pos[0] / PI + psi * cos(azel[0]);
-  if (phi > 0.416)
-    phi = 0.416;
-  else if (phi < -0.416)
-    phi = -0.416;
-  double lam = pos[1] / PI + psi * sin(azel[0]) / cos(phi * PI);
+  long double phi = pos[0] / PI + psi * cosl(azel[0]);
+  if (phi > 0.416L)
+    phi = 0.416L;
+  else if (phi < -0.416L)
+    phi = -0.416L;
+  long double lam = pos[1] / PI + psi * sinl(azel[0]) / cosl(phi * PI);
 
   /* geomagnetic latitude (semi-circle) */
-  phi += 0.064 * cos((lam - 1.617) * PI);
+  phi += 0.064L * cosl((lam - 1.617L) * PI);
 
   /* local time (s) */
   int week;
-  double tt = 43200.0 * lam + time2gpst(t, &week);
-  tt -= floor(tt / 86400.0) * 86400.0; /* 0<=tt<86400 */
+  long double tt = 43200.0L * lam + time2gpst(t, &week);
+  tt -= floorl(tt / 86400.0L) * 86400.0L; /* 0<=tt<86400 */
 
   /* slant factor */
-  double f = 1.0 + 16.0 * pow(0.53 - azel[1] / PI, 3.0);
+  long double f = 1.0L + 16.0L * powl(0.53L - azel[1] / PI, 3.0L);
 
   /* ionospheric delay */
-  double amp = ion[0] + phi * (ion[1] + phi * (ion[2] + phi * ion[3]));
-  double per = ion[4] + phi * (ion[5] + phi * (ion[6] + phi * ion[7]));
-  amp = amp < 0.0 ? 0.0 : amp;
-  per = per < 72000.0 ? 72000.0 : per;
-  double x = 2.0 * PI * (tt - 50400.0) / per;
+  long double amp = ion[0] + phi * (ion[1] + phi * (ion[2] + phi * ion[3]));
+  long double per = ion[4] + phi * (ion[5] + phi * (ion[6] + phi * ion[7]));
+  amp = amp < 0.0L ? 0.0L : amp;
+  per = per < 72000.0L ? 72000.0L : per;
+  long double x = 2.0L * PI * (tt - 50400.0L) / per;
 
-  return CLIGHT * f * (fabs(x) < 1.57 ? 5E-9 + amp * (1.0 + x * x * (-0.5 + x * x / 24.0)) : 5E-9);
+  return CLIGHT * f *
+         (fabsl(x) < 1.57L ? 5E-9L + amp * (1.0L + x * x * (-0.5L + x * x / 24.0L)) : 5E-9L);
 }
 /* ionosphere mapping function -------------------------------------------------
  * compute ionospheric delay mapping function by single layer model
- * args   : double *pos      I   receiver position {lat,lon,h} (rad,m)
- *          double *azel     I   azimuth/elevation angle {az,el} (rad)
+ * args   : long double *pos      I   receiver position {lat,lon,h} (rad,m)
+ *          long double *azel     I   azimuth/elevation angle {az,el} (rad)
  * return : ionospheric mapping function
  *-----------------------------------------------------------------------------*/
-extern double ionmapf(const double *pos, const double *azel) {
-  if (pos[2] >= HION) return 1.0;
-  return 1.0 / cos(asin((RE_WGS84 + pos[2]) / (RE_WGS84 + HION) * sin(PI / 2.0 - azel[1])));
+extern long double ionmapf(const long double *pos, const long double *azel) {
+  if (pos[2] >= HION) return 1.0L;
+  return 1.0L / cosl(asinl((RE_WGS84 + pos[2]) / (RE_WGS84 + HION) * sinl(PI / 2.0L - azel[1])));
 }
 /* ionospheric pierce point position -------------------------------------------
  * compute ionospheric pierce point (ipp) position and slant factor
- * args   : double *pos      I   receiver position {lat,lon,h} (rad,m)
- *          double *azel     I   azimuth/elevation angle {az,el} (rad)
- *          double re        I   earth radius (km)
- *          double hion      I   altitude of ionosphere (km)
- *          double *posp     O   pierce point position {lat,lon,h} (rad,m)
+ * args   : long double *pos      I   receiver position {lat,lon,h} (rad,m)
+ *          long double *azel     I   azimuth/elevation angle {az,el} (rad)
+ *          long double re        I   earth radius (km)
+ *          long double hion      I   altitude of ionosphere (km)
+ *          long double *posp     O   pierce point position {lat,lon,h} (rad,m)
  * return : slant factor, the single-layer mapping function.
  * notes  : see ref [2], only valid on the earth surface
  *          fixing bug on ref [2] A.4.4.10.1 A-22,23
  *-----------------------------------------------------------------------------*/
-extern double ionppp(const double *pos, const double *azel, double re, double hion, double *posp) {
+extern long double ionppp(const long double *pos, const long double *azel, long double re,
+                          long double hion, long double *posp) {
   /* The radius at the receiver station. */
-  double r = re + pos[2];
-  /* asin(rp) is the zenith angle at the IPP. */
-  double rp = r / (re + hion) * cos(azel[1]);
+  long double r = re + pos[2];
+  /* asinl(rp) is the zenith angle at the IPP. */
+  long double rp = r / (re + hion) * cosl(azel[1]);
   /* The angle at the center of the earth. */
-  double ap = PI / 2.0 - azel[1] - asin(rp);
-  double sinap = sin(ap);
-  double cosaz = cos(azel[0]);
-  posp[0] = asin(sin(pos[0]) * cos(ap) + cos(pos[0]) * sinap * cosaz);
+  long double ap = PI / 2.0L - azel[1] - asinl(rp);
+  long double sinap = sinl(ap);
+  long double cosaz = cosl(azel[0]);
+  posp[0] = asinl(sinl(pos[0]) * cosl(ap) + cosl(pos[0]) * sinap * cosaz);
 
-  double tanap = tan(ap);
-  if ((pos[0] > 70.0 * D2R && tanap * cosaz > tan(PI / 2.0 - pos[0])) ||
-      (pos[0] < -70.0 * D2R && -tanap * cosaz > tan(PI / 2.0 + pos[0]))) {
-    posp[1] = pos[1] + PI - asin(sinap * sin(azel[0]) / cos(posp[0]));
+  long double tanap = tanl(ap);
+  if ((pos[0] > 70.0L * D2R && tanap * cosaz > tanl(PI / 2.0L - pos[0])) ||
+      (pos[0] < -70.0L * D2R && -tanap * cosaz > tanl(PI / 2.0L + pos[0]))) {
+    posp[1] = pos[1] + PI - asinl(sinap * sinl(azel[0]) / cosl(posp[0]));
   } else {
-    posp[1] = pos[1] + asin(sinap * sin(azel[0]) / cos(posp[0]));
+    posp[1] = pos[1] + asinl(sinap * sinl(azel[0]) / cosl(posp[0]));
   }
-  /* Equivalent to 1/cos(asin(rp)) */
-  return 1.0 / sqrt(1.0 - rp * rp);
+  /* Equivalent to 1/cosl(asinl(rp)) */
+  return 1.0L / sqrtl(1.0L - rp * rp);
 }
 /* select iono-free linear combination (L1/L2 or L1/L5) ----------------------*/
 extern int seliflc(int optnf, int sys) {
@@ -4012,79 +4037,82 @@ extern int seliflc(int optnf, int sys) {
 /* troposphere model -----------------------------------------------------------
  * compute tropospheric delay by standard atmosphere and saastamoinen model
  * args   : gtime_t time     I   time
- *          double *pos      I   receiver position {lat,lon,h} (rad,m)
- *          double *azel     I   azimuth/elevation angle {az,el} (rad)
- *          double humi      I   relative humidity
+ *          long double *pos      I   receiver position {lat,lon,h} (rad,m)
+ *          long double *azel     I   azimuth/elevation angle {az,el} (rad)
+ *          long double humi      I   relative humidity
  * return : tropospheric delay (m)
  *-----------------------------------------------------------------------------*/
-extern double tropmodel(gtime_t time, const double *pos, const double *azel, double humi) {
-  const double temp0 = 15.0; /* temperature at sea level */
-  if (pos[2] < -100.0 || 1E4 < pos[2] || azel[1] <= 0) return 0.0;
+extern long double tropmodel(gtime_t time, const long double *pos, const long double *azel,
+                             long double humi) {
+  const long double temp0 = 15.0L; /* temperature at sea level */
+  if (pos[2] < -100.0L || 1E4L < pos[2] || azel[1] <= 0) return 0.0L;
 
   /* standard atmosphere */
-  double hgt = pos[2] < 0.0 ? 0.0 : pos[2];
+  long double hgt = pos[2] < 0.0L ? 0.0L : pos[2];
 
-  double pres = 1013.25 * pow(1.0 - 2.2557E-5 * hgt, 5.2568);
-  double temp = temp0 - 6.5E-3 * hgt + 273.16;
-  double e = 6.108 * humi * exp((17.15 * temp - 4684.0) / (temp - 38.45));
+  long double pres = 1013.25L * powl(1.0L - 2.2557E-5L * hgt, 5.2568L);
+  long double temp = temp0 - 6.5E-3L * hgt + 273.16L;
+  long double e = 6.108L * humi * expl((17.15L * temp - 4684.0L) / (temp - 38.45L));
 
   /* saastamoinen model */
-  double z = PI / 2.0 - azel[1];
-  double trph =
-      0.0022768 * pres / (1.0 - 0.00266 * cos(2.0 * pos[0]) - 0.00028 * hgt / 1E3) / cos(z);
-  double trpw = 0.002277 * (1255.0 / temp + 0.05) * e / cos(z);
+  long double z = PI / 2.0L - azel[1];
+  long double trph =
+      0.0022768L * pres / (1.0L - 0.00266L * cosl(2.0L * pos[0]) - 0.00028L * hgt / 1E3L) / cosl(z);
+  long double trpw = 0.002277L * (1255.0L / temp + 0.05L) * e / cosl(z);
   return trph + trpw;
 }
 #ifndef IERS_MODEL
 
-static double interpc(const double coef[], double lat) {
-  int i = (int)(lat / 15.0);
+static long double interpc(const long double coef[], long double lat) {
+  int i = (int)(lat / 15.0L);
   if (i < 1)
     return coef[0];
   else if (i > 4)
     return coef[4];
-  return coef[i - 1] * (1.0 - lat / 15.0 + i) + coef[i] * (lat / 15.0 - i);
+  return coef[i - 1] * (1.0L - lat / 15.0L + i) + coef[i] * (lat / 15.0L - i);
 }
-static double mapf(double el, double a, double b, double c) {
-  double sinel = sin(el);
-  return (1.0 + a / (1.0 + b / (1.0 + c))) / (sinel + (a / (sinel + b / (sinel + c))));
+static long double mapf(long double el, long double a, long double b, long double c) {
+  long double sinel = sinl(el);
+  return (1.0L + a / (1.0L + b / (1.0L + c))) / (sinel + (a / (sinel + b / (sinel + c))));
 }
-static double nmf(gtime_t time, const double pos[], const double azel[], double *mapfw) {
+static long double nmf(gtime_t time, const long double pos[], const long double azel[],
+                       long double *mapfw) {
   /* ref [5] table 3 */
   /* hydro-ave-a,b,c, hydro-amp-a,b,c, wet-a,b,c at latitude 15,30,45,60,75 */
-  const double coef[][5] = {{1.2769934E-3, 1.2683230E-3, 1.2465397E-3, 1.2196049E-3, 1.2045996E-3},
-                            {2.9153695E-3, 2.9152299E-3, 2.9288445E-3, 2.9022565E-3, 2.9024912E-3},
-                            {62.610505E-3, 62.837393E-3, 63.721774E-3, 63.824265E-3, 64.258455E-3},
+  const long double coef[][5] = {
+      {1.2769934E-3L, 1.2683230E-3L, 1.2465397E-3L, 1.2196049E-3L, 1.2045996E-3L},
+      {2.9153695E-3L, 2.9152299E-3L, 2.9288445E-3L, 2.9022565E-3L, 2.9024912E-3L},
+      {62.610505E-3L, 62.837393E-3L, 63.721774E-3L, 63.824265E-3L, 64.258455E-3L},
 
-                            {0.0000000E-0, 1.2709626E-5, 2.6523662E-5, 3.4000452E-5, 4.1202191E-5},
-                            {0.0000000E-0, 2.1414979E-5, 3.0160779E-5, 7.2562722E-5, 11.723375E-5},
-                            {0.0000000E-0, 9.0128400E-5, 4.3497037E-5, 84.795348E-5, 170.37206E-5},
+      {0.0000000E-0L, 1.2709626E-5L, 2.6523662E-5L, 3.4000452E-5L, 4.1202191E-5L},
+      {0.0000000E-0L, 2.1414979E-5L, 3.0160779E-5L, 7.2562722E-5L, 11.723375E-5L},
+      {0.0000000E-0L, 9.0128400E-5L, 4.3497037E-5L, 84.795348E-5L, 170.37206E-5L},
 
-                            {5.8021897E-4, 5.6794847E-4, 5.8118019E-4, 5.9727542E-4, 6.1641693E-4},
-                            {1.4275268E-3, 1.5138625E-3, 1.4572752E-3, 1.5007428E-3, 1.7599082E-3},
-                            {4.3472961E-2, 4.6729510E-2, 4.3908931E-2, 4.4626982E-2, 5.4736038E-2}};
-  const double aht[] = {2.53E-5, 5.49E-3, 1.14E-3}; /* height correction */
+      {5.8021897E-4L, 5.6794847E-4L, 5.8118019E-4L, 5.9727542E-4L, 6.1641693E-4L},
+      {1.4275268E-3L, 1.5138625E-3L, 1.4572752E-3L, 1.5007428E-3L, 1.7599082E-3L},
+      {4.3472961E-2L, 4.6729510E-2L, 4.3908931E-2L, 4.4626982E-2L, 5.4736038E-2L}};
+  const long double aht[] = {2.53E-5L, 5.49E-3L, 1.14E-3L}; /* height correction */
 
-  double el = azel[1];
-  if (el <= 0.0) {
-    if (mapfw) *mapfw = 0.0;
-    return 0.0;
+  long double el = azel[1];
+  if (el <= 0.0L) {
+    if (mapfw) *mapfw = 0.0L;
+    return 0.0L;
   }
   /* year from doy 28, added half a year for southern latitudes */
-  double lat = pos[0] * R2D;
-  double y = (time2doy(time) - 28.0) / 365.25 + (lat < 0.0 ? 0.5 : 0.0);
+  long double lat = pos[0] * R2D;
+  long double y = (time2doy(time) - 28.0L) / 365.25L + (lat < 0.0L ? 0.5L : 0.0L);
 
-  double cosy = cos(2.0 * PI * y);
+  long double cosy = cosl(2.0L * PI * y);
 
-  lat = fabs(lat);
-  double ah[3], aw[3];
+  lat = fabsl(lat);
+  long double ah[3], aw[3];
   for (int i = 0; i < 3; i++) {
     ah[i] = interpc(coef[i], lat) - interpc(coef[i + 3], lat) * cosy;
     aw[i] = interpc(coef[i + 6], lat);
   }
   /* ellipsoidal height is used instead of height above sea level */
-  double hgt = pos[2];
-  double dm = (1.0 / sin(el) - mapf(el, aht[0], aht[1], aht[2])) * hgt / 1E3;
+  long double hgt = pos[2];
+  long double dm = (1.0L / sinl(el) - mapf(el, aht[0], aht[1], aht[2])) * hgt / 1E3L;
 
   if (mapfw) *mapfw = mapf(el, aw[0], aw[1], aw[2]);
 
@@ -4095,32 +4123,33 @@ static double nmf(gtime_t time, const double pos[], const double azel[], double 
 /* troposphere mapping function ------------------------------------------------
  * compute tropospheric mapping function by NMF
  * args   : gtime_t t        I   time
- *          double *pos      I   receiver position {lat,lon,h} (rad,m)
- *          double *azel     I   azimuth/elevation angle {az,el} (rad)
- *          double *mapfw    IO  wet mapping function (NULL: not output)
+ *          long double *pos      I   receiver position {lat,lon,h} (rad,m)
+ *          long double *azel     I   azimuth/elevation angle {az,el} (rad)
+ *          long double *mapfw    IO  wet mapping function (NULL: not output)
  * return : dry mapping function
  * note   : see ref [5] (NMF) and [9] (GMF)
  *          original JGR paper of [5] has bugs in eq.(4) and (5). the corrected
  *          paper is obtained from:
  *          ftp://web.haystack.edu/pub/aen/nmf/NMF_JGR.pdf
  *-----------------------------------------------------------------------------*/
-extern double tropmapf(gtime_t time, const double pos[], const double azel[], double *mapfw) {
-  trace(4, "tropmapf: pos=%10.6f %11.6f %6.1f azel=%5.1f %4.1f\n", pos[0] * R2D, pos[1] * R2D,
+extern long double tropmapf(gtime_t time, const long double pos[], const long double azel[],
+                            long double *mapfw) {
+  trace(4, "tropmapf: pos=%10.6Lf %11.6Lf %6.1Lf azel=%5.1Lf %4.1Lf\n", pos[0] * R2D, pos[1] * R2D,
         pos[2], azel[0] * R2D, azel[1] * R2D);
 
-  if (pos[2] < -1000.0 || pos[2] > 20000.0) {
-    if (mapfw) *mapfw = 0.0;
-    return 0.0;
+  if (pos[2] < -1000.0L || pos[2] > 20000.0L) {
+    if (mapfw) *mapfw = 0.0L;
+    return 0.0L;
   }
 #ifdef IERS_MODEL
-  const double ep[] = {2000, 1, 1, 12, 0, 0};
-  double mjd = 51544.5 + (timediff(time, epoch2time(ep))) / 86400.0;
-  double lat = pos[0], lon = pos[1];
-  double hgt = pos[2] - geoidh(pos); /* height in m (mean sea level) */
-  double zd = PI / 2.0 - azel[1];
+  const long double ep[] = {2000, 1, 1, 12, 0, 0};
+  long double mjd = 51544.5L + (timediff(time, epoch2time(ep))) / 86400.0L;
+  long double lat = pos[0], lon = pos[1];
+  long double hgt = pos[2] - geoidh(pos); /* height in m (mean sea level) */
+  long double zd = PI / 2.0L - azel[1];
 
   /* call GMF */
-  double gmfh, gmfw;
+  long double gmfh, gmfw;
   gmf_(&mjd, &lat, &lon, &hgt, &zd, &gmfh, &gmfw);
 
   if (mapfw) *mapfw = gmfw;
@@ -4130,133 +4159,134 @@ extern double tropmapf(gtime_t time, const double pos[], const double azel[], do
 #endif
 }
 /* interpolate antenna phase center variation --------------------------------*/
-static double interpvar(double ang, const double *var) {
-  double a = ang / 5.0; /* ang=0-90 */
+static long double interpvar(long double ang, const long double *var) {
+  long double a = ang / 5.0L; /* ang=0-90 */
   int i = (int)a;
   if (i < 0)
     return var[0];
   else if (i >= 18)
     return var[18];
-  return var[i] * (1.0 - a + i) + var[i + 1] * (a - i);
+  return var[i] * (1.0L - a + i) + var[i + 1] * (a - i);
 }
 /* receiver antenna model ------------------------------------------------------
  * compute antenna offset by antenna phase center parameters
  * args   : pcv_t *pcv       I   antenna phase center parameters
- *          double *del      I   antenna delta {e,n,u} (m)
- *          double *azel     I   azimuth/elevation for receiver {az,el} (rad)
+ *          long double *del      I   antenna delta {e,n,u} (m)
+ *          long double *azel     I   azimuth/elevation for receiver {az,el} (rad)
  *          int     opt      I   option (0:only offset,1:offset+pcv)
- *          double *dant     O   range offsets for each frequency (m)
+ *          long double *dant     O   range offsets for each frequency (m)
  * return : none
  * notes  : current version does not support azimuth dependent terms
  *-----------------------------------------------------------------------------*/
-extern void antmodel(const pcv_t *pcv, const double *del, const double *azel, int opt,
-                     double *dant) {
-  trace(4, "antmodel: azel=%6.1f %4.1f opt=%d\n", azel[0] * R2D, azel[1] * R2D, opt);
+extern void antmodel(const pcv_t *pcv, const long double *del, const long double *azel, int opt,
+                     long double *dant) {
+  trace(4, "antmodel: azel=%6.1Lf %4.1Lf opt=%d\n", azel[0] * R2D, azel[1] * R2D, opt);
 
-  double e[3], cosel = cos(azel[1]);
-  e[0] = sin(azel[0]) * cosel;
-  e[1] = cos(azel[0]) * cosel;
-  e[2] = sin(azel[1]);
+  long double e[3], cosel = cosl(azel[1]);
+  e[0] = sinl(azel[0]) * cosel;
+  e[1] = cosl(azel[0]) * cosel;
+  e[2] = sinl(azel[1]);
 
-  double off[3];
+  long double off[3];
   for (int i = 0; i < NFREQ; i++) {
     for (int j = 0; j < 3; j++) off[j] = pcv->off[i][j] + del[j];
 
-    dant[i] = -dot3(off, e) + (opt ? interpvar(90.0 - azel[1] * R2D, pcv->var[i]) : 0.0);
+    dant[i] = -dot3(off, e) + (opt ? interpvar(90.0L - azel[1] * R2D, pcv->var[i]) : 0.0L);
   }
-  trace(4, "antmodel: dant=%6.3f %6.3f\n", dant[0], dant[1]);
+  trace(4, "antmodel: dant=%6.3Lf %6.3Lf\n", dant[0], dant[1]);
 }
 /* satellite antenna model ------------------------------------------------------
  * compute satellite antenna phase center parameters
  * args   : pcv_t *pcv       I   antenna phase center parameters
- *          double nadir     I   nadir angle for satellite (rad)
- *          double *dant     O   range offsets for each frequency (m)
+ *          long double nadir     I   nadir angle for satellite (rad)
+ *          long double *dant     O   range offsets for each frequency (m)
  * return : none
  *-----------------------------------------------------------------------------*/
-extern void antmodel_s(const pcv_t *pcv, double nadir, double *dant) {
-  trace(4, "antmodel_s: nadir=%6.1f\n", nadir * R2D);
+extern void antmodel_s(const pcv_t *pcv, long double nadir, long double *dant) {
+  trace(4, "antmodel_s: nadir=%6.1Lf\n", nadir * R2D);
 
   for (int i = 0; i < NFREQ; i++) {
-    dant[i] = interpvar(nadir * R2D * 5.0, pcv->var[i]);
+    dant[i] = interpvar(nadir * R2D * 5.0L, pcv->var[i]);
   }
-  trace(4, "antmodel_s: dant=%6.3f %6.3f\n", dant[0], dant[1]);
+  trace(4, "antmodel_s: dant=%6.3Lf %6.3Lf\n", dant[0], dant[1]);
 }
 /* sun and moon position in eci (ref [4] 5.1.1, 5.2.1) -----------------------*/
-static void sunmoonpos_eci(gtime_t tut, double *rsun, double *rmoon) {
-  const double ep2000[] = {2000, 1, 1, 12, 0, 0};
+static void sunmoonpos_eci(gtime_t tut, long double *rsun, long double *rmoon) {
+  const long double ep2000[] = {2000, 1, 1, 12, 0, 0};
 
   char tstr[40];
   trace(4, "sunmoonpos_eci: tut=%s\n", time2str(tut, tstr, 3));
 
-  double t = timediff(tut, epoch2time(ep2000)) / 86400.0 / 36525.0;
+  long double t = timediff(tut, epoch2time(ep2000)) / 86400.0L / 36525.0L;
 
   /* astronomical arguments */
-  double f[5];
+  long double f[5];
   ast_args(t, f);
 
   /* obliquity of the ecliptic */
-  double eps = 23.439291 - 0.0130042 * t;
-  double sine = sin(eps * D2R);
-  double cose = cos(eps * D2R);
+  long double eps = 23.439291L - 0.0130042L * t;
+  long double sine = sinl(eps * D2R);
+  long double cose = cosl(eps * D2R);
 
   /* sun position in eci */
   if (rsun) {
-    double Ms = 357.5277233 + 35999.05034 * t;
-    double ls =
-        280.460 + 36000.770 * t + 1.914666471 * sin(Ms * D2R) + 0.019994643 * sin(2.0 * Ms * D2R);
-    double rs =
-        AU * (1.000140612 - 0.016708617 * cos(Ms * D2R) - 0.000139589 * cos(2.0 * Ms * D2R));
-    double sinl = sin(ls * D2R);
-    double cosl = cos(ls * D2R);
-    rsun[0] = rs * cosl;
-    rsun[1] = rs * cose * sinl;
-    rsun[2] = rs * sine * sinl;
+    long double Ms = 357.5277233L + 35999.05034L * t;
+    long double ls = 280.460L + 36000.770L * t + 1.914666471L * sinl(Ms * D2R) +
+                     0.019994643L * sinl(2.0L * Ms * D2R);
+    long double rs =
+        AU * (1.000140612L - 0.016708617L * cosl(Ms * D2R) - 0.000139589L * cosl(2.0L * Ms * D2R));
+    long double sinll = sinl(ls * D2R);
+    long double cosll = cosl(ls * D2R);
+    rsun[0] = rs * cosll;
+    rsun[1] = rs * cose * sinll;
+    rsun[2] = rs * sine * sinll;
 
-    trace(5, "rsun =%.3f %.3f %.3f\n", rsun[0], rsun[1], rsun[2]);
+    trace(5, "rsun =%.3Lf %.3Lf %.3Lf\n", rsun[0], rsun[1], rsun[2]);
   }
   /* moon position in eci */
   if (rmoon) {
-    double lm = 218.32 + 481267.883 * t + 6.29 * sin(f[0]) - 1.27 * sin(f[0] - 2.0 * f[3]) +
-                0.66 * sin(2.0 * f[3]) + 0.21 * sin(2.0 * f[0]) - 0.19 * sin(f[1]) -
-                0.11 * sin(2.0 * f[2]);
-    double pm = 5.13 * sin(f[2]) + 0.28 * sin(f[0] + f[2]) - 0.28 * sin(f[2] - f[0]) -
-                0.17 * sin(f[2] - 2.0 * f[3]);
-    double rm = RE_WGS84 / sin((0.9508 + 0.0518 * cos(f[0]) + 0.0095 * cos(f[0] - 2.0 * f[3]) +
-                                0.0078 * cos(2.0 * f[3]) + 0.0028 * cos(2.0 * f[0])) *
-                               D2R);
-    double sinl = sin(lm * D2R);
-    double cosl = cos(lm * D2R);
-    double sinp = sin(pm * D2R);
-    double cosp = cos(pm * D2R);
-    rmoon[0] = rm * cosp * cosl;
-    rmoon[1] = rm * (cose * cosp * sinl - sine * sinp);
-    rmoon[2] = rm * (sine * cosp * sinl + cose * sinp);
+    long double lm = 218.32L + 481267.883L * t + 6.29L * sinl(f[0]) -
+                     1.27L * sinl(f[0] - 2.0L * f[3]) + 0.66L * sinl(2.0L * f[3]) +
+                     0.21L * sinl(2.0L * f[0]) - 0.19L * sinl(f[1]) - 0.11L * sinl(2.0L * f[2]);
+    long double pm = 5.13L * sinl(f[2]) + 0.28L * sinl(f[0] + f[2]) - 0.28L * sinl(f[2] - f[0]) -
+                     0.17L * sinl(f[2] - 2.0L * f[3]);
+    long double rm =
+        RE_WGS84 / sinl((0.9508L + 0.0518L * cosl(f[0]) + 0.0095L * cosl(f[0] - 2.0L * f[3]) +
+                         0.0078L * cosl(2.0L * f[3]) + 0.0028L * cosl(2.0L * f[0])) *
+                        D2R);
+    long double sinll = sinl(lm * D2R);
+    long double cosll = cosl(lm * D2R);
+    long double sinp = sinl(pm * D2R);
+    long double cosp = cosl(pm * D2R);
+    rmoon[0] = rm * cosp * cosll;
+    rmoon[1] = rm * (cose * cosp * sinll - sine * sinp);
+    rmoon[2] = rm * (sine * cosp * sinll + cose * sinp);
 
-    trace(5, "rmoon=%.3f %.3f %.3f\n", rmoon[0], rmoon[1], rmoon[2]);
+    trace(5, "rmoon=%.3Lf %.3Lf %.3Lf\n", rmoon[0], rmoon[1], rmoon[2]);
   }
 }
 /* sun and moon position -------------------------------------------------------
  * get sun and moon position in ecef
  * args   : gtime_t tut      I   time in ut1
- *          double *erpv     I   erp value {xp,yp,ut1_utc,lod} (rad,rad,s,s/d)
- *          double *rsun     IO  sun position in ecef  (m) (NULL: not output)
- *          double *rmoon    IO  moon position in ecef (m) (NULL: not output)
- *          double *gmst     O   gmst (rad)
+ *          long double *erpv     I   erp value {xp,yp,ut1_utc,lod} (rad,rad,s,s/d)
+ *          long double *rsun     IO  sun position in ecef  (m) (NULL: not output)
+ *          long double *rmoon    IO  moon position in ecef (m) (NULL: not output)
+ *          long double *gmst     O   gmst (rad)
  * return : none
  *-----------------------------------------------------------------------------*/
-extern void sunmoonpos(gtime_t tutc, const double *erpv, double *rsun, double *rmoon,
-                       double *gmst) {
+extern void sunmoonpos(gtime_t tutc, const long double *erpv, long double *rsun, long double *rmoon,
+                       long double *gmst) {
   char tstr[40];
   trace(4, "sunmoonpos: tutc=%s\n", time2str(tutc, tstr, 3));
 
   gtime_t tut = timeadd(tutc, erpv[2]); /* utc -> ut1 */
 
   /* sun and moon position in eci */
-  double rs[3], rm[3];
+  long double rs[3], rm[3];
   sunmoonpos_eci(tut, rsun ? rs : NULL, rmoon ? rm : NULL);
 
   /* eci to ecef transformation matrix */
-  double U[9], gmst_;
+  long double U[9], gmst_;
   eci2ecef(tutc, erpv, U, &gmst_);
 
   /* sun and moon position in ecef */
