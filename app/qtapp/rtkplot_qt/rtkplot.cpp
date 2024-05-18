@@ -1,12 +1,12 @@
-#include "plotmain.h"
 #include <QApplication>
 
-int main(int argc, char *argv[])
-{
-    QApplication a(argc, argv);
-    Plot w;
+#include "plotmain.h"
 
-    w.show();
+int main(int argc, char *argv[]) {
+  QApplication a(argc, argv);
+  Plot w;
 
-    return a.exec();
+  w.show();
+
+  return a.exec();
 }

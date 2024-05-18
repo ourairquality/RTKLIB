@@ -1,12 +1,12 @@
-#include "svrmain.h"
 #include <QApplication>
 
-int main(int argc, char *argv[])
-{
-    QApplication a(argc, argv);
-    MainForm w;
+#include "svrmain.h"
 
-    w.show();
+int main(int argc, char *argv[]) {
+  QApplication a(argc, argv);
+  MainForm w;
 
-    return a.exec();
+  w.show();
+
+  return a.exec();
 }

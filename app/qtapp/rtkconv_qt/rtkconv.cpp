@@ -1,12 +1,12 @@
-#include "convmain.h"
 #include <QApplication>
 
-int main(int argc, char *argv[])
-{
-    QApplication a(argc, argv);
-    MainWindow w(NULL);
+#include "convmain.h"
 
-    w.show();
+int main(int argc, char *argv[]) {
+  QApplication a(argc, argv);
+  MainWindow w(NULL);
 
-    return a.exec();
+  w.show();
+
+  return a.exec();
 }

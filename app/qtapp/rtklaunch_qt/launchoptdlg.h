@@ -3,21 +3,22 @@
 #ifndef launchoptdlgH
 #define launchoptdlgH
 //---------------------------------------------------------------------------
-#include "ui_launchoptdlg.h"
 #include <QDialog>
+
+#include "ui_launchoptdlg.h"
 
 class QShowEvent;
 //---------------------------------------------------------------------------
-class LaunchOptDialog : public QDialog, private Ui::LaunchOptDialog
-{
-    Q_OBJECT
-public slots:
-    void BtnOkClick();
+class LaunchOptDialog : public QDialog, private Ui::LaunchOptDialog {
+  Q_OBJECT
+ public slots:
+  void BtnOkClick();
 
-protected:
-    void showEvent(QShowEvent *);
-public:
-    LaunchOptDialog(QWidget* parent);
+ protected:
+  void showEvent(QShowEvent*);
+
+ public:
+  LaunchOptDialog(QWidget* parent);
 };
 //---------------------------------------------------------------------------
 #endif

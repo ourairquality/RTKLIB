@@ -1,12 +1,12 @@
-#include "navimain.h"
 #include <QApplication>
 
-int main(int argc, char *argv[])
-{
-    QApplication a(argc, argv);
-    MainWindow w;
+#include "navimain.h"
 
-    w.show();
+int main(int argc, char *argv[]) {
+  QApplication a(argc, argv);
+  MainWindow w;
 
-    return a.exec();
+  w.show();
+
+  return a.exec();
 }

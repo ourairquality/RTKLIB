@@ -9,28 +9,27 @@
 #include "ui_vmapdlg.h"
 
 //---------------------------------------------------------------------------
-class VecMapDialog : public QDialog, private Ui::VecMapDialog
-{
-    Q_OBJECT
-public slots:
-    void BtnColorClick();
-    void BtnApplyClick();
-    void VisClick();
-    void LayerClick();
-    void BtnUpClick();
-    void BtnDownClick();
+class VecMapDialog : public QDialog, private Ui::VecMapDialog {
+  Q_OBJECT
+ public slots:
+  void BtnColorClick();
+  void BtnApplyClick();
+  void VisClick();
+  void LayerClick();
+  void BtnUpClick();
+  void BtnDownClick();
 
-protected:
-    void showEvent (QShowEvent *event);
+ protected:
+  void showEvent(QShowEvent *event);
 
-private:
-	gis_t Gis;
-    QColor Colors[12];
+ private:
+  gis_t Gis;
+  QColor Colors[12];
 
-    void UpdateMap(void);
+  void UpdateMap(void);
 
-public:
-    explicit VecMapDialog(QWidget *parent);
+ public:
+  explicit VecMapDialog(QWidget *parent);
 };
 //---------------------------------------------------------------------------
 #endif

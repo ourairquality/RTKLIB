@@ -10,17 +10,16 @@
 #include "ui_aboutdlg.h"
 
 //---------------------------------------------------------------------------
-class AboutDialog : public QDialog, private Ui::AboutDlg
-{
-    Q_OBJECT
+class AboutDialog : public QDialog, private Ui::AboutDlg {
+  Q_OBJECT
 
-protected:
-    void showEvent(QShowEvent *);
+ protected:
+  void showEvent(QShowEvent *);
 
-public:
-	int IconIndex;
-    QString About;
+ public:
+  int IconIndex;
+  QString About;
 
-    explicit AboutDialog(QWidget*);
+  explicit AboutDialog(QWidget *);
 };
 #endif

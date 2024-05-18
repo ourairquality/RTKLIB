@@ -3,7 +3,7 @@
 
 #include <QString>
 
-static QString htmlPage =  R"~~~(
+static QString htmlPage = R"~~~(
 
 <!------------------------------------------------------------------------------
 * rtkplot_gm.htm: rtkplot google map view

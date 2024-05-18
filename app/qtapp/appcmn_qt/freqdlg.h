@@ -6,10 +6,9 @@
 #include "ui_freqdlg.h"
 
 //---------------------------------------------------------------------------
-class FreqDialog : public QDialog, private Ui::FreqDialog
-{
-public:
-    FreqDialog(QWidget* parent);
+class FreqDialog : public QDialog, private Ui::FreqDialog {
+ public:
+  FreqDialog(QWidget* parent);
 };
 //---------------------------------------------------------------------------
 #endif

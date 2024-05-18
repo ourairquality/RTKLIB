@@ -25,9 +25,10 @@ CUIs:
 1) cd app/consapp/<appName>/gcc
 2) make
 
-GUIs (Qt based: beta version now available on the qt_gui branch with significant improvements from Jens Reimann):
+GUIs (Qt based - available but not fully supported):
 1) cd app/qtapp
 2) qmake
 3) make
 4) ./install_qtapp
-Note that the install process for the QT GUIs isn't quite sorted out yet, so you may need to manually set the LD_LIBRARY_PATH environment variable to point to the shared libraries.
+
+The linux GUI files have been updated from https://github.com/JensReimann/RTKLIB/tree/rtklib_2.4.3 but are not fully functional
