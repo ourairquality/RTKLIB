@@ -947,6 +947,6 @@ extern int gen_stq(const char *msg, uint8_t *buff, size_t size) {
   buff[len] = 0x0A;
 
   trace(4, "gen_stq: buff=\n");
-  traceb(4, buff, len);
+  traceb(4, buff, size, len);
   return (int)len;
 }
