@@ -184,8 +184,9 @@ extern void tracepclk_impl(int level, const nav_t *nav) {
     }
   }
 }
-extern void traceb_impl(int level, const uint8_t *p, int n) {
-  if (!fp_trace || level > level_trace) return;
+extern void traceb_impl(int level, const uint8_t *p, size_t size, int n) {
+  if (!fp_trace || level > level_trace || n <= 0) return;
+  RTKBOUNDSCHECK(p, size, n - 1);
   for (int i = 0; i < n; i++) fprintf(fp_trace, "%02X%s", *p++, i % 8 == 7 ? " " : "");
   fprintf(fp_trace, "\n");
 }

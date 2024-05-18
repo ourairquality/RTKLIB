@@ -1018,7 +1018,7 @@ static int decode_galfnavrawpageb(raw_t *raw) {
 
   char tstr[40];
   trace(3, "%s E%2d FNAV     (%2d) ", time2str(raw->time, tstr, 0), satid, page);
-  traceb(3, buff, 27);
+  traceb(3, buff, sizeo(buff), 27);
 
   return 0;
 }
@@ -1069,7 +1069,7 @@ static int decode_galinavrawwordb(raw_t *raw) {
   }
   char tstr[40];
   trace(3, "%s E%2d INAV-%s (%2d) ", time2str(time, tstr, 0), satid, sig, type);
-  traceb(3, buff, 16);
+  traceb(3, buff, sizeof(buff), 16);
 
   return 0;
 }
@@ -1098,7 +1098,7 @@ static int decode_rawcnavframeb(raw_t *raw) {
   }
   char tstr[40];
   trace(3, "%s PRN=%3d FRMID=%2d ", time2str(raw->time, tstr, 0), prn, frmid);
-  traceb(3, buff, 38);
+  traceb(3, buff, sizeof(buff), 38);
 
   return 0;
 }

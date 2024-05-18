@@ -1616,7 +1616,7 @@ EXPORT void tracegnav_impl(int level, const nav_t *nav);
 EXPORT void tracehnav_impl(int level, const nav_t *nav);
 EXPORT void tracepeph_impl(int level, const nav_t *nav);
 EXPORT void tracepclk_impl(int level, const nav_t *nav);
-EXPORT void traceb_impl(int level, const uint8_t *p, int n);
+EXPORT void traceb_impl(int level, const uint8_t *p, size_t size, int n);
 
 #else
 
