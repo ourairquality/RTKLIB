@@ -117,46 +117,54 @@
 #define ROUND(x) (int)floor((x) + 0.5)
 
 /* Get fields from the raw buffer (little-endian) ----------------------------*/
-static uint8_t U1(raw_t *raw, size_t index) {
+static uint8_t U1(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index);
   return raw->buff[index];
 }
-static int8_t I1(raw_t *raw, size_t index) {
+static int8_t I1(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index);
   return (int8_t)raw->buff[index];
 }
-static uint16_t U2(raw_t *raw, size_t index) {
+static uint16_t U2(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index + 1);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index + 1);
   uint16_t u;
   memcpy(&u, raw->buff + index, 2);
   return u;
 }
-static uint32_t U4(raw_t *raw, size_t index) {
+static uint32_t U4(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index + 3);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index + 3);
   uint32_t u;
   memcpy(&u, raw->buff + index, 4);
   return u;
 }
-static int32_t I4(raw_t *raw, size_t index) {
+static int32_t I4(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index + 3);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index + 3);
   int32_t u;
   memcpy(&u, raw->buff + index, 4);
   return u;
 }
-static float R4(raw_t *raw, size_t index) {
+static float R4(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index + 3);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index + 3);
   float r;
   memcpy(&r, raw->buff + index, 4);
   return r;
 }
-static double R8(raw_t *raw, size_t index) {
+static double R8(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index + 7);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index + 7);
   double r;
   memcpy(&r, raw->buff + index, 8);
   return r;
 }
-static double I8(raw_t *raw, size_t index) {
+static double I8(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index + 7);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index + 7);
   return I4(raw, index + 4) * 4294967296.0 + U4(raw, index);
 }
 
@@ -195,7 +203,7 @@ static void setR8(uint8_t *p, size_t size, size_t index, double r) {
 }
 
 /* checksum ------------------------------------------------------------------*/
-static bool checksum(uint8_t *buff, int len) {
+static bool checksum(const uint8_t *buff, int len) {
   uint8_t cka = 0, ckb = 0;
   for (int i = 2; i < len - 2; i++) {
     cka += buff[i];
@@ -329,7 +337,7 @@ static int decode_rxmraw(raw_t *raw) {
   }
   /* time tag adjustment option (-TADJ) */
   double tadj = 0.0;
-  char *q = strstr(raw->opt, "-TADJ=");
+  const char *q = strstr(raw->opt, "-TADJ=");
   if (q) {
     sscanf(q, "-TADJ=%lf", &tadj);
   }
@@ -430,7 +438,7 @@ static int decode_rxmrawx(raw_t *raw) {
   }
   /* time tag adjustment option (-TADJ) */
   double tadj = 0.0;
-  char *q = strstr(raw->opt, "-TADJ=");
+  const char *q = strstr(raw->opt, "-TADJ=");
   if (q) {
     sscanf(q, "-TADJ=%lf", &tadj);
   }
@@ -631,7 +639,7 @@ static int decode_trkmeas(raw_t *raw) {
 
   /* trk meas code adjust (-TRKM_ADJ) */
   int fw = 0;
-  char *q = strstr(raw->opt, "-TRKM_ADJ=");
+  const char *q = strstr(raw->opt, "-TRKM_ADJ=");
   if (q) {
     sscanf(q, "-TRKM_ADJ=%d", &fw);
   }
