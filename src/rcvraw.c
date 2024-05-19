@@ -450,7 +450,7 @@ static int decode_gal_inav_utc(const uint8_t *buff, double *utc)
 extern int decode_gal_inav(const uint8_t *buff, eph_t *eph, double *ion,
                            double *utc)
 {
-    trace(4,"decode_gal_fnav:\n");
+    trace(4,"decode_gal_inav:\n");
     
     if (eph&&!decode_gal_inav_eph(buff,eph)) return 0;
     if (ion&&!decode_gal_inav_ion(buff,ion)) return 0;
