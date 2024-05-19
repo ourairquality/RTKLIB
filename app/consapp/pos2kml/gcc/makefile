@@ -5,10 +5,6 @@ SRC    = ../../../../src
 CFLAGS = -std=c99 -Wall -O3 -pedantic -I$(SRC) -DTRACE
 LDLIBS = -lm
 
-ifeq ($(strip $(shell uname -s)),Linux)
-	LDLIBS += -lrt
-endif
-
 pos2kml    : pos2kml.o convkml.o convgpx.o solution.o geoid.o rtkcmn.o trace.o preceph.o
 
 pos2kml.o  : ../pos2kml.c
