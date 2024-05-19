@@ -80,10 +80,6 @@ typedef struct {                       /* console type */
     pthread_t thread;                  /* console thread */
 } con_t;
 
-/* function prototypes -------------------------------------------------------*/
-extern FILE *popen(const char *, const char *);
-extern int pclose(FILE *);
-
 /* global variables ----------------------------------------------------------*/
 static rtksvr_t svr;                    /* rtk server struct */
 static stream_t moni;                   /* monitor stream */
@@ -160,7 +156,6 @@ static const char *helptxt[]={
     "help|? [path]         : print help",
     "exit|ctr-D            : logout console (only for telnet)",
     "shutdown              : shutdown rtk server",
-    "!command [arg...]     : execute command in shell",
     ""
 };
 static const char *pathopts[]={         /* path options help */
@@ -1322,26 +1317,6 @@ static void cmd_help(char **args, int narg, vt_t *vt)
         vt_printf(vt,"unknown help: %s\n",args[1]);
     }
 }
-/* exec command --------------------------------------------------------------*/
-static int cmd_exec(const char *cmd, vt_t *vt)
-{
-    FILE *fp;
-    int ret;
-    char buff[MAXSTR];
-    
-    if (!(fp=popen(cmd,"r"))) {
-        vt_printf(vt,"command exec error\n");
-        return -1;
-    }
-    while (!vt_chkbrk(vt)) {
-        if (!fgets(buff,sizeof(buff),fp)) break;
-        vt_printf(vt,buff);
-    }
-    if ((ret=pclose(fp))) {
-        vt_printf(vt,"command exec error (%d)\n",ret);
-    }
-    return ret;
-}
 /* console thread ------------------------------------------------------------*/
 static void *con_thread(void *arg)
 {
@@ -1379,10 +1354,6 @@ static void *con_thread(void *arg)
         /* input command */
         if (!vt_gets(con->vt,buff,sizeof(buff))) break;
         
-        if (buff[0]=='!') { /* shell escape */
-            cmd_exec(buff+1,con->vt);
-            continue;
-        }
         /* parse command */
         narg=0;
         char *r;
@@ -1621,10 +1592,6 @@ static void accept_sock(int ssock, con_t **con)
 *
 *     shutdown
 *       Shutdown RTK server and exit the program.
-*
-*     !command [arg...]
-*       Execute command by the operating system shell. Do not use the
-*       interactive command.
 *
 * notes
 *     Short form of a command is allowed. In case of the short form, the
