@@ -119,44 +119,52 @@
 /* Get fields from the raw buffer (little-endian) ----------------------------*/
 static uint8_t U1(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index);
   return raw->buff[index];
 }
 static int8_t I1(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index);
   return (int8_t)raw->buff[index];
 }
 static uint16_t U2(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index + 1);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index + 1);
   uint16_t u;
   memcpy(&u, raw->buff + index, 2);
   return u;
 }
 static uint32_t U4(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index + 3);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index + 3);
   uint32_t u;
   memcpy(&u, raw->buff + index, 4);
   return u;
 }
 static int32_t I4(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index + 3);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index + 3);
   int32_t u;
   memcpy(&u, raw->buff + index, 4);
   return u;
 }
 static float R4(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index + 3);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index + 3);
   float r;
   memcpy(&r, raw->buff + index, 4);
   return r;
 }
 static double R8(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index + 7);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index + 7);
   double r;
   memcpy(&r, raw->buff + index, 8);
   return r;
 }
 static long I8(const raw_t *raw, size_t index) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), index + 7);
+  RTKBOUNDSCHECK(raw->buff, raw->len, index + 7);
   return I4(raw, index + 4) * 4294967296.0L + U4(raw, index);
 }
 
