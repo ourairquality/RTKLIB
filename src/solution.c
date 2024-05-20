@@ -373,18 +373,19 @@ static int decode_nmea(char *buff, sol_t *sol)
 static char *decode_soltime(char *buff, const solopt_t *opt, gtime_t *time)
 {
     double v[MAXFIELD];
-    char *p,*q,s[64]=" ";
-    int n,len;
-    
+    char *p,*q,sep[64]=" ";
+    int n,sep_len;
+
     trace(4,"decode_soltime:\n");
-    
-    if (!strcmp(opt->sep,"\\t")) strcpy(s,"\t");
-    else if (*opt->sep) strcpy(s,opt->sep);
-    len=(int)strlen(s);
-    
+
     if (opt->posf==SOLF_STAT) {
         return buff;
     }
+
+    if (!strcmp(opt->sep,"\\t")) strcpy(sep,"\t");
+    else if (*opt->sep) strcpy(sep,opt->sep);
+    sep_len=(int)strlen(sep);
+
     if (opt->posf==SOLF_GSIF) {
         if (sscanf(buff,"%lf %lf %lf %lf:%lf:%lf",v,v+1,v+2,v+3,v+4,v+5)<6) {
             return NULL;
@@ -392,7 +393,9 @@ static char *decode_soltime(char *buff, const solopt_t *opt, gtime_t *time)
         *time=timeadd(epoch2time(v),-12.0*3600.0);
         if (!(p=strchr(buff,':'))||!(p=strchr(p+1,':'))) return NULL;
         for (p++;isdigit((int)*p)||*p=='.';) p++;
-        return p+len;
+        p=strstr(p,sep);
+        if (p) return p+sep_len;
+        else return NULL;
     }
     /* yyyy/mm/dd hh:mm:ss or yyyy mm dd hh:mm:ss */
     if (sscanf(buff,"%lf/%lf/%lf %lf:%lf:%lf",v,v+1,v+2,v+3,v+4,v+5)>=6) {
@@ -408,18 +411,21 @@ static char *decode_soltime(char *buff, const solopt_t *opt, gtime_t *time)
         }
         if (!(p=strchr(buff,':'))||!(p=strchr(p+1,':'))) return NULL;
         for (p++;isdigit((int)*p)||*p=='.';) p++;
-        return p+len;
+        p=strstr(p,sep);
+        if (p) return p+sep_len;
+        else return NULL;
     }
     else { /* wwww ssss */
-    for (p=buff,n=0;n<2;p=q+len) {
-        if ((q=strstr(p,s))) *q='\0'; 
+        for (p=buff,n=0;n<2;p=q+sep_len) {
+            q=strstr(p,sep);
+            if (!q) return NULL;
+            *q='\0';
             if (sscanf(p,"%lf",v+n)==1) n++;
-        if (!q) break;
-    }
-    if (n>=2&&0.0<=v[0]&&v[0]<=3000.0&&0.0<=v[1]&&v[1]<604800.0) {
-        *time=gpst2time((int)v[0],v[1]);
-        return p;
-    }
+        }
+        if (n>=2&&0.0<=v[0]&&v[0]<=3000.0&&0.0<=v[1]&&v[1]<604800.0) {
+            *time=gpst2time((int)v[0],v[1]);
+            return p;
+        }
     }
     return NULL;
 }
