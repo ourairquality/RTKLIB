@@ -279,7 +279,7 @@ static int decode_rangecmpb(raw_t *raw)
         }
 
         if (!parity) lli|=LLI_HALFC;
-#if 0
+#ifdef RTK_DISABLED
         if (halfc  ) lli|=LLI_HALFA;
 #else
         if (halfc!=raw->halfc[sat-1][pos]) lli|=LLI_SLIP;
@@ -303,7 +303,7 @@ static int decode_rangecmpb(raw_t *raw)
                 0.0<=snr&&snr<255.0?(unsigned char)(snr*4.0+0.5):0;
             raw->obs.data[index].LLI[pos]=(unsigned char)lli;
             raw->obs.data[index].code[pos]=code;
-#if 0
+#ifdef RTK_DISABLED
             /* L2C phase shift correction (L2C->L2P) */
             if (code==CODE_L2X) {
                 raw->obs.data[index].L[pos]+=0.25;
@@ -392,7 +392,7 @@ static int decode_rangeb(raw_t *raw)
                 0.0<=snr&&snr<255.0?(unsigned char)(snr*4.0+0.5):0;
             raw->obs.data[index].LLI[pos]=(unsigned char)lli;
             raw->obs.data[index].code[pos]=code;
-#if 0
+#ifdef RTK_DISABLED
             /* L2C phase shift correction */
             if (code==CODE_L2X) {
                 raw->obs.data[index].L[pos]+=0.25;

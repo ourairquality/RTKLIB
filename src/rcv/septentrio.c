@@ -750,7 +750,7 @@ static int decode_sbasnav(raw_t *raw){
     return 2;
 }
 
-#if 0 /* UNUSED */
+#if RTK_DISABLED /* UNUSED */
 
 /* decode SBF nav message for Compass/Beidou (navigation data) --------------------------*/
 static int decode_cmpnav(raw_t *raw){
@@ -1612,7 +1612,7 @@ static int decode_galalm(raw_t *raw)
     return 9;
 }
 
-#if 0 /* UNUSED */
+#if RTK_DISABLED /* UNUSED */
 
 /* type 2-5,0: fast corrections ---------------------------------------*/
 static int decode_sbsfast(raw_t *raw)
@@ -2080,7 +2080,7 @@ static int decode_sbf(raw_t *raw)
 #endif
 #endif
 
-#if 0 /* not yet supported by RTKLIB */
+#if RTK_DISABLED /* not yet supported by RTKLIB */
         case ID_GEOMT00:        return decode_sbsfast(raw);
         case ID_GEOPRNMASK:     return decode_sbsprnmask(raw);
         case ID_GEOFASTCORR:    return decode_sbsfast(raw);
@@ -2091,7 +2091,7 @@ static int decode_sbf(raw_t *raw)
         case ID_GEOIONODELAY:   return decode_sbsionodelay(raw);
 #endif /* UNUSED */
 
-#if 0 /* UNUSED */
+#if RTK_DISABLED /* UNUSED */
         case ID_GALRAWFNAV:     return decode_galrawfnav(raw); /* not yet supported in RTKLIB */
         case ID_GLOALM:         return decode_glosalm(raw); /* not yet supported in RTKLIB */
 
@@ -2100,7 +2100,7 @@ static int decode_sbf(raw_t *raw)
         case ID_COMMENT:        return decode_comment(raw);
 #endif /* UNUSED */
         default:
-#if 0 /* debug output */
+#if RTK_DISABLED /* debug output */
             if (raw->outtype) {
                 sprintf(raw->msgtype,"SBF 0x%04X (%4d):",type, raw->len);
             }

@@ -1016,8 +1016,8 @@ static void set_index(double ver, int sys, const char *opt,
     }
     ind->n=n;
 
-#if 0 /* for debug */
-    for (i=0;i<n;i++) {
+#ifdef RTK_DISABLED /* for debug */
+    for (int i=0;i<n;i++) {
         trace(2,"set_index: sys=%2d,tobs=%s code=%2d pri=%2d idx=%d pos=%d shift=%5.2f\n",
               sys,tobs[i],ind->code[i],ind->pri[i],ind->idx[i],ind->pos[i],
               ind->shift[i]);
@@ -1310,7 +1310,7 @@ static int decode_geph(double ver, int sat, gtime_t toc, double *data,
 
     geph->svh=(int)data[ 6];
     geph->frq=(int)data[10];
-#if 0 /*  output dtaun instead of age */
+#ifdef RTK_DISABLED /*  output dtaun instead of age */
     geph->dtaun=data[14];
 #else
     geph->age=(int)data[14];
@@ -2845,7 +2845,7 @@ extern int outrnxgnavb(FILE *fp, const rnxopt_t *opt, const geph_t *geph)
     outnavf(fp,geph->pos[2]/1E3);
     outnavf(fp,geph->vel[2]/1E3);
     outnavf(fp,geph->acc[2]/1E3);
-#if 0 /* input dtaun instead of age */
+#ifdef RTK_DISABLED /* input dtaun instead of age */
     outnavf(fp,geph->dtaun     );
 #else
     outnavf(fp,geph->age       );

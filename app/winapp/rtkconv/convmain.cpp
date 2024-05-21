@@ -1017,7 +1017,7 @@ void __fastcall TMainWindow::ConvertFile(void)
 	LabelOutFile->Enabled=true;
 	LabelFormat ->Enabled=true;
 	
-#if 0
+#ifdef RTK_DISABLED
 	// set time-start/end if time not specified
 	if (!TimeStartF->Checked&&rnxopt.tstart.time!=0) {
 		time2str(rnxopt.tstart,tstr,0);

@@ -29,7 +29,7 @@ __fastcall TOptDialog::TOptDialog(TComponent* Owner)
     int nglo=MAXPRNGLO,ngal=MAXPRNGAL,nqzs=MAXPRNQZS,ncmp=MAXPRNCMP;
     int nirn=MAXPRNIRN;
     
-#if 0
+#ifdef RTK_DISABLED
     Freq->Items->Clear();
     for (int i=0;i<NFREQ;i++) {
         label=label+(i>0?"+":"")+s.sprintf("%s",freqs[i]);

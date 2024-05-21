@@ -812,7 +812,7 @@ static int DecodeBeidouEphemeris(raw_t *Raw)
     tracet(3, "DecodeBeidouEphemeris(); not yet implemented.\n");
     return 0;
 
-#if 0
+#ifdef RTK_DISABLED
     rt17_t *rt17 = (rt17_t*) Raw->rcv_data;
     uint8_t *p = rt17->PacketBuffer;
     int prn, sat, toc, tow;
@@ -945,7 +945,7 @@ static int DecodeGalileoEphemeris(raw_t *Raw)
     tracet(3, "DecodeGalileoEphemeris(); not yet implemented.\n");
     return 0;
 
-#if 0
+#ifdef RTK_DISABLED
     rt17_t *rt17 = (rt17_t*) Raw->rcv_data;
     uint8_t *p = rt17->PacketBuffer;
     int prn, sat, toc, tow;
@@ -1424,7 +1424,7 @@ static int DecodeQZSSEphemeris(raw_t *Raw)
     tracet(3, "DecodeQZSSEphemeris(); not yet implemented.\n");
     return 0;
 
-#if 0
+#ifdef RTK_DISABLED
     rt17_t *rt17 = (rt17_t*) Raw->rcv_data;
     uint8_t *p = rt17->PacketBuffer;
     int prn, sat, toc, tow;
@@ -1670,7 +1670,7 @@ static int DecodeType17(raw_t *Raw, uint32_t rif)
     tow = R8(p) * 0.001; p += 8;         /* Receive time within the current GPS week. */
     ClockOffset = R8(p) * 0.001; p += 8; /* Clock offset value. 0.0 = not known */ 
 
-#if 0
+#ifdef RTK_DISABLED
     tow += ClockOffset;
 #endif
  
@@ -1855,7 +1855,7 @@ static int DecodeType17(raw_t *Raw, uint32_t rif)
             continue;
         }
 
-#if 0
+#ifdef RTK_DISABLED
         /* Apply clock offset to observables */
         if (ClockOffset != 0.0)
         {
