@@ -3,8 +3,8 @@
  *
  *          Copyright (C) 2007-2020 by T.TAKASU, All rights reserved.
  *
- * version : $Revision: 1.1 $ $Date: 2008/07/17 21:54:53 $
- * history : 2009/06/17  1.0  new
+ * Version : $Revision: 1.1 $ $Date: 2008/07/17 21:54:53 $
+ * History : 2009/06/17  1.0  new
  *           2011/05/29  1.1  add -f, -l and -x option
  *           2011/11/29  1.2  fix bug on recognize ntrips:// (rtklib_2.4.1_p4)
  *           2012/12/25  1.3  add format conversion functions
@@ -13,7 +13,7 @@
  *           2013/01/25  1.4  fix bug on showing message
  *           2014/02/21  1.5  ignore SIG_HUP
  *           2014/08/10  1.5  fix bug on showing message
- *           2014/08/26  1.6  support input format gw10, binex and rt17
+ *           2014/08/26  1.6  support input format GW10, binex and rt17
  *           2014/10/14  1.7  use stdin or stdout if option -in or -out omitted
  *           2014/11/08  1.8  add option -a, -i and -o
  *           2015/03/23  1.9  fix bug on parsing of command line options
@@ -22,27 +22,27 @@
  *                            add option -px
  *           2016/07/01  1.12 support CMR/CMR+
  *           2016/07/23  1.13 add option -c1 -c2 -c3 -c4
- *           2016/09/03  1.14 support ntrip caster
+ *           2016/09/03  1.14 support NTRIP caster
  *                            add option -ft,-fl
  *           2016/09/06  1.15 add reload source table by USR2 signal
  *           2016/09/17  1.16 add option -b
  *           2017/05/26  1.17 add input format tersus
  *           2020/11/30  1.18 support api change strsvrstart(),strsvrstat()
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #define _POSIX_C_SOURCE 199506
 #include <signal.h>
 #include <unistd.h>
 
 #include "rtklib.h"
 
-#define PRGNAME "str2str"      /* program name */
-#define MAXSTR 5               /* max number of streams */
-#define TRFILE "str2str.trace" /* trace file */
+#define PRGNAME "str2str"      /* Program name */
+#define MAXSTR 5               /* Max number of streams */
+#define TRFILE "str2str.trace" /* Trace file */
 
-/* global variables ----------------------------------------------------------*/
-static volatile int intrflg = 0; /* interrupt flag */
+/* Global variables ----------------------------------------------------------*/
+static volatile int intrflg = 0; /* Interrupt flag */
 
-/* help text -----------------------------------------------------------------*/
+/* Help text -----------------------------------------------------------------*/
 static const char *help[] = {
     "",
     " usage: str2str [-in stream] [-out stream [-out stream...]] [options]",
@@ -126,14 +126,14 @@ static const char *help[] = {
     "      - HEX send hex messages",
     "    - other string lines (like NMEA commands) are send as is",
 };
-/* print help ----------------------------------------------------------------*/
+/* Print help ----------------------------------------------------------------*/
 static void printhelp(void) {
   for (unsigned i = 0; i < sizeof(help) / sizeof(*help); i++) fprintf(stderr, "%s\n", help[i]);
   exit(0);
 }
-/* signal handler ------------------------------------------------------------*/
+/* Signal handler ------------------------------------------------------------*/
 static void sigfunc(int sig) { intrflg = 1; }
-/* decode format -------------------------------------------------------------*/
+/* Decode format -------------------------------------------------------------*/
 static void decodefmt(const char *path, int *fmt) {
   *fmt = -1;
   char *p = strrchr(path, '#');
@@ -169,17 +169,17 @@ static void decodefmt(const char *path, int *fmt) {
     *p = '\0';
   }
 }
-/* decode stream path --------------------------------------------------------*/
+/* Decode stream path --------------------------------------------------------*/
 static bool decodepath(const char *path, int *type, char *strpath, size_t size, int *fmt) {
   char buff[1024];
   rtkstrcpy(buff, sizeof(buff), path);
 
-  /* decode format */
+  /* Decode format */
   decodefmt(buff, fmt);
 
   strpath[0] = '\0';
 
-  /* decode type */
+  /* Decode type */
   char *p = strstr(buff, "://");
   if (!p) {
     rtkstrcpy(strpath, size, buff);
@@ -209,7 +209,7 @@ static bool decodepath(const char *path, int *type, char *strpath, size_t size, 
   rtksubstrcpy(strpath, size, p, 3);
   return true;
 }
-/* read receiver commands ----------------------------------------------------*/
+/* Read receiver commands ----------------------------------------------------*/
 static void readcmd(const char *file, char *cmd, size_t size, int type) {
   cmd[0] = '\0';
 
@@ -318,7 +318,7 @@ int main(int argc, char **argv) {
     else if (*argv[i] == '-')
       printhelp();
   }
-  if (n <= 0) n = 1; /* stdout */
+  if (n <= 0) n = 1; /* Stdout */
 
   strconv_t *conv[MAXSTR] = {NULL};
   char buff[256];
@@ -375,7 +375,7 @@ int main(int argc, char **argv) {
     if (*cmdfile[i]) readcmd(cmdfile[i], cmds[i], sizeof(cmd_strs[0]), 0);
     if (*cmdfile[i]) readcmd(cmdfile[i], cmds_periodic[i], sizeof(cmd_periodic_strs[0]), 2);
   }
-  /* start stream server */
+  /* Start stream server */
   if (!strsvrstart(strsvr, opts, types, (const char **)paths, (const char **)logs, conv,
                    (const char **)cmds, (const char **)cmds_periodic, stapos)) {
     fprintf(stderr, "stream server start error\n");
@@ -384,13 +384,13 @@ int main(int argc, char **argv) {
   }
   const char ss[] = {'E', '-', 'W', 'C', 'C'};
   for (intrflg = 0; !intrflg;) {
-    /* get stream server status */
+    /* Get stream server status */
     int byte[MAXSTR] = {0}, bps[MAXSTR] = {0};
     char strmsg[MAXSTRMSG] = "";
     strmsg[0] = '\0';
     strsvrstat(strsvr, stat, log_stat, byte, bps, strmsg, sizeof(strmsg));
 
-    /* show stream server status */
+    /* Show stream server status */
     buff[0] = '\0';
     for (int i = 0; i < MAXSTR; i++) rtkcatprintf(buff, sizeof(buff), "%c", ss[stat[i] + 1]);
 
@@ -403,7 +403,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i < MAXSTR; i++) {
     if (*cmdfile[i]) readcmd(cmdfile[i], cmds[i], sizeof(cmd_strs[0]), 1);
   }
-  /* stop stream server */
+  /* Stop stream server */
   strsvrstop(strsvr, (const char **)cmds);
 
   for (int i = 0; i < n; i++) {

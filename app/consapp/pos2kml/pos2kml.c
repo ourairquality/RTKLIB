@@ -1,10 +1,10 @@
 /*------------------------------------------------------------------------------
- * pos2kml.c : convert positions to google earth KML or GPX file
+ * pos2kml.c : convert positions to Google earth KML or GPX file
  *
  *          Copyright (C) 2007-2016 by T.TAKASU, All rights reserved.
  *
- * version : $Revision: 1.1 $ $Date: 2008/07/17 21:54:53 $
- * history : 2007/01/20  1.0 new
+ * Version : $Revision: 1.1 $ $Date: 2008/07/17 21:54:53 $
+ * History : 2007/01/20  1.0 new
  *           2007/03/15  1.1 modify color sequence
  *           2007/04/03  1.2 add geodetic height option
  *                           support input of NMEA GGA sentence
@@ -12,13 +12,13 @@
  *                           add time stamp option
  *                           separate readsol.c file
  *           2008/07/18  1.3 support change of convkml() arguments
- *           2016/06/11  1.4 add option -gpx for gpx conversion
- *-----------------------------------------------------------------------------*/
+ *           2016/06/11  1.4 add option -gpx for GPX conversion
+ *----------------------------------------------------------------------------*/
 #include <stdarg.h>
 
 #include "rtklib.h"
 
-/* help text -----------------------------------------------------------------*/
+/* Help text -----------------------------------------------------------------*/
 static const char *help[] = {
     "",
     " usage: pos2kml [option]... file [...]",
@@ -41,12 +41,12 @@ static const char *help[] = {
     " -q qflg   output q-flags (0:all) [0]",
     " -f n e h  add north/east/height offset to position (m) [0 0 0]",
     " -gpx      output GPX file"};
-/* print help ----------------------------------------------------------------*/
+/* Print help ----------------------------------------------------------------*/
 static void printhelp(void) {
   for (unsigned i = 0; i < sizeof(help) / sizeof(*help); i++) fprintf(stderr, "%s\n", help[i]);
   exit(0);
 }
-/* pos2kml main --------------------------------------------------------------*/
+/* Pos2kml main --------------------------------------------------------------*/
 int main(int argc, char **argv) {
   int outalt = 0, outtime = 0, qflg = 0, tcolor = 5, pcolor = 5, gpx = 0;
   char *infile[32];

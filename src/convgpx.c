@@ -1,18 +1,18 @@
 /*------------------------------------------------------------------------------
- * convgpx.c : gpx converter
+ * convgpx.c : GPX converter
  *
  *          Copyright (C) 2016 by T.TAKASU, All rights reserved.
  *
- * references :
+ * References :
  *     [1] GPX The GPS Exchange Format http://www.topografix.com/gpx.asp
  *
- * version : $Revision:$ $Date:$
- * history : 2016/06/11  1.0  new
+ * Version : $Revision:$ $Date:$
+ * History : 2016/06/11  1.0  new
  *           2016/09/18  1.1  modify <fix> labels according GPX specs
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
-/* constants -----------------------------------------------------------------*/
+/* Constants -----------------------------------------------------------------*/
 
 #define HEADXML "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 #define HEADGPX "<gpx version=\"1.1\" creator=\"%s\" xmlns=\"%s\">\n"
@@ -20,7 +20,7 @@
 
 static const char *XMLNS = "http://www.topografix.com/GPX/1/1";
 
-/* output waypoint -----------------------------------------------------------*/
+/* Output waypoint -----------------------------------------------------------*/
 static void outpoint(FILE *fp, gtime_t time, const long double *pos, const char *label, int stat,
                      int outalt, int outtime) {
   fprintf(fp, "<wpt lat=\"%.9Lf\" lon=\"%.9Lf\">\n", pos[0] * R2D, pos[1] * R2D);
@@ -41,7 +41,7 @@ static void outpoint(FILE *fp, gtime_t time, const long double *pos, const char 
     fprintf(fp, " <geoidheight>%.4Lf</geoidheight>\n", geoidh(pos));
   }
   if (stat >= 1 && stat <= 6) {
-    /* fix, float, sbas and ppp are rtklib extentions to GPX */
+    /* Fix, float, SBAS and ppp are RTKLIB extentions to GPX */
     const char *fix_label[] = {"fix", "float", "sbas", "dgps", "3d", "ppp"};
     fprintf(fp, " <fix>%s</fix>\n", fix_label[stat - 1]);
   }
@@ -50,7 +50,7 @@ static void outpoint(FILE *fp, gtime_t time, const long double *pos, const char 
   }
   fprintf(fp, "</wpt>\n");
 }
-/* output track --------------------------------------------------------------*/
+/* Output track --------------------------------------------------------------*/
 static void outtrack(FILE *fp, const solbuf_t *solbuf, int outalt, int outtime) {
   fprintf(fp, "<trk>\n");
   fprintf(fp, " <trkseg>\n");
@@ -80,7 +80,7 @@ static void outtrack(FILE *fp, const solbuf_t *solbuf, int outalt, int outtime) 
   fprintf(fp, " </trkseg>\n");
   fprintf(fp, "</trk>\n");
 }
-/* save gpx file -------------------------------------------------------------*/
+/* Save GPX file -------------------------------------------------------------*/
 static bool savegpx(const char *file, const solbuf_t *solbuf, int outtrk, int outpnt, int outalt,
                     int outtime) {
   FILE *fp = fopen(file, "w");
@@ -91,7 +91,7 @@ static bool savegpx(const char *file, const solbuf_t *solbuf, int outtrk, int ou
   fprintf(fp, HEADXML);
   fprintf(fp, HEADGPX, "RTKLIB " VER_RTKLIB, XMLNS);
 
-  /* output waypoint */
+  /* Output waypoint */
   if (outpnt) {
     for (int i = 0; i < solbuf->n; i++) {
       long double pos[3];
@@ -99,13 +99,13 @@ static bool savegpx(const char *file, const solbuf_t *solbuf, int outtrk, int ou
       outpoint(fp, solbuf->data[i].time, pos, "", solbuf->data[i].stat, outalt, outtime);
     }
   }
-  /* output waypoint of ref position */
+  /* Output waypoint of ref position */
   if (norm(solbuf->rb, 3) > 0.0L) {
     long double pos[3];
     ecef2pos(solbuf->rb, pos);
     outpoint(fp, solbuf->data[0].time, pos, "Reference Position", 0, outalt, 0);
   }
-  /* output track */
+  /* Output track */
   if (outtrk) {
     outtrack(fp, solbuf, outalt, outtime);
   }
@@ -113,11 +113,11 @@ static bool savegpx(const char *file, const solbuf_t *solbuf, int outtrk, int ou
   fclose(fp);
   return true;
 }
-/* convert to GPX file ---------------------------------------------------------
- * convert solutions to GPX file [1]
- * args   : char   *infile   I   input solutions file
- *          char   *outfile  I   output google earth kml file ("":<infile>.kml)
- *          gtime_t ts,te    I   start/end time (gpst)
+/* Convert to GPX file ---------------------------------------------------------
+ * Convert solutions to GPX file [1]
+ * Args   : char   *infile   I   input solutions file
+ *          char   *outfile  I   output Google earth KML file ("":<infile>.kml)
+ *          gtime_t ts,te    I   start/end time (GPST)
  *          int    tint      I   time interval (s) (0.0:all)
  *          int    qflg      I   quality flag (0:all)
  *          long double *offset   I   add offset {east,north,up} (m)
@@ -125,8 +125,8 @@ static bool savegpx(const char *file, const solbuf_t *solbuf, int outtrk, int ou
  *          int    outpnt    I   output waypoint (0:off,1:on)
  *          int    outalt    I   output altitude (0:off,1:elipsoidal,2:geodetic)
  *          int    outtime   I   output time (0:off,1:gpst,2:utc,3:jst)
- * return : status (0:ok,-1:file read,-2:file format,-3:no data,-4:file write)
- *-----------------------------------------------------------------------------*/
+ * Return : status (0:ok,-1:file read,-2:file format,-3:no data,-4:file write)
+ *----------------------------------------------------------------------------*/
 extern int convgpx(const char *infile, const char *outfile, gtime_t ts, gtime_t te,
                    long double tint, int qflg, const long double *offset, int outtrk, int outpnt,
                    int outalt, int outtime) {
@@ -144,17 +144,17 @@ extern int convgpx(const char *infile, const char *outfile, gtime_t ts, gtime_t 
   } else
     rtkstrcpy(file, sizeof(file), outfile);
 
-  /* read solution file */
+  /* Read solution file */
   solbuf_t solbuf = {0};
   if (!readsolt(&infile, 1, ts, te, tint, qflg, &solbuf)) return -1;
 
-  /* mean position */
+  /* Mean position */
   long double rr[3] = {0};
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < solbuf.n; j++) rr[i] += solbuf.data[j].rr[i];
     rr[i] /= solbuf.n;
   }
-  /* add offset */
+  /* Add offset */
   long double pos[3];
   ecef2pos(rr, pos);
   long double dr[3];
@@ -165,7 +165,7 @@ extern int convgpx(const char *infile, const char *outfile, gtime_t ts, gtime_t 
   if (norm(solbuf.rb, 3) > 0.0L) {
     for (int i = 0; i < 3; i++) solbuf.rb[i] += dr[i];
   }
-  /* save gpx file */
+  /* Save GPX file */
   int r = savegpx(file, &solbuf, outtrk, outpnt, outalt, outtime) ? 0 : -4;
   freesolbuf(&solbuf);
   return r;

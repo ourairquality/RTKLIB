@@ -3,36 +3,36 @@
  *
  *          Copyright (C) 2015 by T.TAKASU, All rights reserved.
  *
- * version : $Revision:$ $Date:$
- * history : 2015/01/11 1.0  separated from rtkrcv.c
- *-----------------------------------------------------------------------------*/
+ * Version : $Revision:$ $Date:$
+ * History : 2015/01/11 1.0  separated from rtkrcv.c
+ *----------------------------------------------------------------------------*/
 #ifndef VT_H
 #define VT_H
 #include <termios.h>
 
 #include "rtklib.h"
 
-#define MAXBUFF 4096 /* size of line buffer */
-#define MAXHIST 256  /* size of history buffer */
+#define MAXBUFF 4096 /* Size of line buffer */
+#define MAXHIST 256  /* Size of history buffer */
 
-/* type definitions ----------------------------------------------------------*/
-typedef struct vt_tag { /* virtual console type */
+/* Type definitions ----------------------------------------------------------*/
+typedef struct vt_tag { /* Virtual console type */
   int state;            /* state(0:close,1:open) */
-  int type;             /* type (0:dev,1:telnet) */
-  int in, out;          /* input/output file descriptor */
-  int n, nesc;          /* number of line buffer/escape */
-  int cur;              /* cursor position */
-  int cur_h;            /* current history */
-  int brk;              /* break status */
-  int blind;            /* blind inpu mode */
-  struct termios tio;   /* original terminal attribute */
-  char buff[MAXBUFF];   /* line buffer */
-  char esc[8];          /* escape buffer */
-  char *hist[MAXHIST];  /* history buffer */
-  FILE *logfp;          /* log file pointer */
+  int type;             /* Type (0:dev,1:telnet) */
+  int in, out;          /* Input/output file descriptor */
+  int n, nesc;          /* Number of line buffer/escape */
+  int cur;              /* Cursor position */
+  int cur_h;            /* Current history */
+  int brk;              /* Break status */
+  int blind;            /* Blind inpu mode */
+  struct termios tio;   /* Original terminal attribute */
+  char buff[MAXBUFF];   /* Line buffer */
+  char esc[8];          /* Escape buffer */
+  char *hist[MAXHIST];  /* History buffer */
+  FILE *logfp;          /* Log file pointer */
 } vt_t;
 
-/* function prototypes -------------------------------------------------------*/
+/* Function prototypes -------------------------------------------------------*/
 extern vt_t *vt_open(int sock, const char *dev);
 extern void vt_close(vt_t *vt);
 extern int vt_getc(vt_t *vt, char *c);

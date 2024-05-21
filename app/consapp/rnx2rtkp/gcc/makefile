@@ -7,8 +7,10 @@ OPTS    = -DTRACE -DENAGLO -DENAQZS -DENAGAL -DENACMP -DENAIRN -DNFREQ=3 -DNEXOB
 #OPTS    = -DENAGLO -DENAQZS -DENAGAL -DENACMP -DNFREQ=2
 
 # for no lapack
-CFLAGS  = -std=c99 -Wall -O3 -pedantic -Wno-unused-but-set-variable -Wint-in-bool-context -Wextra  -Wdouble-promotion -I$(SRC) $(OPTS)
-LDLIBS  = -lgfortran -lm -lrt
+#CFLAGS  = -std=c99 -Wall -O3 -pedantic -Wno-unused-but-set-variable -Wint-in-bool-context -Wextra  -Wdouble-promotion -I$(SRC) $(OPTS)
+#LDLIBS  = -lgfortran -lm -lrt
+CFLAGS  = -g -fsanitize=undefined,address -fno-omit-frame-pointer -std=c99 -Wall -O3 -pedantic -Wno-unused-but-set-variable -Wint-in-bool-context -Wextra  -Wdouble-promotion -I$(SRC) $(OPTS)
+LDLIBS  = -g -fsanitize=undefined,address -fno-omit-frame-pointer -lgfortran -lm -lrt
 
 #CFLAGS  = -std=c99 -Wall -O3 -pedantic -Wno-unused-but-set-variable -I$(SRC) -DLAPACK $(OPTS)
 #LDLIBS  = -lm -lrt -llapack -lblas

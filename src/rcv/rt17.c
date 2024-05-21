@@ -4,13 +4,13 @@
  *          Copyright (C) 2016 Daniel A. Cook, All rights reserved.
  *          Copyright (C) 2020 T.TAKASU, All rights reserved.
  *
- * references:
+ * References:
  *     [1] https://github.com/astrodanco/RTKLIB/tree/cmr/src/rcv/rt17.c
  *     [2] Trimble, Trimble OEM BD9xx GNSS Receiver Family IDC, version 4.82
  *         Revision A, December, 2013
  *
- * version : $Revision:$ $Date:$
- * history : 2014/08/26 1.0  imported from GitHub (ref [1])
+ * Version : $Revision:$ $Date:$
+ * History : 2014/08/26 1.0  imported from GitHub (ref [1])
  *                           modified to get initial week number
  *                           modified obs types for raw obs data
  *                           function added to output message type
@@ -26,7 +26,7 @@
  *           2016/07/29 1.4  suppress warning
  *           2017/04/11 1.5  (char *) -> (signed char *)
  *           2020/11/30 1.6  use integer type in stdint.h
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 
 /*
 | Trimble real-time binary data stream and file handler functions.
@@ -501,7 +501,7 @@ EXPORT int init_rt17(raw_t *Raw) {
 |  0: no message (tells caller to please read more data from the stream)
 |  1: input observation data
 |  2: input ephemeris
-|  9: input ion/utc parameter
+|  9: input ion/UTC parameter
 |
 | Each message begins with a 4-byte header, followed by the bytes of data in the packet,
 | and the packet ends with a 2-byte trailer. Byte 3 is set to 0 (00h) when the packet
@@ -699,7 +699,7 @@ EXPORT int input_rt17(raw_t *Raw, uint8_t Data) {
 |  0: no message
 |  1: input observation data
 |  2: input ephemeris
-|  9: input ion/utc parameter
+|  9: input ion/UTC parameter
 */
 EXPORT int input_rt17f(raw_t *Raw, FILE *fp) {
   int i, Data, Ret;
@@ -709,7 +709,7 @@ EXPORT int input_rt17f(raw_t *Raw, FILE *fp) {
     if ((Ret = input_rt17(Raw, (uint8_t)Data))) return Ret;
   }
 
-  return 0; /* return at every 4k bytes */
+  return 0; /* Return at every 4k bytes */
 }
 
 /*
@@ -728,7 +728,7 @@ EXPORT int input_rt17f(raw_t *Raw, FILE *fp) {
 static int CheckPacketChecksum(uint8_t *PacketBuffer) {
   uint8_t Checksum = 0;
   uint8_t *p = &PacketBuffer[1];         /* Starting with status */
-  uint32_t Length = PacketBuffer[3] + 3; /* status, type, length, data */
+  uint32_t Length = PacketBuffer[3] + 3; /* Status, type, length, data */
 
   /* Compute the packet checksum */
   while (Length > 0) {
@@ -766,20 +766,20 @@ static void ClearPacketBuffer(rt17_t *rt17) {
 }
 
 /*
-| DecodeBeidouEphemeris - Decode a Beidou Ephemeris record
+| DecodeBeidouEphemeris - Decode a BeiDou Ephemeris record
 |
 | Returns:
 |
 | -1: error message
 |  2: input ephemeris
 |
-| See reference #1 above for documentation of the RETSVDATA Beidou Ephemeris.
+| See reference #1 above for documentation of the RETSVDATA BeiDou Ephemeris.
 */
 static int DecodeBeidouEphemeris(raw_t *Raw) {
   tracet(3, "DecodeBeidouEphemeris(); not yet implemented.\n");
   return 0;
 
-#if 0
+#ifdef RTK_DISABLED
   rt17_t *rt17 = (rt17_t *)Raw->rcv_data;
   uint8_t *p = rt17->PacketBuffer;
   int prn, sat, toc, tow;
@@ -798,13 +798,13 @@ static int DecodeBeidouEphemeris(raw_t *Raw) {
     return -1;
   }
 
-  eph.week = U2(p + 6);    /* 006-007: Ephemeris Week number (weeks) */
-  eph.iodc = U2(p + 8);    /* 008-009: IODC */
-  /* Reserved byte */      /* 010-010: RESERVED */
-  eph.iode = U1(p + 11);   /* 011-011: IODE */
-  tow = I4(p + 12);        /* 012-015: TOW */
-  toc = I4(p + 16);        /* 016-019: TOC (seconds) */
-  toe = U4(p + 20);        /* 020-023: TOE (seconds) */
+  eph.week = U2(p + 6);                 /* 006-007: Ephemeris Week number (weeks) */
+  eph.iodc = U2(p + 8);                 /* 008-009: IODC */
+  /* Reserved byte */                   /* 010-010: RESERVED */
+  eph.iode = U1(p + 11);                /* 011-011: IODE */
+  tow = I4(p + 12);                     /* 012-015: TOW */
+  toc = I4(p + 16);                     /* 016-019: TOC (seconds) */
+  toe = U4(p + 20);                     /* 020-023: TOE (seconds) */
   eph.tgd[0] = (long double)R8(p + 24); /* 024-031: TGD (seconds) */
   eph.f2 = (long double)R8(p + 32);     /* 032-029: AF2 (seconds/seconds^2) */
   eph.f1 = (long double)R8(p + 40);     /* 040-047: AF1 (seconds/seconds) */
@@ -824,7 +824,7 @@ static int DecodeBeidouEphemeris(raw_t *Raw) {
   eph.omg = (long double)R8(p + 152);   /* 152-159: OMEGA (semi-circles?) */
   eph.OMGd = (long double)R8(p + 160);  /* 160-167: OMEGA DOT (semi-circles/second) */
   eph.idot = (long double)R8(p + 168);  /* 168-175: I DOT (semi-circles/second) */
-  Flags = U4(p + 176);     /* 176-179: FLAGS */
+  Flags = U4(p + 176);                  /* 176-179: FLAGS */
 
   /*
   | Multiply these by PI to make semi-circle units into radian units for RTKLIB.
@@ -884,7 +884,7 @@ static int DecodeBeidouEphemeris(raw_t *Raw) {
   tracet(3, "RT17: DecodeBeidouEphemeris(); SAT=%d, IODC=%d, IODE=%d, WEEK=%d.\n", sat, eph.iodc,
          eph.iode, eph.week);
   if (!strstr(Raw->opt, "-EPHALL")) {
-    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* unchanged */
+    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* Unchanged */
   }
   eph.sat = sat;
   Raw->nav.eph[sat - 1][0] = eph;
@@ -908,7 +908,7 @@ static int DecodeGalileoEphemeris(raw_t *Raw) {
   tracet(3, "DecodeGalileoEphemeris(); not yet implemented.\n");
   return 0;
 
-#if 0
+#ifdef RTK_DISABLED
   rt17_t *rt17 = (rt17_t *)Raw->rcv_data;
   uint8_t *p = rt17->PacketBuffer;
   int prn, sat, toc, tow;
@@ -930,11 +930,11 @@ static int DecodeGalileoEphemeris(raw_t *Raw) {
     return -1;
   }
 
-  eph.code = U1(p + 6);   /* 006-006: Data source 0:E1B 1:E5B 2:E5A */
-  eph.week = U2(p + 7);   /* 007-008: Ephemeris Week number (weeks) */
-  tow = I4(p + 9);        /* 008-012: TOW */
-  IODnav = U2(p + 13);    /* 013-014: Ephemeris and clock correction issue of data */
-  toe = U4(p + 15);       /* 015-018: TOE (seconds) */
+  eph.code = U1(p + 6);                /* 006-006: Data source 0:E1B 1:E5B 2:E5A */
+  eph.week = U2(p + 7);                /* 007-008: Ephemeris Week number (weeks) */
+  tow = I4(p + 9);                     /* 008-012: TOW */
+  IODnav = U2(p + 13);                 /* 013-014: Ephemeris and clock correction issue of data */
+  toe = U4(p + 15);                    /* 015-018: TOE (seconds) */
   eph.crs = (long double)R8(p + 19);   /* 019-026: CRS (meters) */
   eph.deln = (long double)R8(p + 27);  /* 027-034: DELTA N (semi-circles/second) */
   eph.M0 = (long double)R8(p + 35);    /* 035-042: M SUB 0 (semi-circles) */
@@ -950,16 +950,16 @@ static int DecodeGalileoEphemeris(raw_t *Raw) {
   eph.omg = (long double)R8(p + 115);  /* 115-122: OMEGA (semi-circles?) */
   eph.OMGd = (long double)R8(p + 123); /* 123-130: OMEGA DOT (semi-circles/second) */
   eph.idot = (long double)R8(p + 131); /* 131-138: I DOT (semi-circles/second) */
-  SISA = U1(p + 149);     /* 149-149: ? */
-  HSDVS = U2(p + 150);    /* 150-151: Signal Health Flag */
-  toc = I4(p + 142);      /* 142-145: TOC (seconds) */
+  SISA = U1(p + 149);                  /* 149-149: ? */
+  HSDVS = U2(p + 150);                 /* 150-151: Signal Health Flag */
+  toc = I4(p + 142);                   /* 142-145: TOC (seconds) */
   eph.f0 = (long double)R8(p + 146);   /* 146-153: AF0 (seconds) */
   eph.f1 = (long double)R8(p + 154);   /* 154-161: AF1 (seconds/seconds) */
   eph.f2 = (long double)R8(p + 162);   /* 162-169: AF2 (seconds/seconds^2) */
   BDG1 = (long double)R8(p + 170);     /* 170-177: Seconds */
-  MODEL1 = U1(p + 178);   /* 178-178: Clock model for TOC/AF0?2/BGD1 */
+  MODEL1 = U1(p + 178);                /* 178-178: Clock model for TOC/AF0?2/BGD1 */
   BDG2 = (long double)R8(p + 179);     /* 179-186: Seconds */
-  MODEL2 = U1(p + 187);   /* 187-187: Clock model for BGD2 */
+  MODEL2 = U1(p + 187);                /* 187-187: Clock model for BGD2 */
   /*
   | Multiply these by PI to make semi-circle units into radian units for RTKLIB.
   */
@@ -987,7 +987,7 @@ static int DecodeGalileoEphemeris(raw_t *Raw) {
   tracet(3, "RT17: DecodeGalileoEphemeris(); SAT=%d, IODC=%d, IODE=%d, WEEK=%d.\n", sat, eph.iodc,
          eph.iode, eph.week);
   if (!strstr(Raw->opt, "-EPHALL")) {
-    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* unchanged */
+    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* Unchanged */
   }
   eph.sat = sat;
   Raw->nav.eph[sat - 1][0] = eph;
@@ -1158,7 +1158,7 @@ static int DecodeGPSEphemeris(raw_t *Raw) {
   }
 
   if (!strstr(Raw->opt, "-EPHALL")) {
-    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* unchanged */
+    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* Unchanged */
   }
 
   eph.sat = sat;
@@ -1313,7 +1313,7 @@ static int DecodeGSOF41(raw_t *raw, uint8_t *p) {
 | Returns:
 |
 | -1: error message
-|  9: input ion/utc parameter|
+|  9: input ion/UTC parameter|
 |
 | See ICD-GPS-200C.PDF for documetation of GPS ION / UTC data.
 | See reference #1 above for documentation of RETSVDATA and ION / UTC data.
@@ -1375,7 +1375,7 @@ static int DecodeQZSSEphemeris(raw_t *Raw) {
   tracet(3, "DecodeQZSSEphemeris(); not yet implemented.\n");
   return 0;
 
-#if 0
+#ifdef RTK_DISABLED
   rt17_t *rt17 = (rt17_t *)Raw->rcv_data;
   uint8_t *p = rt17->PacketBuffer;
   int prn, sat, toc, tow;
@@ -1398,10 +1398,10 @@ static int DecodeQZSSEphemeris(raw_t *Raw) {
   eph.week = U2(p + 8);  /* 008-009: Ephemeris Week number (weeks) */
   eph.iodc = U2(p + 10); /* 010-011: IODC */
   /* Reserved byte           012-012: RESERVED */
-  eph.iode = U1(p + 13);   /* 013-013: IODE */
-  tow = I4(p + 14);        /* 014-017: TOW */
-  toc = I4(p + 18);        /* 018-021: TOC (seconds) */
-  toe = U4(p + 22);        /* 022-025: TOE (seconds) */
+  eph.iode = U1(p + 13);                /* 013-013: IODE */
+  tow = I4(p + 14);                     /* 014-017: TOW */
+  toc = I4(p + 18);                     /* 018-021: TOC (seconds) */
+  toe = U4(p + 22);                     /* 022-025: TOE (seconds) */
   eph.tgd[0] = (long double)R8(p + 26); /* 026-033: TGD (seconds) */
   eph.f2 = (long double)R8(p + 34);     /* 034-041: AF2 (seconds/seconds^2) */
   eph.f1 = (long double)R8(p + 42);     /* 042-049: AF1 (seconds/seconds) */
@@ -1421,7 +1421,7 @@ static int DecodeQZSSEphemeris(raw_t *Raw) {
   eph.omg = (long double)R8(p + 154);   /* 154-161: OMEGA (semi-circles?) */
   eph.OMGd = (long double)R8(p + 162);  /* 162-169: OMEGA DOT (semi-circles/second) */
   eph.idot = (long double)R8(p + 170);  /* 170-177: I DOT (semi-circles/second) */
-  Flags = U4(p + 178);     /* 178-181: FLAGS */
+  Flags = U4(p + 178);                  /* 178-181: FLAGS */
 
   /*
   | Multiply these by PI to make ICD specified semi-circle units into radian
@@ -1483,7 +1483,7 @@ static int DecodeQZSSEphemeris(raw_t *Raw) {
   tracet(3, "RT17: DecodeQZSSEphemeris(); SAT=%d, IODC=%d, IODE=%d, WEEK=%d.\n", sat, eph.iodc,
          eph.iode, eph.week);
   if (!strstr(Raw->opt, "-EPHALL")) {
-    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* unchanged */
+    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* Unchanged */
   }
   eph.sat = sat;
   Raw->nav.eph[sat - 1][0] = eph;
@@ -1547,7 +1547,7 @@ static int DecodeRawdata(raw_t *Raw) {
 | -1: error message
 |  0: no message (tells caller to please read more data from the stream)
 |  2: input ephemeris
-|  9: input ion/utc parameter
+|  9: input ion/UTC parameter
 */
 static int DecodeRetsvdata(raw_t *Raw) {
   rt17_t *rt17 = (rt17_t *)Raw->rcv_data;
@@ -1615,7 +1615,7 @@ static int DecodeType17(raw_t *Raw, uint32_t rif) {
   ClockOffset = (long double)R8(p) * 0.001L;
   p += 8; /* Clock offset value. 0.0 = not known */
 
-#if 0
+#ifdef RTK_DISABLED
   tow += ClockOffset;
 #endif
 
@@ -1794,7 +1794,7 @@ static int DecodeType17(raw_t *Raw, uint32_t rif) {
       continue;
     }
 
-#if 0
+#ifdef RTK_DISABLED
     /* Apply clock offset to observables */
     if (ClockOffset != 0.0L) {
       obs->P[0] += ClockOffset * (CLIGHT / FREQL1);

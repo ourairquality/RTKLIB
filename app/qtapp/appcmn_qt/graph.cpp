@@ -332,11 +332,13 @@ void Graph::DrawMark(QPainter &c, const QPoint &p, int mark, const QColor &color
   // rot  = rotation angle (deg)
 
   // if the same mark already drawn, skip it
-#if 0
-    if (p == p_ && mark == mark_ && color == color_ && size == size_ &&
-        rot == rot_)
-		return;
-    p_ = p; mark_ = mark; color_ = color; size_ = size; rot_ = rot;
+#ifdef RTK_DISABLED
+  if (p == p_ && mark == mark_ && color == color_ && size == size_ && rot == rot_) return;
+  p_ = p;
+  mark_ = mark;
+  color_ = color;
+  size_ = size;
+  rot_ = rot;
 #endif
 
   if (size < 1) size = 1;

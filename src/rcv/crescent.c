@@ -3,16 +3,16 @@
  *
  *          Copyright (C) 2007-2020 by T.TAKASU, All rights reserved.
  *
- * reference :
+ * Reference :
  *     [1] Hemisphere GPS, Grescent Integrator's Manual, December, 2005
  *     [2] Hemisphere GPS, GPS Technical Reference, Part No. 875-0175-000,
  *         Rev.D1, 2008
  *     [3] Hemisphere GPS, Hemisphere GPS Technical Reference Manual, v4.0,
  *         June 30, 2020
  *
- * version : $Revision: 1.2 $ $Date: 2008/07/14 00:05:05 $
- * history : 2008/05/21 1.0  new
- *           2009/04/01 1.1  support sbas, set 0 to L2 observables
+ * Version : $Revision: 1.2 $ $Date: 2008/07/14 00:05:05 $
+ * History : 2008/05/21 1.0  new
+ *           2009/04/01 1.1  support SBAS, set 0 to L2 observables
  *                           fix bug on getting doppler observables
  *           2009/10/19 1.2  support eclipse (message bin 76)
  *           2009/10/24 1.3  ignore vaild phase flag
@@ -27,24 +27,24 @@
  *           2020/11/30 1.10 use integer type in stdint.h
  *                           use sat2freq() instead of lam_carr()
  *                           udpate reference [3]
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
-#define CRESSYNC "$BIN" /* hemis bin sync code */
+#define CRESSYNC "$BIN" /* Hemis bin sync code */
 
-#define ID_CRESPOS 1     /* hemis msg id: bin 1 position/velocity */
-#define ID_CRESGLOEPH 65 /* hemis msg id: bin 65 glonass ephemeris */
-#define ID_CRESGLORAW 66 /* hemis msg id: bin 66 glonass L1/L2 phase and code */
-#define ID_CRESRAW2 76   /* hemis msg id: bin 76 dual-freq raw */
-#define ID_CRESWAAS 80   /* hemis msg id: bin 80 waas messages */
-#define ID_CRESIONUTC 94 /* hemis msg id: bin 94 ion/utc parameters */
-#define ID_CRESEPH 95    /* hemis msg id: bin 95 raw ephemeris */
-#define ID_CRESRAW 96    /* hemis msg id: bin 96 raw phase and code */
+#define ID_CRESPOS 1     /* Hemis msg id: bin 1 position/velocity */
+#define ID_CRESGLOEPH 65 /* Hemis msg id: bin 65 GLONASS ephemeris */
+#define ID_CRESGLORAW 66 /* Hemis msg id: bin 66 GLONASS L1/L2 phase and code */
+#define ID_CRESRAW2 76   /* Hemis msg id: bin 76 dual-freq raw */
+#define ID_CRESWAAS 80   /* Hemis msg id: bin 80 waas messages */
+#define ID_CRESIONUTC 94 /* Hemis msg id: bin 94 ion/UTC parameters */
+#define ID_CRESEPH 95    /* Hemis msg id: bin 95 raw ephemeris */
+#define ID_CRESRAW 96    /* Hemis msg id: bin 96 raw phase and code */
 
-#define SNR2CN0_L1 30.0L /* hemis snr to c/n0 offset (db) L1 */
-#define SNR2CN0_L2 30.0L /* hemis snr to c/n0 offset (db) L2 */
+#define SNR2CN0_L1 30.0L /* Hemis snr to c/n0 offset (db) L1 */
+#define SNR2CN0_L2 30.0L /* Hemis snr to c/n0 offset (db) L2 */
 
-/* get fields (little-endian) ------------------------------------------------*/
+/* Get fields (little-endian) ------------------------------------------------*/
 #define U1(p) (*((uint8_t *)(p)))
 #define I1(p) (*((int8_t *)(p)))
 static uint16_t U2(uint8_t *p) {
@@ -78,7 +78,7 @@ static double R8(uint8_t *p) {
   return r;
 }
 
-/* checksum ------------------------------------------------------------------*/
+/* Checksum ------------------------------------------------------------------*/
 static int chksum(const uint8_t *buff, int len) {
   uint16_t sum = 0;
   int i;
@@ -89,7 +89,7 @@ static int chksum(const uint8_t *buff, int len) {
   return (sum >> 8) == buff[len - 3] && (sum & 0xFF) == buff[len - 4] && buff[len - 2] == 0x0D &&
          buff[len - 1] == 0x0A;
 }
-/* decode bin 1 position/velocity ---------------------------------------------*/
+/* Decode bin 1 position/velocity --------------------------------------------*/
 static int decode_crespos(raw_t *raw) {
   int ns, week, mode;
   long double tow, pos[3], vel[3], std;
@@ -118,7 +118,7 @@ static int decode_crespos(raw_t *raw) {
         mode == 6 ? 1 : (mode > 4 ? 2 : (mode > 1 ? 5 : 0)), ns, std);
   return 0;
 }
-/* decode bin 96 raw phase and code ------------------------------------------*/
+/* Decode bin 96 raw phase and code ------------------------------------------*/
 static int decode_cresraw(raw_t *raw) {
   gtime_t time;
   long double tow, tows, toff = 0.0L, cp, pr, dop, snr, freq = FREQL1;
@@ -134,24 +134,24 @@ static int decode_cresraw(raw_t *raw) {
   }
   week = U2(p + 2);
   tow = (long double)R8(p + 4);
-  tows = floorl(tow * 1000.0L + 0.5L) / 1000.0L; /* round by 1ms */
+  tows = floorl(tow * 1000.0L + 0.5L) / 1000.0L; /* Round by 1ms */
   time = gpst2time(week, tows);
 
-  /* time tag offset correction */
+  /* Time tag offset correction */
   if (strstr(raw->opt, "-TTCORR")) {
     toff = CLIGHT * (tows - tow);
   }
   for (i = n = 0, p += 12; i < 12 && n < MAXOBS; i++, p += 24) {
     word1 = U4(p);
     word2 = I4(p + 4);
-    if ((prn = word1 & 0xFF) == 0) continue; /* if 0, no data */
+    if ((prn = word1 & 0xFF) == 0) continue; /* If 0, no data */
     if (!(sat = satno(prn <= MAXPRNGPS ? SYS_GPS : SYS_SBS, prn))) {
       trace(2, "creasent bin 96 satellite number error: prn=%d\n", prn);
       continue;
     }
     pr = (long double)R8(p + 8) - toff;
     cp = (long double)R8(p + 16) - toff;
-    if (!(word2 & 1)) cp = 0.0L; /* invalid phase */
+    if (!(word2 & 1)) cp = 0.0L; /* Invalid phase */
     sn = (word1 >> 8) & 0xFF;
     snr = sn == 0 ? 0.0L : 10.0L * log10l(0.8192L * sn) + SNR2CN0_L1;
     sc = (uint32_t)(word1 >> 24);
@@ -182,7 +182,7 @@ static int decode_cresraw(raw_t *raw) {
   raw->obs.n = n;
   return 1;
 }
-/* decode bin 76 dual-freq raw phase and code --------------------------------*/
+/* Decode bin 76 dual-freq raw phase and code --------------------------------*/
 static int decode_cresraw2(raw_t *raw) {
   gtime_t time;
   long double tow, tows, toff = 0.0L, cp[2] = {0}, pr1, pr[2] = {0}, dop[2] = {0}, snr[2] = {0};
@@ -199,10 +199,10 @@ static int decode_cresraw2(raw_t *raw) {
   }
   tow = (long double)R8(p);
   week = U2(p + 8);
-  tows = floorl(tow * 1000.0L + 0.5L) / 1000.0L; /* round by 1ms */
+  tows = floorl(tow * 1000.0L + 0.5L) / 1000.0L; /* Round by 1ms */
   time = gpst2time(week, tows);
 
-  /* time tag offset correction */
+  /* Time tag offset correction */
   if (strstr(raw->opt, "-TTCORR")) {
     toff = CLIGHT * (tows - tow);
   }
@@ -211,12 +211,12 @@ static int decode_cresraw2(raw_t *raw) {
   }
   for (i = 0, p += 16; i < 15 && n < MAXOBS; i++) {
     word1 = U4(p + 324 + 4 * i);             /* L1CACodeMSBsPRN */
-    if ((prn = word1 & 0xFF) == 0) continue; /* if 0, no data */
+    if ((prn = word1 & 0xFF) == 0) continue; /* If 0, no data */
     if (!(sat = satno(prn <= MAXPRNGPS ? SYS_GPS : SYS_SBS, prn))) {
       trace(2, "creasent bin 76 satellite number error: prn=%d\n", prn);
       continue;
     }
-    pr1 = (word1 >> 13) * 256.0L; /* upper 19bit of L1CA pseudorange */
+    pr1 = (word1 >> 13) * 256.0L; /* Upper 19bit of L1CA pseudorange */
 
     word1 = U4(p + 144 + 12 * i); /* L1CASatObs */
     word2 = U4(p + 148 + 12 * i);
@@ -294,10 +294,10 @@ static int decode_cresraw2(raw_t *raw) {
   }
   raw->time = time;
   raw->obs.n = n;
-  if (strstr(raw->opt, "-ENAGLO")) return 0; /* glonass follows */
+  if (strstr(raw->opt, "-ENAGLO")) return 0; /* GLONASS follows */
   return 1;
 }
-/* decode bin 95 ephemeris ---------------------------------------------------*/
+/* Decode bin 95 ephemeris ---------------------------------------------------*/
 static int decode_creseph(raw_t *raw) {
   eph_t eph = {0};
   uint32_t word;
@@ -320,12 +320,12 @@ static int decode_creseph(raw_t *raw) {
       word = U4(p + 8 + i * 40 + j * 4) >> 6;
       for (k = 0; k < 3; k++) buff[i * 30 + j * 3 + k] = (uint8_t)((word >> (8 * (2 - k))) & 0xFF);
     }
-  if (!decode_frame(buff, &eph, NULL, NULL, NULL)) {
+  if (!decode_frame(buff, sizeof(buff), &eph, NULL, NULL, NULL)) {
     trace(2, "crescent bin 95 navigation frame error: prn=%d\n", prn);
     return -1;
   }
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (eph.iode == raw->nav.eph[sat - 1][0].iode) return 0; /* unchanged */
+    if (eph.iode == raw->nav.eph[sat - 1][0].iode) return 0; /* Unchanged */
   }
   eph.sat = sat;
   raw->nav.eph[sat - 1][0] = eph;
@@ -333,7 +333,7 @@ static int decode_creseph(raw_t *raw) {
   raw->ephset = 0;
   return 2;
 }
-/* decode bin 94 ion/utc parameters ------------------------------------------*/
+/* Decode bin 94 ion/UTC parameters ------------------------------------------*/
 static int decode_cresionutc(raw_t *raw) {
   int i;
   uint8_t *p = raw->buff + 8;
@@ -352,7 +352,7 @@ static int decode_cresionutc(raw_t *raw) {
   raw->nav.utc_gps[4] = I2(p + 90);
   return 9;
 }
-/* decode bin 80 waas messages -----------------------------------------------*/
+/* Decode bin 80 waas messages -----------------------------------------------*/
 static int decode_creswaas(raw_t *raw) {
   long double tow;
   uint32_t word;
@@ -385,7 +385,7 @@ static int decode_creswaas(raw_t *raw) {
   raw->sbsmsg.msg[28] &= 0xC0;
   return 3;
 }
-/* decode bin 66 glonass L1/L2 code and carrier phase ------------------------*/
+/* Decode bin 66 GLONASS L1/L2 code and carrier phase ------------------------*/
 static int decode_cresgloraw(raw_t *raw) {
   gtime_t time;
   long double tow, tows, toff = 0.0L, cp[2] = {0}, pr1, pr[2] = {0}, dop[2] = {0}, snr[2] = {0};
@@ -404,10 +404,10 @@ static int decode_cresgloraw(raw_t *raw) {
   }
   tow = (long double)R8(p);
   week = U2(p + 8);
-  tows = floorl(tow * 1000.0L + 0.5L) / 1000.0L; /* round by 1ms */
+  tows = floorl(tow * 1000.0L + 0.5L) / 1000.0L; /* Round by 1ms */
   time = gpst2time(week, tows);
 
-  /* time tag offset correction */
+  /* Time tag offset correction */
   if (strstr(raw->opt, "-TTCORR")) {
     toff = CLIGHT * (tows - tow);
   }
@@ -416,12 +416,12 @@ static int decode_cresgloraw(raw_t *raw) {
   }
   for (i = 0, p += 16; i < 12 && n < MAXOBS; i++) {
     word1 = U4(p + 288 + 4 * i);             /* L1CACodeMSBsSlot */
-    if ((prn = word1 & 0xFF) == 0) continue; /* if 0, no data */
+    if ((prn = word1 & 0xFF) == 0) continue; /* If 0, no data */
     if (!(sat = satno(SYS_GLO, prn))) {
       trace(2, "creasent bin 66 satellite number error: prn=%d\n", prn);
       continue;
     }
-    pr1 = (word1 >> 13) * 256.0L; /* upper 19bit of L1CA pseudorange */
+    pr1 = (word1 >> 13) * 256.0L; /* Upper 19bit of L1CA pseudorange */
 
     freq[0] = sat2freq(sat, CODE_L1C, &raw->nav);
     freq[1] = sat2freq(sat, CODE_L2C, &raw->nav);
@@ -503,7 +503,7 @@ static int decode_cresgloraw(raw_t *raw) {
   raw->obs.n = n;
   return 1;
 }
-/* decode bin 65 glonass ephemeris -------------------------------------------*/
+/* Decode bin 65 GLONASS ephemeris -------------------------------------------*/
 static int decode_cresgloeph(raw_t *raw) {
   geph_t geph = {0};
   uint8_t *p = raw->buff + 8, str[12];
@@ -529,26 +529,27 @@ static int decode_cresgloeph(raw_t *raw) {
       for (k = 3; k >= 0; k--) {
         str[k + j * 4] = U1(p++);
       }
-    if ((no = getbitu(str, 1, 4)) != i + 1) {
+    if ((no = getbitu(str, sizeof(str), 1, 4)) != i + 1) {
       trace(2, "creasent bin 65 string no error: sat=%2d no=%d %d\n", sat, i + 1, no);
       return -1;
     }
     memcpy(raw->subfrm[sat - 1] + 10 * i, str, 10);
   }
-  /* decode glonass ephemeris strings */
+  /* Decode GLONASS ephemeris strings */
   geph.tof = raw->time;
-  if (!decode_glostr(raw->subfrm[sat - 1], &geph, NULL) || geph.sat != sat) return -1;
+  if (!decode_glostr(raw->subfrm[sat - 1], sizeof(raw->subfrm[0]), &geph, NULL) || geph.sat != sat)
+    return -1;
   geph.frq = frq;
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (geph.iode == raw->nav.geph[prn - 1][0].iode) return 0; /* unchanged */
+    if (geph.iode == raw->nav.geph[prn - 1][0].iode) return 0; /* Unchanged */
   }
   raw->nav.geph[prn - 1][0] = geph;
   raw->ephsat = sat;
   raw->ephset = 0;
   return 2;
 }
-/* decode crescent raw message -----------------------------------------------*/
+/* Decode crescent raw message -----------------------------------------------*/
 static int decode_cres(raw_t *raw) {
   int type = U2(raw->buff + 4);
 
@@ -581,7 +582,7 @@ static int decode_cres(raw_t *raw) {
   }
   return 0;
 }
-/* sync code -----------------------------------------------------------------*/
+/* Sync code -----------------------------------------------------------------*/
 static int sync_cres(uint8_t *buff, uint8_t data) {
   buff[0] = buff[1];
   buff[1] = buff[2];
@@ -590,26 +591,26 @@ static int sync_cres(uint8_t *buff, uint8_t data) {
   return buff[0] == CRESSYNC[0] && buff[1] == CRESSYNC[1] && buff[2] == CRESSYNC[2] &&
          buff[3] == CRESSYNC[3];
 }
-/* input cresent raw message ---------------------------------------------------
- * input next crescent raw message from stream
- * args   : raw_t *raw       IO  receiver raw data control struct
+/* Input cresent raw message ---------------------------------------------------
+ * Input next crescent raw message from stream
+ * Args   : raw_t *raw       IO  receiver raw data control struct
  *          uint8_t data     I   stream data (1 byte)
- * return : status (-1: error message, 0: no message, 1: input observation data,
- *                  2: input ephemeris, 3: input sbas message,
- *                  9: input ion/utc parameter)
+ * Return : status (-1: error message, 0: no message, 1: input observation data,
+ *                  2: input ephemeris, 3: input SBAS message,
+ *                  9: input ion/UTC parameter)
  *
- * notes  : to specify input options, set raw->opt to the following option
+ * Notes  : to specify input options, set raw->opt to the following option
  *          strings separated by spaces.
  *
  *          -EPHALL      : input all ephemerides
  *          -TTCORR      : time-tag offset correction
- *          -ENAGLO      : enable glonass messages
+ *          -ENAGLO      : enable GLONASS messages
  *
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern int input_cres(raw_t *raw, uint8_t data) {
   trace(5, "input_cres: data=%02x\n", data);
 
-  /* synchronize frame */
+  /* Synchronize frame */
   if (raw->nbyte == 0) {
     if (!sync_cres(raw->buff, data)) return 0;
     raw->nbyte = 4;
@@ -627,21 +628,21 @@ extern int input_cres(raw_t *raw, uint8_t data) {
   if (raw->nbyte < 8 || raw->nbyte < raw->len) return 0;
   raw->nbyte = 0;
 
-  /* decode crescent raw message */
+  /* Decode crescent raw message */
   return decode_cres(raw);
 }
-/* input crescent raw message from file ----------------------------------------
- * input next crescent raw message from file
- * args   : raw_t  *raw   IO     receiver raw data control struct
+/* Input crescent raw message from file ----------------------------------------
+ * Input next crescent raw message from file
+ * Args   : raw_t  *raw   IO     receiver raw data control struct
  *          FILE   *fp    I      file pointer
- * return : status(-2: end of file, -1...9: same as above)
- *-----------------------------------------------------------------------------*/
+ * Return : status(-2: end of file, -1...9: same as above)
+ *----------------------------------------------------------------------------*/
 extern int input_cresf(raw_t *raw, FILE *fp) {
   int i, data;
 
   trace(4, "input_cresf:\n");
 
-  /* synchronize frame */
+  /* Synchronize frame */
   if (raw->nbyte == 0) {
     for (i = 0;; i++) {
       if ((data = fgetc(fp)) == EOF) return -2;
@@ -660,6 +661,6 @@ extern int input_cresf(raw_t *raw, FILE *fp) {
   if (fread(raw->buff + 8, 1, raw->len - 8, fp) < (size_t)(raw->len - 8)) return -2;
   raw->nbyte = 0;
 
-  /* decode crescent raw message */
+  /* Decode crescent raw message */
   return decode_cres(raw);
 }

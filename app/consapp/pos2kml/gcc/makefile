@@ -2,8 +2,10 @@
 
 BINDIR = /usr/local/bin
 SRC    = ../../../../src
-CFLAGS = -std=c99 -Wall -O3 -pedantic -Wint-in-bool-context -Wextra  -Wdouble-promotion -I$(SRC) -DTRACE
-LDLIBS  = -lm -lrt
+#CFLAGS = -std=c99 -Wall -O3 -pedantic -Wint-in-bool-context -Wextra  -Wdouble-promotion -I$(SRC) -DTRACE
+#LDLIBS  = -lm -lrt
+CFLAGS = -g -fsanitize=undefined,address -fno-omit-frame-pointer -std=c99 -Wall -O3 -pedantic -Wint-in-bool-context -Wextra  -Wdouble-promotion -I$(SRC) -DTRACE
+LDLIBS  = -g -fsanitize=undefined,address -fno-omit-frame-pointer -lm -lrt
 
 pos2kml    : pos2kml.o convkml.o convgpx.o solution.o geoid.o rtkcmn.o trace.o preceph.o
 

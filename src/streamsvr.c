@@ -3,39 +3,39 @@
  *
  *          Copyright (C) 2010-2020 by T.TAKASU, All rights reserved.
  *
- * options : -DWIN32    use WIN32 API
+ * Options : -DWIN32    use WIN32 API
  *
- * version : $Revision:$ $Date:$
- * history : 2010/07/18 1.0  moved from stream.c
+ * Version : $Revision:$ $Date:$
+ * History : 2010/07/18 1.0  moved from stream.c
  *           2011/01/18 1.1  change api strsvrstart()
  *           2012/12/04 1.2  add stream conversion function
  *           2012/12/25 1.3  fix bug on cyclic navigation data output
  *                           suppress warnings
- *           2013/05/08 1.4  fix bug on 1 s offset for javad -> rtcm conversion
+ *           2013/05/08 1.4  fix bug on 1 s offset for JAVAD -> RTCM conversion
  *           2014/10/16 1.5  support input from stdout
- *           2015/12/05 1.6  support rtcm 3 mt 63 beidou ephemeris
+ *           2015/12/05 1.6  support RTCM 3 mt 63 BeiDou ephemeris
  *           2016/07/23 1.7  change api strsvrstart(),strsvrstop()
  *                           support command for output streams
  *           2016/08/20 1.8  support api change of sendnmea()
- *           2016/09/03 1.9  support ntrip caster function
+ *           2016/09/03 1.9  support NTRIP caster function
  *           2016/09/06 1.10 add api strsvrsetsrctbl()
  *           2016/09/17 1.11 add relay back function of output stream
- *                           fix bug on rtcm cyclic output of beidou ephemeris
+ *                           fix bug on RTCM cyclic output of BeiDou ephemeris
  *           2016/10/01 1.12 change api startstrserver()
  *           2017/04/11 1.13 fix bug on search of next satellite in nextsat()
- *           2018/11/05 1.14 update message type of beidou ephemeirs
- *                           support multiple msm messages if nsat x nsig > 64
+ *           2018/11/05 1.14 update message type of BeiDou ephemeirs
+ *                           support multiple MSM messages if nsat x nsig > 64
  *           2020/11/30 1.15 support RTCM MT1131-1137,1041 (NavIC/IRNSS)
  *                           add log paths in API strsvrstart()
  *                           add log status in API strsvrstat()
  *                           support multiple ephemeris sets (e.g. I/NAV-F/NAV)
  *                           delete API strsvrsetsrctbl()
  *                           use integer types in stdint.h
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #define _POSIX_C_SOURCE 199506
 #include "rtklib.h"
 
-/* test observation data message ---------------------------------------------*/
+/* Test observation data message ---------------------------------------------*/
 static bool is_obsmsg(int msg) {
   return (1001 <= msg && msg <= 1004) || (1009 <= msg && msg <= 1012) ||
          (1071 <= msg && msg <= 1077) || (1081 <= msg && msg <= 1087) ||
@@ -43,30 +43,30 @@ static bool is_obsmsg(int msg) {
          (1111 <= msg && msg <= 1117) || (1121 <= msg && msg <= 1127) ||
          (1131 <= msg && msg <= 1137);
 }
-/* test navigation data message ----------------------------------------------*/
+/* Test navigation data message ----------------------------------------------*/
 static bool is_navmsg(int msg) {
   return msg == 1019 || msg == 1020 || msg == 1044 || msg == 1045 || msg == 1046 || msg == 1042 ||
          msg == 63 || msg == 1041;
 }
-/* test station info message -------------------------------------------------*/
+/* Test station info message -------------------------------------------------*/
 static int is_stamsg(int msg) {
   return msg == 1005 || msg == 1006 || msg == 1007 || msg == 1008 || msg == 1033 || msg == 1230;
 }
-/* test time interval --------------------------------------------------------*/
+/* Test time interval --------------------------------------------------------*/
 static bool is_tint(gtime_t time, long double tint) {
   if (tint <= 0.0L) return true;
   return fmodl(time2gpst(time, NULL) + DTTOL, tint) <= 2.0L * DTTOL;
 }
-/* new stream converter --------------------------------------------------------
- * generate new stream converter
- * args   : int    itype     I   input stream type  (STRFMT_???)
+/* New stream converter --------------------------------------------------------
+ * Generate new stream converter
+ * Args   : int    itype     I   input stream type  (STRFMT_???)
  *          int    otype     I   output stream type (STRFMT_???)
  *          char   *msgs     I   output message type and interval (, separated)
  *          int    staid     I   station id
  *          int    stasel    I   station info selection (0:remote,1:local)
- *          char   *opt      I   rtcm or receiver raw options
- * return : stream generator (NULL:error)
- *-----------------------------------------------------------------------------*/
+ *          char   *opt      I   RTCM or receiver raw options
+ * Return : stream generator (NULL:error)
+ *----------------------------------------------------------------------------*/
 extern strconv_t *strconvnew(int itype, int otype, const char *msgs, int staid, int stasel,
                              const char *opt) {
   strconv_t *conv = (strconv_t *)malloc(sizeof(strconv_t));
@@ -108,11 +108,11 @@ extern strconv_t *strconvnew(int itype, int otype, const char *msgs, int staid, 
   rtksnprintf(conv->raw.opt, sizeof(conv->raw.opt), "-EPHALL %s", opt);
   return conv;
 }
-/* free stream converter -------------------------------------------------------
- * free stream converter
- * args   : strconv_t *conv  IO  stream converter
- * return : none
- *-----------------------------------------------------------------------------*/
+/* Free stream converter -------------------------------------------------------
+ * Free stream converter
+ * Args   : strconv_t *conv  IO  stream converter
+ * Return : none
+ *----------------------------------------------------------------------------*/
 extern void strconvfree(strconv_t *conv) {
   if (!conv) return;
   free_rtcm(&conv->rtcm);
@@ -120,7 +120,7 @@ extern void strconvfree(strconv_t *conv) {
   free_raw(&conv->raw);
   free(conv);
 }
-/* copy received data from receiver raw to rtcm ------------------------------*/
+/* Copy received data from receiver raw to RTCM ------------------------------*/
 static void raw2rtcm(rtcm_t *out, const raw_t *raw, int ret) {
   out->time = raw->time;
 
@@ -165,7 +165,7 @@ static void raw2rtcm(rtcm_t *out, const raw_t *raw, int ret) {
     matcpy(out->nav.ion_irn, raw->nav.ion_irn, 8, 1);
   }
 }
-/* copy received data from receiver rtcm to rtcm -----------------------------*/
+/* Copy received data from receiver RTCM to RTCM -----------------------------*/
 static void rtcm2rtcm(rtcm_t *out, const rtcm_t *rtcm, int ret, int stasel) {
   out->time = rtcm->time;
 
@@ -198,7 +198,7 @@ static void rtcm2rtcm(rtcm_t *out, const rtcm_t *rtcm, int ret, int stasel) {
     if (!stasel) out->sta = rtcm->sta;
   }
 }
-/* write rtcm3 msm to stream -------------------------------------------------*/
+/* Write RTCM3 MSM to stream -------------------------------------------------*/
 static void write_rtcm3_msm(stream_t *str, rtcm_t *out, int msg, int sync) {
   int sys;
   if (1071 <= msg && msg <= 1077)
@@ -218,7 +218,7 @@ static void write_rtcm3_msm(stream_t *str, rtcm_t *out, int msg, int sync) {
   else
     return;
 
-  /* count number of satellites and signals */
+  /* Count number of satellites and signals */
   obsd_t *data = out->obs.data;
   int nobs = out->obs.n, nsat = 0, nsig = 0, mask[MAXCODE] = {0};
   for (int i = 0; i < nobs && i < MAXOBS; i++) {
@@ -233,11 +233,11 @@ static void write_rtcm3_msm(stream_t *str, rtcm_t *out, int msg, int sync) {
   }
   if (nsig > 64) return;
 
-  /* pack data to multiple messages if nsat x nsig > 64 */
+  /* Pack data to multiple messages if nsat x nsig > 64 */
   int ns, nmsg;
   if (nsig > 0) {
-    ns = 64 / nsig;             /* max number of sats in a message */
-    nmsg = (nsat - 1) / ns + 1; /* number of messages */
+    ns = 64 / nsig;             /* Max number of sats in a message */
+    nmsg = (nsat - 1) / ns + 1; /* Number of messages */
   } else {
     ns = 0;
     nmsg = 1;
@@ -260,40 +260,40 @@ static void write_rtcm3_msm(stream_t *str, rtcm_t *out, int msg, int sync) {
   out->obs.data = data;
   out->obs.n = nobs;
 }
-/* write obs data messages ---------------------------------------------------*/
+/* Write obs data messages ---------------------------------------------------*/
 static void write_obs(gtime_t time, stream_t *str, strconv_t *conv) {
   int j = 0;
 
   for (int i = 0; i < conv->nmsg; i++) {
     if (!is_obsmsg(conv->msgs[i]) || !is_tint(time, conv->tint[i])) continue;
 
-    j = i; /* index of last message */
+    j = i; /* Index of last message */
   }
   for (int i = 0; i < conv->nmsg; i++) {
     if (!is_obsmsg(conv->msgs[i]) || !is_tint(time, conv->tint[i])) continue;
 
-    /* generate messages */
+    /* Generate messages */
     if (conv->otype == STRFMT_RTCM2) {
       if (!gen_rtcm2(&conv->out, conv->msgs[i], i != j)) continue;
 
-      /* write messages to stream */
+      /* Write messages to stream */
       strwrite(str, conv->out.buff, conv->out.nbyte);
     } else if (conv->otype == STRFMT_RTCM3) {
       if (conv->msgs[i] <= 1012) {
         if (!gen_rtcm3(&conv->out, conv->msgs[i], 0, i != j)) continue;
         strwrite(str, conv->out.buff, conv->out.nbyte);
-      } else { /* write rtcm3 msm to stream */
+      } else { /* Write RTCM3 MSM to stream */
         write_rtcm3_msm(str, &conv->out, conv->msgs[i], i != j);
       }
     }
   }
 }
-/* write nav data messages ---------------------------------------------------*/
+/* Write nav data messages ---------------------------------------------------*/
 static void write_nav(gtime_t time, stream_t *str, strconv_t *conv) {
   for (int i = 0; i < conv->nmsg; i++) {
     if (!is_navmsg(conv->msgs[i]) || conv->tint[i] > 0.0L) continue;
 
-    /* generate messages */
+    /* Generate messages */
     if (conv->otype == STRFMT_RTCM2) {
       if (!gen_rtcm2(&conv->out, conv->msgs[i], 0)) continue;
     } else if (conv->otype == STRFMT_RTCM3) {
@@ -301,11 +301,11 @@ static void write_nav(gtime_t time, stream_t *str, strconv_t *conv) {
     } else
       continue;
 
-    /* write messages to stream */
+    /* Write messages to stream */
     strwrite(str, conv->out.buff, conv->out.nbyte);
   }
 }
-/* next ephemeris satellite --------------------------------------------------*/
+/* Next ephemeris satellite --------------------------------------------------*/
 static int nextsat(const nav_t *nav, int sat, int msg) {
   int sys, set, p1, p2;
   switch (msg) {
@@ -358,7 +358,7 @@ static int nextsat(const nav_t *nav, int sat, int msg) {
   int p0;
   if (satsys(sat, &p0) != sys) return satno(sys, p1);
 
-  /* search next valid ephemeris */
+  /* Search next valid ephemeris */
   for (int p = p0 >= p2 ? p1 : p0 + 1; p != p0; p = p >= p2 ? p1 : p + 1) {
     if (sys == SYS_GLO) {
       sat = satno(sys, p);
@@ -370,26 +370,26 @@ static int nextsat(const nav_t *nav, int sat, int msg) {
   }
   return 0;
 }
-/* write cyclic nav data messages --------------------------------------------*/
+/* Write cyclic nav data messages --------------------------------------------*/
 static void write_nav_cycle(stream_t *str, strconv_t *conv) {
   uint32_t tick = tickget();
 
   for (int i = 0; i < conv->nmsg; i++) {
     if (!is_navmsg(conv->msgs[i]) || conv->tint[i] <= 0.0L) continue;
 
-    /* output cycle */
+    /* Output cycle */
     int tint = (int)(conv->tint[i] * 1000.0L);
     if ((int)(tick - conv->tick[i]) < tint) continue;
     conv->tick[i] = tick;
 
-    /* next satellite */
+    /* Next satellite */
     int sat = nextsat(&conv->out.nav, conv->ephsat[i], conv->msgs[i]);
     if (!sat) {
       continue;
     }
     conv->out.ephsat = conv->ephsat[i] = sat;
 
-    /* generate messages */
+    /* Generate messages */
     if (conv->otype == STRFMT_RTCM2) {
       if (!gen_rtcm2(&conv->out, conv->msgs[i], 0)) continue;
     } else if (conv->otype == STRFMT_RTCM3) {
@@ -397,23 +397,23 @@ static void write_nav_cycle(stream_t *str, strconv_t *conv) {
     } else
       continue;
 
-    /* write messages to stream */
+    /* Write messages to stream */
     strwrite(str, conv->out.buff, conv->out.nbyte);
   }
 }
-/* write cyclic station info messages ----------------------------------------*/
+/* Write cyclic station info messages ----------------------------------------*/
 static void write_sta_cycle(stream_t *str, strconv_t *conv) {
   uint32_t tick = tickget();
 
   for (int i = 0; i < conv->nmsg; i++) {
     if (!is_stamsg(conv->msgs[i])) continue;
 
-    /* output cycle */
+    /* Output cycle */
     int tint = conv->tint[i] == 0.0L ? 30000 : (int)(conv->tint[i] * 1000.0L);
     if ((int)(tick - conv->tick[i]) < tint) continue;
     conv->tick[i] = tick;
 
-    /* generate messages */
+    /* Generate messages */
     if (conv->otype == STRFMT_RTCM2) {
       if (!gen_rtcm2(&conv->out, conv->msgs[i], 0)) continue;
     } else if (conv->otype == STRFMT_RTCM3) {
@@ -421,30 +421,30 @@ static void write_sta_cycle(stream_t *str, strconv_t *conv) {
     } else
       continue;
 
-    /* write messages to stream */
+    /* Write messages to stream */
     strwrite(str, conv->out.buff, conv->out.nbyte);
   }
 }
-/* convert stearm ------------------------------------------------------------*/
+/* Convert stearm ------------------------------------------------------------*/
 static void strconv(stream_t *str, strconv_t *conv, const uint8_t *buff, int n) {
   for (int i = 0; i < n; i++) {
     int ret;
-    /* input rtcm 2 messages */
+    /* Input RTCM 2 messages */
     if (conv->itype == STRFMT_RTCM2) {
       ret = input_rtcm2(&conv->rtcm, buff[i]);
       rtcm2rtcm(&conv->out, &conv->rtcm, ret, conv->stasel);
     }
-    /* input rtcm 3 messages */
+    /* Input RTCM 3 messages */
     else if (conv->itype == STRFMT_RTCM3) {
       ret = input_rtcm3(&conv->rtcm, buff[i]);
       rtcm2rtcm(&conv->out, &conv->rtcm, ret, conv->stasel);
     }
-    /* input receiver raw messages */
+    /* Input receiver raw messages */
     else {
       ret = input_raw(&conv->raw, conv->itype, buff[i]);
       raw2rtcm(&conv->out, &conv->raw, ret);
     }
-    /* write obs and nav data messages to stream */
+    /* Write obs and nav data messages to stream */
     switch (ret) {
       case 1:
         write_obs(conv->out.time, str, conv);
@@ -454,11 +454,11 @@ static void strconv(stream_t *str, strconv_t *conv, const uint8_t *buff, int n) 
         break;
     }
   }
-  /* write cyclic nav data and station info messages to stream */
+  /* Write cyclic nav data and station info messages to stream */
   write_nav_cycle(str, conv);
   write_sta_cycle(str, conv);
 }
-/* periodic command ----------------------------------------------------------*/
+/* Periodic command ----------------------------------------------------------*/
 static void periodic_cmd(int cycle, const char *cmd, stream_t *stream) {
   const char *q;
   for (const char *p = cmd;; p = q + 1) {
@@ -487,7 +487,7 @@ static void periodic_cmd(int cycle, const char *cmd, stream_t *stream) {
     if (!*q) break;
   }
 }
-/* stearm server thread ------------------------------------------------------*/
+/* Stearm server thread ------------------------------------------------------*/
 #ifdef WIN32
 static DWORD WINAPI strsvrthread(void *arg)
 #else
@@ -505,10 +505,10 @@ static void *strsvrthread(void *arg)
   for (int cyc = 0; svr->state; cyc++) {
     uint32_t tick = tickget();
 
-    /* read data from input stream */
+    /* Read data from input stream */
     int n;
     while ((n = strread(svr->stream, svr->buff, svr->buffsize)) > 0 && svr->state) {
-      /* write data to output streams */
+      /* Write data to output streams */
       for (int i = 1; i < svr->nstr; i++) {
         if (svr->conv[i - 1]) {
           strconv(svr->stream + i, svr->conv[i - 1], svr->buff, n);
@@ -516,7 +516,7 @@ static void *strsvrthread(void *arg)
           strwrite(svr->stream + i, svr->buff, n);
         }
       }
-      /* write data to log stream */
+      /* Write data to log stream */
       strwrite(svr->strlog, svr->buff, n);
 
       rtklib_lock(&svr->lock);
@@ -526,23 +526,23 @@ static void *strsvrthread(void *arg)
       rtklib_unlock(&svr->lock);
     }
     for (int i = 1; i < svr->nstr; i++) {
-      /* read message from output stream if connected */
+      /* Read message from output stream if connected */
       uint8_t buff[1024];
       while (strstat(svr->stream + i, NULL, 0) >= 2 &&
              (n = strread(svr->stream + i, buff, sizeof(buff))) > 0) {
-        /* relay back message from output stream to input stream */
+        /* Relay back message from output stream to input stream */
         if (i == svr->relayback) {
           strwrite(svr->stream, buff, n);
         }
-        /* write data to log stream */
+        /* Write data to log stream */
         strwrite(svr->strlog + i, buff, n);
       }
     }
-    /* write periodic command to input stream */
+    /* Write periodic command to input stream */
     for (int i = 0; i < svr->nstr; i++) {
       periodic_cmd(cyc * svr->cycle, svr->cmds_periodic[i], svr->stream + i);
     }
-    /* write nmea messages to input stream */
+    /* Write NMEA messages to input stream */
     if (svr->nmeacycle > 0 && (int)(tick - tick_nmea) >= svr->nmeacycle) {
       sol_nmea.stat = SOLQ_SINGLE;
       sol_nmea.ns = 10; /* Some servers don't like when ns = 0 */
@@ -563,12 +563,12 @@ static void *strsvrthread(void *arg)
 
   return 0;
 }
-/* initialize stream server ----------------------------------------------------
- * initialize stream server
- * args   : strsvr_t *svr    IO  stream sever struct
+/* Initialize stream server ----------------------------------------------------
+ * Initialize stream server
+ * Args   : strsvr_t *svr    IO  stream sever struct
  *          int    nout      I   number of output streams
- * return : none
- *-----------------------------------------------------------------------------*/
+ * Return : none
+ *----------------------------------------------------------------------------*/
 extern void strsvrinit(strsvr_t *svr, int nout) {
   tracet(3, "strsvrinit: nout=%d\n", nout);
 
@@ -592,16 +592,16 @@ extern void strsvrinit(strsvr_t *svr, int nout) {
   svr->thread = 0;
   rtklib_initlock(&svr->lock);
 }
-/* start stream server ---------------------------------------------------------
- * start stream server
- * args   : strsvr_t *svr    IO  stream sever struct
+/* Start stream server ---------------------------------------------------------
+ * Start stream server
+ * Args   : strsvr_t *svr    IO  stream sever struct
  *          int    *opts     I   stream options
  *              opts[0]= inactive timeout (ms)
  *              opts[1]= interval to reconnect (ms)
  *              opts[2]= averaging time of data rate (ms)
  *              opts[3]= receive/send buffer size (bytes);
  *              opts[4]= server cycle (ms)
- *              opts[5]= nmea request cycle (ms) (0:no)
+ *              opts[5]= NMEA request cycle (ms) (0:no)
  *              opts[6]= file swap margin (s)
  *              opts[7]= relay back of output stream (0:no)
  *          int    *strs     I   stream types (STR_???)
@@ -639,9 +639,9 @@ extern void strsvrinit(strsvr_t *svr, int nout) {
  *              cmds[2]= output stream 2 command
  *              cmds[3]= output stream 3 command
  *              ...
- *          long double *nmeapos  I   nmea request position (ecef) (m) (NULL: no)
- * return : status (true:ok,false:error)
- *-----------------------------------------------------------------------------*/
+ *          long double *nmeapos  I   NMEA request position (ECEF) (m) (NULL: no)
+ * Return : status (true:ok,false:error)
+ *----------------------------------------------------------------------------*/
 extern bool strsvrstart(strsvr_t *svr, const int *opts, const int *strs, const char **paths,
                         const char **logs, strconv_t **conv, const char **cmds,
                         const char **cmds_periodic, const long double *nmeapos) {
@@ -672,7 +672,7 @@ extern bool strsvrstart(strsvr_t *svr, const int *opts, const int *strs, const c
     free(svr->pbuf);
     return false;
   }
-  /* open streams */
+  /* Open streams */
   for (int i = 0; i < svr->nstr; i++) {
     char file1[MAXSTRPATH];
     rtkstrcpy(file1, sizeof(file1), paths[0]);
@@ -698,21 +698,21 @@ extern bool strsvrstart(strsvr_t *svr, const int *opts, const int *strs, const c
     for (i--; i >= 0; i--) strclose(svr->stream + i);
     return false;
   }
-  /* open log streams */
+  /* Open log streams */
   for (int i = 0; i < svr->nstr; i++) {
     if (strs[i] == STR_NONE || strs[i] == STR_FILE || !*logs[i]) continue;
     stropen(svr->strlog + i, STR_FILE, STR_MODE_W, logs[i]);
   }
-  /* write start commands to input/output streams */
+  /* Write start commands to input/output streams */
   for (int i = 0; i < svr->nstr; i++) {
     if (!cmds[i]) continue;
-    strwrite(svr->stream + i, (uint8_t *)"", 0); /* for connect */
+    strwrite(svr->stream + i, (uint8_t *)"", 0); /* For connect */
     sleepms(100);
     strsendcmd(svr->stream + i, cmds[i]);
   }
   svr->state = 1;
 
-  /* create stream server thread */
+  /* Create stream server thread */
 #ifdef WIN32
   if (!(svr->thread = CreateThread(NULL, 0, strsvrthread, svr, 0, NULL))) {
 #else
@@ -724,17 +724,17 @@ extern bool strsvrstart(strsvr_t *svr, const int *opts, const int *strs, const c
   }
   return true;
 }
-/* stop stream server ----------------------------------------------------------
- * stop stream server
- * args   : strsvr_t *svr    IO  stream server struct
+/* Stop stream server ----------------------------------------------------------
+ * Stop stream server
+ * Args   : strsvr_t *svr    IO  stream server struct
  *          char  **cmds     I   stop commands (NULL: no cmd)
  *              cmds[0]= input stream command
  *              cmds[1]= output stream 1 command
  *              cmds[2]= output stream 2 command
  *              cmds[3]= output stream 3 command
  *              ...
- * return : none
- *-----------------------------------------------------------------------------*/
+ * Return : none
+ *----------------------------------------------------------------------------*/
 extern void strsvrstop(strsvr_t *svr, const char **cmds) {
   tracet(3, "strsvrstop:\n");
 
@@ -750,18 +750,18 @@ extern void strsvrstop(strsvr_t *svr, const char **cmds) {
   pthread_join(svr->thread, NULL);
 #endif
 }
-/* get stream server status ----------------------------------------------------
- * get status of stream server
- * args   : strsvr_t *svr    IO  stream sever struct
+/* Get stream server status ----------------------------------------------------
+ * Get status of stream server
+ * Args   : strsvr_t *svr    IO  stream sever struct
  *          int    *stat     O   stream status
  *          int    *log_stat O   log status
  *          int    *byte     O   bytes received/sent
  *          int    *bps      O   bitrate received/sent
  *          char   *msg      O   messages
  *          size_t size      I   messages buffer size
- * return : none
+ * Return : none
  * Note   : Messages are appended to msg which must be nul terminated.
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern void strsvrstat(strsvr_t *svr, int *stat, int *log_stat, int *byte, int *bps, char *msg,
                        size_t msize) {
   tracet(4, "strsvrstat:\n");
@@ -779,13 +779,13 @@ extern void strsvrstat(strsvr_t *svr, int *stat, int *log_stat, int *byte, int *
     log_stat[i] = strstat(svr->strlog + i, NULL, 0);
   }
 }
-/* peek input/output stream ----------------------------------------------------
- * peek input/output stream of stream server
- * args   : strsvr_t *svr    IO  stream sever struct
+/* Peek input/output stream ----------------------------------------------------
+ * Peek input/output stream of stream server
+ * Args   : strsvr_t *svr    IO  stream sever struct
  *          uint8_t *buff    O   stream buff
  *          int    nmax      I   buffer size (bytes)
- * return : stream size (bytes)
- *-----------------------------------------------------------------------------*/
+ * Return : stream size (bytes)
+ *----------------------------------------------------------------------------*/
 extern int strsvrpeek(strsvr_t *svr, uint8_t *buff, int nmax) {
   if (!svr->state) return 0;
 

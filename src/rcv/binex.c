@@ -3,24 +3,24 @@
  *
  *          Copyright (C) 2013-2020 by T.TAKASU, All rights reserved.
  *
- * reference :
+ * Reference :
  *     [1] UNAVCO, BINEX: Binary exchange format (updated on July 13, 2018)
  *         (http://BINEX.unavco.org/BINEX.html)
  *
- * version : $Revision:$ $Date:$
- * history : 2013/02/20 1.0 new
+ * Version : $Revision:$ $Date:$
+ * History : 2013/02/20 1.0 new
  *           2013/04/15 1.1 support 0x01-05 beidou-2/compass ephemeris
  *           2013/05/18 1.2 fix bug on decoding obsflags in message 0x7f-05
  *           2014/04/27 1.3 fix bug on decoding iode for message 0x01-02
  *           2015/12/05 1.4 fix bug on decoding tgd for message 0x01-05
  *           2016/07/29 1.5 crc16() -> rtk_crc16()
  *           2017/04/11 1.6 (char *) -> (signed char *)
- *                          fix bug on unchange-test of beidou ephemeris
- *           2018/10/10 1.7 fix problem of sisa handling in galileo ephemeris
+ *                          fix bug on unchange-test of BeiDou ephemeris
+ *           2018/10/10 1.7 fix problem of sisa handling in Galileo ephemeris
  *                          add receiver option -GALINAV, -GALFNAV
- *           2018/12/06 1.8 fix bug on decoding galileo ephemeirs iode (0x01-04)
- *           2019/05/10 1.9 save galileo E5b data to obs index 2
- *           2019/07/25 1.10 support upgraded galileo ephemeris (0x01-14)
+ *           2018/12/06 1.8 fix bug on decoding Galileo ephemeirs iode (0x01-04)
+ *           2019/05/10 1.9 save Galileo E5b data to obs index 2
+ *           2019/07/25 1.10 support upgraded Galileo ephemeris (0x01-14)
  *           2020/11/30 1.11 support NavIC/IRNSS raw obs data (0x7f-05)
  *                           support BDS B2b in raw obs data (0x7f-05)
  *                           support IRNSS decoded ephemeris (0x01-07)
@@ -30,7 +30,7 @@
  *                           use API code2idx() to get frequency index
  *                           use API code2idx() to get carrier frequency
  *                           use integer types in stdint.h
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
 #define BNXSYNC1 0xC2 /* BINEX sync (little-endian,regular-crc) */
@@ -50,7 +50,7 @@
 static const long double ura_eph[] = {2.4L,    3.4L,    4.85L,   6.85L,  9.65L,  13.65L,
                                       24.0L,   48.0L,   96.0L,   192.0L, 384.0L, 768.0L,
                                       1536.0L, 3072.0L, 6144.0L, 0.0L};
-/* get fields (big-endian) ---------------------------------------------------*/
+/* Get fields (big-endian) ---------------------------------------------------*/
 #define U1(p) (*((uint8_t *)(p)))
 #define I1(p) (*((int8_t *)(p)))
 
@@ -83,7 +83,7 @@ static double R8(uint8_t *p) {
   for (i = 0; i < 8; i++) *q-- = *p++;
   return value;
 }
-/* get BINEX 1-4 byte unsigned integer (big endian) --------------------------*/
+/* Get BINEX 1-4 byte unsigned integer (big endian) --------------------------*/
 static int getbnxi(uint8_t *p, uint32_t *val) {
   int i;
 
@@ -94,7 +94,7 @@ static int getbnxi(uint8_t *p, uint32_t *val) {
   *val = (*val << 8) + p[i];
   return 4;
 }
-/* checksum 8 parity ---------------------------------------------------------*/
+/* Checksum 8 parity ---------------------------------------------------------*/
 static uint8_t csum8(const uint8_t *buff, int len) {
   uint8_t cs = 0;
   int i;
@@ -104,7 +104,7 @@ static uint8_t csum8(const uint8_t *buff, int len) {
   }
   return cs;
 }
-/* adjust weekly rollover of GPS time ----------------------------------------*/
+/* Adjust weekly rollover of GPS time ----------------------------------------*/
 static gtime_t adjweek(gtime_t time, long double tow) {
   long double tow_p;
   int week;
@@ -115,7 +115,7 @@ static gtime_t adjweek(gtime_t time, long double tow) {
     tow -= 604800.0L;
   return gpst2time(week, tow);
 }
-/* adjust daily rollover of time ---------------------------------------------*/
+/* Adjust daily rollover of time ---------------------------------------------*/
 static gtime_t adjday(gtime_t time, long double tod) {
   long double ep[6], tod_p;
   time2epoch(time, ep);
@@ -142,8 +142,8 @@ static int sisaindex(long double value) {
   if (value <= 6.0L) return (int)((value - 2.0L) / 0.16L) + 100;
   return 255; /* NAPA */
 }
-/* decode BINEX mesaage 0x00: site metadata ----------------------------------*/
-static int decode_bnx_00(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x00: site metadata ----------------------------------*/
+static int decode_bnx_00(raw_t *raw, uint8_t *buff, size_t size, int len) {
   static const long double gpst0[] = {1980, 1, 6, 0, 0, 0};
   long double x[3];
   char str[MAXANT];
@@ -170,7 +170,7 @@ static int decode_bnx_00(raw_t *raw, uint8_t *buff, int len) {
 
     if (fid <= 0x0c || (fid >= 0x0f && fid <= 0x1c) || (fid >= 0x20 && fid <= 0x22) ||
         fid == 0x7f) {
-      p += getbnxi(p, &flen); /* field length*/
+      p += getbnxi(p, &flen); /* Field length*/
       rtksnprintf(str, sizeof(str), "%.*s", MIN(flen, MAXANT - 1), (char *)p);
       p += flen;
       if (raw->outtype) {
@@ -193,7 +193,7 @@ static int decode_bnx_00(raw_t *raw, uint8_t *buff, int len) {
       ret = 5;
     } else if (fid == 0x1d || fid == 0x1e || fid == 0x1f) {
       if (fid == 0x1d || fid == 0x1e) {
-        p += getbnxi(p, &flen); /* subfield length */
+        p += getbnxi(p, &flen); /* Subfield length */
         p += flen;
       }
       for (i = 0; i < 3; i++) {
@@ -204,13 +204,13 @@ static int decode_bnx_00(raw_t *raw, uint8_t *buff, int len) {
         rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " [%02x]%.3Lf/%.3Lf/%.3Lf", fid, x[0],
                      x[1], x[2]);
       }
-      if (fid == 0x1d) { /* antenna ECEF X/Y/Z position */
+      if (fid == 0x1d) { /* Antenna ECEF X/Y/Z position */
         matcpy(raw->sta.pos, x, 3, 1);
-      } else if (fid == 0x1e) { /* antenna geographic position */
+      } else if (fid == 0x1e) { /* Antenna geographic position */
         x[0] *= D2R;
         x[1] *= D2R;
         pos2ecef(x, raw->sta.pos);
-      } else if (fid == 0x1f) { /* antenna offset (H/E/N) */
+      } else if (fid == 0x1f) { /* Antenna offset (H/E/N) */
         raw->sta.deltype = 0;   /* (E/N/U) */
         raw->sta.del[0] = x[1];
         raw->sta.del[1] = x[2];
@@ -224,13 +224,13 @@ static int decode_bnx_00(raw_t *raw, uint8_t *buff, int len) {
   }
   return ret;
 }
-/* decode BINEX mesaage 0x01-00: coded (raw bytes) GNSS ephemeris ------------*/
-static int decode_bnx_01_00(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x01-00: coded (raw bytes) GNSS ephemeris ------------*/
+static int decode_bnx_01_00(raw_t *raw, uint8_t *buff, size_t size, int len) {
   trace(2, "BINEX 0x01-00: unsupported message\n");
   return 0;
 }
-/* decode BINEX mesaage 0x01-01: decoded GPS ephmemeris ----------------------*/
-static int decode_bnx_01_01(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x01-01: decoded GPS ephmemeris ----------------------*/
+static int decode_bnx_01_01(raw_t *raw, uint8_t *buff, size_t size, int len) {
   eph_t eph = {0};
   uint8_t *p = buff;
   long double tow, ura, sqrtA;
@@ -315,15 +315,15 @@ static int decode_bnx_01_01(raw_t *raw, uint8_t *buff, int len) {
   if (!strstr(raw->opt, "-EPHALL")) {
     if (raw->nav.eph[eph.sat - 1][0].iode == eph.iode &&
         raw->nav.eph[eph.sat - 1][0].iodc == eph.iodc)
-      return 0; /* unchanged */
+      return 0; /* Unchanged */
   }
   raw->nav.eph[sat - 1][0] = eph;
   raw->ephsat = sat;
   raw->ephset = 0;
   return 2;
 }
-/* decode BINEX mesaage 0x01-02: decoded GLONASS ephmemeris ------------------*/
-static int decode_bnx_01_02(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x01-02: decoded GLONASS ephmemeris ------------------*/
+static int decode_bnx_01_02(raw_t *raw, uint8_t *buff, size_t size, int len) {
   geph_t geph = {0};
   uint8_t *p = buff;
   long double tod, tof, tau_gps;
@@ -397,8 +397,8 @@ static int decode_bnx_01_02(raw_t *raw, uint8_t *buff, int len) {
   raw->ephset = 0;
   return 2;
 }
-/* decode BINEX mesaage 0x01-03: decoded SBAS ephmemeris ---------------------*/
-static int decode_bnx_01_03(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x01-03: decoded SBAS ephmemeris ---------------------*/
+static int decode_bnx_01_03(raw_t *raw, uint8_t *buff, size_t size, int len) {
   seph_t seph = {0};
   uint8_t *p = buff;
   long double tow, tod, tof;
@@ -464,12 +464,12 @@ static int decode_bnx_01_03(raw_t *raw, uint8_t *buff, int len) {
   raw->ephset = 0;
   return 2;
 }
-/* decode BINEX mesaage 0x01-04: decoded Galileo ephmemeris ------------------*/
-static int decode_bnx_01_04(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x01-04: decoded Galileo ephmemeris ------------------*/
+static int decode_bnx_01_04(raw_t *raw, uint8_t *buff, size_t size, int len) {
   eph_t eph = {0};
   uint8_t *p = buff;
   long double tow, ura, sqrtA;
-  int prn, sat, set, eph_sel = 3; /* ephemeris selection (1:I/NAV+2:F/NAV) */
+  int prn, sat, set, eph_sel = 3; /* Ephemeris selection (1:I/NAV+2:F/NAV) */
 
   trace(4, "BINEX 0x01-04: len=%d\n", len);
 
@@ -480,7 +480,7 @@ static int decode_bnx_01_04(raw_t *raw, uint8_t *buff, int len) {
     prn = U1(p) + 1;
     p += 1;
     eph.week = U2(p);
-    p += 2; /* gal-week = gps-week */
+    p += 2; /* Gal-week = gps-week */
     tow = I4(p);
     p += 4;
     eph.toes = I4(p);
@@ -531,7 +531,7 @@ static int decode_bnx_01_04(raw_t *raw, uint8_t *buff, int len) {
     p += 4;
     eph.svh = U2(p);
     p += 2;
-    eph.code = U2(p); /* data source defined as RINEX 3.03 */
+    eph.code = U2(p); /* Data source defined as RINEX 3.03 */
   } else {
     trace(2, "BINEX 0x01-04: length error len=%d\n", len);
     return -1;
@@ -568,8 +568,8 @@ static long double bds_tgd(int tgd) {
   tgd &= 0x3FF;
   return (tgd & 0x200) ? -1E-10L * ((~tgd) & 0x1FF) : 1E-10L * (tgd & 0x1FF);
 }
-/* decode BINEX mesaage 0x01-05: decoded Beidou-2/Compass ephmemeris ---------*/
-static int decode_bnx_01_05(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x01-05: decoded Beidou-2/Compass ephmemeris ---------*/
+static int decode_bnx_01_05(raw_t *raw, uint8_t *buff, size_t size, int len) {
   eph_t eph = {0};
   uint8_t *p = buff;
   long double tow, toc, sqrtA;
@@ -637,18 +637,18 @@ static int decode_bnx_01_05(raw_t *raw, uint8_t *buff, int len) {
   }
   eph.sat = sat;
   eph.A = SQR(sqrtA);
-  eph.toe = gpst2time(eph.week + 1356, eph.toes + 14.0L); /* bdt -> gpst */
-  eph.toc = gpst2time(eph.week + 1356, eph.toes + 14.0L); /* bdt -> gpst */
-  eph.ttr = adjweek(eph.toe, tow + 14.0L);                /* bdt -> gpst */
+  eph.toe = gpst2time(eph.week + 1356, eph.toes + 14.0L); /* BDT -> GPST */
+  eph.toc = gpst2time(eph.week + 1356, eph.toes + 14.0L); /* BDT -> GPST */
+  eph.ttr = adjweek(eph.toe, tow + 14.0L);                /* BDT -> GPST */
   eph.iodc = (flag1 >> 1) & 0x1F;
   eph.iode = (flag1 >> 6) & 0x1F;
   eph.svh = flag1 & 0x01;
   eph.sva = flag2 & 0x0F;            /* URA index */
   eph.tgd[0] = bds_tgd(flag2 >> 4);  /* TGD1 (s) */
   eph.tgd[1] = bds_tgd(flag2 >> 14); /* TGD2 (s) */
-  eph.flag = (flag1 >> 11) & 0x07;   /* nav type (0:unknown,1:IGSO/MEO,2:GEO) */
+  eph.flag = (flag1 >> 11) & 0x07;   /* Nav type (0:unknown,1:IGSO/MEO,2:GEO) */
   eph.code = (flag2 >> 25) & 0x7F;
-  /* message source (0:unknown,1:B1I,2:B1Q,3:B2I,4:B2Q,5:B3I,6:B3Q)*/
+  /* Message source (0:unknown,1:B1I,2:B1Q,3:B2I,4:B2Q,5:B3I,6:B3Q)*/
 
   if (!strstr(raw->opt, "-EPHALL")) {
     if (fabsl(timediff(raw->nav.eph[sat - 1][0].toe, eph.toe)) < 1.0L) return 0;
@@ -658,8 +658,8 @@ static int decode_bnx_01_05(raw_t *raw, uint8_t *buff, int len) {
   raw->ephset = 0;
   return 2;
 }
-/* decode BINEX mesaage 0x01-06: decoded QZSS ephmemeris ---------------------*/
-static int decode_bnx_01_06(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x01-06: decoded QZSS ephmemeris ---------------------*/
+static int decode_bnx_01_06(raw_t *raw, uint8_t *buff, size_t size, int len) {
   eph_t eph = {0};
   uint8_t *p = buff;
   long double tow, ura, sqrtA;
@@ -738,7 +738,7 @@ static int decode_bnx_01_06(raw_t *raw, uint8_t *buff, int len) {
   eph.ttr = adjweek(eph.toe, tow);
   eph.fit = (flag & 0x01) ? 0.0L : 2.0L; /* 0:2hr,1:>2hr */
   eph.sva = uraindex(ura);
-  eph.code = 2; /* codes on L2 channel */
+  eph.code = 2; /* Codes on L2 channel */
 
   if (!strstr(raw->opt, "-EPHALL")) {
     if (raw->nav.eph[sat - 1][0].iode == eph.iode && raw->nav.eph[sat - 1][0].iodc == eph.iodc)
@@ -749,8 +749,8 @@ static int decode_bnx_01_06(raw_t *raw, uint8_t *buff, int len) {
   raw->ephset = 0;
   return 2;
 }
-/* decode BINEX mesaage 0x01-07: decoded IRNSS ephmemeris --------------------*/
-static int decode_bnx_01_07(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x01-07: decoded IRNSS ephmemeris --------------------*/
+static int decode_bnx_01_07(raw_t *raw, uint8_t *buff, size_t size, int len) {
   eph_t eph = {0};
   uint8_t *p = buff;
   long double tow, toc, sqrtA;
@@ -837,8 +837,8 @@ static int decode_bnx_01_07(raw_t *raw, uint8_t *buff, int len) {
   raw->ephset = 0;
   return 2;
 }
-/* decode BINEX mesaage 0x01-14: upgraded decoded Galileo ephmemeris ---------*/
-static int decode_bnx_01_14(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x01-14: upgraded decoded Galileo ephmemeris ---------*/
+static int decode_bnx_01_14(raw_t *raw, uint8_t *buff, size_t size, int len) {
   eph_t eph = {0};
   uint8_t *p = buff;
   long double tow, ura, sqrtA;
@@ -853,7 +853,7 @@ static int decode_bnx_01_14(raw_t *raw, uint8_t *buff, int len) {
     prn = U1(p) + 1;
     p += 1;
     eph.week = U2(p);
-    p += 2; /* gal-week = gps-week */
+    p += 2; /* Gal-week = gps-week */
     tow = I4(p);
     p += 4;
     tocs = I4(p);
@@ -906,7 +906,7 @@ static int decode_bnx_01_14(raw_t *raw, uint8_t *buff, int len) {
     p += 4;
     eph.svh = U2(p);
     p += 2;
-    eph.code = U2(p); /* data source defined as RINEX 3.03 */
+    eph.code = U2(p); /* Data source defined as RINEX 3.03 */
   } else {
     trace(2, "BINEX 0x01-14: length error len=%d\n", len);
     return -1;
@@ -938,8 +938,8 @@ static int decode_bnx_01_14(raw_t *raw, uint8_t *buff, int len) {
   raw->ephset = set;
   return 2;
 }
-/* decode BINEX mesaage 0x01: GNSS navigation information --------------------*/
-static int decode_bnx_01(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x01: GNSS navigation information --------------------*/
+static int decode_bnx_01(raw_t *raw, uint8_t *buff, size_t size, int len) {
   int srec = U1(buff), prn = U1(buff + 1);
 
   if (raw->outtype) {
@@ -948,73 +948,74 @@ static int decode_bnx_01(raw_t *raw, uint8_t *buff, int len) {
   }
   switch (srec) {
     case 0x00:
-      return decode_bnx_01_00(raw, buff + 1, len - 1);
+      return decode_bnx_01_00(raw, buff + 1, size - 1, len - 1);
     case 0x01:
-      return decode_bnx_01_01(raw, buff + 1, len - 1);
+      return decode_bnx_01_01(raw, buff + 1, size - 1, len - 1);
     case 0x02:
-      return decode_bnx_01_02(raw, buff + 1, len - 1);
+      return decode_bnx_01_02(raw, buff + 1, size - 1, len - 1);
     case 0x03:
-      return decode_bnx_01_03(raw, buff + 1, len - 1);
+      return decode_bnx_01_03(raw, buff + 1, size - 1, len - 1);
     case 0x04:
-      return decode_bnx_01_04(raw, buff + 1, len - 1);
+      return decode_bnx_01_04(raw, buff + 1, size - 1, len - 1);
     case 0x05:
-      return decode_bnx_01_05(raw, buff + 1, len - 1);
+      return decode_bnx_01_05(raw, buff + 1, size - 1, len - 1);
     case 0x06:
-      return decode_bnx_01_06(raw, buff + 1, len - 1);
+      return decode_bnx_01_06(raw, buff + 1, size - 1, len - 1);
     case 0x07:
-      return decode_bnx_01_07(raw, buff + 1, len - 1);
+      return decode_bnx_01_07(raw, buff + 1, size - 1, len - 1);
     case 0x14:
-      return decode_bnx_01_14(raw, buff + 1, len - 1);
+      return decode_bnx_01_14(raw, buff + 1, size - 1, len - 1);
   }
   return 0;
 }
-/* decode BINEX mesaage 0x02: generalized GNSS data --------------------------*/
-static int decode_bnx_02(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x02: generalized GNSS data --------------------------*/
+static int decode_bnx_02(raw_t *raw, uint8_t *buff, size_t size, int len) {
   trace(2, "BINEX 0x02: unsupported message\n");
   return 0;
 }
-/* decode BINEX mesaage 0x03: generalized ancillary site data ----------------*/
-static int decode_bnx_03(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x03: generalized ancillary site data ----------------*/
+static int decode_bnx_03(raw_t *raw, uint8_t *buff, size_t size, int len) {
   trace(2, "BINEX 0x03: unsupported message\n");
   return 0;
 }
-/* decode BINEX mesaage 0x7d: receiver internal state prototyping ------------*/
-static int decode_bnx_7d(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x7d: receiver internal state prototyping ------------*/
+static int decode_bnx_7d(raw_t *raw, uint8_t *buff, size_t size, int len) {
   trace(2, "BINEX 0x7d: unsupported message\n");
   return 0;
 }
-/* decode BINEX mesaage 0x7e: ancillary site data prototyping ----------------*/
-static int decode_bnx_7e(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x7e: ancillary site data prototyping ----------------*/
+static int decode_bnx_7e(raw_t *raw, uint8_t *buff, size_t size, int len) {
   trace(2, "BINEX 0x7e: unsupported message\n");
   return 0;
 }
-/* decode BINEX mesaage 0x7f-00: JPL fiducial site ---------------------------*/
-static int decode_bnx_7f_00(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x7f-00: JPL fiducial site ---------------------------*/
+static int decode_bnx_7f_00(raw_t *raw, uint8_t *buff, size_t size, int len) {
   trace(2, "BINEX 0x7f-00: unsupported message\n");
   return 0;
 }
-/* decode BINEX mesaage 0x7f-01: UCAR COSMIC ---------------------------------*/
-static int decode_bnx_7f_01(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x7f-01: UCAR COSMIC ---------------------------------*/
+static int decode_bnx_7f_01(raw_t *raw, uint8_t *buff, size_t size, int len) {
   trace(2, "BINEX 0x7f-01: unsupported message\n");
   return 0;
 }
-/* decode BINEX mesaage 0x7f-02: Trimble 4700 --------------------------------*/
-static int decode_bnx_7f_02(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x7f-02: Trimble 4700 --------------------------------*/
+static int decode_bnx_7f_02(raw_t *raw, uint8_t *buff, size_t size, int len) {
   trace(2, "BINEX 0x7f-02: unsupported message\n");
   return 0;
 }
-/* decode BINEX mesaage 0x7f-03: Trimble NetRS -------------------------------*/
-static int decode_bnx_7f_03(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x7f-03: Trimble NetRS -------------------------------*/
+static int decode_bnx_7f_03(raw_t *raw, uint8_t *buff, size_t size, int len) {
   trace(2, "BINEX 0x7f-03: unsupported message\n");
   return 0;
 }
-/* decode BINEX mesaage 0x7f-04: Trimble NetRS -------------------------------*/
-static int decode_bnx_7f_04(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x7f-04: Trimble NetRS -------------------------------*/
+static int decode_bnx_7f_04(raw_t *raw, uint8_t *buff, size_t size, int len) {
   trace(2, "BINEX 0x7f-04: unsupported message\n");
   return 0;
 }
-/* decode BINEX mesaage 0x7f-05: Trimble NetR8 obs data ----------------------*/
-static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nobs, obsd_t *data) {
+/* Decode BINEX mesaage 0x7f-05: Trimble NetR8 obs data ----------------------*/
+static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, size_t size, int sat, int nobs,
+                                     obsd_t *data) {
   const uint8_t codes_gps[32] = {
       CODE_L1C, CODE_L1C, CODE_L1P,  CODE_L1W,  CODE_L1Y,  CODE_L1M, /*  0- 5 */
       CODE_L1X, CODE_L1N, CODE_NONE, CODE_NONE, CODE_L2W,  CODE_L2C, /*  6-11 */
@@ -1097,9 +1098,9 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nob
       return 0;
   }
   for (i = 0; i < nobs; i++) {
-    flag = getbitu(p, 0, 1);
-    slip[i] = getbitu(p, 2, 1);
-    code[i] = getbitu(p, 3, 5);
+    flag = getbitu(p, size - (p - buff), 0, 1);
+    slip[i] = getbitu(p, size - (p - buff), 2, 1);
+    code[i] = getbitu(p, size - (p - buff), 3, 5);
     p++;
 
     for (j = 0; j < 4; j++) flags[j] = 0;
@@ -1110,37 +1111,38 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nob
       flag &= 0x80;
     }
     if (flags[2]) {
-      fcn = getbits(flags + 2, 2, 4);
+      fcn = getbits(flags + 2, sizeof(flags) - 2, 2, 4);
       if (sys == SYS_GLO && !raw->nav.glo_fcn[prn - 1]) {
         raw->nav.glo_fcn[prn - 1] = fcn + 8; /* fcn+8 */
       }
     }
-    acc = (flags[0] & 0x20) ? 0.0001L : 0.00002L; /* phase accuracy */
+    acc = (flags[0] & 0x20) ? 0.0001L : 0.00002L; /* Phase accuracy */
 
     cnr[i] = U1(p++) * 0.4L;
 
     if (i == 0) {
-      cnr[i] += getbits(p, 0, 2) * 0.1L;
-      range[i] = getbitu(p, 2, 32) * 0.064L + getbitu(p, 34, 6) * 0.001L;
+      cnr[i] += getbits(p, size - (p - buff), 0, 2) * 0.1L;
+      range[i] = getbitu(p, size - (p - buff), 2, 32) * 0.064L +
+                 getbitu(p, size - (p - buff), 34, 6) * 0.001L;
       p += 5;
     } else if (flags[0] & 0x40) {
-      cnr[i] += getbits(p, 0, 2) * 0.1L;
-      range[i] = range[0] + getbits(p, 4, 20) * 0.001L;
+      cnr[i] += getbits(p, size - (p - buff), 0, 2) * 0.1L;
+      range[i] = range[0] + getbits(p, size - (p - buff), 4, 20) * 0.001L;
       p += 3;
     } else {
-      range[i] = range[0] + getbits(p, 0, 16) * 0.001L;
+      range[i] = range[0] + getbits(p, size - (p - buff), 0, 16) * 0.001L;
       p += 2;
     }
     if (flags[0] & 0x40) {
-      phase[i] = range[i] + getbits(p, 0, 24) * acc;
+      phase[i] = range[i] + getbits(p, size - (p - buff), 0, 24) * acc;
       p += 3;
     } else {
-      cnr[i] += getbits(p, 0, 2) * 0.1L;
-      phase[i] = range[i] + getbits(p, 2, 22) * acc;
+      cnr[i] += getbits(p, size - (p - buff), 0, 2) * 0.1L;
+      phase[i] = range[i] + getbits(p, size - (p - buff), 2, 22) * acc;
       p += 3;
     }
     if (flags[0] & 0x04) {
-      dopp[i] = getbits(p, 0, 24) / 256.0L;
+      dopp[i] = getbits(p, size - (p - buff), 0, 24) / 256.0L;
       p += 3;
     }
     if (flags[0] & 0x08) {
@@ -1164,7 +1166,7 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nob
   data->time = raw->time;
   data->sat = sat;
 
-  /* get code priority */
+  /* Get code priority */
   for (i = 0; i < nobs; i++) {
     idx[i] = code2idx(sys, codes[code[i]]);
     pri[i] = getcodepri(sys, codes[code[i]], raw->opt);
@@ -1211,8 +1213,8 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat, int nob
   }
   return p;
 }
-/* decode BINEX mesaage 0x7f-05: Trimble NetR8 -------------------------------*/
-static int decode_bnx_7f_05(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x7f-05: Trimble NetR8 -------------------------------*/
+static int decode_bnx_7f_05(raw_t *raw, uint8_t *buff, size_t size, int len) {
   obsd_t data = {{0}};
   long double clkoff = 0.0L, toff[16] = {0};
   uint8_t *p = buff;
@@ -1226,24 +1228,24 @@ static int decode_bnx_7f_05(raw_t *raw, uint8_t *buff, int len) {
   nsat = (int)(flag & 0x3F) + 1;
 
   if (flag & 0x80) { /* rxclkoff */
-    clkrst = getbitu(p, 0, 2);
-    clkoff = getbits(p, 2, 22) * 1E-9L;
+    clkrst = getbitu(p, size - (p - buff), 0, 2);
+    clkoff = getbits(p, size - (p - buff), 2, 22) * 1E-9L;
     p += 3;
   }
-  if (flag & 0x40) { /* systime */
-    nsys = getbitu(p, 0, 4);
-    rsys = getbitu(p, 4, 4);
+  if (flag & 0x40) { /* Systime */
+    nsys = getbitu(p, size - (p - buff), 0, 4);
+    rsys = getbitu(p, size - (p - buff), 4, 4);
     p++;
     for (i = 0; i < nsys; i++) {
-      toff[i] = getbits(p, 0, 24) * 1E-9L;
-      tsys[i] = getbitu(p, 28, 4);
+      toff[i] = getbits(p, size - (p - buff), 0, 24) * 1E-9L;
+      tsys[i] = getbitu(p, size - (p - buff), 28, 4);
       p += 4;
     }
   }
   for (i = 0; i < nsat; i++) {
     prn = U1(p++);
-    nobs = getbitu(p, 1, 3);
-    sys = getbitu(p, 4, 4);
+    nobs = getbitu(p, size - (p - buff), 1, 3);
+    sys = getbitu(p, size - (p - buff), 4, 4);
     p++;
 
     trace(5, "BINEX 0x7F-05 PRN=%3d SYS=%d NOBS=%d\n", prn, sys, nobs);
@@ -1274,14 +1276,14 @@ static int decode_bnx_7f_05(raw_t *raw, uint8_t *buff, int len) {
         sat = 0;
         break;
     }
-    /* decode BINEX mesaage 0x7F-05 obs data */
-    if (!(p = decode_bnx_7f_05_obs(raw, p, sat, nobs, &data))) return -1;
+    /* Decode BINEX mesaage 0x7F-05 obs data */
+    if (!(p = decode_bnx_7f_05_obs(raw, p, size - (p - buff), sat, nobs, &data))) return -1;
 
     if ((int)(p - buff) > len) {
       trace(2, "BINEX 0x7F-05 length error: nsat=%2d len=%d\n", nsat, len);
       return -1;
     }
-    /* save obs data to obs buffer */
+    /* Save obs data to obs buffer */
     if (data.sat && raw->obs.n < MAXOBS) {
       raw->obs.data[raw->obs.n++] = data;
     }
@@ -1291,14 +1293,14 @@ static int decode_bnx_7f_05(raw_t *raw, uint8_t *buff, int len) {
   }
   return raw->obs.n > 0 ? 1 : 0;
 }
-/* decode BINEX mesaage 0x7f: GNSS data prototyping --------------------------*/
-static int decode_bnx_7f(raw_t *raw, uint8_t *buff, int len) {
+/* Decode BINEX mesaage 0x7f: GNSS data prototyping --------------------------*/
+static int decode_bnx_7f(raw_t *raw, uint8_t *buff, size_t size, int len) {
   static const long double gpst0[] = {1980, 1, 6, 0, 0, 0};
   uint8_t *p = buff;
   uint32_t srec, min, msec;
 
   srec = U1(p);
-  p += 1; /* subrecord ID */
+  p += 1; /* Subrecord ID */
   min = U4(p);
   p += 4;
   msec = U2(p);
@@ -1312,39 +1314,39 @@ static int decode_bnx_7f(raw_t *raw, uint8_t *buff, int len) {
   }
   switch (srec) {
     case 0x00:
-      return decode_bnx_7f_00(raw, buff + 7, len - 7);
+      return decode_bnx_7f_00(raw, buff + 7, size - 7, len - 7);
     case 0x01:
-      return decode_bnx_7f_01(raw, buff + 7, len - 7);
+      return decode_bnx_7f_01(raw, buff + 7, size - 7, len - 7);
     case 0x02:
-      return decode_bnx_7f_02(raw, buff + 7, len - 7);
+      return decode_bnx_7f_02(raw, buff + 7, size - 7, len - 7);
     case 0x03:
-      return decode_bnx_7f_03(raw, buff + 7, len - 7);
+      return decode_bnx_7f_03(raw, buff + 7, size - 7, len - 7);
     case 0x04:
-      return decode_bnx_7f_04(raw, buff + 7, len - 7);
+      return decode_bnx_7f_04(raw, buff + 7, size - 7, len - 7);
     case 0x05:
-      return decode_bnx_7f_05(raw, buff + 7, len - 7);
+      return decode_bnx_7f_05(raw, buff + 7, size - 7, len - 7);
   }
   return 0;
 }
-/* decode BINEX mesaage ------------------------------------------------------*/
+/* Decode BINEX mesaage ------------------------------------------------------*/
 static int decode_bnx(raw_t *raw) {
   uint32_t len, cs1, cs2;
   int rec, len_h;
 
-  rec = raw->buff[1]; /* record ID */
+  rec = raw->buff[1]; /* Record ID */
 
-  /* record and header length */
+  /* Record and header length */
   len_h = getbnxi(raw->buff + 2, &len);
 
   trace(5, "decode_bnx: rec=%02x len=%d\n", rec, len);
 
-  /* check parity */
+  /* Check parity */
   if (raw->len - 1 < 128) {
     cs1 = U1(raw->buff + raw->len);
     cs2 = csum8(raw->buff + 1, raw->len - 1);
   } else {
     cs1 = U2(raw->buff + raw->len);
-    cs2 = rtk_crc16(raw->buff + 1, raw->len - 1);
+    cs2 = rtk_crc16(raw->buff + 1, sizeof(raw->buff) - 1, raw->len - 1);
   }
   if (cs1 != cs2) {
     trace(2, "BINEX 0x%02X parity error CS=%X %X\n", rec, cs1, cs2);
@@ -1353,26 +1355,26 @@ static int decode_bnx(raw_t *raw) {
   if (raw->outtype) {
     rtksnprintf(raw->msgtype, sizeof(raw->msgtype), "BINEX 0x%02X (%4d)", rec, raw->len);
   }
-  /* decode BINEX message record */
+  /* Decode BINEX message record */
   switch (rec) {
     case 0x00:
-      return decode_bnx_00(raw, raw->buff + 2 + len_h, len);
+      return decode_bnx_00(raw, raw->buff + 2 + len_h, sizeof(raw->buff) - 2 - len_h, len);
     case 0x01:
-      return decode_bnx_01(raw, raw->buff + 2 + len_h, len);
+      return decode_bnx_01(raw, raw->buff + 2 + len_h, sizeof(raw->buff) - 2 - len_h, len);
     case 0x02:
-      return decode_bnx_02(raw, raw->buff + 2 + len_h, len);
+      return decode_bnx_02(raw, raw->buff + 2 + len_h, sizeof(raw->buff) - 2 - len_h, len);
     case 0x03:
-      return decode_bnx_03(raw, raw->buff + 2 + len_h, len);
+      return decode_bnx_03(raw, raw->buff + 2 + len_h, sizeof(raw->buff) - 2 - len_h, len);
     case 0x7d:
-      return decode_bnx_7d(raw, raw->buff + 2 + len_h, len);
+      return decode_bnx_7d(raw, raw->buff + 2 + len_h, sizeof(raw->buff) - 2 - len_h, len);
     case 0x7e:
-      return decode_bnx_7e(raw, raw->buff + 2 + len_h, len);
+      return decode_bnx_7e(raw, raw->buff + 2 + len_h, sizeof(raw->buff) - 2 - len_h, len);
     case 0x7f:
-      return decode_bnx_7f(raw, raw->buff + 2 + len_h, len);
+      return decode_bnx_7f(raw, raw->buff + 2 + len_h, sizeof(raw->buff) - 2 - len_h, len);
   }
   return 0;
 }
-/* synchronize BINEX message -------------------------------------------------*/
+/* Synchronize BINEX message -------------------------------------------------*/
 static int sync_bnx(uint8_t *buff, uint8_t data) {
   buff[0] = buff[1];
   buff[1] = data;
@@ -1381,13 +1383,13 @@ static int sync_bnx(uint8_t *buff, uint8_t data) {
          (buff[1] == 0x00 || buff[1] == 0x01 || buff[1] == 0x02 || buff[1] == 0x03 ||
           buff[1] == 0x7D || buff[1] == 0x7E || buff[1] == 0x7F);
 }
-/* input BINEX message from stream ---------------------------------------------
- * fetch next BINEX data and input a message from stream
- * args   : raw_t *raw       IO  receiver raw data control struct
+/* Input BINEX message from stream ---------------------------------------------
+ * Fetch next BINEX data and input a message from stream
+ * Args   : raw_t *raw       IO  receiver raw data control struct
  *          uint8_t data     I   stream data (1 byte)
- * return : status (-1: error message, 0: no message, 1: input observation data,
+ * Return : status (-1: error message, 0: no message, 1: input observation data,
  *                  2: input ephemeris, 5: input station pos/ant parameters)
- * notes  : support only the following message (ref [1])
+ * Notes  : support only the following message (ref [1])
  *
  *          - big-endian, regular CRC, forward record (sync=0xE2)
  *          - record-subrecord:
@@ -1413,14 +1415,14 @@ static int sync_bnx(uint8_t *buff, uint8_t data) {
  *          -CLss    : select signal ss for BDS (ss=2I,2X,...)
  *          -GALINAV : select I/NAV for Galileo ephemeris (default: all)
  *          -GALFNAV : select F/NAV for Galileo ephemeris (default: all)
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern int input_bnx(raw_t *raw, uint8_t data) {
   uint32_t len;
   int len_h, len_c;
 
   trace(5, "input_bnx: data=%02x\n", data);
 
-  /* synchronize BINEX message */
+  /* Synchronize BINEX message */
   if (raw->nbyte == 0) {
     if (!sync_bnx(raw->buff, data)) return 0;
     raw->nbyte = 2;
@@ -1431,7 +1433,7 @@ extern int input_bnx(raw_t *raw, uint8_t data) {
 
   len_h = getbnxi(raw->buff + 2, &len);
 
-  raw->len = len + len_h + 2; /* length without CRC */
+  raw->len = len + len_h + 2; /* Length without CRC */
 
   if (raw->len - 1 > 4096) {
     trace(2, "BINEX length error: len=%d\n", raw->len - 1);
@@ -1443,15 +1445,15 @@ extern int input_bnx(raw_t *raw, uint8_t data) {
   if (raw->nbyte < (int)(raw->len + len_c)) return 0;
   raw->nbyte = 0;
 
-  /* decode BINEX message */
+  /* Decode BINEX message */
   return decode_bnx(raw);
 }
-/* input BINEX message from file -----------------------------------------------
- * fetch next BINEX data and input a message from file
- * args   : raw_t  *raw      IO  receiver raw data control struct
+/* Input BINEX message from file -----------------------------------------------
+ * Fetch next BINEX data and input a message from file
+ * Args   : raw_t  *raw      IO  receiver raw data control struct
  *          FILE   *fp       I   file pointer
- * return : status(-2: end of file, -1...9: same as above)
- *-----------------------------------------------------------------------------*/
+ * Return : status(-2: end of file, -1...9: same as above)
+ *----------------------------------------------------------------------------*/
 extern int input_bnxf(raw_t *raw, FILE *fp) {
   uint32_t len;
   int i, data, len_h, len_c;
@@ -1483,6 +1485,6 @@ extern int input_bnxf(raw_t *raw, FILE *fp) {
   }
   raw->nbyte = 0;
 
-  /* decode BINEX message */
+  /* Decode BINEX message */
   return decode_bnx(raw);
 }

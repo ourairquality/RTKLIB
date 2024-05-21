@@ -1,26 +1,26 @@
 /*------------------------------------------------------------------------------
- * convbin.c : convert receiver binary log file to rinex obs/nav, sbas messages
+ * convbin.c : convert receiver binary log file to RINEX obs/nav, SBAS messages
  *
  *          Copyright (C) 2007-2020 by T.TAKASU, All rights reserved.
  *
- * options : -DWIN32 use windows file path separator
+ * Options : -DWIN32 use windows file path separator
  *
- * version : $Revision: 1.1 $ $Date: 2008/07/17 22:13:04 $
- * history : 2008/06/22 1.0 new
- *           2009/06/17 1.1 support glonass
- *           2009/12/19 1.2 fix bug on disable of glonass
- *                          fix bug on improper header for rtcm2 and rtcm3
+ * Version : $Revision: 1.1 $ $Date: 2008/07/17 22:13:04 $
+ * History : 2008/06/22 1.0 new
+ *           2009/06/17 1.1 support GLONASS
+ *           2009/12/19 1.2 fix bug on disable of GLONASS
+ *                          fix bug on improper header for RTCM2 and RTCM3
  *           2010/07/18 1.3 add option -v, -t, -h, -x
  *           2011/01/15 1.4 add option -ro, -hc, -hm, -hn, -ht, -ho, -hr, -ha,
  *                            -hp, -hd, -y, -c, -q
- *                          support gw10 and javad receiver, galileo, qzss
- *                          support rinex file name convention
+ *                          support GW10 and JAVAD receiver, Galileo, QZSS
+ *                          support RINEX file name convention
  *           2012/10/22 1.5 add option -scan, -oi, -ot, -ol
- *                          change default rinex version to 2.11
+ *                          change default RINEX version to 2.11
  *                          fix bug on default output directory (/ -> .)
- *                          support galileo nav (LNAV) output
+ *                          support Galileo nav (LNAV) output
  *                          support compass
- *           2012/11/19 1.6 fix bug on setting code mask in rinex options
+ *           2012/11/19 1.6 fix bug on setting code mask in RINEX options
  *           2013/02/18 1.7 support binex
  *           2013/05/19 1.8 support auto format for file path with wild-card
  *           2014/02/08 1.9 add option -span -trace -mask
@@ -33,7 +33,7 @@
  *           2016/07/01 1.15 support log format CMR/CMR+
  *           2016/07/31 1.16 add option -halfc
  *           2017/05/26 1.17 add input format tersus
- *           2017/06/06 1.18 fix bug on output beidou and irnss nav files
+ *           2017/06/06 1.18 fix bug on output BeiDou and IRNSS nav files
  *                           add option -tt
  *           2018/10/10 1.19 default options are changed.
  *                             scan input file: off - on
@@ -43,7 +43,7 @@
  *                           force option -scan
  *                           delete option -noscan
  *                           suppress warnings
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #define _POSIX_C_SOURCE 199506
 #include <stdarg.h>
 #include <stdio.h>
@@ -55,7 +55,7 @@
 
 #define PRGNAME "CONVBIN"
 #define TRACEFILE "convbin.trace"
-#define NOUTFILE 9 /* number of output files */
+#define NOUTFILE 9 /* Number of output files */
 
 /* Help text -----------------------------------------------------------------*/
 static const char *help[] = {
@@ -185,7 +185,7 @@ extern int showmsg(const char *format, ...) {
   fprintf(stderr, *format ? "\r" : "\n");
   return 0;
 }
-/* convert main --------------------------------------------------------------*/
+/* Convert main --------------------------------------------------------------*/
 static bool convbin(int format, rnxopt_t *opt, const char *ifile, char **file, char *dir) {
   /* Replace wild-card (*) in input file by 0 */
   char ifile_[1024];
@@ -376,14 +376,14 @@ static void setmask(const char *argv, rnxopt_t *opt, int mask) {
     }
   }
 }
-/* Get start time of input file -----------------------------------------------*/
+/* Get start time of input file ----------------------------------------------*/
 static bool get_filetime(const char *file, gtime_t *time) {
   char path[FNSIZE], *paths[1];
   paths[0] = path;
 
   if (!expath(file, paths, sizeof(path), 1)) return false;
 
-  /* get start time of time-tag file */
+  /* Get start time of time-tag file */
   char path_tag[FNSIZE];
   rtksnprintf(path_tag, sizeof(path_tag), "%.1019s.tag", path);
   FILE *fp = fopen(path_tag, "rb");
@@ -399,7 +399,7 @@ static bool get_filetime(const char *file, gtime_t *time) {
     }
     fclose(fp);
   }
-  /* get modified time of input file */
+  /* Get modified time of input file */
   struct stat st;
   struct tm *tm;
   if (!stat(path, &st) && (tm = gmtime(&st.st_mtime))) {
@@ -415,7 +415,7 @@ static bool get_filetime(const char *file, gtime_t *time) {
   }
   return false;
 }
-/* parse command line options ------------------------------------------------*/
+/* Parse command line options ------------------------------------------------*/
 static int cmdopts(int argc, char **argv, rnxopt_t *opt, char **ifile, char **ofile, char **dir,
                    int *trace) {
   opt->rnxver = 304;
@@ -513,7 +513,7 @@ static int cmdopts(int argc, char **argv, rnxopt_t *opt, char **ifile, char **of
     } else if (!strcmp(argv[i], "-ol")) {
       opt->outleaps = 1;
     } else if (!strcmp(argv[i], "-scan")) {
-      /* obsolete */;
+      /* Obsolete */;
     } else if (!strcmp(argv[i], "-halfc")) {
       opt->halfcyc = 1;
     } else if (!strcmp(argv[i], "-mask") && i + 1 < argc) {
@@ -662,9 +662,9 @@ static int cmdopts(int argc, char **argv, rnxopt_t *opt, char **ifile, char **of
   }
   return format;
 }
-/* main ----------------------------------------------------------------------*/
+/* Main ----------------------------------------------------------------------*/
 int main(int argc, char **argv) {
-  /* parse command line options */
+  /* Parse command line options */
   rnxopt_t opt = {{0}};
   char *ifile = "", *ofile[NOUTFILE] = {0}, *dir = "";
   int trace = 0;

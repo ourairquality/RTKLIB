@@ -3,38 +3,38 @@
  *
  *          Copyright (C) 2007-2020 by T.TAKASU, All rights reserved.
  *
- * version : $Revision: 1.1 $ $Date: 2008/07/17 21:48:06 $
- * history : 2007/05/08  1.0  new
+ * Version : $Revision: 1.1 $ $Date: 2008/07/17 21:48:06 $
+ * History : 2007/05/08  1.0  new
  *           2008/06/16  1.1  support binary inputs
  *           2009/01/02  1.2  support new rtk positioning api
  *           2009/09/03  1.3  fix bug on combined mode of moving-baseline
  *           2009/12/04  1.4  fix bug on obs data buffer overflow
  *           2010/07/26  1.5  support ppp-kinematic and ppp-static
  *                            support multiple sessions
- *                            support sbas positioning
+ *                            support SBAS positioning
  *                            changed api:
  *                                postpos()
  *                            deleted api:
  *                                postposopt()
- *           2010/08/16  1.6  fix bug sbas message synchronization (2.4.0_p4)
- *           2010/12/09  1.7  support qzss lex and ssr corrections
- *           2011/02/07  1.8  fix bug on sbas navigation data conflict
+ *           2010/08/16  1.6  fix bug SBAS message synchronization (2.4.0_p4)
+ *           2010/12/09  1.7  support QZSS lex and SSR corrections
+ *           2011/02/07  1.8  fix bug on SBAS navigation data conflict
  *           2011/03/22  1.9  add function reading g_tec file
  *           2011/08/20  1.10 fix bug on freez if solstatic=single and combined
  *           2011/09/15  1.11 add function reading stec file
- *           2012/02/01  1.12 support keyword expansion of rtcm ssr corrections
+ *           2012/02/01  1.12 support keyword expansion of RTCM SSR corrections
  *           2013/03/11  1.13 add function reading otl and erp data
  *           2014/06/29  1.14 fix problem on overflow of # of satellites
- *           2015/03/23  1.15 fix bug on ant type replacement by rinex header
+ *           2015/03/23  1.15 fix bug on ant type replacement by RINEX header
  *                            fix bug on combined filter for moving-base mode
- *           2015/04/29  1.16 fix bug on reading rtcm ssr corrections
+ *           2015/04/29  1.16 fix bug on reading RTCM SSR corrections
  *                            add function to read satellite fcb
  *                            add function to read stec and troposphere file
  *                            add keyword replacement in dcb, erp and ionos file
  *           2015/11/13  1.17 add support of L5 antenna phase center parameters
  *                            add *.stec and *.trp file for ppp correction
  *           2015/11/26  1.18 support opt->freqopt(disable L2)
- *           2016/01/12  1.19 add carrier-phase bias correction by ssr
+ *           2016/01/12  1.19 add carrier-phase bias correction by SSR
  *           2016/07/31  1.20 fix error message problem in rnx2rtkp
  *           2016/08/29  1.21 suppress warnings
  *           2016/10/10  1.22 fix bug on identification of file fopt->blq
@@ -43,47 +43,47 @@
  *                            fix bug on select best solution in static mode
  *                            delete function to use L2 instead of L5 PCV
  *                            writing solution file in binary mode
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 #define SQRT(x) ((x) <= 0.0L || (x) != (x) ? 0.0L : sqrtl(x))
 
-#define MAXPRCDAYS 100   /* max days of continuous processing */
-#define MAXINFILE 1000   /* max number of input files */
-#define MAXINVALIDTM 100 /* max number of invalid time marks */
+#define MAXPRCDAYS 100   /* Max days of continuous processing */
+#define MAXINFILE 1000   /* Max number of input files */
+#define MAXINVALIDTM 100 /* Max number of invalid time marks */
 
-/* constants/global variables ------------------------------------------------*/
+/* Constants/global variables ------------------------------------------------*/
 
-static pcvs_t pcvss = {0};                      /* satellite antenna parameters */
-static pcvs_t pcvsr = {0};                      /* receiver antenna parameters */
-static obs_t obss = {0};                        /* observation data */
-static nav_t navs = {0};                        /* navigation data */
-static sbs_t sbss = {0};                        /* sbas messages */
-static sta_t stas[MAXRCV];                      /* station information */
-static int nepoch = 0;                          /* number of observation epochs */
-static int nitm = 0;                            /* number of invalid time marks */
-static int iobsu = 0;                           /* current rover observation data index */
-static int iobsr = 0;                           /* current reference observation data index */
-static int isbs = 0;                            /* current sbas message index */
-static int iitm = 0;                            /* current invalid time mark index */
-static int reverse = 0;                         /* analysis direction (0:forward,1:backward) */
-static int aborts = 0;                          /* abort status */
-static sol_t *solf;                             /* forward solutions */
-static sol_t *solb;                             /* backward solutions */
-static long double *rbf;                        /* forward base positions */
-static long double *rbb;                        /* backward base positions */
-static int isolf = 0;                           /* current forward solutions index */
-static int isolb = 0;                           /* current backward solutions index */
-static char proc_rov[64] = "";                  /* rover for current processing */
-static char proc_base[64] = "";                 /* base station for current processing */
-static char rtcm_file[FNSIZE] = "";             /* rtcm data file */
-static char rtcm_path[FNSIZE] = "";             /* rtcm data path */
-static gtime_t invalidtm[MAXINVALIDTM] = {{0}}; /* invalid time marks */
-static rtcm_t rtcm;                             /* rtcm control struct */
-static FILE *fp_rtcm = NULL;                    /* rtcm data file pointer */
+static pcvs_t pcvss = {0};                      /* Satellite antenna parameters */
+static pcvs_t pcvsr = {0};                      /* Receiver antenna parameters */
+static obs_t obss = {0};                        /* Observation data */
+static nav_t navs = {0};                        /* Navigation data */
+static sbs_t sbss = {0};                        /* SBAS messages */
+static sta_t stas[MAXRCV];                      /* Station information */
+static int nepoch = 0;                          /* Number of observation epochs */
+static int nitm = 0;                            /* Number of invalid time marks */
+static int iobsu = 0;                           /* Current rover observation data index */
+static int iobsr = 0;                           /* Current reference observation data index */
+static int isbs = 0;                            /* Current SBAS message index */
+static int iitm = 0;                            /* Current invalid time mark index */
+static int reverse = 0;                         /* Analysis direction (0:forward,1:backward) */
+static int aborts = 0;                          /* Abort status */
+static sol_t *solf;                             /* Forward solutions */
+static sol_t *solb;                             /* Backward solutions */
+static long double *rbf;                        /* Forward base positions */
+static long double *rbb;                        /* Backward base positions */
+static int isolf = 0;                           /* Current forward solutions index */
+static int isolb = 0;                           /* Current backward solutions index */
+static char proc_rov[64] = "";                  /* Rover for current processing */
+static char proc_base[64] = "";                 /* Base station for current processing */
+static char rtcm_file[FNSIZE] = "";             /* RTCM data file */
+static char rtcm_path[FNSIZE] = "";             /* RTCM data path */
+static gtime_t invalidtm[MAXINVALIDTM] = {{0}}; /* Invalid time marks */
+static rtcm_t rtcm;                             /* RTCM control struct */
+static FILE *fp_rtcm = NULL;                    /* RTCM data file pointer */
 
-/* show message and check break ----------------------------------------------*/
+/* Show message and check break ----------------------------------------------*/
 static int checkbrk(const char *format, ...) {
   va_list arg;
   char buff[1024];
@@ -99,7 +99,7 @@ static int checkbrk(const char *format, ...) {
     rtkcatprintf(buff, sizeof(buff), " (%s)", proc_base);
   return showmsg(buff);
 }
-/* output reference position -------------------------------------------------*/
+/* Output reference position -------------------------------------------------*/
 static void outrpos(FILE *fp, const long double *r, const solopt_t *opt) {
   const char *sep = opt->sep;
 
@@ -121,7 +121,7 @@ static void outrpos(FILE *fp, const long double *r, const solopt_t *opt) {
     fprintf(fp, "%14.4Lf%s%14.4Lf%s%14.4Lf", r[0], sep, r[1], sep, r[2]);
   }
 }
-/* output header -------------------------------------------------------------*/
+/* Output header -------------------------------------------------------------*/
 static void outheader(FILE *fp, const char **file, int n, const prcopt_t *popt,
                       const solopt_t *sopt) {
   trace(3, "outheader: n=%d\n", n);
@@ -180,7 +180,7 @@ static void outheader(FILE *fp, const char **file, int n, const prcopt_t *popt,
 
   outsolhead(fp, sopt);
 }
-/* Search next observation data index ----------------------------------------
+/* Search next observation data index ------------------------------------------
    Note *i will be advanced outside the index range of the obs data if none
    are found. */
 static int nextobsf(const obs_t *obs, int *i, int rcv) {
@@ -205,9 +205,9 @@ static int nextobsb(const obs_t *obs, int *i, int rcv) {
   }
   return n;
 }
-/* update rtcm ssr correction ------------------------------------------------*/
+/* Update RTCM SSR correction ------------------------------------------------*/
 static void update_rtcm_ssr(gtime_t time) {
-  /* open or swap rtcm file */
+  /* Open or swap RTCM file */
   char path[FNSIZE];
   reppath(rtcm_file, path, sizeof(path), time, "", "");
 
@@ -224,11 +224,11 @@ static void update_rtcm_ssr(gtime_t time) {
   }
   if (!fp_rtcm) return;
 
-  /* read rtcm file until current time */
+  /* Read RTCM file until current time */
   while (timediff(rtcm.time, time) < 1E-3L) {
     if (input_rtcm3f(&rtcm, fp_rtcm) < -1) break;
 
-    /* update ssr corrections */
+    /* Update SSR corrections */
     for (int i = 0; i < MAXSAT; i++) {
       if (!rtcm.ssr[i].update || rtcm.ssr[i].iod[0] != rtcm.ssr[i].iod[1] ||
           timediff(time, rtcm.ssr[i].t0[0]) < -1E-3L)
@@ -238,7 +238,7 @@ static void update_rtcm_ssr(gtime_t time) {
     }
   }
 }
-/* Input obs data, navigation messages and sbas correction -------------------*/
+/* Input obs data, navigation messages and SBAS correction -------------------*/
 static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt) {
   trace(3, "\ninfunc  : dir=%d iobsu=%d iobsr=%d isbs=%d\n", reverse, iobsu, iobsr, isbs);
 
@@ -286,17 +286,18 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt) {
     }
     iobsu += nu;
 
-    /* Update sbas corrections */
+    /* Update SBAS corrections */
     while (isbs < sbss.n) {
       gtime_t time = gpst2time(sbss.msgs[isbs].week, sbss.msgs[isbs].tow);
 
-      if (getbitu(sbss.msgs[isbs].msg, 8, 6) != 9) { /* Except for geo nav */
+      if (getbitu(sbss.msgs[isbs].msg, sizeof(sbss.msgs[0].msg), 8, 6) !=
+          9) { /* Except for geo nav */
         sbsupdatecorr(sbss.msgs + isbs, &navs);
       }
       if (timediff(time, obs[0].time) > -1.0L - DTTOL) break;
       isbs++;
     }
-    /* Update rtcm ssr corrections */
+    /* Update RTCM SSR corrections */
     if (*rtcm_file) {
       update_rtcm_ssr(obs[0].time);
     }
@@ -332,11 +333,12 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt) {
     }
     iobsu -= nu;
 
-    /* Update sbas corrections */
+    /* Update SBAS corrections */
     while (isbs >= 0) {
       gtime_t time = gpst2time(sbss.msgs[isbs].week, sbss.msgs[isbs].tow);
 
-      if (getbitu(sbss.msgs[isbs].msg, 8, 6) != 9) { /* Except for geo nav */
+      if (getbitu(sbss.msgs[isbs].msg, sizeof(sbss.msgs[0].msg), 8, 6) !=
+          9) { /* Except for geo nav */
         sbsupdatecorr(sbss.msgs + isbs, &navs);
       }
       if (timediff(time, obs[0].time) < 1.0L + DTTOL) break;
@@ -345,7 +347,7 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt) {
   }
   return n;
 }
-/* output to file message of invalid time mark -------------------------------*/
+/* Output to file message of invalid time mark -------------------------------*/
 static void outinvalidtm(FILE *fptm, const solopt_t *opt, const gtime_t tm) {
   const long double secondsInAWeek = 604800;
 
@@ -370,7 +372,7 @@ static void outinvalidtm(FILE *fptm, const solopt_t *opt, const gtime_t tm) {
 
   fwrite(s, strlen(s), 1, fptm);
 }
-/* fill structure sol_t for time mark ----------------------------------------*/
+/* Fill structure sol_t for time mark ----------------------------------------*/
 static sol_t fillsoltm(const sol_t solold, const sol_t solnew, const gtime_t tm) {
   gtime_t t1 = {0}, t2 = {0};
   sol_t sol = solold;
@@ -383,7 +385,7 @@ static sol_t fillsoltm(const sol_t solold, const sol_t solnew, const gtime_t tm)
   sol.ns = (solold.ns < solnew.ns) ? solold.ns : solnew.ns;
   sol.ratio = (solold.ratio < solnew.ratio) ? solold.ratio : solnew.ratio;
 
-  /* interpolation position and speed of time mark */
+  /* Interpolation position and speed of time mark */
   t1 = solold.time;
   t2 = solnew.time;
   sol.time = tm;
@@ -395,7 +397,7 @@ static sol_t fillsoltm(const sol_t solold, const sol_t solnew, const gtime_t tm)
   return sol;
 }
 
-/* carrier-phase bias correction by ssr --------------------------------------*/
+/* Carrier-phase bias correction by SSR --------------------------------------*/
 static void corr_phase_bias_ssr(obsd_t *obs, int n, const nav_t *nav) {
   for (int i = 0; i < n; i++)
     for (int j = 0; j < NFREQ; j++) {
@@ -404,11 +406,11 @@ static void corr_phase_bias_ssr(obsd_t *obs, int n, const nav_t *nav) {
       long double freq = sat2freq(obs[i].sat, code, nav);
       if (freq == 0.0L) continue;
 
-      /* correct phase bias (cyc) */
+      /* Correct phase bias (cyc) */
       obs[i].L[j] -= nav->ssr[obs[i].sat - 1].pbias[code - 1] * freq / CLIGHT;
     }
 }
-/* process positioning -------------------------------------------------------*/
+/* Process positioning -------------------------------------------------------*/
 static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *sopt, rtk_t *rtk,
                     int mode) {
   gtime_t time = {0};
@@ -425,16 +427,16 @@ static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
   int nobs, n, num = 0;
   sol_t sol = {{0}}, oldsol = {{0}}, newsol = {{0}};
   long double rb[3] = {0};
-  obsd_t *obs_ptr = (obsd_t *)malloc(sizeof(obsd_t) * MAXOBS * 2); /* for rover and base */
+  obsd_t *obs_ptr = (obsd_t *)malloc(sizeof(obsd_t) * MAXOBS * 2); /* For rover and base */
   while ((nobs = inputobs(obs_ptr, rtk->sol.stat, popt)) >= 0) {
-    /* exclude satellites */
+    /* Exclude satellites */
     for (int i = n = 0; i < nobs; i++) {
       if ((satsys(obs_ptr[i].sat, NULL) & popt->navsys) && popt->exsats[obs_ptr[i].sat - 1] != 1)
         obs_ptr[n++] = obs_ptr[i];
     }
     if (n <= 0) continue;
 
-    /* carrier-phase bias correction */
+    /* Carrier-phase bias correction */
     if (!strstr(popt->pppopt, "-ENA_FCB")) {
       corr_phase_bias_ssr(obs_ptr, n, &navs);
     }
@@ -449,7 +451,7 @@ static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
       continue;
     }
 
-    if (mode == SOLMODE_SINGLE_DIR) { /* forward or backward */
+    if (mode == SOLMODE_SINGLE_DIR) { /* Forward or backward */
       if (!solstatic) {
         outsol(fp, &rtk->sol, rtk->rb, sopt);
       } else if (time.time == 0 || pri[rtk->sol.stat] <= pri[sol.stat]) {
@@ -459,7 +461,7 @@ static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
           time = rtk->sol.time;
         }
       }
-      /* check time mark */
+      /* Check time mark */
       if (rtk->sol.eventime.time != 0) {
         newsol = fillsoltm(oldsol, rtk->sol, rtk->sol.eventime);
         num++;
@@ -468,7 +470,7 @@ static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
         }
       }
       oldsol = rtk->sol;
-    } else if (!reverse) { /* combined-forward */
+    } else if (!reverse) { /* Combined-forward */
       if (isolf >= nepoch) {
         free(obs_ptr);
         return;
@@ -476,7 +478,7 @@ static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
       solf[isolf] = rtk->sol;
       for (int i = 0; i < 3; i++) rbf[i + isolf * 3] = rtk->rb[i];
       isolf++;
-    } else { /* combined-backward */
+    } else { /* Combined-backward */
       if (isolb >= nepoch) {
         free(obs_ptr);
         return;
@@ -491,14 +493,14 @@ static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
     outsol(fp, &sol, rb, sopt);
   }
 
-  free(obs_ptr); /* moved from stack to heap to kill a stack overflow warning */
+  free(obs_ptr); /* Moved from stack to heap to kill a stack overflow warning */
 }
-/* validation of combined solutions ------------------------------------------*/
+/* Validation of combined solutions ------------------------------------------*/
 static bool valcomb(const sol_t *solf, const sol_t *solb, const long double *rbf,
                     const long double *rbb, const prcopt_t *popt) {
   trace(4, "valcomb :\n");
 
-  /* compare forward and backward solution */
+  /* Compare forward and backward solution */
   long double dr[3], var[3];
   for (int i = 0; i < 3; i++) {
     dr[i] = solf->rr[i] - solb->rr[i];
@@ -506,7 +508,7 @@ static bool valcomb(const sol_t *solf, const sol_t *solb, const long double *rbf
     var[i] = solf->qr[i] + solb->qr[i];
   }
   for (int i = 0; i < 3; i++) {
-    if (dr[i] * dr[i] <= 16.0L * var[i]) continue; /* ok if in 4-sigma */
+    if (dr[i] * dr[i] <= 16.0L * var[i]) continue; /* Ok if in 4-sigma */
 
     char tstr[40];
     time2str(solf->time, tstr, 2);
@@ -516,7 +518,7 @@ static bool valcomb(const sol_t *solf, const sol_t *solb, const long double *rbf
   }
   return true;
 }
-/* combine forward/backward solutions and save results ---------------------*/
+/* Combine forward/backward solutions and save results -----------------------*/
 static void combres(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *sopt) {
   const int pri[] = {7, 1, 2, 3, 4, 5, 1, 6};
 
@@ -551,7 +553,7 @@ static void combres(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
       sols.time = timeadd(sols.time, -tt / 2.0L);
 
       if ((popt->mode == PMODE_KINEMA || popt->mode == PMODE_MOVEB) && sols.stat == SOLQ_FIX) {
-        /* degrade fix to float if validation failed */
+        /* Degrade fix to float if validation failed */
         if (!valcomb(solf + i, solb + j, rbf + i * 3, rbb + j * 3, popt)) sols.stat = SOLQ_FLOAT;
       }
       long double Qf[9], Qb[9];
@@ -584,7 +586,7 @@ static void combres(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
       sols.qr[4] = Qs[5];
       sols.qr[5] = Qs[2];
 
-      /* smoother for velocity solution */
+      /* Smoother for velocity solution */
       if (popt->dynamics) {
         for (int k = 0; k < 3; k++) {
           Qf[k + k * 3] = solf[i].qv[k];
@@ -632,7 +634,7 @@ static void combres(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
     outsol(fp, &sol, rb, sopt);
   }
 }
-/* read prec ephemeris, sbas data, tec grid and open rtcm --------------------*/
+/* Read prec ephemeris, SBAS data, TEC grid and open RTCM --------------------*/
 static void readpreceph(const char **infile, int n, const prcopt_t *prcopt, nav_t *nav,
                         sbs_t *sbs) {
   trace(2, "readpreceph: n=%d\n", n);
@@ -641,23 +643,23 @@ static void readpreceph(const char **infile, int n, const prcopt_t *prcopt, nav_
   nav->nc = nav->ncmax = 0;
   sbs->n = sbs->nmax = 0;
 
-  /* read precise ephemeris files */
+  /* Read precise ephemeris files */
   for (int i = 0; i < n; i++) {
     if (strstr(infile[i], "%r") || strstr(infile[i], "%b")) continue;
     readsp3(infile[i], nav, 0);
   }
-  /* read precise clock files */
+  /* Read precise clock files */
   for (int i = 0; i < n; i++) {
     if (strstr(infile[i], "%r") || strstr(infile[i], "%b")) continue;
     readrnxc(infile[i], nav);
   }
-  /* read sbas message files */
+  /* Read SBAS message files */
   for (int i = 0; i < n; i++) {
     if (strstr(infile[i], "%r") || strstr(infile[i], "%b")) continue;
     sbsreadmsg(infile[i], prcopt->sbassatsel, sbs);
   }
 
-  /* set rtcm file and initialize rtcm struct */
+  /* Set RTCM file and initialize RTCM struct */
   rtcm_file[0] = rtcm_path[0] = '\0';
   fp_rtcm = NULL;
 
@@ -670,7 +672,7 @@ static void readpreceph(const char **infile, int n, const prcopt_t *prcopt, nav_
     }
   }
 }
-/* free prec ephemeris and sbas data -----------------------------------------*/
+/* Free prec ephemeris and SBAS data -----------------------------------------*/
 static void freepreceph(nav_t *nav, sbs_t *sbs) {
   trace(3, "freepreceph:\n");
 
@@ -694,7 +696,7 @@ static void freepreceph(nav_t *nav, sbs_t *sbs) {
   if (fp_rtcm) fclose(fp_rtcm);
   free_rtcm(&rtcm);
 }
-/* read obs and nav data -----------------------------------------------------*/
+/* Read obs and nav data -----------------------------------------------------*/
 static bool readobsnav(gtime_t ts, gtime_t te, long double ti, const char **infile,
                        const int *index, int n, const prcopt_t *prcopt, obs_t *obs, nav_t *nav,
                        sta_t *sta) {
@@ -726,7 +728,7 @@ static bool readobsnav(gtime_t ts, gtime_t te, long double ti, const char **infi
       ind = index[i];
       nobs = obs->n;
     }
-    /* read rinex obs and nav file */
+    /* Read RINEX obs and nav file */
     if (readrnxt(infile[i], rcv, ts, te, ti, prcopt->rnxopt[rcv <= 1 ? 0 : 1], obs, nav,
                  rcv <= 2 ? sta + rcv - 1 : NULL) < 0) {
       checkbrk("error : insufficient memory");
@@ -744,13 +746,13 @@ static bool readobsnav(gtime_t ts, gtime_t te, long double ti, const char **infi
     trace(1, "\n");
     return false;
   }
-  /* sort observation data */
+  /* Sort observation data */
   nepoch = sortobs(obs);
 
-  /* delete duplicated ephemeris */
+  /* Delete duplicated ephemeris */
   uniqnav(nav);
 
-  /* set time span for progress display */
+  /* Set time span for progress display */
   if (ts.time == 0 || te.time == 0) {
     int i, j;
     for (i = 0; i < obs->n; i++)
@@ -765,7 +767,7 @@ static bool readobsnav(gtime_t ts, gtime_t te, long double ti, const char **infi
   }
   return true;
 }
-/* free obs and nav data -----------------------------------------------------*/
+/* Free obs and nav data -----------------------------------------------------*/
 static void freeobsnav(obs_t *obs, nav_t *nav) {
   trace(3, "freeobsnav:\n");
 
@@ -788,7 +790,7 @@ static void freeobsnav(obs_t *obs, nav_t *nav) {
     nav->ns[i] = nav->nsmax[i] = 0;
   }
 }
-/* average of single position ------------------------------------------------*/
+/* Average of single position ------------------------------------------------*/
 static bool avepos(long double *ra, int rcv, const obs_t *obs, const nav_t *nav,
                    const prcopt_t *opt) {
   trace(3, "avepos: rcv=%d obs.n=%d\n", rcv, obs->n);
@@ -804,7 +806,7 @@ static bool avepos(long double *ra, int rcv, const obs_t *obs, const nav_t *nav,
       if ((satsys(data[j].sat, NULL) & opt->navsys) && opt->exsats[data[j].sat - 1] != 1) j++;
     }
     gtime_t ts = {0};
-    if (j <= 0 || !screent(data[0].time, ts, ts, 1.0L)) continue; /* only 1 hz */
+    if (j <= 0 || !screent(data[0].time, ts, ts, 1.0L)) continue; /* Only 1 hz */
 
     /* Messages are disarded. */
     char msg[128];
@@ -822,7 +824,7 @@ static bool avepos(long double *ra, int rcv, const obs_t *obs, const nav_t *nav,
   for (int i = 0; i < 3; i++) ra[i] /= n;
   return true;
 }
-/* station position from file ------------------------------------------------*/
+/* Station position from file ------------------------------------------------*/
 static bool getstapos(const char *file, const char *name, long double *r) {
   trace(3, "getstapos: file=%s name=%s\n", file, name);
 
@@ -856,41 +858,41 @@ static bool getstapos(const char *file, const char *name, long double *r) {
   trace(1, "no station position: %s %s\n", name, file);
   return false;
 }
-/* antenna phase center position ---------------------------------------------*/
+/* Antenna phase center position ---------------------------------------------*/
 static bool antpos(prcopt_t *opt, int rcvno, const obs_t *obs, const nav_t *nav, const sta_t *sta,
                    const char *posfile) {
   trace(3, "antpos  : rcvno=%d\n", rcvno);
 
   long double *rr = rcvno == 1 ? opt->ru : opt->rb;
   int postype = rcvno == 1 ? opt->rovpos : opt->refpos;
-  if (postype == POSOPT_SINGLE) { /* average of single position */
+  if (postype == POSOPT_SINGLE) { /* Average of single position */
     if (!avepos(rr, rcvno, obs, nav, opt)) {
       showmsg("error : station pos computation");
       return false;
     }
-  } else if (postype == POSOPT_FILE) { /* read from position file */
+  } else if (postype == POSOPT_FILE) { /* Read from position file */
     char *name = stas[rcvno == 1 ? 0 : 1].name;
     if (!getstapos(posfile, name, rr)) {
       showmsg("error : no position of %s in %s", name, posfile);
       return false;
     }
-  } else if (postype == POSOPT_RINEX) { /* get from rinex header */
+  } else if (postype == POSOPT_RINEX) { /* Get from RINEX header */
     long double dr[3] = {0};
     if (norm(stas[rcvno == 1 ? 0 : 1].pos, 3) <= 0.0L) {
       showmsg("error : no position in rinex header");
       trace(1, "no position in rinex header\n");
       return false;
     }
-    /* add antenna delta unless already done in antpcv() */
+    /* Add antenna delta unless already done in antpcv() */
     if (!strcmp(opt->anttype[rcvno], "*")) {
-      if (stas[rcvno == 1 ? 0 : 1].deltype == 0) { /* enu */
+      if (stas[rcvno == 1 ? 0 : 1].deltype == 0) { /* ENU */
         long double del[3];
         for (int i = 0; i < 3; i++) del[i] = stas[rcvno == 1 ? 0 : 1].del[i];
         del[2] += stas[rcvno == 1 ? 0 : 1].hgt;
         long double pos[3];
         ecef2pos(stas[rcvno == 1 ? 0 : 1].pos, pos);
         enu2ecef(pos, del, dr);
-      } else { /* xyz */
+      } else { /* XYZ */
         for (int i = 0; i < 3; i++) dr[i] = stas[rcvno == 1 ? 0 : 1].del[i];
       }
     }
@@ -898,24 +900,24 @@ static bool antpos(prcopt_t *opt, int rcvno, const obs_t *obs, const nav_t *nav,
   }
   return true;
 }
-/* open processing session ----------------------------------------------------*/
+/* Open processing session ---------------------------------------------------*/
 static bool openses(const prcopt_t *popt, const solopt_t *sopt, const filopt_t *fopt, nav_t *nav,
                     pcvs_t *pcvs, pcvs_t *pcvr) {
   trace(3, "openses :\n");
 
-  /* read satellite antenna parameters */
+  /* Read satellite antenna parameters */
   if (*fopt->satantp && !(readpcv(fopt->satantp, pcvs))) {
     showmsg("error : no sat ant pcv in %s", fopt->satantp);
     trace(1, "sat antenna pcv read error: %s\n", fopt->satantp);
     return false;
   }
-  /* read receiver antenna parameters */
+  /* Read receiver antenna parameters */
   if (*fopt->rcvantp && !(readpcv(fopt->rcvantp, pcvr))) {
     showmsg("error : no rec ant pcv in %s", fopt->rcvantp);
     trace(1, "rec antenna pcv read error: %s\n", fopt->rcvantp);
     return false;
   }
-  /* open geoid data */
+  /* Open geoid data */
   if (sopt->geoid > 0 && *fopt->geoid) {
     if (!opengeoid(sopt->geoid, fopt->geoid)) {
       showmsg("error : no geoid data %s", fopt->geoid);
@@ -924,11 +926,11 @@ static bool openses(const prcopt_t *popt, const solopt_t *sopt, const filopt_t *
   }
   return true;
 }
-/* close processing session ---------------------------------------------------*/
+/* Close processing session --------------------------------------------------*/
 static void closeses(nav_t *nav, pcvs_t *pcvs, pcvs_t *pcvr) {
   trace(3, "closeses:\n");
 
-  /* free antenna parameters */
+  /* Free antenna parameters */
   free(pcvs->pcv);
   pcvs->pcv = NULL;
   pcvs->n = pcvs->nmax = 0;
@@ -936,25 +938,25 @@ static void closeses(nav_t *nav, pcvs_t *pcvs, pcvs_t *pcvr) {
   pcvr->pcv = NULL;
   pcvr->n = pcvr->nmax = 0;
 
-  /* close geoid data */
+  /* Close geoid data */
   closegeoid();
 
-  /* free erp data */
+  /* Free erp data */
   free(nav->erp.data);
   nav->erp.data = NULL;
   nav->erp.n = nav->erp.nmax = 0;
 
-  /* close solution statistics and debug trace */
+  /* Close solution statistics and debug trace */
   rtkclosestat();
   traceclose();
 }
-/* set antenna parameters ----------------------------------------------------*/
+/* Set antenna parameters ----------------------------------------------------*/
 static void setpcv(gtime_t time, prcopt_t *popt, nav_t *nav, const pcvs_t *pcvs, const pcvs_t *pcvr,
                    const sta_t *sta) {
   pcv_t pcv0 = {0};
   int mode = PMODE_DGPS <= popt->mode && popt->mode <= PMODE_FIXED;
 
-  /* set satellite antenna parameters */
+  /* Set satellite antenna parameters */
   for (int i = 0; i < MAXSAT; i++) {
     nav->pcvs[i] = pcv0;
     if (!(satsys(i + 1, NULL) & popt->navsys)) continue;
@@ -969,9 +971,9 @@ static void setpcv(gtime_t time, prcopt_t *popt, nav_t *nav, const pcvs_t *pcvs,
   }
   for (int i = 0; i < (mode ? 2 : 1); i++) {
     popt->pcvr[i] = pcv0;
-    if (!strcmp(popt->anttype[i], "*")) { /* set by station parameters */
+    if (!strcmp(popt->anttype[i], "*")) { /* Set by station parameters */
       rtkstrcpy(popt->anttype[i], sizeof(popt->anttype[i]), sta[i].antdes);
-      if (sta[i].deltype == 1) { /* xyz */
+      if (sta[i].deltype == 1) { /* XYZ */
         if (norm(sta[i].pos, 3) > 0.0L) {
           long double pos[3];
           ecef2pos(sta[i].pos, pos);
@@ -979,7 +981,7 @@ static void setpcv(gtime_t time, prcopt_t *popt, nav_t *nav, const pcvs_t *pcvs,
           ecef2enu(pos, sta[i].del, del);
           for (int j = 0; j < 3; j++) popt->antdel[i][j] = del[j];
         }
-      } else { /* enu */
+      } else { /* ENU */
         for (int j = 0; j < 3; j++) popt->antdel[i][j] = stas[i].del[j];
       }
     }
@@ -993,14 +995,14 @@ static void setpcv(gtime_t time, prcopt_t *popt, nav_t *nav, const pcvs_t *pcvs,
     popt->pcvr[i] = *pcv;
   }
 }
-/* read ocean tide loading parameters ----------------------------------------*/
+/* Read ocean tide loading parameters ----------------------------------------*/
 static void readotl(prcopt_t *popt, const char *file, const sta_t *sta) {
   int mode = PMODE_DGPS <= popt->mode && popt->mode <= PMODE_FIXED;
   for (int i = 0; i < (mode ? 2 : 1); i++) {
     readblq(file, sta[i].name, popt->odisp[i]);
   }
 }
-/* write header to output file -----------------------------------------------*/
+/* Write header to output file -----------------------------------------------*/
 static bool outhead(const char *outfile, const char **infile, int n, const prcopt_t *popt,
                     const solopt_t *sopt) {
   trace(3, "outhead: outfile=%s n=%d\n", outfile, n);
@@ -1016,14 +1018,14 @@ static bool outhead(const char *outfile, const char **infile, int n, const prcop
       return false;
     }
   }
-  /* output header */
+  /* Output header */
   outheader(fp, infile, n, popt, sopt);
 
   if (*outfile) fclose(fp);
 
   return true;
 }
-/* open output file for append -----------------------------------------------*/
+/* Open output file for append -----------------------------------------------*/
 static FILE *openfile(const char *outfile) {
   trace(3, "openfile: outfile=%s\n", outfile);
 
@@ -1037,25 +1039,25 @@ static void namefiletm(char *outfiletm, size_t size, const char *outfile) {
       break;
     }
   }
-  /* if no file extension, then name time marks file as name of outfile + _events.pos */
+  /* If no file extension, then name time marks file as name of outfile + _events.pos */
   if (i == 0) {
     i = strlen(outfile);
   }
   rtkesubstrcpy(outfiletm, size, outfile, 0, i);
   rtkstrcat(outfiletm, size, "_events.pos");
 }
-/* execute processing session ------------------------------------------------*/
+/* Execute processing session ------------------------------------------------*/
 static bool execses(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt,
                     const solopt_t *sopt, const filopt_t *fopt, int flag, const char **infile,
                     const int *index, int n, const char *outfile) {
   trace(3, "execses : n=%d outfile=%s\n", n, outfile);
 
   rtk_t *rtk_ptr =
-      (rtk_t *)malloc(sizeof(rtk_t)); /* moved from stack to heap to avoid stack overflow warning */
+      (rtk_t *)malloc(sizeof(rtk_t)); /* Moved from stack to heap to avoid stack overflow warning */
   prcopt_t popt_ = *popt;
   solopt_t tmsopt = *sopt;
 
-  /* open debug trace */
+  /* Open debug trace */
   if (flag && sopt->trace > 0) {
     char tracefile[FNSIZE];
     if (*outfile) {
@@ -1068,7 +1070,7 @@ static bool execses(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt
     traceopen(tracefile);
     tracelevel(sopt->trace);
   }
-  /* read ionosphere data file */
+  /* Read ionosphere data file */
   const char *ext;
   if (*fopt->iono && (ext = strrchr(fopt->iono, '.'))) {
     if (strlen(ext) == 4 &&
@@ -1078,7 +1080,7 @@ static bool execses(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt
       readtec(path, &navs, 1);
     }
   }
-  /* read erp data */
+  /* Read erp data */
   if (*fopt->eop) {
     free(navs.erp.data);
     navs.erp.data = NULL;
@@ -1090,41 +1092,41 @@ static bool execses(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt
       trace(2, "no erp data %s\n", path);
     }
   }
-  /* read obs and nav data */
+  /* Read obs and nav data */
   if (!readobsnav(ts, te, ti, infile, index, n, &popt_, &obss, &navs, stas)) {
-    /* free obs and nav data */
+    /* Free obs and nav data */
     freeobsnav(&obss, &navs);
     free(rtk_ptr);
     return false;
   }
 
-  /* read dcb parameters from DCB, BIA, BSX files */
+  /* Read dcb parameters from DCB, BIA, BSX files */
   for (int i = 0; i < MAX_CODE_BIASES; i++)
     for (int k = 0; k < MAX_CODE_BIAS_FREQS; k++) {
       for (int j = 0; j < MAXSAT; j++) navs.cbias[j][k][i] = -1;
       for (int j = 0; j < MAXRCV; j++) navs.rbias[j][k][i] = 0;
     }
   int dcb_ok = 0;
-  for (int i = 0; i < n; i++) { /* first check infiles for .BIA or .BSX files */
+  for (int i = 0; i < n; i++) { /* First check infiles for .BIA or .BSX files */
     dcb_ok = readdcb(infile[i], &navs, stas);
     if (dcb_ok) break;
   }
-  if (!dcb_ok && *fopt->dcb) { /* then check if DCB file specified */
+  if (!dcb_ok && *fopt->dcb) { /* Then check if DCB file specified */
     char path[FNSIZE];
     reppath(fopt->dcb, path, sizeof(path), ts, "", "");
     dcb_ok = readdcb(path, &navs, stas);
   }
   if (!dcb_ok) {
   }
-  /* set antenna parameters */
+  /* Set antenna parameters */
   if (popt_.mode != PMODE_SINGLE) {
     setpcv(obss.n > 0 ? obss.data[0].time : timeget(), &popt_, &navs, &pcvss, &pcvsr, stas);
   }
-  /* read ocean tide loading parameters */
+  /* Read ocean tide loading parameters */
   if (popt_.mode > PMODE_SINGLE && *fopt->blq) {
     readotl(&popt_, fopt->blq, stas);
   }
-  /* rover/reference fixed position */
+  /* Rover/reference fixed position */
   if (popt_.mode == PMODE_FIXED) {
     if (!antpos(&popt_, 1, &obss, &navs, stas, fopt->stapos)) {
       freeobsnav(&obss, &navs);
@@ -1143,7 +1145,7 @@ static bool execses(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt
       return false;
     }
   }
-  /* open solution statistics */
+  /* Open solution statistics */
   if (flag && sopt->sstat > 0) {
     char statfile[FNSIZE];
     rtkstrcpy(statfile, sizeof(statfile), outfile);
@@ -1151,16 +1153,16 @@ static bool execses(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt
     rtkclosestat();
     rtkopenstat(statfile, sopt->sstat);
   }
-  /* write header to output file */
+  /* Write header to output file */
   if (flag && !outhead(outfile, infile, n, &popt_, sopt)) {
     freeobsnav(&obss, &navs);
     free(rtk_ptr);
     return false;
   }
-  /* name time events file */
+  /* Name time events file */
   char outfiletm[FNSIZE] = {0};
   namefiletm(outfiletm, sizeof(outfiletm), outfile);
-  /* write header to file with time marks */
+  /* Write header to file with time marks */
   outhead(outfiletm, infile, n, &popt_, &tmsopt);
 
   iobsu = iobsr = isbs = reverse = aborts = 0;
@@ -1192,7 +1194,7 @@ static bool execses(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt
       }
       fclose(fp);
     }
-  } else { /* combined or combined with no phase reset */
+  } else { /* Combined or combined with no phase reset */
     solf = (sol_t *)malloc(sizeof(sol_t) * nepoch);
     solb = (sol_t *)malloc(sizeof(sol_t) * nepoch);
     rbf = (long double *)malloc(sizeof(long double) * nepoch * 3);
@@ -1201,7 +1203,7 @@ static bool execses(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt
     if (solf && solb) {
       isolf = isolb = 0;
       rtkinit(rtk_ptr, popt);
-      procpos(NULL, NULL, &popt_, sopt, rtk_ptr, SOLMODE_COMBINED); /* forward */
+      procpos(NULL, NULL, &popt_, sopt, rtk_ptr, SOLMODE_COMBINED); /* Forward */
       reverse = 1;
       iobsu = iobsr = obss.n - 1;
       isbs = sbss.n - 1;
@@ -1210,10 +1212,10 @@ static bool execses(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt
         rtkfree(rtk_ptr);
         rtkinit(rtk_ptr, popt);
       }
-      procpos(NULL, NULL, &popt_, sopt, rtk_ptr, SOLMODE_COMBINED); /* backward */
+      procpos(NULL, NULL, &popt_, sopt, rtk_ptr, SOLMODE_COMBINED); /* Backward */
       rtkfree(rtk_ptr);
 
-      /* combine forward/backward solutions */
+      /* Combine forward/backward solutions */
       if (!aborts) {
         FILE *fp = openfile(outfile);
         if (fp) {
@@ -1232,13 +1234,13 @@ static bool execses(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt
     free(rbf);
     free(rbb);
   }
-  /* free rtk, obs and nav data */
+  /* Free rtk, obs and nav data */
   free(rtk_ptr);
   freeobsnav(&obss, &navs);
 
   return aborts ? true : false;
 }
-/* execute processing session for each rover ---------------------------------*/
+/* Execute processing session for each rover ---------------------------------*/
 static bool execses_r(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt,
                       const solopt_t *sopt, const filopt_t *fopt, int flag, const char **infile,
                       const int *index, int n, const char *outfile, const char *rov) {
@@ -1251,7 +1253,7 @@ static bool execses_r(gtime_t ts, gtime_t te, long double ti, const prcopt_t *po
     if (strstr(infile[i1], "%r")) break;
 
   bool stat = false;
-  if (i1 < n) { /* include rover keywords */
+  if (i1 < n) { /* Include rover keywords */
     size_t rsize = strlen(rov) + 1;
     char *rov_ = (char *)malloc(rsize);
     if (!rov_) return false;
@@ -1267,7 +1269,7 @@ static bool execses_r(gtime_t ts, gtime_t te, long double ti, const prcopt_t *po
     }
 
     char *q;
-    for (const char *p = rov_;; p = q + 1) { /* for each rover */
+    for (const char *p = rov_;; p = q + 1) { /* For each rover */
       q = strchr(p, ' ');
       if (q) *q = '\0';
 
@@ -1286,7 +1288,7 @@ static bool execses_r(gtime_t ts, gtime_t te, long double ti, const prcopt_t *po
         char ofile[FNSIZE];
         reppath(outfile, ofile, sizeof(ofile), t0, p, "");
 
-        /* execute processing session */
+        /* Execute processing session */
         stat = execses(ts, te, ti, popt, sopt, fopt, flag, (const char **)ifile, index, n, ofile);
       }
       if (stat == true || !q) break;
@@ -1294,19 +1296,19 @@ static bool execses_r(gtime_t ts, gtime_t te, long double ti, const prcopt_t *po
     free(rov_);
     for (int i = 0; i < n; i++) free(ifile[i]);
   } else {
-    /* execute processing session */
+    /* Execute processing session */
     stat = execses(ts, te, ti, popt, sopt, fopt, flag, infile, index, n, outfile);
   }
   return stat;
 }
-/* execute processing session for each base station --------------------------*/
+/* Execute processing session for each base station --------------------------*/
 static bool execses_b(gtime_t ts, gtime_t te, long double ti, const prcopt_t *popt,
                       const solopt_t *sopt, const filopt_t *fopt, int flag, const char **infile,
                       const int *index, int n, const char *outfile, const char *rov,
                       const char *base) {
   trace(3, "execses_b: n=%d outfile=%s\n", n, outfile);
 
-  /* read prec ephemeris and sbas data */
+  /* Read prec ephemeris and SBAS data */
   readpreceph(infile, n, popt, &navs, &sbss);
 
   gtime_t t0 = {0};
@@ -1316,7 +1318,7 @@ static bool execses_b(gtime_t ts, gtime_t te, long double ti, const prcopt_t *po
     if (strstr(infile[i], "%b")) break;
 
   bool stat = false;
-  if (i < n) { /* include base station keywords */
+  if (i < n) { /* Include base station keywords */
     size_t bsize = strlen(base) + 1;
     char *base_ = (char *)malloc(bsize);
     if (!base_) {
@@ -1335,7 +1337,7 @@ static bool execses_b(gtime_t ts, gtime_t te, long double ti, const prcopt_t *po
       }
     }
     char *q;
-    for (const char *p = base_;; p = q + 1) { /* for each base station */
+    for (const char *p = base_;; p = q + 1) { /* For each base station */
       q = strchr(p, ' ');
       if (q) *q = '\0';
 
@@ -1364,14 +1366,14 @@ static bool execses_b(gtime_t ts, gtime_t te, long double ti, const prcopt_t *po
   } else {
     stat = execses_r(ts, te, ti, popt, sopt, fopt, flag, infile, index, n, outfile, rov);
   }
-  /* free prec ephemeris and sbas data */
+  /* Free prec ephemeris and SBAS data */
   freepreceph(&navs, &sbss);
 
   return stat;
 }
-/* post-processing positioning -------------------------------------------------
- * post-processing positioning
- * args   : gtime_t ts       I   processing start time (ts.time==0: no limit)
+/* Post-processing positioning -------------------------------------------------
+ * Post-processing positioning
+ * Args   : gtime_t ts       I   processing start time (ts.time==0: no limit)
  *        : gtime_t te       I   processing end time   (te.time==0: no limit)
  *          long double ti        I   processing interval  (s) (0:all)
  *          long double tu        I   processing unit time (s) (0:all)
@@ -1383,20 +1385,20 @@ static bool execses_b(gtime_t ts, gtime_t te, long double ti, const prcopt_t *po
  *          char   *outfile  I   output file ("":stdout, see below)
  *          char   *rov      I   rover id list        (separated by " ")
  *          char   *base     I   base station id list (separated by " ")
- * return : status (0:ok,0>:error,1:aborted)
- * notes  : input files should contain observation data, navigation data, precise
- *          ephemeris/clock (optional), sbas log file (optional), ssr message
- *          log file (optional) and tec grid file (optional). only the first
+ * Return : status (0:ok,0>:error,1:aborted)
+ * Notes  : input files should contain observation data, navigation data, precise
+ *          ephemeris/clock (optional), SBAS log file (optional), SSR message
+ *          log file (optional) and TEC grid file (optional). only the first
  *          observation data file in the input files is recognized as the rover
  *          data.
  *
  *          the type of an input file is recognized by the file extension as ]
  *          follows:
  *              .sp3,.SP3,.eph*,.EPH*: precise ephemeris (sp3c)
- *              .sbs,.SBS,.ems,.EMS  : sbas message log files (rtklib or ems)
- *              .rtcm3,.RTCM3        : ssr message log files (rtcm3)
- *              .*i,.*I              : tec grid files (ionex)
- *              others               : rinex obs, nav, gnav, hnav, qnav or clock
+ *              .sbs,.SBS,.ems,.EMS  : SBAS message log files (RTKLIB or EMS)
+ *              .rtcm3,.RTCM3        : SSR message log files (RTCM3)
+ *              .*i,.*I              : TEC grid files (ionex)
+ *              others               : RINEX obs, nav, gnav, hnav, qnav or clock
  *
  *          inputs files can include wild-cards (*). if an file includes
  *          wild-cards, the wild-card expanded multiple files are used.
@@ -1410,8 +1412,8 @@ static bool execses_b(gtime_t ts, gtime_t te, long double ti, const prcopt_t *po
  *          not include keywords. the results of all multiple session analyses
  *          are output to a single output file.
  *
- *          ssr corrections are valid only for forward estimation.
- *-----------------------------------------------------------------------------*/
+ *          SSR corrections are valid only for forward estimation.
+ *----------------------------------------------------------------------------*/
 extern int postpos(gtime_t ts, gtime_t te, long double ti, long double tu, const prcopt_t *popt,
                    const solopt_t *sopt, const filopt_t *fopt, const char **infile, int n,
                    const char *outfile, const char *rov, const char *base) {
@@ -1421,7 +1423,7 @@ extern int postpos(gtime_t ts, gtime_t te, long double ti, long double tu, const
   bool stat = false;
   char *ifile[MAXINFILE], ofile[FNSIZE];
 
-  /* open processing session */
+  /* Open processing session */
   if (!openses(popt, sopt, fopt, &navs, &pcvss, &pcvsr)) return -1;
 
   if (ts.time != 0 && te.time != 0 && tu >= 0.0L) {
@@ -1444,7 +1446,7 @@ extern int postpos(gtime_t ts, gtime_t te, long double ti, long double tu, const
     long double tss = tunit * (int)floorl(time2gpst(ts, &week) / tunit);
     int flag = 1;
 
-    for (int i = 0;; i++) { /* for each periods */
+    for (int i = 0;; i++) { /* For each periods */
       gtime_t tts = gpst2time(week, tss + i * tu);
       gtime_t tte = timeadd(tts, tu - DTTOL);
       if (timediff(tts, te) > 0.0L) break;
@@ -1465,7 +1467,7 @@ extern int postpos(gtime_t ts, gtime_t te, long double ti, long double tu, const
         if (ext && (!strcmp(ext, ".rtcm3") || !strcmp(ext, ".RTCM3"))) {
           rtkstrcpy(ifile[nf++], FNSIZE, infile[j]);
         } else {
-          /* include next day precise ephemeris or rinex brdc nav */
+          /* Include next day precise ephemeris or RINEX brdc nav */
           gtime_t ttte = tte;
           if (ext && (!strcmp(ext, ".sp3") || !strcmp(ext, ".SP3") || !strcmp(ext, ".eph") ||
                       !strcmp(ext, ".EPH"))) {
@@ -1484,7 +1486,7 @@ extern int postpos(gtime_t ts, gtime_t te, long double ti, long double tu, const
       }
       if (!reppath(outfile, ofile, sizeof(ofile), tts, "", "") && i > 0) flag = 0;
 
-      /* execute processing session */
+      /* Execute processing session */
       stat = execses_b(tts, tte, ti, popt, sopt, fopt, flag, (const char **)ifile, index, nf,
                        (const char *)ofile, rov, base);
 
@@ -1502,7 +1504,7 @@ extern int postpos(gtime_t ts, gtime_t te, long double ti, long double tu, const
     }
     reppath(outfile, ofile, sizeof(ofile), ts, "", "");
 
-    /* execute processing session */
+    /* Execute processing session */
     stat = execses_b(ts, te, ti, popt, sopt, fopt, 1, (const char **)ifile, index, n, ofile, rov,
                      base);
 
@@ -1510,10 +1512,10 @@ extern int postpos(gtime_t ts, gtime_t te, long double ti, long double tu, const
   } else {
     for (int i = 0; i < n; i++) index[i] = i;
 
-    /* execute processing session */
+    /* Execute processing session */
     stat = execses_b(ts, te, ti, popt, sopt, fopt, 1, infile, index, n, outfile, rov, base);
   }
-  /* close processing session */
+  /* Close processing session */
   closeses(&navs, &pcvss, &pcvsr);
 
   return stat ? 1 : 0;

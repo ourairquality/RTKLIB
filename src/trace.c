@@ -1,13 +1,13 @@
-/* debug trace functions -----------------------------------------------------*/
+/* Debug trace functions -----------------------------------------------------*/
 #ifdef TRACE
 #include "rtklib.h"
 
-static FILE *fp_trace = NULL;    /* file pointer of trace */
-static char file_trace[FNSIZE];  /* trace file */
-static int level_trace = 0;      /* level of trace */
-static uint32_t tick_trace = 0;  /* tick time at traceopen (ms) */
-static gtime_t time_trace = {0}; /* time at traceopen */
-static rtklib_lock_t lock_trace; /* lock for trace */
+static FILE *fp_trace = NULL;    /* File pointer of trace */
+static char file_trace[FNSIZE];  /* Trace file */
+static int level_trace = 0;      /* Level of trace */
+static uint32_t tick_trace = 0;  /* Tick time at traceopen (ms) */
+static gtime_t time_trace = {0}; /* Time at traceopen */
+static rtklib_lock_t lock_trace; /* Lock for trace */
 
 static void traceswap(void) {
   gtime_t time = utc2gpst(timeget());
@@ -55,7 +55,7 @@ extern int gettracelevel(void) { return level_trace; }
 extern void trace_impl(int level, const char *format, ...) {
   va_list ap;
 
-  /* print error message to stderr */
+  /* Print error message to stderr */
   if (level <= 1) {
     va_start(ap, format);
     vfprintf(stderr, format, ap);
@@ -187,7 +187,7 @@ extern void tracepclk_impl(int level, const nav_t *nav) {
 extern void traceb_impl(int level, const uint8_t *p, size_t size, int n) {
   if (!fp_trace || level > level_trace || n <= 0) return;
   RTKBOUNDSCHECK(p, size, n - 1);
-  for (int i = 0; i < n; i++) fprintf(fp_trace, "%02X%s", *p++, i % 8 == 7 ? " " : "");
+  for (int i = 0; i < n; i++) fprintf(fp_trace, "%02X%s", p[i], i % 8 == 7 ? " " : "");
   fprintf(fp_trace, "\n");
 }
 

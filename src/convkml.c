@@ -1,13 +1,13 @@
 /*------------------------------------------------------------------------------
- * convkml.c : google earth kml converter
+ * convkml.c : Google earth KML converter
  *
  *          Copyright (C) 2007-2017 by T.TAKASU, All rights reserved.
  *
- * references :
+ * References :
  *     [1] Open Geospatial Consortium Inc., OGC 07-147r2, OGC(R) KML, 2008-04-14
  *
- * version : $Revision: 1.1 $ $Date: 2008/07/17 21:48:06 $
- * history : 2007/01/20  1.0  new
+ * Version : $Revision: 1.1 $ $Date: 2008/07/17 21:48:06 $
+ * History : 2007/01/20  1.0  new
  *           2007/03/15  1.1  modify color sequence
  *           2007/04/03  1.2  add geodetic height option
  *                            support input of NMEA GGA sentence
@@ -18,20 +18,20 @@
  *           2010/05/10  1.4  support api readsolt() change
  *           2010/08/14  1.5  fix bug on readsolt() (2.4.0_p3)
  *           2017/06/10  1.6  support wild-card in input file
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
-/* constants -----------------------------------------------------------------*/
+/* Constants -----------------------------------------------------------------*/
 
-#define SIZP 0.2L  /* mark size of rover positions */
-#define SIZR 0.3L  /* mark size of reference position */
-#define TINT 60.0L /* time label interval (sec) */
+#define SIZP 0.2L  /* Mark size of rover positions */
+#define SIZR 0.3L  /* Mark size of reference position */
+#define TINT 60.0L /* Time label interval (sec) */
 
 static const char *head1 = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 static const char *head2 = "<kml xmlns=\"http://earth.google.com/kml/2.1\">";
 static const char *mark = "http://maps.google.com/mapfiles/kml/pal2/icon18.png";
 
-/* output track --------------------------------------------------------------*/
+/* Output track --------------------------------------------------------------*/
 static void outtrack(FILE *f, const solbuf_t *solbuf, const char *color, int outalt, int outtime) {
   fprintf(f, "<Placemark>\n");
   fprintf(f, "<name>Rover Track</name>\n");
@@ -56,7 +56,7 @@ static void outtrack(FILE *f, const solbuf_t *solbuf, const char *color, int out
   fprintf(f, "</LineString>\n");
   fprintf(f, "</Placemark>\n");
 }
-/* output point --------------------------------------------------------------*/
+/* Output point --------------------------------------------------------------*/
 static void outpoint(FILE *fp, gtime_t time, const long double *pos, const char *label, int style,
                      int outalt, int outtime) {
   fprintf(fp, "<Placemark>\n");
@@ -90,7 +90,7 @@ static void outpoint(FILE *fp, gtime_t time, const long double *pos, const char 
   fprintf(fp, "</Point>\n");
   fprintf(fp, "</Placemark>\n");
 }
-/* save kml file -------------------------------------------------------------*/
+/* Save KML file -------------------------------------------------------------*/
 static int savekml(const char *file, const solbuf_t *solbuf, int tcolor, int pcolor, int outalt,
                    int outtime) {
   const char *color[] = {"ffffffff", "ff008800", "ff00aaff", "ff0000ff", "ff00ffff", "ffff00ff"};
@@ -135,11 +135,11 @@ static int savekml(const char *file, const solbuf_t *solbuf, int tcolor, int pco
   fclose(fp);
   return 1;
 }
-/* convert to google earth kml file --------------------------------------------
- * convert solutions to google earth kml file
- * args   : char   *infile   I   input solutions file (wild-card (*) is expanded)
- *          char   *outfile  I   output google earth kml file ("":<infile>.kml)
- *          gtime_t ts,te    I   start/end time (gpst)
+/* Convert to Google earth KML file --------------------------------------------
+ * Convert solutions to Google earth KML file
+ * Args   : char   *infile   I   input solutions file (wild-card (*) is expanded)
+ *          char   *outfile  I   output Google earth KML file ("":<infile>.kml)
+ *          gtime_t ts,te    I   start/end time (GPST)
  *          int    tint      I   time interval (s) (0.0:all)
  *          int    qflg      I   quality flag (0:all)
  *          long double *offset   I   add offset {east,north,up} (m)
@@ -149,15 +149,15 @@ static int savekml(const char *file, const solbuf_t *solbuf, int tcolor, int pco
  *                               (0:none,1:white,2:green,3:orange,4:red,5:by qflag)
  *          int    outalt    I   output altitude (0:off,1:elipsoidal,2:geodetic)
  *          int    outtime   I   output time (0:off,1:gpst,2:utc,3:jst)
- * return : status (0:ok,-1:file read,-2:file format,-3:no data,-4:file write)
- * notes  : see ref [1] for google earth kml file format
- *-----------------------------------------------------------------------------*/
+ * Return : status (0:ok,-1:file read,-2:file format,-3:no data,-4:file write)
+ * Notes  : see ref [1] for Google earth KML file format
+ *----------------------------------------------------------------------------*/
 extern int convkml(const char *infile, const char *outfile, gtime_t ts, gtime_t te,
                    long double tint, int qflg, const long double *offset, int tcolor, int pcolor,
                    int outalt, int outtime) {
   trace(3, "convkml : infile=%s outfile=%s\n", infile, outfile);
 
-  /* expand wild-card of infile */
+  /* Expand wild-card of infile */
   char *files[MAXEXFILE] = {0};
   for (int i = 0; i < MAXEXFILE; i++) {
     if (!(files[i] = (char *)malloc(FNSIZE))) {
@@ -181,7 +181,7 @@ extern int convkml(const char *infile, const char *outfile, gtime_t ts, gtime_t 
   } else
     rtkstrcpy(file, sizeof(file), outfile);
 
-  /* read solution file */
+  /* Read solution file */
   solbuf_t solbuf = {0};
   int stat = readsolt((const char **)files, nfile, ts, te, tint, qflg, &solbuf);
 
@@ -190,13 +190,13 @@ extern int convkml(const char *infile, const char *outfile, gtime_t ts, gtime_t 
   if (!stat) {
     return -1;
   }
-  /* mean position */
+  /* Mean position */
   long double rr[3] = {0};
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < solbuf.n; j++) rr[i] += solbuf.data[j].rr[i];
     rr[i] /= solbuf.n;
   }
-  /* add offset */
+  /* Add offset */
   long double pos[3];
   ecef2pos(rr, pos);
   long double dr[3];
@@ -207,7 +207,7 @@ extern int convkml(const char *infile, const char *outfile, gtime_t ts, gtime_t 
   if (norm(solbuf.rb, 3) > 0.0L) {
     for (int i = 0; i < 3; i++) solbuf.rb[i] += dr[i];
   }
-  /* save kml file */
+  /* Save KML file */
   int r = savekml(file, &solbuf, tcolor, pcolor, outalt, outtime) ? 0 : -4;
   freesolbuf(&solbuf);
   return r;
