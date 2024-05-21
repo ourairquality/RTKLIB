@@ -530,8 +530,8 @@ extern int tle_pos(gtime_t time, const char *name, const char *satno,
                !(stat=strcmp(name,tle->data[i].alias)))) break;
         }
         if (i<tle->n) stat=0;
-	    /* binary search by satellite name or alias if name is empty */        
 #ifdef RTK_DISABLED
+        // Binary search by satellite name or alias if name is empty.
         i = 0;
         for (int j=0,k=tle->n-1;j<=k;) {
             i=(j+k)/2;

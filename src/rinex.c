@@ -1032,9 +1032,9 @@ static void set_index(double ver, int sys, const char *opt,
         trace(4,"reject obs type: sys=%2d, obs=%s\n",sys,tobs[i]);
     }
     ind->n=n;
-
-#if 0 /* for debug */
-    for (i=0;i<n;i++) {
+    
+#ifdef RTK_DISABLED /* for debug */
+    for (int i=0;i<n;i++) {
         trace(2,"set_index: sys=%2d,tobs=%s code=%2d pri=%2d idx=%d pos=%d shift=%5.2f\n",
               sys,tobs[i],ind->code[i],ind->pri[i],ind->idx[i],ind->pos[i],
               ind->shift[i]);
