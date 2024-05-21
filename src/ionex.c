@@ -3,41 +3,41 @@
  *
  *          Copyright (C) 2011-2013 by T.TAKASU, All rights reserved.
  *
- * references:
+ * References:
  *     [1] S.Schear, W.Gurtner and J.Feltens, IONEX: The IONosphere Map EXchange
  *         Format Version 1, February 25, 1998
  *     [2] S.Schaer, R.Markus, B.Gerhard and A.S.Timon, Daily Global Ionosphere
  *         Maps based on GPS Carrier Phase Data Routinely produced by CODE
  *         Analysis Center, Proceeding of the IGS Analysis Center Workshop, 1996
  *
- * version : $Revision:$ $Date:$
- * history : 2011/03/29 1.0 new
+ * Version : $Revision:$ $Date:$
+ * History : 2011/03/29 1.0 new
  *           2013/03/05 1.1 change api readtec()
  *                          fix problem in case of lat>85deg or lat<-85deg
  *           2014/02/22 1.2 fix problem on compiled as C++
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
 #define SQR(x) ((x) * (x))
-#define VAR_NOTEC SQR(30.0) /* variance of no tec */
-#define MIN_EL 0.0          /* min elevation angle (rad) */
-#define MIN_HGT -1000.0     /* min user height (m) */
+#define VAR_NOTEC SQR(30.0) /* Variance of no TEC */
+#define MIN_EL 0.0          /* Min elevation angle (rad) */
+#define MIN_HGT -1000.0     /* Min user height (m) */
 
-/* get index -----------------------------------------------------------------*/
+/* Get index -----------------------------------------------------------------*/
 static int getindex(double value, const double *range) {
   if (range[2] == 0.0) return 0;
   if (range[1] > 0.0 && (value < range[0] || range[1] < value)) return -1;
   if (range[1] < 0.0 && (value < range[1] || range[0] < value)) return -1;
   return (int)floor((value - range[0]) / range[2] + 0.5);
 }
-/* get number of items -------------------------------------------------------*/
+/* Get number of items -------------------------------------------------------*/
 static int nitem(const double *range) { return getindex(range[1], range) + 1; }
-/* data index (i:lat,j:lon,k:hgt) --------------------------------------------*/
+/* Data index (i:lat,j:lon,k:hgt) --------------------------------------------*/
 static int dataindex(int i, int j, int k, const int *ndata) {
   if (i < 0 || ndata[0] <= i || j < 0 || ndata[1] <= j || k < 0 || ndata[2] <= k) return -1;
   return i + ndata[0] * (j + ndata[1] * k);
 }
-/* add tec data to navigation data -------------------------------------------*/
+/* Add TEC data to navigation data -------------------------------------------*/
 static tec_t *addtec(const double *lats, const double *lons, const double *hgts, double rb,
                      nav_t *nav) {
   trace(3, "addtec  :\n");
@@ -88,7 +88,7 @@ static tec_t *addtec(const double *lats, const double *lons, const double *hgts,
   } else
     return NULL;
 }
-/* read ionex dcb aux data ----------------------------------------------------*/
+/* Read ionex dcb aux data ---------------------------------------------------*/
 static void readionexdcb(FILE *fp, double *dcb, double *rms) {
   trace(3, "readionexdcb:\n");
 
@@ -113,7 +113,7 @@ static void readionexdcb(FILE *fp, double *dcb, double *rms) {
       break;
   }
 }
-/* read ionex header ---------------------------------------------------------*/
+/* Read ionex header ---------------------------------------------------------*/
 static double readionexh(FILE *fp, double *lats, double *lons, double *hgts, double *rb,
                          double *nexp, double *dcb, double *rms) {
   double ver = 0.0;
@@ -152,7 +152,7 @@ static double readionexh(FILE *fp, double *lats, double *lons, double *hgts, dou
   }
   return 0.0;
 }
-/* read ionex body -----------------------------------------------------------*/
+/* Read ionex body -----------------------------------------------------------*/
 static bool readionexb(FILE *fp, const double *lats, const double *lons, const double *hgts,
                        double rb, double nexp, nav_t *nav) {
   trace(3, "readionexb:\n");
@@ -221,7 +221,7 @@ static bool readionexb(FILE *fp, const double *lats, const double *lons, const d
   }
   return true;
 }
-/* combine tec grid data -----------------------------------------------------*/
+/* Combine TEC grid data -----------------------------------------------------*/
 static void combtec(nav_t *nav) {
   trace(3, "combtec : nav->nt=%d\n", nav->nt);
 
@@ -248,22 +248,22 @@ static void combtec(nav_t *nav) {
 
   trace(4, "combtec : nav->nt=%d\n", nav->nt);
 }
-/* read ionex tec grid file ----------------------------------------------------
- * read ionex ionospheric tec grid file
- * args   : char   *file       I   ionex tec grid file
+/* Read ionex TEC grid file ----------------------------------------------------
+ * Read ionex ionospheric TEC grid file
+ * Args   : char   *file       I   ionex TEC grid file
  *                                 (wind-card * is expanded)
  *          nav_t  *nav        IO  navigation data
  *                                 nav->nt, nav->ntmax and nav->tec are modified
- *          int    opt         I   read option (1: no clear of tec data,0:clear)
- * return : none
- * notes  : see ref [1]
- *-----------------------------------------------------------------------------*/
+ *          int    opt         I   read option (1: no clear of TEC data,0:clear)
+ * Return : none
+ * Notes  : see ref [1]
+ *----------------------------------------------------------------------------*/
 extern void readtec(const char *file, nav_t *nav, int opt) {
   double dcb[MAXSAT] = {0}, rms[MAXSAT] = {0};
 
   trace(3, "readtec : file=%s\n", file);
 
-  /* clear of tec grid data option */
+  /* Clear of TEC grid data option */
   if (!opt) {
     free(nav->tec);
     nav->tec = NULL;
@@ -276,7 +276,7 @@ extern void readtec(const char *file, nav_t *nav, int opt) {
       return;
     }
   }
-  /* expand wild card in file path */
+  /* Expand wild card in file path */
   int n = expath(file, efiles, FNSIZE, MAXEXFILE);
 
   for (int i = 0; i < n; i++) {
@@ -285,28 +285,28 @@ extern void readtec(const char *file, nav_t *nav, int opt) {
       trace(2, "ionex file open error %s\n", efiles[i]);
       continue;
     }
-    /* read ionex header */
+    /* Read ionex header */
     double lats[3] = {0}, lons[3] = {0}, hgts[3] = {0}, rb = 0.0, nexp = -1.0;
     if (readionexh(fp, lats, lons, hgts, &rb, &nexp, dcb, rms) <= 0.0) {
       trace(2, "ionex file format error %s\n", efiles[i]);
       continue;
     }
-    /* read ionex body */
+    /* Read ionex body */
     readionexb(fp, lats, lons, hgts, rb, nexp, nav);
 
     fclose(fp);
   }
   for (int i = 0; i < MAXEXFILE; i++) free(efiles[i]);
 
-  /* combine tec grid data */
+  /* Combine TEC grid data */
   if (nav->nt > 0) combtec(nav);
 
   /* P1-P2 dcb (not used)*/
-  /* for (int i=0;i<MAXSAT;i++) { */
+  /* For (int i=0;i<MAXSAT;i++) { */
   /*    nav->cbias[i][0]=CLIGHT*dcb[i]*1E-9; */ /* ns->m */
                                                 /* } */
 }
-/* interpolate tec grid data -------------------------------------------------*/
+/* Interpolate TEC grid data -------------------------------------------------*/
 static bool interptec(const tec_t *tec, int k, const double *posp, double *value, double *rms) {
   double dlat, dlon, a, b, d[4] = {0}, r[4] = {0};
   int i, j;
@@ -330,7 +330,7 @@ static bool interptec(const tec_t *tec, int k, const double *posp, double *value
   j = (int)floor(b);
   b -= j;
 
-  /* get gridded tec data */
+  /* Get gridded TEC data */
   for (int n = 0; n < 4; n++) {
     int index = dataindex(i + (n % 2), j + (n < 2 ? 0 : 1), k, tec->ndata);
     if (index < 0) continue;
@@ -338,13 +338,13 @@ static bool interptec(const tec_t *tec, int k, const double *posp, double *value
     r[n] = tec->rms[index];
   }
   if (d[0] > 0.0 && d[1] > 0.0 && d[2] > 0.0 && d[3] > 0.0) {
-    /* bilinear interpolation (inside of grid) */
+    /* Bilinear interpolation (inside of grid) */
     *value =
         (1.0 - a) * (1.0 - b) * d[0] + a * (1.0 - b) * d[1] + (1.0 - a) * b * d[2] + a * b * d[3];
     *rms =
         (1.0 - a) * (1.0 - b) * r[0] + a * (1.0 - b) * r[1] + (1.0 - a) * b * r[2] + a * b * r[3];
   }
-  /* nearest-neighbour extrapolation (outside of grid) */
+  /* Nearest-neighbour extrapolation (outside of grid) */
   else if (a <= 0.5 && b <= 0.5 && d[0] > 0.0) {
     *value = d[0];
     *rms = r[0];
@@ -371,7 +371,7 @@ static bool interptec(const tec_t *tec, int k, const double *posp, double *value
   }
   return true;
 }
-/* ionosphere delay by tec grid data -----------------------------------------*/
+/* Ionosphere delay by TEC grid data -----------------------------------------*/
 static bool iondelay(gtime_t time, const tec_t *tec, const double *pos, const double *azel, int opt,
                      double *delay, double *var) {
   const double fact = 40.30E16 / FREQL1 / FREQL1; /* tecu->L1 iono (m) */
@@ -383,25 +383,25 @@ static bool iondelay(gtime_t time, const tec_t *tec, const double *pos, const do
 
   *delay = *var = 0.0;
 
-  for (int i = 0; i < tec->ndata[2]; i++) { /* for a layer */
+  for (int i = 0; i < tec->ndata[2]; i++) { /* For a layer */
 
     double hion;
     hion = tec->hgts[0] + tec->hgts[2] * i;
 
-    /* ionospheric pierce point position */
+    /* Ionospheric pierce point position */
     double fs;
     fs = ionppp(pos, azel, tec->rb, hion, posp);
 
     if (opt & 2) {
-      /* modified single layer mapping function (M-SLM) ref [2] */
+      /* Modified single layer mapping function (M-SLM) ref [2] */
       rp = tec->rb / (tec->rb + hion) * sin(0.9782 * (PI / 2.0 - azel[1]));
       fs = 1.0 / sqrt(1.0 - rp * rp);
     }
     if (opt & 1) {
-      /* earth rotation correction (sun-fixed coordinate) */
+      /* Earth rotation correction (sun-fixed coordinate) */
       posp[1] += 2.0 * PI * timediff(time, tec->time) / 86400.0;
     }
-    /* interpolate tec grid data */
+    /* Interpolate TEC grid data */
     if (!interptec(tec, i, posp, &vtec, &rms)) return false;
 
     *delay += fact * fs * vtec;
@@ -411,9 +411,9 @@ static bool iondelay(gtime_t time, const tec_t *tec, const double *pos, const do
 
   return true;
 }
-/* ionosphere model by tec grid data -------------------------------------------
- * compute ionospheric delay by tec grid data
- * args   : gtime_t time     I   time (gpst)
+/* Ionosphere model by TEC grid data -------------------------------------------
+ * Compute ionospheric delay by TEC grid data
+ * Args   : gtime_t time     I   time (GPST)
  *          nav_t  *nav      I   navigation data
  *          double *pos      I   receiver position {lat,lon,h} (rad,m)
  *          double *azel     I   azimuth/elevation angle {az,el} (rad)
@@ -422,10 +422,10 @@ static bool iondelay(gtime_t time, const tec_t *tec, const double *pos, const do
  *                                bit1: 0:single-layer,1:modified single-layer
  *          double *delay    O   ionospheric delay (L1) (m)
  *          double *var      O   ionospheric dealy (L1) variance (m^2)
- * return : status (true:ok,false:error)
- * notes  : before calling the function, read tec grid data by calling readtec()
+ * Return : status (true:ok,false:error)
+ * Notes  : before calling the function, read TEC grid data by calling readtec()
  *          return ok with delay=0 and var=VAR_NOTEC if el<MIN_EL or h<MIN_HGT
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern bool iontec(gtime_t time, const nav_t *nav, const double *pos, const double *azel, int opt,
                    double *delay, double *var) {
   char tstr[40];
@@ -450,7 +450,7 @@ extern bool iontec(gtime_t time, const nav_t *nav, const double *pos, const doub
     trace(2, "tec grid time interval error\n");
     return false;
   }
-  /* ionospheric delay by tec grid data */
+  /* Ionospheric delay by TEC grid data */
   int stat[2];
   double dels[2], vars[2];
   stat[0] = iondelay(time, nav->tec + i - 1, pos, azel, opt, dels, vars);
@@ -461,11 +461,11 @@ extern bool iontec(gtime_t time, const nav_t *nav, const double *pos, const doub
           pos[0] * R2D, pos[1] * R2D, azel[0] * R2D, azel[1] * R2D);
     return false;
   }
-  if (stat[0] && stat[1]) { /* linear interpolation by time */
+  if (stat[0] && stat[1]) { /* Linear interpolation by time */
     double a = timediff(time, nav->tec[i - 1].time) / tt;
     *delay = dels[0] * (1.0 - a) + dels[1] * a;
     *var = vars[0] * (1.0 - a) + vars[1] * a;
-  } else if (stat[0]) { /* nearest-neighbour extrapolation by time */
+  } else if (stat[0]) { /* Nearest-neighbour extrapolation by time */
     *delay = dels[0];
     *var = vars[0];
   } else {

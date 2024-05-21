@@ -1187,31 +1187,27 @@ void Plot::MenuPlotMapViewClick() {
   mapView->setVisible(true);
 }
 //---------------------------------------------------------------------------
-#if 0
-void Plot::DispGesture()
-{
-    AnsiString s;
-    int b, e;
+#ifdef RTK_DISABLED
+void Plot::DispGesture() {
+  AnsiString s;
+  int b, e;
 
-    b = EventInfo.Flags.Contains(gfBegin);
-    e = EventInfo.Flags.Contains(gfEnd);
+  b = EventInfo.Flags.Contains(gfBegin);
+  e = EventInfo.Flags.Contains(gfEnd);
 
-    if (EventInfo.GestureID == Controls::igiZoom) {
-        s.sprintf("zoom: Location=%d,%d,Flag=%d,%d,Angle=%.1f,Disnance=%d",
-              EventInfo.Location.X, EventInfo.Location.Y, b, e,
-              EventInfo.Angle, EventInfo.Distance);
-        Message1->Caption = s;
-    } else if (EventInfo.GestureID == Controls::igiPan) {
-        s.sprintf("pan: Location=%d,%d,Flag=%d,%d,Angle=%.1f,Disnance=%d",
-              EventInfo.Location.X, EventInfo.Location.Y, b, e,
-              EventInfo.Angle, EventInfo.Distance);
-        Message1->Caption = s;
-    } else if (EventInfo.GestureID == Controls::igiRotate) {
-        s.sprintf("rotate: Location=%d,%d,Flag=%d,%d,Angle=%.1f,Disnance=%d",
-              EventInfo.Location.X, EventInfo.Location.Y, b, e,
-              EventInfo.Angle, EventInfo.Distance);
-        Message1->Caption = s;
-    }
+  if (EventInfo.GestureID == Controls::igiZoom) {
+    s.sprintf("zoom: Location=%d,%d,Flag=%d,%d,Angle=%.1f,Disnance=%d", EventInfo.Location.X,
+              EventInfo.Location.Y, b, e, EventInfo.Angle, EventInfo.Distance);
+    Message1->Caption = s;
+  } else if (EventInfo.GestureID == Controls::igiPan) {
+    s.sprintf("pan: Location=%d,%d,Flag=%d,%d,Angle=%.1f,Disnance=%d", EventInfo.Location.X,
+              EventInfo.Location.Y, b, e, EventInfo.Angle, EventInfo.Distance);
+    Message1->Caption = s;
+  } else if (EventInfo.GestureID == Controls::igiRotate) {
+    s.sprintf("rotate: Location=%d,%d,Flag=%d,%d,Angle=%.1f,Disnance=%d", EventInfo.Location.X,
+              EventInfo.Location.Y, b, e, EventInfo.Angle, EventInfo.Distance);
+    Message1->Caption = s;
+  }
 }
 #endif
 // callback on menu-animation-start -----------------------------------------

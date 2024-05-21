@@ -1,33 +1,33 @@
 /*------------------------------------------------------------------------------
- * convrnx.c : rinex translator for rtcm and receiver raw data log
+ * convrnx.c : RINEX translator for RTCM and receiver raw data log
  *
  *          Copyright (C) 2009-2020 by T.TAKASU, All rights reserved.
  *
- * version : $Revision: 1.2 $ $Date: 2008/07/17 21:48:06 $
- * history : 2009/04/10 1.0  new
- *           2009/06/02 1.1  support glonass
+ * Version : $Revision: 1.2 $ $Date: 2008/07/17 21:48:06 $
+ * History : 2009/04/10 1.0  new
+ *           2009/06/02 1.1  support GLONASS
  *           2009/12/18 1.2  add check return of init_rtcm()/init_raw()
  *           2010/07/15 1.3  support wildcard expansion of input file
- *                           support rinex 3.00
- *                           support rinex as input format
+ *                           support RINEX 3.00
+ *                           support RINEX as input format
  *                           support output of geo navigation message
- *                           support rtcm antenna and receiver info
+ *                           support RTCM antenna and receiver info
  *                           changed api:
  *                               convrnx()
- *           2011/05/27 1.4  support GW10, Javad, LEX receiver
+ *           2011/05/27 1.4  support GW10, JAVAD, LEX receiver
  *                           support lex message conversion
  *                           change api convrnx()
  *           2012/10/18 1.5  support multiple codes in a frequency
  *           2012/10/29 1.6  fix bug on scanning obs types
  *                           support output of compass navigation data
- *                           add supported obs types for rinex input
- *           2013/03/11 1.7  support binex and rinex 3.02
- *                           add approx position in rinex obs header if blank
- *           2014/05/24 1.8  support beidou B1
+ *                           add supported obs types for RINEX input
+ *           2013/03/11 1.7  support binex and RINEX 3.02
+ *                           add approx position in RINEX obs header if blank
+ *           2014/05/24 1.8  support BeiDou B1
  *           2014/08/26 1.9  support input format rt17
  *           2015/05/24 1.10 fix bug on setting antenna delta in rtcm2opt()
  *           2016/07/04 1.11 support IRNSS
- *           2016/10/10 1.12 support event output by staid change in rtcm
+ *           2016/10/10 1.12 support event output by staid change in RTCM
  *                           support separated navigation files for ver.3
  *           2017/06/06 1.13 fix bug on array overflow in set_obstype() and
  *                           scan_obstype()
@@ -43,56 +43,56 @@
  *                           fix bug on screening time in screent_ttol()
  *                           fix bug on screening QZS L1S messages as SBAS
  *                           use integer types in stdint.h
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
-#define NOUTFILE 9        /* number of output files */
-#define NSATSYS 7         /* number of satellite systems */
-#define TSTARTMARGIN 60.0 /* time margin for file name replacement */
+#define NOUTFILE 9        /* Number of output files */
+#define NSATSYS 7         /* Number of satellite systems */
+#define TSTARTMARGIN 60.0 /* Time margin for file name replacement */
 
-#define EVENT_STARTMOVE 2 /* rinex event start moving antenna */
-#define EVENT_NEWSITE 3   /* rinex event new site occupation */
-#define EVENT_HEADER 4    /* rinex event header info follows */
-#define EVENT_EXTERNAL 5  /* rinex event external event */
+#define EVENT_STARTMOVE 2 /* RINEX event start moving antenna */
+#define EVENT_NEWSITE 3   /* RINEX event new site occupation */
+#define EVENT_HEADER 4    /* RINEX event header info follows */
+#define EVENT_EXTERNAL 5  /* RINEX event external event */
 
-/* type definitions ----------------------------------------------------------*/
+/* Type definitions ----------------------------------------------------------*/
 
-typedef struct stas_tag { /* station list type */
-  int staid;              /* station IS */
-  gtime_t ts, te;         /* first and last observation time */
-  sta_t sta;              /* station parameters */
-  struct stas_tag *next;  /* next list */
+typedef struct stas_tag { /* Station list type */
+  int staid;              /* Station IS */
+  gtime_t ts, te;         /* First and last observation time */
+  sta_t sta;              /* Station parameters */
+  struct stas_tag *next;  /* Next list */
 } stas_t;
 
-typedef struct halfc_tag { /* half-cycle ambiguity list type */
-  gtime_t ts, te;          /* first and last observation time */
-  uint8_t stat;            /* half-cycle ambiguity status */
-  struct halfc_tag *next;  /* next list */
+typedef struct halfc_tag { /* Half-cycle ambiguity list type */
+  gtime_t ts, te;          /* First and last observation time */
+  uint8_t stat;            /* Half-cycle ambiguity status */
+  struct halfc_tag *next;  /* Next list */
 } halfc_t;
 
-typedef struct {                          /* stream file type */
-  int format;                             /* stream format (STRFMT_???) */
-  int staid;                              /* station ID */
-  int ephsat, ephset;                     /* satellite and set of input ephemeris */
-  gtime_t time;                           /* current time */
-  gtime_t tstart;                         /* start time */
-  obs_t *obs;                             /* pointer to input observation data */
-  nav_t *nav;                             /* pointer to input navigation data */
-  sta_t *sta;                             /* pointer to input station parameters */
-  rtcm_t rtcm;                            /* input RTCM data */
-  raw_t raw;                              /* input receiver raw data */
-  rnxctr_t rnx;                           /* input RINEX control data */
-  stas_t *stas;                           /* station list */
-  uint8_t slips[MAXSAT][NFREQ + NEXOBS];  /* cycle slip flag cache */
-  halfc_t *halfc[MAXSAT][NFREQ + NEXOBS]; /* half-cycle ambiguity list */
-  FILE *fp;                               /* output file pointer */
+typedef struct {                          /* Stream file type */
+  int format;                             /* Stream format (STRFMT_???) */
+  int staid;                              /* Station ID */
+  int ephsat, ephset;                     /* Satellite and set of input ephemeris */
+  gtime_t time;                           /* Current time */
+  gtime_t tstart;                         /* Start time */
+  obs_t *obs;                             /* Pointer to input observation data */
+  nav_t *nav;                             /* Pointer to input navigation data */
+  sta_t *sta;                             /* Pointer to input station parameters */
+  rtcm_t rtcm;                            /* Input RTCM data */
+  raw_t raw;                              /* Input receiver raw data */
+  rnxctr_t rnx;                           /* Input RINEX control data */
+  stas_t *stas;                           /* Station list */
+  uint8_t slips[MAXSAT][NFREQ + NEXOBS];  /* Cycle slip flag cache */
+  halfc_t *halfc[MAXSAT][NFREQ + NEXOBS]; /* Half-cycle ambiguity list */
+  FILE *fp;                               /* Output file pointer */
 } strfile_t;
 
-/* global variables ----------------------------------------------------------*/
-static const int navsys[] = {/* system codes */
+/* Global variables ----------------------------------------------------------*/
+static const int navsys[] = {/* System codes */
                              SYS_GPS, SYS_GLO, SYS_GAL, SYS_QZS, SYS_SBS, SYS_CMP, SYS_IRN, 0};
 static const char vercode[][MAXCODE] = {
-    /* supported obs-type by RINEX version */
+    /* Supported obs-type by RINEX version */
     /* 0........1.........2.........3.........4.........5.........6........          */
     /* 11111111111112222222222555777666666688822663331155599991555677788444     CODE */
     /* CPWYMNSLEABXZCDSLXPWYMNIQXIQXABCXZSLIQXIQIQIQXIQABCABCXDDPZEDPZDPABX          */
@@ -104,7 +104,7 @@ static const char vercode[][MAXCODE] = {
     ".4...4...4.4.....1.......41114..1.....41111............444..44444...", /* BDS */
     ".........................3......................3333333............."  /* IRN */
 };
-/* convert RINEX obs-type ver.3 -> ver.2 -------------------------------------*/
+/* Convert RINEX obs-type ver.3 -> ver.2 -------------------------------------*/
 static void convcode(int rnxver, int sys, char *type, size_t size) {
   if (rnxver >= 212 && (sys == SYS_GPS || sys == SYS_QZS || sys == SYS_SBS) &&
       !strcmp(type + 1, "1C")) { /* L1C/A */
@@ -134,7 +134,7 @@ static void convcode(int rnxver, int sys, char *type, size_t size) {
     type[2] = '\0';
   }
 }
-/* generate stream file ------------------------------------------------------*/
+/* Generate stream file ------------------------------------------------------*/
 static strfile_t *gen_strfile(int format, const char *opt) {
   gtime_t time0 = {0};
 
@@ -195,7 +195,7 @@ static strfile_t *gen_strfile(int format, const char *opt) {
   str->fp = NULL;
   return str;
 }
-/* free stream file ----------------------------------------------------------*/
+/* Free stream file ----------------------------------------------------------*/
 static void free_strfile(strfile_t *str) {
   trace(3, "free_strfile:\n");
 
@@ -219,7 +219,7 @@ static void free_strfile(strfile_t *str) {
     }
   free(str);
 }
-/* input stream file ---------------------------------------------------------*/
+/* Input stream file ---------------------------------------------------------*/
 static int input_strfile(strfile_t *str) {
   trace(4, "input_strfile:\n");
 
@@ -264,7 +264,7 @@ static int input_strfile(strfile_t *str) {
   trace(4, "input_strfile: time=%s type=%d\n", time2str(str->time, tstr, 3), type);
   return type;
 }
-/* open stream file ----------------------------------------------------------*/
+/* Open stream file ----------------------------------------------------------*/
 static bool open_strfile(strfile_t *str, const char *file) {
   trace(3, "open_strfile: file=%s\n", file);
 
@@ -285,7 +285,7 @@ static bool open_strfile(strfile_t *str, const char *file) {
       showmsg("rinex open error: %s", file);
       return false;
     }
-    /* open rinex control */
+    /* Open RINEX control */
     if (!open_rnxctr(&str->rnx, str->fp)) {
       showmsg("no rinex file: %s", file);
       fclose(str->fp);
@@ -295,7 +295,7 @@ static bool open_strfile(strfile_t *str, const char *file) {
   }
   return true;
 }
-/* close stream file ---------------------------------------------------------*/
+/* Close stream file ---------------------------------------------------------*/
 static void close_strfile(strfile_t *str) {
   trace(3, "close_strfile:\n");
 
@@ -307,7 +307,7 @@ static void close_strfile(strfile_t *str) {
     if (str->fp) fclose(str->fp);
   }
 }
-/* set format and files in RINEX options comments ----------------------------*/
+/* Set format and files in RINEX options comments ----------------------------*/
 static void setopt_file(int format, char **paths, int n, const int *mask, rnxopt_t *opt) {
   int i;
   for (i = 0; i < MAXCOMMENT; i++) {
@@ -324,7 +324,7 @@ static void setopt_file(int format, char **paths, int n, const int *mask, rnxopt
     rtksnprintf(opt->comment[i++], sizeof(opt->comment[0]), "options: %.54s", opt->rcvopt);
   }
 }
-/* unset RINEX options comments ----------------------------------------------*/
+/* Unset RINEX options comments ----------------------------------------------*/
 static void unsetopt_file(rnxopt_t *opt) {
   int brk = 0;
 
@@ -334,7 +334,7 @@ static void unsetopt_file(rnxopt_t *opt) {
     *opt->comment[i] = '\0';
   }
 }
-/* sort obs-types ------------------------------------------------------------*/
+/* Sort obs-types ------------------------------------------------------------*/
 static void sort_obstype(uint8_t *codes, uint8_t *types, int n, int sys) {
   for (int i = 0; i < n - 1; i++)
     for (int j = i + 1; j < n; j++) {
@@ -351,7 +351,7 @@ static void sort_obstype(uint8_t *codes, uint8_t *types, int n, int sys) {
       types[j] = tmp;
     }
 }
-/* set obs-types in RINEX options --------------------------------------------*/
+/* Set obs-types in RINEX options --------------------------------------------*/
 static void setopt_obstype(const uint8_t *codes, const uint8_t *types, int sys, rnxopt_t *opt) {
   trace(3, "setopt_obstype: sys=%d\n", sys);
 
@@ -379,18 +379,18 @@ static void setopt_obstype(const uint8_t *codes, const uint8_t *types, int sys, 
       if (!(opt->obstype & (1 << j))) continue;
       if (types && !(types[i] & (1 << j))) continue;
 
-      /* obs-types in ver.3 */
+      /* Obs-types in ver.3 */
       char type[16];
       const char type_str[] = "CLDS";
       rtksnprintf(type, sizeof(type), "%c%s", type_str[j], id);
-      if (type[0] == 'C' && type[2] == 'N') continue; /* codeless */
+      if (type[0] == 'C' && type[2] == 'N') continue; /* Codeless */
 
-      if (opt->rnxver <= 299) { /* ver.2 */
+      if (opt->rnxver <= 299) { /* Ver.2 */
 
-        /* ver.3 -> ver.2 */
+        /* Ver.3 -> ver.2 */
         convcode(opt->rnxver, navsys[sys], type, sizeof(type));
 
-        /* check duplicated obs-type */
+        /* Check duplicated obs-type */
         int k;
         for (k = 0; k < opt->nobs[0]; k++) {
           if (!strcmp(opt->tobs[0][k], type)) break;
@@ -398,13 +398,13 @@ static void setopt_obstype(const uint8_t *codes, const uint8_t *types, int sys, 
         if (k >= opt->nobs[0] && opt->nobs[0] < MAXOBSTYPE) {
           rtkstrcpy(opt->tobs[0][opt->nobs[0]++], sizeof(opt->tobs[0][0]), type);
         }
-      } else if (opt->nobs[sys] < MAXOBSTYPE) { /* ver.3 */
+      } else if (opt->nobs[sys] < MAXOBSTYPE) { /* Ver.3 */
         rtkstrcpy(opt->tobs[sys][opt->nobs[sys]++], sizeof(opt->tobs[0][0]), type);
       }
     }
   }
 }
-/* set phase shift in RINEX options (RINEX 3.04 A23) -------------------------*/
+/* Set phase shift in RINEX options (RINEX 3.04 A23) -------------------------*/
 static void setopt_phshift(rnxopt_t *opt) {
   for (int i = 0; i < NSATSYS; i++)
     for (int j = 0; j < opt->nobs[i]; j++) {
@@ -446,7 +446,7 @@ static void setopt_phshift(rnxopt_t *opt) {
       }
     }
 }
-/* set station ID list to RINEX options comments -----------------------------*/
+/* Set station ID list to RINEX options comments -----------------------------*/
 static void setopt_sta_list(const strfile_t *str, rnxopt_t *opt) {
   const stas_t *p;
   int n = 0;
@@ -472,12 +472,12 @@ static void setopt_sta_list(const strfile_t *str, rnxopt_t *opt) {
     rtksnprintf(opt->comment[i + n], sizeof(opt->comment[0]), " %04d  %s  %s", p->staid, s1, s2);
   }
 }
-/* set station info in RINEX options -----------------------------------------*/
+/* Set station info in RINEX options -----------------------------------------*/
 static void setopt_sta(const strfile_t *str, rnxopt_t *opt) {
   trace(3, "setopt_sta:\n");
 
   const stas_t *p;
-  /* search first station in station list */
+  /* Search first station in station list */
   for (p = str->stas; p; p = p->next) {
     if (!p->next) break;
     if (opt->ts.time && timediff(p->next->te, opt->ts) < 0.0) break;
@@ -489,12 +489,12 @@ static void setopt_sta(const strfile_t *str, rnxopt_t *opt) {
   } else {
     sta = str->sta;
   }
-  /* marker name and number */
+  /* Marker name and number */
   if (!*opt->marker && !*opt->markerno) {
     rtkstrcpy(opt->marker, sizeof(opt->marker), sta->name);
     rtkstrcpy(opt->markerno, sizeof(opt->markerno), sta->marker);
   }
-  /* receiver and antenna info */
+  /* Receiver and antenna info */
   if (!*opt->rec[0] && !*opt->rec[1] && !*opt->rec[2]) {
     rtkstrcpy(opt->rec[0], sizeof(opt->rec[0]), sta->recsno);
     rtkstrcpy(opt->rec[1], sizeof(opt->rec[1]), sta->rectype);
@@ -508,19 +508,19 @@ static void setopt_sta(const strfile_t *str, rnxopt_t *opt) {
     } else
       *opt->ant[2] = '\0';
   }
-  /* antenna approx position */
+  /* Antenna approx position */
   if (!opt->autopos && norm(sta->pos, 3) > 0.0) {
     matcpy(opt->apppos, sta->pos, 3, 1);
   }
-  /* antenna delta */
+  /* Antenna delta */
   if (norm(opt->antdel, 3) > 0.0) {
     ;
   } else if (norm(sta->del, 3) > 0.0) {
-    if (!sta->deltype) {                  /* enu */
+    if (!sta->deltype) {                  /* ENU */
       opt->antdel[0] = sta->del[2];       /* h */
       opt->antdel[1] = sta->del[0];       /* e */
       opt->antdel[2] = sta->del[1];       /* n */
-    } else if (norm(sta->pos, 3) > 0.0) { /* xyz */
+    } else if (norm(sta->pos, 3) > 0.0) { /* XYZ */
       double pos[3];
       ecef2pos(sta->pos, pos);
       double enu[3];
@@ -539,9 +539,9 @@ static void setopt_sta(const strfile_t *str, rnxopt_t *opt) {
     opt->antdel[2] = 0.0;
   }
 }
-/* update station list -------------------------------------------------------*/
+/* Update station list -------------------------------------------------------*/
 static void update_stas(strfile_t *str) {
-  if (!str->stas || str->stas->staid != str->staid) { /* station ID changed */
+  if (!str->stas || str->stas->staid != str->staid) { /* Station ID changed */
     stas_t *p = (stas_t *)calloc(sizeof(stas_t), 1);
     if (!p) return;
     p->staid = str->staid;
@@ -552,15 +552,15 @@ static void update_stas(strfile_t *str) {
     str->stas->te = str->time;
   }
 }
-/* update station info in station list ---------------------------------------*/
+/* Update station info in station list ---------------------------------------*/
 static void update_stainf(strfile_t *str) {
   if (str->stas && str->stas->staid == str->staid) {
     str->stas->sta = *str->sta;
   }
 }
-/* dump station list ---------------------------------------------------------*/
+/* Dump station list ---------------------------------------------------------*/
 static void dump_stas(const strfile_t *str) {
-#if 1 /* for debug */
+#if 1 /* For debug */
   trace(2, "# STATION LIST\n");
   trace(2, "# %17s %19s %5s %6s %16s %16s %12s %13s %9s %2s %6s %6s %6s\n", "TIME", "STAID",
         "MARKER", "ANTENNA", "RECEIVER", "LATITUDE", "LONGITUDE", "HIGHT", "DT", "DEL1", "DEL2",
@@ -582,7 +582,7 @@ static void dump_stas(const strfile_t *str) {
   }
 #endif
 }
-/* add half-cycle ambiguity list ---------------------------------------------*/
+/* Add half-cycle ambiguity list ---------------------------------------------*/
 static bool add_halfc(strfile_t *str, int sat, int idx, gtime_t time) {
   halfc_t *p = (halfc_t *)calloc(sizeof(halfc_t), 1);
   if (!p) return false;
@@ -592,46 +592,46 @@ static bool add_halfc(strfile_t *str, int sat, int idx, gtime_t time) {
   str->halfc[sat - 1][idx] = p;
   return true;
 }
-/* update half-cycle ambiguity -----------------------------------------------*/
+/* Update half-cycle ambiguity -----------------------------------------------*/
 static void update_halfc(strfile_t *str, const obsd_t *obs) {
   int sat = obs->sat;
 
   for (int i = 0; i < NFREQ + NEXOBS; i++) {
     if (obs->L[i] == 0.0) continue;
 
-    /* if no list, start list */
+    /* If no list, start list */
     if (!str->halfc[sat - 1][i]) {
       if (!add_halfc(str, sat, i, obs->time)) continue;
     }
-    /* reset list if true cycle slip */
+    /* Reset list if true cycle slip */
     if ((obs->LLI[i] & LLI_SLIP) && !(obs->LLI[i] & (LLI_HALFA | LLI_HALFS))) {
       str->halfc[sat - 1][i]->stat = 0;
     }
-    if (obs->LLI[i] & LLI_HALFC) { /* halfcyc unresolved */
-      /* if new list, set unresolved start epoch */
+    if (obs->LLI[i] & LLI_HALFC) { /* Halfcyc unresolved */
+      /* If new list, set unresolved start epoch */
       if (str->halfc[sat - 1][i]->stat == 0) {
         str->halfc[sat - 1][i]->ts = obs->time;
       }
-      /* update unresolved end epoch and set status to active */
+      /* Update unresolved end epoch and set status to active */
       str->halfc[sat - 1][i]->te = obs->time;
       str->halfc[sat - 1][i]->stat = 1;
-    } /* else if resolved, update status */
+    } /* Else if resolved, update status */
     else if (str->halfc[sat - 1][i]->stat == 1) {
       if (obs->LLI[i] & LLI_HALFA) {
-        str->halfc[sat - 1][i]->stat = 2; /* resolved with add */
+        str->halfc[sat - 1][i]->stat = 2; /* Resolved with add */
       } else if (obs->LLI[i] & LLI_HALFS) {
-        str->halfc[sat - 1][i]->stat = 3; /* resolved with subtract */
+        str->halfc[sat - 1][i]->stat = 3; /* Resolved with subtract */
       } else {
-        str->halfc[sat - 1][i]->stat = 4; /* resolved with no adjust */
+        str->halfc[sat - 1][i]->stat = 4; /* Resolved with no adjust */
       }
-      /* create new list entry */
+      /* Create new list entry */
       if (!add_halfc(str, sat, i, obs->time)) continue;
     }
   }
 }
-/* dump half-cycle ambiguity list --------------------------------------------*/
+/* Dump half-cycle ambiguity list --------------------------------------------*/
 static void dump_halfc(const strfile_t *str) {
-#if 0 /* for debug */
+#ifdef RTK_DISABLED /* For debug */
   trace(2, "# HALF-CYCLE AMBIGUITY CORRECTIONS\n");
   trace(2, "# %20s %22s %4s %3s %3s\n", "START", "END", "SAT", "FRQ", "COR");
 
@@ -649,19 +649,19 @@ static void dump_halfc(const strfile_t *str) {
     }
 #endif
 }
-/* resolve half-cycle ambiguity ----------------------------------------------*/
+/* Resolve half-cycle ambiguity ----------------------------------------------*/
 static void resolve_halfc(const strfile_t *str, obsd_t *data, int n) {
   for (int i = 0; i < n; i++)
     for (int j = 0; j < NFREQ + NEXOBS; j++) {
       int sat = data[i].sat;
       for (halfc_t *p = str->halfc[sat - 1][j]; p; p = p->next) {
-        if (p->stat <= 1) continue; /* unresolved half cycle */
+        if (p->stat <= 1) continue; /* Unresolved half cycle */
         if (timediff(data[i].time, p->ts) < -DTTOL || timediff(data[i].time, p->te) > DTTOL)
           continue;
 
-        if (p->stat == 2) { /* add half cycle */
+        if (p->stat == 2) { /* Add half cycle */
           data[i].L[j] += 0.5;
-        } else if (p->stat == 3) { /* subtract half cycle  */
+        } else if (p->stat == 3) { /* Subtract half cycle  */
           data[i].L[j] -= 0.5;
         }
         data[i].LLI[j] &= ~LLI_HALFC;
@@ -669,7 +669,7 @@ static void resolve_halfc(const strfile_t *str, obsd_t *data, int n) {
       data[i].LLI[j] &= ~(LLI_HALFA | LLI_HALFS);
     }
 }
-/* scan input files ----------------------------------------------------------*/
+/* Scan input files ----------------------------------------------------------*/
 static bool scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str, int *mask) {
   trace(3, "scan_file: nf=%d\n", nf);
 
@@ -685,9 +685,9 @@ static bool scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str, int *
     while ((type = input_strfile(str)) >= -1) {
       if (opt->ts.time && timediff(str->time, opt->ts) < -opt->ttol) continue;
       if (opt->te.time && timediff(str->time, opt->te) > -opt->ttol) break;
-      mask[m] = 1; /* update file mask */
+      mask[m] = 1; /* Update file mask */
 
-      if (type == 1) { /* observation data */
+      if (type == 1) { /* Observation data */
         for (int i = 0; i < str->obs->n; i++) {
           int sys = satsys(str->obs->data[i].sat, NULL);
           if (!(sys & opt->navsys)) continue;
@@ -696,7 +696,7 @@ static bool scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str, int *
             if (navsys[l] == sys) break;
           if (!navsys[l]) continue;
 
-          /* update obs-types */
+          /* Update obs-types */
           for (int j = 0; j < NFREQ + NEXOBS; j++) {
             if (!str->obs->data[i].code[j]) continue;
 
@@ -714,15 +714,15 @@ static bool scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str, int *
               if (str->obs->data[i].SNR[j] != 0) types[l][k] |= 8;
             }
           }
-          /* update half-cycle ambiguity list */
+          /* Update half-cycle ambiguity list */
           if (opt->halfcyc) {
             update_halfc(str, str->obs->data + i);
           }
         }
-        /* update station list */
+        /* Update station list */
         update_stas(str);
-      } else if (type == 5) { /* station info */
-        /* update station info */
+      } else if (type == 5) { /* Station info */
+        /* Update station info */
         update_stainf(str);
       }
       if (++c % 11) continue;
@@ -746,7 +746,7 @@ static bool scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str, int *
     for (int j = 0; j < n[i]; j++) {
       trace(2, "scan_file: sys=%d code=%s type=%d\n", i, code2obs(codes[i][j]), types[i][j]);
     }
-  /* sort and set obs-types in RINEX options */
+  /* Sort and set obs-types in RINEX options */
   for (int i = 0; i < NSATSYS; i++) {
     sort_obstype(codes[i], types[i], n[i], i);
     setopt_obstype(codes[i], types[i], i, opt);
@@ -755,14 +755,14 @@ static bool scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str, int *
       trace(3, "scan_file: sys=%d code=%s\n", i, code2obs(codes[i][j]));
     }
   }
-  /* set station info in RINEX options */
+  /* Set station info in RINEX options */
   setopt_sta(str, opt);
 
-  /* set phase shifts in RINEX options */
+  /* Set phase shifts in RINEX options */
   if (opt->phshift) {
     setopt_phshift(opt);
   }
-  /* set GLONASS FCN and clear ephemeris */
+  /* Set GLONASS FCN and clear ephemeris */
   for (int i = 0; i < MAXSAT; i++) {
     for (int j = 0; j < str->nav->n[i]; j++) {
       eph_t eph0 = {0, -1, -1};
@@ -788,7 +788,7 @@ static bool scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str, int *
   dump_halfc(str);
   return true;
 }
-/* write RINEX header --------------------------------------------------------*/
+/* Write RINEX header --------------------------------------------------------*/
 static void write_header(FILE **ofp, int idx, const rnxopt_t *opt, const nav_t *nav) {
   switch (idx) {
     case 0:
@@ -817,7 +817,7 @@ static void write_header(FILE **ofp, int idx, const rnxopt_t *opt, const nav_t *
       break;
   }
 }
-/* open output files ---------------------------------------------------------*/
+/* Open output files ---------------------------------------------------------*/
 static bool openfile(FILE **ofp, char *files[], const char *file, const rnxopt_t *opt,
                      const nav_t *nav) {
   trace(3, "openfile:\n");
@@ -828,10 +828,10 @@ static bool openfile(FILE **ofp, char *files[], const char *file, const rnxopt_t
     char path[FNSIZE];
     rtkstrcpy(path, sizeof(path), files[i]);
 
-    /* check overwrite input file and modify output file */
+    /* Check overwrite input file and modify output file */
     if (!strcmp(path, file)) rtkstrcat(path, sizeof(path), "_");
 
-    /* create directory if not exist */
+    /* Create directory if not exist */
     createdir(path);
 
     if (!(ofp[i] = fopen(path, "w"))) {
@@ -840,26 +840,26 @@ static bool openfile(FILE **ofp, char *files[], const char *file, const rnxopt_t
         if (ofp[i]) fclose(ofp[i]);
       return false;
     }
-    /* write RINEX header */
+    /* Write RINEX header */
     write_header(ofp, i, opt, nav);
   }
   return true;
 }
-/* close output files --------------------------------------------------------*/
+/* Close output files --------------------------------------------------------*/
 static void closefile(FILE **ofp, const rnxopt_t *opt, const nav_t *nav) {
   trace(3, "closefile:\n");
 
   for (int i = 0; i < NOUTFILE; i++) {
     if (!ofp[i]) continue;
 
-    /* rewrite RINEX header */
+    /* Rewrite RINEX header */
     rewind(ofp[i]);
     write_header(ofp, i, opt, nav);
 
     fclose(ofp[i]);
   }
 }
-/* output RINEX event --------------------------------------------------------*/
+/* Output RINEX event --------------------------------------------------------*/
 static void outrnxevent(FILE *fp, const rnxopt_t *opt, gtime_t time, int event, const stas_t *stas,
                         int staid) {
   trace(3, "outrnxevent: event=%d\n", event);
@@ -887,14 +887,14 @@ static void outrnxevent(FILE *fp, const rnxopt_t *opt, gtime_t time, int event, 
     fprintf(fp, "%14.4f%14.4f%14.4f%-18s%-20s\n", p->sta.pos[0], p->sta.pos[1], p->sta.pos[2], "",
             "APPROX POSITION XYZ");
 
-    /* antenna delta */
+    /* Antenna delta */
     double del[3];
     if (norm(p->sta.del, 3) > 0.0) {
-      if (!p->sta.deltype) {                  /* enu */
+      if (!p->sta.deltype) {                  /* ENU */
         del[0] = p->sta.del[2];               /* h */
         del[1] = p->sta.del[0];               /* e */
         del[2] = p->sta.del[1];               /* n */
-      } else if (norm(p->sta.pos, 3) > 0.0) { /* xyz */
+      } else if (norm(p->sta.pos, 3) > 0.0) { /* XYZ */
         double pos[3];
         ecef2pos(p->sta.pos, pos);
         double enu[3];
@@ -923,14 +923,14 @@ static void outrnxevent(FILE *fp, const rnxopt_t *opt, gtime_t time, int event, 
     fprintf(fp, "%-60s%-20s\n", "EXTERNAL EVENT", "COMMENT");
   }
 }
-/* save cycle slips ----------------------------------------------------------*/
+/* Save cycle slips ----------------------------------------------------------*/
 static void save_slips(strfile_t *str, obsd_t *data, int n) {
   for (int i = 0; i < n; i++)
     for (int j = 0; j < NFREQ + NEXOBS; j++) {
       if (data[i].LLI[j] & LLI_SLIP) str->slips[data[i].sat - 1][j] = 1;
     }
 }
-/* restore cycle slips -------------------------------------------------------*/
+/* Restore cycle slips -------------------------------------------------------*/
 static void rest_slips(strfile_t *str, obsd_t *data, int n) {
   for (int i = 0; i < n; i++)
     for (int j = 0; j < NFREQ + NEXOBS; j++) {
@@ -940,7 +940,7 @@ static void rest_slips(strfile_t *str, obsd_t *data, int n) {
       }
     }
 }
-/* screen time with time tolerance -------------------------------------------*/
+/* Screen time with time tolerance -------------------------------------------*/
 static int screent_ttol(gtime_t time, gtime_t ts, gtime_t te, double tint, double ttol) {
   if (ttol <= 0.0) ttol = DTTOL;
 
@@ -948,7 +948,7 @@ static int screent_ttol(gtime_t time, gtime_t ts, gtime_t te, double tint, doubl
          (ts.time == 0 || timediff(time, ts) >= -ttol) &&
          (te.time == 0 || timediff(time, te) < ttol);
 }
-/* convert observation data --------------------------------------------------*/
+/* Convert observation data --------------------------------------------------*/
 static void convobs(FILE **ofp, rnxopt_t *opt, strfile_t *str, int *n, gtime_t *tend, int *staid) {
   trace(3, "convobs :\n");
 
@@ -956,26 +956,26 @@ static void convobs(FILE **ofp, rnxopt_t *opt, strfile_t *str, int *n, gtime_t *
 
   gtime_t time = str->obs->data[0].time;
 
-  /* avoid duplicated data by multiple files handover */
+  /* Avoid duplicated data by multiple files handover */
   if (tend->time && timediff(time, *tend) < opt->ttol) return;
   *tend = time;
 
-  /* save cycle slips */
+  /* Save cycle slips */
   save_slips(str, str->obs->data, str->obs->n);
 
   if (!screent_ttol(time, opt->ts, opt->te, opt->tint, opt->ttol)) return;
 
-  /* restore cycle slips */
+  /* Restore cycle slips */
   rest_slips(str, str->obs->data, str->obs->n);
 
-  if (str->staid != *staid) { /* station ID changed */
+  if (str->staid != *staid) { /* Station ID changed */
 
-    if (*staid >= 0) { /* output RINEX event */
+    if (*staid >= 0) { /* Output RINEX event */
       outrnxevent(ofp[0], opt, str->time, EVENT_NEWSITE, str->stas, str->staid);
     }
     *staid = str->staid;
 
-    /* set cycle slips */
+    /* Set cycle slips */
     for (int i = 0; i < str->obs->n; i++)
       for (int j = 0; j < NFREQ + NEXOBS; j++) {
         if (str->obs->data[i].L[j] != 0.0) {
@@ -983,15 +983,15 @@ static void convobs(FILE **ofp, rnxopt_t *opt, strfile_t *str, int *n, gtime_t *
         }
       }
   }
-  /* resolve half-cycle ambiguity */
+  /* Resolve half-cycle ambiguity */
   if (opt->halfcyc) {
     resolve_halfc(str, str->obs->data, str->obs->n);
   }
-  /* output RINEX observation data */
+  /* Output RINEX observation data */
   outrnxobsb(ofp[0], opt, str->obs->data, str->obs->n, str->obs->flag);
-  /* n[NOUTFILE+1] - count of events converted to rinex */
+  /* n[NOUTFILE+1] - count of events converted to RINEX */
   if (str->obs->flag == 5) n[NOUTFILE + 1]++;
-  /* set to zero flag for the next iteration (initialization) */
+  /* Set to zero flag for the next iteration (initialization) */
   str->obs->flag = 0;
 
   if (opt->tstart.time == 0) opt->tstart = time;
@@ -999,7 +999,7 @@ static void convobs(FILE **ofp, rnxopt_t *opt, strfile_t *str, int *n, gtime_t *
 
   n[0]++;
 }
-/* convert navigation data --------------------------------------------------*/
+/* Convert navigation data ---------------------------------------------------*/
 static void convnav(FILE **ofp, const rnxopt_t *opt, const strfile_t *str, int *n) {
   int sep_nav = (opt->rnxver <= 299 || opt->sep_nav);
 
@@ -1094,7 +1094,7 @@ static void convnav(FILE **ofp, const rnxopt_t *opt, const strfile_t *str, int *
     }
   }
 }
-/* convert SBAS message ------------------------------------------------------*/
+/* Convert SBAS message ------------------------------------------------------*/
 static void convsbs(FILE **ofp, const rnxopt_t *opt, strfile_t *str, int *n, gtime_t *tend) {
   int sep_nav = opt->rnxver <= 299 || opt->sep_nav;
 
@@ -1104,7 +1104,7 @@ static void convsbs(FILE **ofp, const rnxopt_t *opt, strfile_t *str, int *n, gti
 
   if (!screent(time, opt->ts, opt->te, 0.0)) return;
 
-  /* avoid duplicated data by multiple files handover */
+  /* Avoid duplicated data by multiple files handover */
   if (tend->time && timediff(time, *tend) < opt->ttol) return;
   *tend = time;
 
@@ -1122,12 +1122,12 @@ static void convsbs(FILE **ofp, const rnxopt_t *opt, strfile_t *str, int *n, gti
   int sat = satno(sys, prn);
   if (!sat || opt->exsats[sat - 1] == 1) return;
 
-  /* output SBAS message log */
+  /* Output SBAS message log */
   if (ofp[NOUTFILE - 1]) {
     sbsoutmsg(ofp[NOUTFILE - 1], &str->raw.sbsmsg);
     n[NOUTFILE - 1]++;
   }
-  /* output SBAS ephemeris */
+  /* Output SBAS ephemeris */
   if ((opt->navsys & SYS_SBS) && sbsupdatecorr(&str->raw.sbsmsg, str->nav) == 9) {
     if (ofp[1] && !sep_nav) {
       outrnxhnavb(ofp[1], opt, str->nav->seph[prn - MINPRNSBS]);
@@ -1138,13 +1138,13 @@ static void convsbs(FILE **ofp, const rnxopt_t *opt, strfile_t *str, int *n, gti
     }
   }
 }
-/* set approx position in RINEX options --------------------------------------*/
+/* Set approx position in RINEX options --------------------------------------*/
 static void setopt_apppos(const strfile_t *str, rnxopt_t *opt) {
   prcopt_t prcopt = prcopt_default;
   prcopt.navsys = opt->navsys;
   sol_t sol = {{0}};
 
-  /* point positioning with last obs data */
+  /* Point positioning with last obs data */
   char msg[128];
   msg[0] = '\0';
   if (!pntpos(str->obs->data, str->obs->n, str->nav, &prcopt, &sol, NULL, NULL, msg, sizeof(msg))) {
@@ -1153,7 +1153,7 @@ static void setopt_apppos(const strfile_t *str, rnxopt_t *opt) {
   }
   matcpy(opt->apppos, sol.rr, 3, 1);
 }
-/* show conversion status ----------------------------------------------------*/
+/* Show conversion status ----------------------------------------------------*/
 static int showstat(int sess, gtime_t ts, gtime_t te, const int *n) {
   const char type[] = "ONGHQLCISET";
   char msg[1024] = "";
@@ -1187,14 +1187,14 @@ static int convrnx_s(int sess, int format, rnxopt_t *opt, const char *file, char
         sess, format, file, ofile[0], ofile[1], ofile[2], ofile[3], ofile[4], ofile[5], ofile[6],
         ofile[7], ofile[8]);
 
-  /* replace keywords in input file */
+  /* Replace keywords in input file */
   char path[FNSIZE];
   const char *staname = *opt->staid ? opt->staid : "0000";
   if (reppath(file, path, sizeof(path), opt->ts, staname, "") < 0) {
     showmsg("no time for input file: %s", file);
     return 0;
   }
-  /* expand wild-cards in input file */
+  /* Expand wild-cards in input file */
   char *epath[MAXEXFILE] = {0};
   for (int i = 0; i < MAXEXFILE; i++) {
     if (!(epath[i] = (char *)malloc(FNSIZE))) {
@@ -1218,21 +1218,21 @@ static int convrnx_s(int sess, int format, rnxopt_t *opt, const char *file, char
   } else if (opt->ts.time) {
     str->time = timeadd(opt->ts, -1.0);
   }
-  /* set GLONASS FCN in RINEX options */
+  /* Set GLONASS FCN in RINEX options */
   for (int i = 0; i < MAXPRNGLO; i++) {
     str->nav->glo_fcn[i] = opt->glofcn[i]; /* FCN+8 */
   }
-  /* scan input files */
+  /* Scan input files */
   int mask[MAXEXFILE] = {0};
   if (!scan_file(epath, nf, opt, str, mask)) {
     for (int i = 0; i < MAXEXFILE; i++) free(epath[i]);
     free_strfile(str);
     return 0;
   }
-  /* set format and file in RINEX options comments */
+  /* Set format and file in RINEX options comments */
   setopt_file(format, epath, nf, mask, opt);
 
-  /* replace keywords in output file */
+  /* Replace keywords in output file */
   char *paths[NOUTFILE], s[NOUTFILE][FNSIZE];
   for (int i = 0; i < NOUTFILE; i++) {
     paths[i] = s[i];
@@ -1244,7 +1244,7 @@ static int convrnx_s(int sess, int format, rnxopt_t *opt, const char *file, char
       return 0;
     }
   }
-  /* open output files */
+  /* Open output files */
   FILE *ofp[NOUTFILE] = {NULL};
   if (!openfile(ofp, paths, path, opt, str->nav)) {
     for (int i = 0; i < MAXEXFILE; i++) free(epath[i]);
@@ -1259,16 +1259,16 @@ static int convrnx_s(int sess, int format, rnxopt_t *opt, const char *file, char
   for (int i = 0; i < nf && !abort; i++) {
     if (!mask[i]) continue;
 
-    /* open stream file */
+    /* Open stream file */
     if (!open_strfile(str, epath[i])) continue;
 
-    /* input message */
+    /* Input message */
     int type;
     for (int j = 0; (type = input_strfile(str)) >= -1; j++) {
       if (!(j % 11) && (abort = showstat(sess, str->time, str->time, n))) break;
       if (opt->te.time && timediff(str->time, opt->te) > -opt->ttol) break;
 
-      /* convert message */
+      /* Convert message */
       switch (type) {
         case 1:
           convobs(ofp, opt, str, n, tend, &staid);
@@ -1281,26 +1281,26 @@ static int convrnx_s(int sess, int format, rnxopt_t *opt, const char *file, char
           break;
         case -1:
           n[NOUTFILE]++;
-          break; /* error */
+          break; /* Error */
       }
-      /* set approx position in rinex option */
+      /* Set approx position in RINEX option */
       if (type == 1 && !opt->autopos && norm(opt->apppos, 3) <= 0.0) {
         setopt_apppos(str, opt);
       }
     }
-    /* close stream file */
+    /* Close stream file */
     close_strfile(str);
   }
-  /* close output files */
+  /* Close output files */
   closefile(ofp, opt, str->nav);
 
-  /* remove empty output files */
+  /* Remove empty output files */
   for (int i = 0; i < NOUTFILE; i++) {
     if (ofp[i] && n[i] <= 0) remove(ofile[i]);
   }
   showstat(sess, opt->tstart, opt->tend, n);
 
-  /* unset RINEX options comments */
+  /* Unset RINEX options comments */
   unsetopt_file(opt);
 
   free_strfile(str);
@@ -1309,8 +1309,8 @@ static int convrnx_s(int sess, int format, rnxopt_t *opt, const char *file, char
   return abort ? -1 : 1;
 }
 /* RINEX converter -------------------------------------------------------------
- * convert receiver log file to RINEX obs/nav, SBAS log files
- * args   : int    format I      receiver raw format (STRFMT_???)
+ * Convert receiver log file to RINEX obs/nav, SBAS log files
+ * Args   : int    format I      receiver raw format (STRFMT_???)
  *          rnxopt_t *opt IO     RINEX options (see below)
  *          char   *file  I      RTCM, receiver raw or RINEX file
  *                               (wild-cards (*) are expanded)
@@ -1324,13 +1324,13 @@ static int convrnx_s(int sess, int format, rnxopt_t *opt, const char *file, char
  *                               ofile[6] RINEX CNAV file  ("": no output)
  *                               ofile[7] RINEX INAV file  ("": no output)
  *                               ofile[8] SBAS log file    ("": no output)
- * return : status (1:ok,0:error,-1:abort)
- * notes  : the following members of opt are replaced by information in last
+ * Return : status (1:ok,0:error,-1:abort)
+ * Notes  : the following members of opt are replaced by information in last
  *          converted RINEX: opt->tstart, opt->tend, opt->obstype, opt->nobs
  *          keywords in ofile[] are replaced by first observation date/time and
  *          station ID (%r)
  *          the order of wild-card expanded files must be in-order by time
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern int convrnx(int format, rnxopt_t *opt, const char *file, char **ofile) {
   gtime_t t0 = {0};
   rnxopt_t opt_ = *opt;
@@ -1340,7 +1340,7 @@ extern int convrnx(int format, rnxopt_t *opt, const char *file, char **ofile) {
 
   showmsg("");
 
-  /* disable systems according to RINEX version */
+  /* Disable systems according to RINEX version */
   int sys_GRS = SYS_GPS | SYS_GLO | SYS_SBS;
   if (opt->rnxver <= 210)
     opt_.navsys &= sys_GRS;
@@ -1355,21 +1355,21 @@ extern int convrnx(int format, rnxopt_t *opt, const char *file, char **ofile) {
   else if (opt->rnxver <= 302)
     opt_.navsys &= sys_GRS | SYS_GAL | SYS_CMP | SYS_QZS;
 
-  /* disable frequency according to RINEX version */
+  /* Disable frequency according to RINEX version */
   if (opt->rnxver <= 210) opt_.freqtype &= 0x3;
 
   int stat = 1;
   if (opt->ts.time == 0 || opt->te.time == 0 || opt->tunit <= 0.0) {
-    /* single session */
+    /* Single session */
     opt_.tstart = opt_.tend = t0;
     stat = convrnx_s(0, format, &opt_, file, ofile);
   } else if (timediff(opt->ts, opt->te) < 0.0) {
-    /* multiple session */
+    /* Multiple session */
     double tu = opt->tunit < 86400.0 ? opt->tunit : 86400.0;
     int week;
     double ts = tu * (int)floor(time2gpst(opt->ts, &week) / tu);
 
-    for (int i = 0;; i++) { /* for each session */
+    for (int i = 0;; i++) { /* For each session */
       opt_.ts = gpst2time(week, ts + i * tu);
       opt_.te = timeadd(opt_.ts, tu);
       if (opt->trtcm.time) {
@@ -1386,7 +1386,7 @@ extern int convrnx(int format, rnxopt_t *opt, const char *file, char **ofile) {
     showmsg("no period");
     return 0;
   }
-  /* output start and end time */
+  /* Output start and end time */
   opt->tstart = opt_.tstart;
   opt->tend = opt_.tend;
 

@@ -963,22 +963,22 @@ void MainWindow::ConversionFinished() {
   LabelOutFile->setEnabled(true);
   LabelFormat->setEnabled(true);
 
-#if 0
-    // set time-start/end if time not specified
-    if (!TimeStartF->Checked && rnxopt.tstart.time != 0) {
-        char tstr[40];
-        time2str(rnxopt.tstart, tstr, 0);
-        tstr[10] = '\0';
-        TimeY1->Text = tstr;
-        TimeH1->Text = tstr + 11;
-    }
-    if (!TimeEndF->Checked && rnxopt.tend.time != 0) {
-        char tstr[40];
-        time2str(rnxopt.tend, tstr, 0);
-        tstr[10] = '\0';
-        TimeY2->Text = tstr;
-        TimeH2->Text = tstr + 11;
-    }
+#ifdef RTK_DISABLED
+  // set time-start/end if time not specified
+  if (!TimeStartF->Checked && rnxopt.tstart.time != 0) {
+    char tstr[40];
+    time2str(rnxopt.tstart, tstr, 0);
+    tstr[10] = '\0';
+    TimeY1->Text = tstr;
+    TimeH1->Text = tstr + 11;
+  }
+  if (!TimeEndF->Checked && rnxopt.tend.time != 0) {
+    char tstr[40];
+    time2str(rnxopt.tend, tstr, 0);
+    tstr[10] = '\0';
+    TimeY2->Text = tstr;
+    TimeH2->Text = tstr + 11;
+  }
 #endif
   RnxTime = conversionThread->rnxopt.tstart;
 

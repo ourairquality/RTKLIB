@@ -3,7 +3,7 @@
  *
  *          Copyright (C) 2007-2020 by T.TAKASU, All rights reserved.
  *
- * references :
+ * References :
  *     [1] S.Hilla, The Extended Standard Product 3 Orbit Format (SP3-c),
  *         12 February, 2007
  *     [2] J.Ray, W.Gurtner, RINEX Extensions to Handle Clock Information,
@@ -14,10 +14,10 @@
  *     [5] S.Hilla, The Extended Standard Product 3 Orbit Format (SP3-d),
  *         February 21, 2016
  *
- * version : $Revision: 1.1 $ $Date: 2008/07/17 21:48:06 $
- * history : 2009/01/18 1.0  new
+ * Version : $Revision: 1.1 $ $Date: 2008/07/17 21:48:06 $
+ * History : 2009/01/18 1.0  new
  *           2009/01/31 1.1  fix bug on numerical error to read sp3a ephemeris
- *           2009/05/15 1.2  support glonass,galileo,qzs
+ *           2009/05/15 1.2  support GLONASS,Galileo,QZS
  *           2009/12/11 1.3  support wild-card expansion of file path
  *           2010/07/21 1.4  added api:
  *                               eci2ecef(),sunmoonpos(),peph2pos(),satantoff(),
@@ -27,7 +27,7 @@
  *                           deleted api:
  *                               eph2posp()
  *           2010/09/09 1.5  fix problem when precise clock outage
- *           2011/01/23 1.6  support qzss satellite code
+ *           2011/01/23 1.6  support QZSS satellite code
  *           2011/09/12 1.7  fix problem on precise clock outage
  *                           move sunmmonpos() to rtkcmn.c
  *           2011/12/01 1.8  modify api readsp3()
@@ -48,24 +48,24 @@
  *                           LC defined GPS/QZS L1-L2, GLO G1-G2, GAL E1-E5b,
  *                            BDS B1I-B2I and IRN L5-S for API satantoff()
  *                           fix bug on reading SP3 file extension
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
 #define SQR(x) ((x) * (x))
 
-#define NMAX 10         /* order of polynomial interpolation */
-#define MAXDTE 900.0    /* max time difference to ephem time (s) */
-#define EXTERR_CLK 1E-3 /* extrapolation error for clock (m/s) */
-#define EXTERR_EPH 5E-7 /* extrapolation error for ephem (m/s^2) */
+#define NMAX 10         /* Order of polynomial interpolation */
+#define MAXDTE 900.0    /* Max time difference to ephem time (s) */
+#define EXTERR_CLK 1E-3 /* Extrapolation error for clock (m/s) */
+#define EXTERR_EPH 5E-7 /* Extrapolation error for ephem (m/s^2) */
 #define MAX_BIAS_SYS 4  /* # of constellations supported */
 
-/* table to translate code to code bias table index  */
+/* Table to translate code to code bias table index  */
 static int8_t code_bias_ix[MAX_BIAS_SYS][MAXCODE];
-/* initialize code bias lookup table -------------------------------------------
+/* Initialize code bias lookup table -------------------------------------------
  *       -1 = code not supported
  *        0 = reference code (0 bias)
  *        1-3 = table index for code
- * ----------------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 static void init_bias_ix(void) {
   for (int i = 0; i < MAX_BIAS_SYS; i++)
     for (int j = 0; j < MAXCODE; j++) code_bias_ix[i][j] = -1;
@@ -90,12 +90,12 @@ static void init_bias_ix(void) {
   code_bias_ix[2][CODE_L5Q] = 0;
   code_bias_ix[2][CODE_L5I] = 1;
   code_bias_ix[2][CODE_L5X] = 2;
-  /* Beidou */
+  /* BeiDou */
   code_bias_ix[3][CODE_L2I] = 0;
   code_bias_ix[3][CODE_L6I] = 0;
 }
 
-/* satellite code to satellite system ----------------------------------------*/
+/* Satellite code to satellite system ----------------------------------------*/
 static int code2sys(char code) {
   if (code == 'G' || code == ' ') return SYS_GPS;
   if (code == 'R') return SYS_GLO;
@@ -106,7 +106,7 @@ static int code2sys(char code) {
   if (code == 'L') return SYS_LEO; /* SP3-d */
   return SYS_NONE;
 }
-/* read SP3 header -----------------------------------------------------------*/
+/* Read SP3 header -----------------------------------------------------------*/
 static int readsp3h(FILE *fp, gtime_t *time, char *type, int *sats, double *bfact, char *tsys,
                     size_t tsize) {
   int i = 0, k = 0, ns = 0, nl = 5;
@@ -136,13 +136,13 @@ static int readsp3h(FILE *fp, gtime_t *time, char *type, int *sats, double *bfac
       bfact[0] = str2num(buff, 3, 10);
       bfact[1] = str2num(buff, 14, 12);
     } else if (i == 2 * nl + 11) {
-      break; /* at end of header */
+      break; /* At end of header */
     }
-    i = i + 1; /* line counter */
+    i = i + 1; /* Line counter */
   }
   return ns;
 }
-/* add precise ephemeris -----------------------------------------------------*/
+/* Add precise ephemeris -----------------------------------------------------*/
 static bool addpeph(nav_t *nav, const peph_t *peph) {
   if (nav->ne >= nav->nemax) {
     nav->nemax += 256;
@@ -159,7 +159,7 @@ static bool addpeph(nav_t *nav, const peph_t *peph) {
   nav->peph[nav->ne++] = *peph;
   return true;
 }
-/* read SP3 body -------------------------------------------------------------*/
+/* Read SP3 body -------------------------------------------------------------*/
 static void readsp3b(FILE *fp, char type, int *sats, int ns, const double *bfact, const char *tsys,
                      int index, int opt, nav_t *nav) {
   int n = ns * (type == 'P' ? 1 : 2);
@@ -175,7 +175,7 @@ static void readsp3b(FILE *fp, char type, int *sats, int ns, const double *bfact
       trace(2, "sp3 invalid epoch %31.31s\n", buff);
       continue;
     }
-    if (!strcmp(tsys, "UTC")) time = utc2gpst(time); /* utc->gpst */
+    if (!strcmp(tsys, "UTC")) time = utc2gpst(time); /* Utc->gpst */
     peph_t peph;
     peph.time = time;
     peph.index = index;
@@ -201,7 +201,7 @@ static void readsp3b(FILE *fp, char type, int *sats, int ns, const double *bfact
       if (sys == SYS_SBS)
         prn += 100;
       else if (sys == SYS_QZS)
-        prn += 192; /* extension to sp3-c */
+        prn += 192; /* Extension to sp3-c */
 
       int sat = satno(sys, prn);
       if (!sat) continue;
@@ -211,7 +211,7 @@ static void readsp3b(FILE *fp, char type, int *sats, int ns, const double *bfact
         pred_o = strlen(buff) >= 80 && buff[79] == 'P';
       }
       for (int j = 0; j < 4; j++) {
-        /* read option for predicted value */
+        /* Read option for predicted value */
         if (j < 3 && (opt & 1) && pred_o) continue;
         if (j < 3 && (opt & 2) && !pred_o) continue;
         if (j == 3 && (opt & 1) && pred_c) continue;
@@ -220,16 +220,16 @@ static void readsp3b(FILE *fp, char type, int *sats, int ns, const double *bfact
         double val = str2num(buff, 4 + j * 14, 14);
         double std = str2num(buff, 61 + j * 3, j < 3 ? 2 : 3);
 
-        if (buff[0] == 'P') { /* position */
+        if (buff[0] == 'P') { /* Position */
           if (val != 0.0 && fabs(val - 999999.999999) >= 1E-6) {
             peph.pos[sat - 1][j] = val * (j < 3 ? 1000.0 : 1E-6);
-            v = 1; /* valid epoch */
+            v = 1; /* Valid epoch */
           }
           double base = bfact[j < 3 ? 0 : 1];
           if (base > 0.0 && std > 0.0) {
             peph.std[sat - 1][j] = (float)(pow(base, std) * (j < 3 ? 1E-3 : 1E-12));
           }
-        } else if (v) { /* velocity */
+        } else if (v) { /* Velocity */
           if (val != 0.0 && fabs(val - 999999.999999) >= 1E-6) {
             peph.vel[sat - 1][j] = val * (j < 3 ? 0.1 : 1E-10);
           }
@@ -245,13 +245,13 @@ static void readsp3b(FILE *fp, char type, int *sats, int ns, const double *bfact
     }
   }
 }
-/* compare precise ephemeris -------------------------------------------------*/
+/* Compare precise ephemeris -------------------------------------------------*/
 static int cmppeph(const void *p1, const void *p2) {
   const peph_t *q1 = (peph_t *)p1, *q2 = (peph_t *)p2;
   double tt = timediff(q1->time, q2->time);
   return tt < -1E-9 ? -1 : (tt > 1E-9 ? 1 : q1->index - q2->index);
 }
-/* combine precise ephemeris -------------------------------------------------*/
+/* Combine precise ephemeris -------------------------------------------------*/
 static void combpeph(nav_t *nav, int opt) {
   trace(3, "combpeph: ne=%d\n", nav->ne);
 
@@ -276,20 +276,20 @@ static void combpeph(nav_t *nav, int opt) {
 
   trace(4, "combpeph: ne=%d\n", nav->ne);
 }
-/* read sp3 precise ephemeris file ---------------------------------------------
- * read sp3 precise ephemeris/clock files and set them to navigation data
- * args   : char   *file       I   sp3-c precise ephemeris file
+/* Read sp3 precise ephemeris file ---------------------------------------------
+ * Read sp3 precise ephemeris/clock files and set them to navigation data
+ * Args   : char   *file       I   sp3-c precise ephemeris file
  *                                 (wind-card * is expanded)
  *          nav_t  *nav        IO  navigation data
  *          int    opt         I   options (1: only observed + 2: only predicted +
  *                                 4: not combined)
- * return : none
- * notes  : see ref [1]
+ * Return : none
+ * Notes  : see ref [1]
  *          precise ephemeris is appended and combined
  *          nav->peph and nav->ne must by properly initialized before calling the
  *          function
  *          only files with extensions of .sp3, .SP3, .eph* and .EPH* are read
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern void readsp3(const char *file, nav_t *nav, int opt) {
   trace(3, "readpephs: file=%s\n", file);
 
@@ -300,7 +300,7 @@ extern void readsp3(const char *file, nav_t *nav, int opt) {
       return;
     }
   }
-  /* expand wild card in file path */
+  /* Expand wild card in file path */
   int n = expath(file, efiles, FNSIZE, MAXEXFILE);
 
   int j;
@@ -317,31 +317,31 @@ extern void readsp3(const char *file, nav_t *nav, int opt) {
       trace(2, "sp3 file open error %s\n", efiles[i]);
       continue;
     }
-    /* read sp3 header */
+    /* Read sp3 header */
     gtime_t time = {0};
     char type = ' ', tsys[4] = "";
     int sats[MAXSAT] = {0};
     double bfact[2] = {0};
     int ns = readsp3h(fp, &time, &type, sats, bfact, tsys, sizeof(tsys));
 
-    /* read sp3 body */
+    /* Read sp3 body */
     readsp3b(fp, type, sats, ns, bfact, tsys, j++, opt, nav);
 
     fclose(fp);
   }
   for (int i = 0; i < MAXEXFILE; i++) free(efiles[i]);
 
-  /* combine precise ephemeris */
+  /* Combine precise ephemeris */
   if (nav->ne > 0) combpeph(nav, opt);
 }
-/* read satellite antenna parameters -------------------------------------------
- * read satellite antenna parameters
- * args   : char   *file       I   antenna parameter file
+/* Read satellite antenna parameters -------------------------------------------
+ * Read satellite antenna parameters
+ * Args   : char   *file       I   antenna parameter file
  *          gtime_t time       I   time
  *          nav_t  *nav        IO  navigation data
- * return : status (true:ok,false:error)
- * notes  : only support antex format for the antenna parameter file
- *-----------------------------------------------------------------------------*/
+ * Return : status (true:ok,false:error)
+ * Notes  : only support antex format for the antenna parameter file
+ *----------------------------------------------------------------------------*/
 extern bool readsap(const char *file, gtime_t time, nav_t *nav) {
   char tstr[40];
   trace(3, "readsap : file=%s time=%s\n", file, time2str(time, tstr, 0));
@@ -357,9 +357,9 @@ extern bool readsap(const char *file, gtime_t time, nav_t *nav) {
   free(pcvs.pcv);
   return true;
 }
-/* read DCB parameters from DCB file -------------------------------------------
+/* Read DCB parameters from DCB file -------------------------------------------
  *    - supports satellite and receiver biases
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 static bool readdcbf(const char *file, nav_t *nav, const sta_t *sta) {
   trace(3, "readdcbf: file=%s\n", file);
 
@@ -383,7 +383,7 @@ static bool readdcbf(const char *file, nav_t *nav, const sta_t *sta) {
     double cbias = str2num(buff, 26, 9);
     if (cbias == 0.0) continue;
 
-    if (sta && (!strcmp(str1, "G") || !strcmp(str1, "R"))) { /* receiver DCB */
+    if (sta && (!strcmp(str1, "G") || !strcmp(str1, "R"))) { /* Receiver DCB */
       int i;
       for (i = 0; i < MAXRCV; i++) {
         if (!strcmp(sta[i].name, str2)) break;
@@ -395,7 +395,7 @@ static bool readdcbf(const char *file, nav_t *nav, const sta_t *sta) {
     } else {
       int sat = satid2no(str1);
       if (sat) {
-        /* satellite dcb */
+        /* Satellite dcb */
         nav->cbias[sat - 1][type - 1][0] = cbias * 1E-9 * CLIGHT; /* ns -> m */
       }
     }
@@ -404,7 +404,7 @@ static bool readdcbf(const char *file, nav_t *nav, const sta_t *sta) {
 
   return true;
 }
-/* satellite system to index */
+/* Satellite system to index */
 static int sys2ix(int sys) {
   const int ix[] = {0,  /* Undefined */
                     0,  /* GPS */
@@ -417,11 +417,11 @@ static int sys2ix(int sys) {
                     0}; /* LEO */
   return ix[sys2no(sys)];
 }
-/* translate satellite system and code to code bias table index ----------------
+/* Translate satellite system and code to code bias table index ----------------
  *       -1 = code not supported
  *        0 = reference code (0 bias)
  *        1-3 = table index for code
- * ----------------------------------------------------------------------------*/
+ * ---------------------------------------------------------------------------*/
 extern int code2bias_ix(int sys, int code) {
   int sys_ix = sys2ix(sys);
   if (sys_ix < MAX_BIAS_SYS)
@@ -429,9 +429,9 @@ extern int code2bias_ix(int sys, int code) {
   else
     return 0;
 }
-/* read DCB parameters from BIA or BSX file ------------------------------------
+/* Read DCB parameters from BIA or BSX file ------------------------------------
  *    - supports satellite code biases only
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 static bool readbiaf(const char *file, nav_t *nav) {
   trace(3, "readbiaf: file=%s\n", file);
 
@@ -444,12 +444,12 @@ static bool readbiaf(const char *file, nav_t *nav) {
   while (fgets(buff, sizeof(buff), fp)) {
     char bias[6] = "", svn[6] = "", prn[6] = "", obs1[6] = "", obs2[6];
     if (sscanf(buff, "%4s %5s %4s %4s %4s", bias, svn, prn, obs1, obs2) < 5) continue;
-    if (obs1[0] != 'C') continue; /* skip phase biases for now */
+    if (obs1[0] != 'C') continue; /* Skip phase biases for now */
     double cbias = str2num(buff, 70, 21);
     if (cbias == 0.0) continue;
     int sat = satid2no(prn);
     int sys = satsys(sat, NULL);
-    /* other code biases are L1/L2, Galileo is L1/L5 */
+    /* Other code biases are L1/L2, Galileo is L1/L5 */
     int freq;
     if (obs1[1] == '1')
       freq = 0;
@@ -459,26 +459,26 @@ static bool readbiaf(const char *file, nav_t *nav) {
       continue;
 
     int code1 = obs2code(&obs1[1]);
-    if (!code1) continue; /* skip if code not valid */
+    if (!code1) continue; /* Skip if code not valid */
     int bias_ix1 = code2bias_ix(sys, code1);
 
     if (strcmp(bias, "OSB") == 0) {
-      /* observed signal bias */
-      if (bias_ix1 == 0) {                        /* this is ref code */
-        for (int i = 0; i < MAX_CODE_BIASES; i++) /* adjust all other codes by ref code bias */
+      /* Observed signal bias */
+      if (bias_ix1 == 0) {                        /* This is ref code */
+        for (int i = 0; i < MAX_CODE_BIASES; i++) /* Adjust all other codes by ref code bias */
           nav->cbias[sat - 1][freq][i] += cbias * 1E-9 * CLIGHT; /* ns -> m */
       } else {
         nav->cbias[sat - 1][freq][bias_ix1 - 1] -= cbias * 1E-9 * CLIGHT; /* ns -> m */
       }
     } else if (strcmp(bias, "DSB") == 0) {
-      /* differential signal bias */
-      if (obs1[1] != obs2[1]) continue; /* skip biases between freqs for now */
+      /* Differential signal bias */
+      if (obs1[1] != obs2[1]) continue; /* Skip biases between freqs for now */
       int code2 = obs2code(&obs2[1]);
-      if (!code2) continue; /* skip if code not valid */
+      if (!code2) continue; /* Skip if code not valid */
       int bias_ix2 = code2bias_ix(sys, code2);
-      if (bias_ix1 == 0)                                                  /* this is ref code */
+      if (bias_ix1 == 0)                                                  /* This is ref code */
         nav->cbias[sat - 1][freq][bias_ix2 - 1] = cbias * 1E-9 * CLIGHT;  /* ns -> m */
-      else if (bias_ix2 == 0)                                             /* this is ref code */
+      else if (bias_ix2 == 0)                                             /* This is ref code */
         nav->cbias[sat - 1][freq][bias_ix1 - 1] = -cbias * 1E-9 * CLIGHT; /* ns -> m */
     }
   }
@@ -486,21 +486,21 @@ static bool readbiaf(const char *file, nav_t *nav) {
 
   return true;
 }
-/* read DCB parameters ---------------------------------------------------------
-* read differential code bias (DCB) parameters
-* args   : char   *file       I   DCB parameters file (wild-card * expanded)
+/* Read DCB parameters ---------------------------------------------------------
+* Read differential code bias (DCB) parameters
+* Args   : char   *file       I   DCB parameters file (wild-card * expanded)
 *          nav_t  *nav        IO  navigation data
 *          sta_t  *sta        I   station info data to import receiver DCB
 *                                 (NULL: no use)
-* return : status (true:ok,false:error)
-* notes  : supports DCB, BIA, and BSX file formats
+* Return : status (true:ok,false:error)
+* Notes  : supports DCB, BIA, and BSX file formats
          : currently only support P1-P2, P1-C1 bias in DCB file
          : currently only supports satellite biases in BIA/BSX files
 *-----------------------------------------------------------------------------*/
 extern bool readdcb(const char *file, nav_t *nav, const sta_t *sta) {
   trace(3, "readdcb : file=%s\n", file);
 
-  init_bias_ix(); /* init translation table from code to table column */
+  init_bias_ix(); /* Init translation table from code to table column */
 
   for (int i = 0; i < MAXSAT; i++)
     for (int j = 0; j < MAX_CODE_BIAS_FREQS; j++)
@@ -528,7 +528,7 @@ extern bool readdcb(const char *file, nav_t *nav, const sta_t *sta) {
 
   return dcb_ok;
 }
-/* polynomial interpolation by Neville's algorithm ---------------------------*/
+/* Polynomial interpolation by Neville's algorithm ---------------------------*/
 static double interppol(const double *x, double *y, int n) {
   for (int j = 1; j < n; j++) {
     for (int i = 0; i < n - j; i++) {
@@ -537,7 +537,7 @@ static double interppol(const double *x, double *y, int n) {
   }
   return y[0];
 }
-/* satellite position by precise ephemeris -----------------------------------*/
+/* Satellite position by precise ephemeris -----------------------------------*/
 static bool pephpos(gtime_t time, int sat, const nav_t *nav, double *rs, double *dts, double *vare,
                     double *varc) {
   char tstr[40];
@@ -550,7 +550,7 @@ static bool pephpos(gtime_t time, int sat, const nav_t *nav, double *rs, double 
     trace(3, "no prec ephem %s sat=%2d\n", time2str(time, tstr, 0), sat);
     return false;
   }
-  /* binary search */
+  /* Binary search */
   int i = 0;
   for (int j = nav->ne - 1; i < j;) {
     int k = (i + j) / 2;
@@ -561,7 +561,7 @@ static bool pephpos(gtime_t time, int sat, const nav_t *nav, double *rs, double 
   }
   int index = i <= 0 ? 0 : i - 1;
 
-  /* polynomial interpolation for orbit */
+  /* Polynomial interpolation for orbit */
   i = index - (NMAX + 1) / 2;
   if (i < 0)
     i = 0;
@@ -579,7 +579,7 @@ static bool pephpos(gtime_t time, int sat, const nav_t *nav, double *rs, double 
   double p[3][NMAX + 1];
   for (int j = 0; j <= NMAX; j++) {
     const double *pos = nav->peph[i + j].pos[sat - 1];
-    /* correction for earth rotation ver.2.4.0 */
+    /* Correction for earth rotation ver.2.4.0 */
     double sinl = sin(OMGE * t[j]);
     double cosl = cos(OMGE * t[j]);
     p[0][j] = cosl * pos[0] - sinl * pos[1];
@@ -595,14 +595,14 @@ static bool pephpos(gtime_t time, int sat, const nav_t *nav, double *rs, double 
     for (int i2 = 0; i2 < 3; i2++) s[i2] = nav->peph[index].std[sat - 1][i2];
     std = norm(s, 3);
 
-    /* extrapolation error for orbit */
+    /* Extrapolation error for orbit */
     if (t[0] > 0.0)
       std += EXTERR_EPH * SQR(t[0]) / 2.0;
     else if (t[NMAX] < 0.0)
       std += EXTERR_EPH * SQR(t[NMAX]) / 2.0;
     *vare = SQR(std);
   }
-  /* linear interpolation for clock */
+  /* Linear interpolation for clock */
   double c[2];
   t[0] = timediff(time, nav->peph[index].time);
   t[1] = timediff(time, nav->peph[index + 1].time);
@@ -627,7 +627,7 @@ static bool pephpos(gtime_t time, int sat, const nav_t *nav, double *rs, double 
   if (varc) *varc = SQR(std);
   return true;
 }
-/* satellite clock by precise clock ------------------------------------------*/
+/* Satellite clock by precise clock ------------------------------------------*/
 static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts, double *varc) {
   char tstr[40];
   trace(4, "pephclk : time=%s sat=%2d\n", time2str(time, tstr, 3), sat);
@@ -637,7 +637,7 @@ static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts, double 
     trace(3, "no prec clock %s sat=%2d\n", time2str(time, tstr, 0), sat);
     return true;
   }
-  /* binary search */
+  /* Binary search */
   int i = 0;
   for (int j = nav->nc - 1; i < j;) {
     int k = (i + j) / 2;
@@ -648,7 +648,7 @@ static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts, double 
   }
   int index = i <= 0 ? 0 : i - 1;
 
-  /* linear interpolation for clock */
+  /* Linear interpolation for clock */
   double t[2], c[2];
   t[0] = timediff(time, nav->pclk[index].time);
   t[1] = timediff(time, nav->pclk[index + 1].time);
@@ -673,35 +673,35 @@ static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts, double 
   if (varc) *varc = SQR(std);
   return true;
 }
-/* satellite antenna phase center offset ---------------------------------------
- * compute satellite antenna phase center offset in ecef
- * args   : gtime_t time       I   time (gpst)
- *          double *rs         I   satellite position and velocity (ecef)
+/* Satellite antenna phase center offset ---------------------------------------
+ * Compute satellite antenna phase center offset in ECEF
+ * Args   : gtime_t time       I   time (GPST)
+ *          double *rs         I   satellite position and velocity (ECEF)
  *                                 {x,y,z,vx,vy,vz} (m|m/s)
  *          int    sat         I   satellite number
  *          nav_t  *nav        I   navigation data
- *          double *dant       O   satellite antenna phase center offset (ecef)
+ *          double *dant       O   satellite antenna phase center offset (ECEF)
  *                                 {dx,dy,dz} (m) (iono-free LC value)
- * return : none
- * notes  : iono-free LC frequencies defined as follows:
+ * Return : none
+ * Notes  : iono-free LC frequencies defined as follows:
  *            GPS/QZSS : L1-L2
  *            GLONASS  : G1-G2
  *            Galileo  : E1-E5b
  *            BDS      : B1I-B2I
  *            NavIC    : L5-S
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav, double *dant) {
   char tstr[40];
   trace(4, "satantoff: time=%s sat=%2d\n", time2str(time, tstr, 3), sat);
 
   dant[0] = dant[1] = dant[2] = 0.0;
 
-  /* sun position in ecef */
+  /* Sun position in ECEF */
   double rsun[3], gmst;
   const double erpv[5] = {0};
   sunmoonpos(gpst2utc(time), erpv, rsun, NULL, &gmst);
 
-  /* unit vectors of satellite fixed coordinates */
+  /* Unit vectors of satellite fixed coordinates */
   double r[3];
   for (int i = 0; i < 3; i++) r[i] = -rs[i];
   double ez[3];
@@ -715,7 +715,7 @@ extern void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
   double ex[3];
   cross3(ey, ez, ex);
 
-  /* iono-free LC coefficients */
+  /* Iono-free LC coefficients */
   int sys = satsys(sat, NULL);
   double freq[2];
   if (sys == SYS_GPS || sys == SYS_QZS) { /* L1-L2 */
@@ -739,7 +739,7 @@ extern void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
   double C1 = SQR(freq[0]) / (SQR(freq[0]) - SQR(freq[1]));
   double C2 = -SQR(freq[1]) / (SQR(freq[0]) - SQR(freq[1]));
 
-  /* iono-free LC */
+  /* Iono-free LC */
   const pcv_t *pcv = nav->pcvs + sat - 1;
   for (int i = 0; i < 3; i++) {
     double dant1 = pcv->off[0][0] * ex[i] + pcv->off[0][1] * ey[i] + pcv->off[0][2] * ez[i];
@@ -747,24 +747,24 @@ extern void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
     dant[i] = C1 * dant1 + C2 * dant2;
   }
 }
-/* satellite position/clock by precise ephemeris/clock -------------------------
- * compute satellite position/clock with precise ephemeris/clock
- * args   : gtime_t time       I   time (gpst)
+/* Satellite position/clock by precise ephemeris/clock -------------------------
+ * Compute satellite position/clock with precise ephemeris/clock
+ * Args   : gtime_t time       I   time (GPST)
  *          int    sat         I   satellite number
  *          nav_t  *nav        I   navigation data
  *          int    opt         I   sat position option
  *                                 (0: center of mass, 1: antenna phase center)
- *          double *rs         O   sat position and velocity (ecef)
+ *          double *rs         O   sat position and velocity (ECEF)
  *                                 {x,y,z,vx,vy,vz} (m|m/s)
  *          double *dts        O   sat clock {bias,drift} (s|s/s)
  *          double *var        IO  sat position and clock error variance (m)
  *                                 (NULL: no output)
- * return : status (true:ok,false:error or data outage)
- * notes  : clock includes relativistic correction but does not contain code bias
+ * Return : status (true:ok,false:error or data outage)
+ * Notes  : clock includes relativistic correction but does not contain code bias
  *          before calling the function, nav->peph, nav->ne, nav->pclk and
  *          nav->nc must be set by calling readsp3(), readrnx() or readrnxt()
  *          if precise clocks are not set, clocks in sp3 are used instead
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern bool peph2pos(gtime_t time, int sat, const nav_t *nav, int opt, double *rs, double *dts,
                      double *var) {
   char tstr[40];
@@ -772,7 +772,7 @@ extern bool peph2pos(gtime_t time, int sat, const nav_t *nav, int opt, double *r
 
   if (sat <= 0 || MAXSAT < sat) return false;
 
-  /* satellite position and clock bias */
+  /* Satellite position and clock bias */
   double rss[3], dtss[1], vare = 0.0, varc = 0.0;
   if (!pephpos(time, sat, nav, rss, dtss, &vare, &varc) || !pephclk(time, sat, nav, dtss, &varc))
     return false;
@@ -783,7 +783,7 @@ extern bool peph2pos(gtime_t time, int sat, const nav_t *nav, int opt, double *r
   if (!pephpos(time_tt, sat, nav, rst, dtst, NULL, NULL) || !pephclk(time_tt, sat, nav, dtst, NULL))
     return false;
 
-  /* satellite antenna offset correction */
+  /* Satellite antenna offset correction */
   double dant[3] = {0};
   if (opt) {
     satantoff(time, rss, sat, nav, dant);
@@ -792,11 +792,11 @@ extern bool peph2pos(gtime_t time, int sat, const nav_t *nav, int opt, double *r
     rs[i] = rss[i] + dant[i];
     rs[i + 3] = (rst[i] - rss[i]) / tt;
   }
-  /* relativistic effect correction */
+  /* Relativistic effect correction */
   if (dtss[0] != 0.0) {
     dts[0] = dtss[0] - 2.0 * dot3(rs, rs + 3) / CLIGHT / CLIGHT;
     dts[1] = (dtst[0] - dtss[0]) / tt;
-  } else { /* no precise clock */
+  } else { /* No precise clock */
     dts[0] = dts[1] = 0.0;
   }
   if (var) *var = vare + varc;

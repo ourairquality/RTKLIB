@@ -3,10 +3,10 @@
  *
  *          Copyright (C) 2014-2016 by T.TAKASU, All rights reserved.
  *
- * version : $Revision:$ $Date:$
- * history : 2015/01/11 1.0  separated from rtkrcv.c
+ * Version : $Revision:$ $Date:$
+ * History : 2015/01/11 1.0  separated from rtkrcv.c
  *           2016/09/19 1.1  change api vt_open()
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #ifndef WIN32
 #define _POSIX_C_SOURCE 2
 #endif
@@ -32,31 +32,31 @@
 #endif
 #include "vt.h"
 
-#define DEF_DEV "/dev/tty" /* default console device */
+#define DEF_DEV "/dev/tty" /* Default console device */
 
-#define C_DEL (char)0x7F  /* delete */
-#define C_ESC (char)0x1B  /* escape */
-#define C_CTRC (char)0x03 /* interrupt (ctrl-c) */
-#define C_CTRD (char)0x04 /* logout (ctrl-d) */
-#define C_ECHO (char)1    /* telnet echo */
-#define C_SUPPGA (char)3  /* telnet suppress go ahead */
-#define C_BRK (char)243   /* telnet break */
-#define C_IP (char)244    /* telnet interrupt */
-#define C_EC (char)247    /* telnet erase character */
-#define C_EL (char)248    /* telnet erase line */
-#define C_WILL (char)251  /* telnet option negotiation */
-#define C_WONT (char)252  /* telnet option negotiation */
-#define C_DO (char)253    /* telnet option negotiation */
-#define C_DONT (char)254  /* telnet option negotiation */
-#define C_IAC (char)255   /* telnet interpret as command */
+#define C_DEL (char)0x7F  /* Delete */
+#define C_ESC (char)0x1B  /* Escape */
+#define C_CTRC (char)0x03 /* Interrupt (ctrl-c) */
+#define C_CTRD (char)0x04 /* Logout (ctrl-d) */
+#define C_ECHO (char)1    /* Telnet echo */
+#define C_SUPPGA (char)3  /* Telnet suppress go ahead */
+#define C_BRK (char)243   /* Telnet break */
+#define C_IP (char)244    /* Telnet interrupt */
+#define C_EC (char)247    /* Telnet erase character */
+#define C_EL (char)248    /* Telnet erase line */
+#define C_WILL (char)251  /* Telnet option negotiation */
+#define C_WONT (char)252  /* Telnet option negotiation */
+#define C_DO (char)253    /* Telnet option negotiation */
+#define C_DONT (char)254  /* Telnet option negotiation */
+#define C_IAC (char)255   /* Telnet interpret as command */
 
-/* open virtual console --------------------------------------------------------
- * open virtual console
- * args   : vt_t   *vt       I   virtual console
+/* Open virtual console --------------------------------------------------------
+ * Open virtual console
+ * Args   : vt_t   *vt       I   virtual console
  *          int    sock      I   socket (0:use device)
  *          char   *dev      I   device ("": standard tty)
- * return : virtual console (NULL: error)
- *-----------------------------------------------------------------------------*/
+ * Return : virtual console (NULL: error)
+ *----------------------------------------------------------------------------*/
 extern vt_t *vt_open(int sock, const char *dev) {
   trace(3, "vt_open: sock=%d dev=%s\n", sock, dev);
 
@@ -74,7 +74,7 @@ extern vt_t *vt_open(int sock, const char *dev) {
       free(vt);
       return 0;
     }
-    /* set terminal mode echo-off */
+    /* Set terminal mode echo-off */
     tcgetattr(vt->in, &vt->tio);
     struct termios tio = {0};
     tcsetattr(vt->in, TCSANOW, &tio);
@@ -82,7 +82,7 @@ extern vt_t *vt_open(int sock, const char *dev) {
     vt->type = 1;
     vt->in = vt->out = sock;
 
-    /* send telnet character mode */
+    /* Send telnet character mode */
     const char mode[] = {C_IAC, C_WILL, C_SUPPGA, C_IAC, C_WILL, C_ECHO};
     if (write(sock, mode, sizeof(mode)) != sizeof(mode)) {
       free(vt);
@@ -93,17 +93,17 @@ extern vt_t *vt_open(int sock, const char *dev) {
 
   return vt;
 }
-/* close virtual console -------------------------------------------------------
- * close virtual console
- * args   : vt_t   *vt       I   virtual console
- * return : none
- *-----------------------------------------------------------------------------*/
+/* Close virtual console -------------------------------------------------------
+ * Close virtual console
+ * Args   : vt_t   *vt       I   virtual console
+ * Return : none
+ *----------------------------------------------------------------------------*/
 extern void vt_close(vt_t *vt) {
   int i;
 
   trace(3, "vt_close:\n");
 
-  /* restore terminal mode */
+  /* Restore terminal mode */
   if (!vt->type) {
     tcsetattr(vt->in, TCSANOW, &vt->tio);
   }
@@ -115,7 +115,7 @@ extern void vt_close(vt_t *vt) {
   vt->state = 0;
   free(vt);
 }
-/* clear line buffer ---------------------------------------------------------*/
+/* Clear line buffer ---------------------------------------------------------*/
 static int clear_buff(vt_t *vt) {
   char buff[MAXBUFF * 3], *p = buff;
   int len = vt->n;
@@ -125,7 +125,7 @@ static int clear_buff(vt_t *vt) {
   vt->n = vt->nesc = vt->cur = 0;
   return write(vt->out, buff, p - buff) == p - buff;
 }
-/* refresh line buffer -------------------------------------------------------*/
+/* Refresh line buffer -------------------------------------------------------*/
 static int ref_buff(vt_t *vt) {
   char buff[MAXBUFF * 3], *p = buff;
   int i;
@@ -134,27 +134,27 @@ static int ref_buff(vt_t *vt) {
   for (; i >= vt->cur; i--) *p++ = '\b';
   return write(vt->out, buff, p - buff) == p - buff;
 }
-/* move cursor right ---------------------------------------------------------*/
+/* Move cursor right ---------------------------------------------------------*/
 static int right_cur(vt_t *vt) {
   if (vt->cur >= vt->n) return 1;
   if (write(vt->out, vt->buff + vt->cur, 1) < 1) return 0;
   vt->cur++;
   return 1;
 }
-/* move cursor left ----------------------------------------------------------*/
+/* Move cursor left ----------------------------------------------------------*/
 static int left_cur(vt_t *vt) {
   if (vt->cur <= 0) return 1;
   vt->cur--;
   return write(vt->out, "\b", 1) == 1;
 }
-/* delete character before cursor --------------------------------------------*/
+/* Delete character before cursor --------------------------------------------*/
 static int del_cur(vt_t *vt) {
   if (vt->cur <= 0) return 1;
   for (int i = vt->cur; i < vt->n; i++) vt->buff[i - 1] = vt->buff[i];
   vt->n--;
   return left_cur(vt) && ref_buff(vt);
 }
-/* insert character after cursor ---------------------------------------------*/
+/* Insert character after cursor ---------------------------------------------*/
 static int ins_cur(vt_t *vt, char c) {
   if (vt->n >= MAXBUFF) return 1;
   for (int i = vt->n++; i > vt->cur; i--) vt->buff[i] = vt->buff[i - 1];
@@ -162,7 +162,7 @@ static int ins_cur(vt_t *vt, char c) {
   if (write(vt->out, vt->blind ? "*" : &c, 1) < 1) return 0;
   return ref_buff(vt);
 }
-/* add history ---------------------------------------------------------------*/
+/* Add history ---------------------------------------------------------------*/
 static int hist_add(vt_t *vt, const char *buff) {
   int len = vt->n;
   if (len <= 0) return 1;
@@ -173,7 +173,7 @@ static int hist_add(vt_t *vt, const char *buff) {
   strcpy(vt->hist[0], buff);
   return 1;
 }
-/* call previous history -----------------------------------------------------*/
+/* Call previous history -----------------------------------------------------*/
 static int hist_prev(vt_t *vt) {
   if (vt->cur_h >= MAXHIST || !vt->hist[vt->cur_h]) return 1;
   if (!clear_buff(vt)) return 0;
@@ -181,7 +181,7 @@ static int hist_prev(vt_t *vt) {
     if (!ins_cur(vt, *p)) return 0;
   return 1;
 }
-/* call next history ---------------------------------------------------------*/
+/* Call next history ---------------------------------------------------------*/
 static int hist_next(vt_t *vt) {
   if (!clear_buff(vt)) return 0;
   if (vt->cur_h == 0 || !vt->hist[vt->cur_h - 1]) return 1;
@@ -189,97 +189,97 @@ static int hist_next(vt_t *vt) {
     if (!ins_cur(vt, *p)) return 0;
   return 1;
 }
-/* handle telnet sequence ----------------------------------------------------*/
+/* Handle telnet sequence ----------------------------------------------------*/
 static int seq_telnet(vt_t *vt) {
   char msg[3] = {C_IAC};
 
-  if (vt->esc[1] == C_WILL) { /* option negotiation */
+  if (vt->esc[1] == C_WILL) { /* Option negotiation */
     if (vt->nesc < 3) return 1;
     msg[1] = vt->esc[2] == C_ECHO || vt->esc[2] == C_SUPPGA ? C_DO : C_DONT;
     msg[2] = vt->esc[2];
     if (write(vt->out, msg, 3) < 3) return 0;
-  } else if (vt->esc[1] == C_DO) { /* option negotiation */
+  } else if (vt->esc[1] == C_DO) { /* Option negotiation */
     if (vt->nesc < 3) return 1;
     msg[1] = vt->esc[2] == C_ECHO || vt->esc[2] == C_SUPPGA ? C_WILL : C_WONT;
     msg[2] = vt->esc[2];
     if (write(vt->out, msg, 3) < 3) return 0;
-  } else if (vt->esc[1] == C_WONT || vt->esc[1] == C_DONT) { /* option negotiation */
+  } else if (vt->esc[1] == C_WONT || vt->esc[1] == C_DONT) { /* Option negotiation */
     if (vt->nesc < 3) return 1;
     msg[1] = vt->esc[1] == C_WONT ? C_DONT : C_WONT;
     msg[2] = vt->esc[2];
     if (write(vt->out, msg, 3) < 3) return 0;
-  } else if (vt->esc[1] == C_BRK || vt->esc[1] == C_IP) { /* break or interrupt */
+  } else if (vt->esc[1] == C_BRK || vt->esc[1] == C_IP) { /* Break or interrupt */
     vt->brk = 1;
-  } else if (vt->esc[1] == C_EC) { /* erase character */
+  } else if (vt->esc[1] == C_EC) { /* Erase character */
     del_cur(vt);
-  } else if (vt->esc[1] == C_EL) { /* erase line */
+  } else if (vt->esc[1] == C_EL) { /* Erase line */
     clear_buff(vt);
   }
   vt->nesc = 0;
   return 1;
 }
-/* handle escape sequence ----------------------------------------------------*/
+/* Handle escape sequence ----------------------------------------------------*/
 static int seq_esc(vt_t *vt) {
   if (vt->nesc < 3) return 1;
   vt->nesc = 0;
   if (vt->esc[1] == '[' || vt->esc[1] == 'O') {
-    if (vt->esc[2] == 'A') return hist_prev(vt); /* cursor up    */
-    if (vt->esc[2] == 'B') return hist_next(vt); /* cursor down  */
-    if (vt->esc[2] == 'C') return right_cur(vt); /* cursor right */
-    if (vt->esc[2] == 'D') return left_cur(vt);  /* cursor left  */
+    if (vt->esc[2] == 'A') return hist_prev(vt); /* Cursor up    */
+    if (vt->esc[2] == 'B') return hist_next(vt); /* Cursor down  */
+    if (vt->esc[2] == 'C') return right_cur(vt); /* Cursor right */
+    if (vt->esc[2] == 'D') return left_cur(vt);  /* Cursor left  */
   }
   return 1;
 }
-/* get character from console --------------------------------------------------
- * get a character from virtual console with timeout
- * args   : vt_t   *vt       I   virtual console
+/* Get character from console --------------------------------------------------
+ * Get a character from virtual console with timeout
+ * Args   : vt_t   *vt       I   virtual console
  *          char   *c        O   character
- * return : status (1:ok,0:error)
- * notes  : if no input, return ok with *c='\0'
- *-----------------------------------------------------------------------------*/
+ * Return : status (1:ok,0:error)
+ * Notes  : if no input, return ok with *c='\0'
+ *----------------------------------------------------------------------------*/
 extern int vt_getc(vt_t *vt, char *c) {
   *c = '\0';
 
   if (!vt || !vt->state) return 0;
 
-  /* read character with timeout */
+  /* Read character with timeout */
   fd_set rs;
   FD_ZERO(&rs);
   FD_SET(vt->in, &rs);
-  struct timeval tv = {0, 1000}; /* timeout (us) */
+  struct timeval tv = {0, 1000}; /* Timeout (us) */
   int stat = select(vt->in + 1, &rs, NULL, NULL, &tv);
-  if (!stat) return 1;                               /* no data */
-  if (stat < 0 || read(vt->in, c, 1) != 1) return 0; /* error */
+  if (!stat) return 1;                               /* No data */
+  if (stat < 0 || read(vt->in, c, 1) != 1) return 0; /* Error */
 
-  if ((vt->type && *c == C_IAC) || *c == C_ESC) { /* escape or telnet */
+  if ((vt->type && *c == C_IAC) || *c == C_ESC) { /* Escape or telnet */
     vt->esc[0] = *c;
     *c = '\0';
     vt->nesc = 1;
-  } else if (vt->nesc > 0 && vt->esc[0] == C_IAC) { /* telnet sequence */
+  } else if (vt->nesc > 0 && vt->esc[0] == C_IAC) { /* Telnet sequence */
     vt->esc[vt->nesc++] = *c;
     *c = '\0';
     if (!seq_telnet(vt)) return 0;
-  } else if (vt->nesc > 0 && vt->esc[0] == C_ESC) { /* escape sequence */
+  } else if (vt->nesc > 0 && vt->esc[0] == C_ESC) { /* Escape sequence */
     vt->esc[vt->nesc++] = *c;
     *c = '\0';
     if (!seq_esc(vt)) return 0;
-  } else if (*c == '\b' || *c == C_DEL) { /* backspace or delete */
+  } else if (*c == '\b' || *c == C_DEL) { /* Backspace or delete */
     if (!del_cur(vt)) return 0;
-  } else if (*c == C_CTRC) { /* interrupt (ctrl-c) */
+  } else if (*c == C_CTRC) { /* Interrupt (ctrl-c) */
     vt->brk = 1;
     if (!vt_puts(vt, "^C\n")) return 0;
-  } else if (isprint(*c)) { /* printable character */
+  } else if (isprint(*c)) { /* Printable character */
     if (!ins_cur(vt, *c)) return 0;
   }
   return 1;
 }
-/* get line from console -------------------------------------------------------
- * get line from virtual console
- * args   : vt_t   *vt       I   virtual console
+/* Get line from console -------------------------------------------------------
+ * Get line from virtual console
+ * Args   : vt_t   *vt       I   virtual console
  *          char   *buff     O   buffer
  *          in     n         I   buffer size
- * return : status (1:ok,0:no input)
- *-----------------------------------------------------------------------------*/
+ * Return : status (1:ok,0:no input)
+ *----------------------------------------------------------------------------*/
 extern int vt_gets(vt_t *vt, char *buff, int n) {
   buff[0] = '\0';
 
@@ -291,11 +291,11 @@ extern int vt_gets(vt_t *vt, char *buff, int n) {
     char c;
     if (!vt_getc(vt, &c)) return 0;
 
-    if (c == C_CTRD && vt->n == 0) { /* logout */
+    if (c == C_CTRD && vt->n == 0) { /* Logout */
       vt->state = 0;
-    } else if (vt->brk) { /* break */
+    } else if (vt->brk) { /* Break */
       return vt_puts(vt, "\n");
-    } else if (c == '\r') { /* end of line */
+    } else if (c == '\r') { /* End of line */
       vt->buff[vt->n] = '\0';
       strncpy(buff, vt->buff, n - 1);
       buff[n - 1] = '\0';
@@ -305,40 +305,40 @@ extern int vt_gets(vt_t *vt, char *buff, int n) {
   }
   return 0;
 }
-/* put character to console --------------------------------------------------*/
+/* Put character to console --------------------------------------------------*/
 static int vt_putchar(vt_t *vt, char c) {
   if (!vt || !vt->state) return 0;
   if (vt->logfp) fwrite(&c, 1, 1, vt->logfp);
   return write(vt->out, &c, 1) == 1;
 }
-/* put character to console ----------------------------------------------------
- * put a character to virtual console
- * args   : vt_t   *vt       I   virtual console
+/* Put character to console ----------------------------------------------------
+ * Put a character to virtual console
+ * Args   : vt_t   *vt       I   virtual console
  *          char   c         I   character
- * return : status (1:ok,0:error)
- *-----------------------------------------------------------------------------*/
+ * Return : status (1:ok,0:error)
+ *----------------------------------------------------------------------------*/
 extern int vt_putc(vt_t *vt, char c) {
   if (c == '\n' && !vt_putchar(vt, '\r')) return 0;
   return vt_putchar(vt, c);
 }
-/* put strings to console ------------------------------------------------------
- * put strings to virtual console
- * args   : vt_t   *vt       I   virtual console
+/* Put strings to console ------------------------------------------------------
+ * Put strings to virtual console
+ * Args   : vt_t   *vt       I   virtual console
  *          char   *buff     I   strings
- * return : status (1:ok,0:error)
- *-----------------------------------------------------------------------------*/
+ * Return : status (1:ok,0:error)
+ *----------------------------------------------------------------------------*/
 extern int vt_puts(vt_t *vt, const char *buff) {
   for (const char *p = buff; *p; p++)
     if (!vt_putc(vt, *p)) return 0;
   return 1;
 }
-/* print to console with formatting --------------------------------------------
- * print to virtual console with formatting
- * args   : vt_t   *vt       I   virtual console
+/* Print to console with formatting --------------------------------------------
+ * Print to virtual console with formatting
+ * Args   : vt_t   *vt       I   virtual console
  *          char   *format   I   format (same as sfprintf)
  *          ...              I   variable arguments
- * return : status (1:ok,0:error)
- *-----------------------------------------------------------------------------*/
+ * Return : status (1:ok,0:error)
+ *----------------------------------------------------------------------------*/
 extern int vt_printf(vt_t *vt, const char *format, ...) {
   va_list ap;
   char buff[MAXBUFF + 1];
@@ -347,31 +347,31 @@ extern int vt_printf(vt_t *vt, const char *format, ...) {
   va_end(ap);
   return vt_puts(vt, buff);
 }
-/* check break on console ------------------------------------------------------
- * check break on virtual console
- * args   : vt_t   *vt       I   virtual console
- * return : status (1:break,0:no break)
- *-----------------------------------------------------------------------------*/
+/* Check break on console ------------------------------------------------------
+ * Check break on virtual console
+ * Args   : vt_t   *vt       I   virtual console
+ * Return : status (1:break,0:no break)
+ *----------------------------------------------------------------------------*/
 extern int vt_chkbrk(vt_t *vt) {
   vt->brk = 0;
   char c;
   return !vt_getc(vt, &c) || vt->brk;
 }
-/* open console log ------------------------------------------------------------
- * open console log for virtual console
- * args   : vt_t   *vt       I   virtual console
+/* Open console log ------------------------------------------------------------
+ * Open console log for virtual console
+ * Args   : vt_t   *vt       I   virtual console
  *          char   *file     I   log file path
- * return : status (1:ok,0:error)
- *-----------------------------------------------------------------------------*/
+ * Return : status (1:ok,0:error)
+ *----------------------------------------------------------------------------*/
 extern int vt_openlog(vt_t *vt, const char *file) {
   if (!vt || !vt->state || !(vt->logfp = fopen(file, "w"))) return 0;
   return 1;
 }
-/* close console log -----------------------------------------------------------
- * close console log for virtual console
- * args   : vt_t   *vt       I   virtual console
- * return : none
- *-----------------------------------------------------------------------------*/
+/* Close console log -----------------------------------------------------------
+ * Close console log for virtual console
+ * Args   : vt_t   *vt       I   virtual console
+ * Return : none
+ *----------------------------------------------------------------------------*/
 extern void vt_closelog(vt_t *vt) {
   if (!vt || !vt->state || !vt->logfp) return;
   fclose(vt->logfp);

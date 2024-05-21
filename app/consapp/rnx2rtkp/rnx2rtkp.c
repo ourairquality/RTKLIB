@@ -1,14 +1,14 @@
 /*------------------------------------------------------------------------------
- * rnx2rtkp.c : read rinex obs/nav files and compute receiver positions
+ * rnx2rtkp.c : read RINEX obs/nav files and compute receiver positions
  *
  *          Copyright (C) 2007-2016 by T.TAKASU, All rights reserved.
  *
- * version : $Revision: 1.1 $ $Date: 2008/07/17 21:55:16 $
- * history : 2007/01/16  1.0 new
+ * Version : $Revision: 1.1 $ $Date: 2008/07/17 21:55:16 $
+ * History : 2007/01/16  1.0 new
  *           2007/03/15  1.1 add library mode
  *           2007/05/08  1.2 separate from postpos.c
- *           2009/01/20  1.3 support rtklib 2.2.0 api
- *           2009/12/12  1.4 support glonass
+ *           2009/01/20  1.3 support RTKLIB 2.2.0 api
+ *           2009/12/12  1.4 support GLONASS
  *                           add option -h, -a, -l, -x
  *           2010/01/28  1.5 add option -k
  *           2010/08/12  1.6 add option -y implementation (2.4.0_p1)
@@ -16,15 +16,15 @@
  *           2015/05/15  1.8 -r or -l options for fixed or ppp-fixed mode
  *           2015/06/12  1.9 output patch level in header
  *           2016/09/07  1.10 add option -sys
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #include <stdarg.h>
 
 #include "rtklib.h"
 
-#define PROGNAME "rnx2rtkp" /* program name */
-#define MAXFILE 16          /* max number of input files */
+#define PROGNAME "rnx2rtkp" /* Program name */
+#define MAXFILE 16          /* Max number of input files */
 
-/* help text -----------------------------------------------------------------*/
+/* Help text -----------------------------------------------------------------*/
 static const char *help[] = {
     "",
     " usage: rnx2rtkp [option]... file file [...]",
@@ -74,7 +74,7 @@ static const char *help[] = {
     "           rover latitude/longitude/height for fixed or ppp-fixed mode",
     " -y level  output solution status (0:off,1:states,2:residuals) [0]",
     " -x level  debug trace level (0:off) [0]"};
-/* show message --------------------------------------------------------------*/
+/* Show message --------------------------------------------------------------*/
 extern int showmsg(const char *format, ...) {
   va_list arg;
   va_start(arg, format);
@@ -86,12 +86,12 @@ extern int showmsg(const char *format, ...) {
 extern void settspan(gtime_t ts, gtime_t te) {}
 extern void settime(gtime_t time) {}
 
-/* print help ----------------------------------------------------------------*/
+/* Print help ----------------------------------------------------------------*/
 static void printhelp(void) {
   for (unsigned i = 0; i < sizeof(help) / sizeof(*help); i++) fprintf(stderr, "%s\n", help[i]);
   exit(0);
 }
-/* rnx2rtkp main -------------------------------------------------------------*/
+/* Rnx2rtkp main -------------------------------------------------------------*/
 int main(int argc, char **argv) {
   prcopt_t prcopt = prcopt_default;
   prcopt.mode = PMODE_KINEMA;
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
   filopt_t filopt = {""};
   rtksnprintf(filopt.trace, sizeof(filopt.trace), "%s.trace", PROGNAME);
 
-  /* load options from configuration file */
+  /* Load options from configuration file */
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-k") && i + 1 < argc) {
       resetsysopts();

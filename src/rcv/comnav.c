@@ -3,11 +3,11 @@
 *
 *          Copyright (C) 2007-2017 by T.TAKASU, All rights reserved.
 *
-* reference :
+* Reference :
 *     [1] ComNav, CNT-OEM-RM001, Rev 1.5 COMNAV OEM BOARD REFERENCE MANUAL, 2018
 
 *
-* history : 2007/10/08 1.0 new
+* History : 2007/10/08 1.0 new
 
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
@@ -18,28 +18,28 @@
 
 #define CNAVHLEN 28 /* cnav message header length (bytes) */
 
-#define ID_ALMANAC 73       /* message id: cnav decoded almanac */
-#define ID_GLOALMANAC 718   /* message id: cnav glonass decoded almanac */
-#define ID_GLOEPHEMERIS 723 /* message id: cnav glonass ephemeris */
-#define ID_IONUTC 8         /* message id: cnav iono and utc data */
-#define ID_RANGE 43         /* message id: cnav range measurement */
-#define ID_RANGECMP 140     /* message id: cnav range compressed */
-#define ID_RAWALM 74        /* message id: cnav raw almanac */
-#define ID_RAWEPHEM 41      /* message id: cnav raw ephemeris */
-#define ID_RAWWAASFRAME 287 /* message id: cnav raw waas frame */
+#define ID_ALMANAC 73       /* Message id: cnav decoded almanac */
+#define ID_GLOALMANAC 718   /* Message id: cnav GLONASS decoded almanac */
+#define ID_GLOEPHEMERIS 723 /* Message id: cnav GLONASS ephemeris */
+#define ID_IONUTC 8         /* Message id: cnav iono and UTC data */
+#define ID_RANGE 43         /* Message id: cnav range measurement */
+#define ID_RANGECMP 140     /* Message id: cnav range compressed */
+#define ID_RAWALM 74        /* Message id: cnav raw almanac */
+#define ID_RAWEPHEM 41      /* Message id: cnav raw ephemeris */
+#define ID_RAWWAASFRAME 287 /* Message id: cnav raw waas frame */
 
-#define ID_QZSSIONUTC 1347      /* message id: oem6 qzss ion/utc parameters */
-#define ID_QZSSRAWEPHEM 1330    /* message id: oem6 qzss raw ephemeris */
-#define ID_QZSSRAWSUBFRAME 1331 /* message id: oem6 qzss raw subframe */
-#define ID_RAWSBASFRAME 973     /* message id: oem6 raw sbas frame */
-#define ID_GALEPHEMERIS 1122    /* message id: oem6 decoded galileo ephemeris */
-#define ID_GALALMANAC 1120      /* message id: oem6 decoded galileo almanac */
-#define ID_GALCLOCK 1121        /* message id: oem6 galileo clockinformation */
-#define ID_GALIONO 1127         /* message id: oem6 decoded galileo iono corrections */
-#define ID_GALFNAVRAWPAGE 1413  /* message id: oem6 raw galileo f/nav paga data */
-#define ID_GALINAVRAWWORD 1414  /* message id: oem6 raw galileo i/nav word data */
-#define ID_RAWCNAVFRAME 1066    /* message id: oem6 raw cnav frame data */
-#define ID_BDSEPHEMERIS 1696    /* message id: oem6 decoded bds ephemeris */
+#define ID_QZSSIONUTC 1347      /* Message id: oem6 QZSS ion/UTC parameters */
+#define ID_QZSSRAWEPHEM 1330    /* Message id: oem6 QZSS raw ephemeris */
+#define ID_QZSSRAWSUBFRAME 1331 /* Message id: oem6 QZSS raw subframe */
+#define ID_RAWSBASFRAME 973     /* Message id: oem6 raw SBAS frame */
+#define ID_GALEPHEMERIS 1122    /* Message id: oem6 decoded Galileo ephemeris */
+#define ID_GALALMANAC 1120      /* Message id: oem6 decoded Galileo almanac */
+#define ID_GALCLOCK 1121        /* Message id: oem6 Galileo clockinformation */
+#define ID_GALIONO 1127         /* Message id: oem6 decoded Galileo iono corrections */
+#define ID_GALFNAVRAWPAGE 1413  /* Message id: oem6 raw Galileo f/nav paga data */
+#define ID_GALINAVRAWWORD 1414  /* Message id: oem6 raw Galileo i/nav word data */
+#define ID_RAWCNAVFRAME 1066    /* Message id: oem6 raw cnav frame data */
+#define ID_BDSEPHEMERIS 1696    /* Message id: oem6 decoded bds ephemeris */
 
 #define WL1 0.1902936727984
 #define WL2 0.2442102134246
@@ -47,7 +47,7 @@
 
 #define OFF_FRQNO -7 /* F/W ver.3.620 */
 
-/* get fields (little-endian) ------------------------------------------------*/
+/* Get fields (little-endian) ------------------------------------------------*/
 #define U1(p) (*((unsigned char *)(p)))
 #define I1(p) (*((signed char *)(p)))
 static unsigned short U2(unsigned char *p) {
@@ -76,11 +76,11 @@ static double R8(unsigned char *p) {
   return r;
 }
 
-/* extend sign ---------------------------------------------------------------*/
+/* Extend sign ---------------------------------------------------------------*/
 static int exsign(unsigned int v, int bits) {
   return (int)(v & (1 << (bits - 1)) ? v | (~0u << bits) : v);
 }
-/* adjust weekly rollover of gps time ----------------------------------------*/
+/* Adjust weekly rollover of GPS time ----------------------------------------*/
 static gtime_t adjweek(gtime_t time, double tow) {
   double tow_p;
   int week;
@@ -91,7 +91,7 @@ static gtime_t adjweek(gtime_t time, double tow) {
     tow -= 604800.0;
   return gpst2time(week, tow);
 }
-/* get observation data index ------------------------------------------------*/
+/* Get observation data index ------------------------------------------------*/
 static int obsindex(obs_t *obs, gtime_t time, int sat) {
   int i, j;
 
@@ -110,9 +110,9 @@ static int obsindex(obs_t *obs, gtime_t time, int sat) {
   obs->n++;
   return i;
 }
-/* decode cnav tracking status -------------------------------------------------
- * deocode cnav tracking status
- * args   : unsigned int stat I  tracking status field
+/* Decode cnav tracking status -------------------------------------------------
+ * Deocode cnav tracking status
+ * Args   : unsigned int stat I  tracking status field
  *          int    *sys   O      system (SYS_???)
  *          int    *code  O      signal code (CODE_L??)
  *          int    *track O      tracking state
@@ -135,9 +135,9 @@ static int obsindex(obs_t *obs, gtime_t time, int sat) {
  *          int    *parity O     parity known flag (0=not known,  1=known)
  *          int    *halfc O      phase measurement (0=half-cycle not added,
  *                                                  1=added)
- * return : signal frequency (0:L1,1:L2,2:L5,3:L6,4:L7,5:L8,-1:error)
- * notes  : refer [1][3]
- *-----------------------------------------------------------------------------*/
+ * Return : signal frequency (0:L1,1:L2,2:L5,3:L6,4:L7,5:L8,-1:error)
+ * Notes  : refer [1][3]
+ *----------------------------------------------------------------------------*/
 static int decode_trackstat(unsigned int stat, int *sys, int *code, int *track, int *plock,
                             int *clock, int *parity, int *halfc) {
   int satsys, sigtype, freq = 0;
@@ -290,9 +290,9 @@ static int decode_trackstat(unsigned int stat, int *sys, int *code, int *track, 
   }
   return freq;
 }
-/* check code priority and return obs position -------------------------------*/
+/* Check code priority and return obs position -------------------------------*/
 static int checkpri(const char *opt, int sys, int code, int freq) {
-  int nex = NEXOBS; /* number of extended obs data */
+  int nex = NEXOBS; /* Number of extended obs data */
 
   if (sys == SYS_GPS) {
     if (strstr(opt, "-GL1P") && freq == 0) return code == CODE_L1P ? 0 : -1;
@@ -310,7 +310,7 @@ static int checkpri(const char *opt, int sys, int code, int freq) {
   }
   return freq < NFREQ ? freq : -1;
 }
-/* decode rangecmpb ----------------------------------------------------------*/
+/* Decode rangecmpb ----------------------------------------------------------*/
 static int decode_rangecmpb(raw_t *raw) {
   double psr, adr, adr_rolls, lockt, tt, dop, snr, wavelen;
   int i, index, nobs, prn, sat, sys, code, freq, pos;
@@ -329,11 +329,11 @@ static int decode_rangecmpb(raw_t *raw) {
     return -1;
   }
   for (i = 0, p += 4; i < nobs; i++, p += 24) {
-    /* decode tracking status */
+    /* Decode tracking status */
     if ((freq = decode_trackstat(U4(p), &sys, &code, &track, &plock, &clock, &parity, &halfc)) < 0)
       continue;
 
-    /* obs position */
+    /* Obs position */
     if ((pos = checkpri(raw->opt, sys, code, freq)) < 0) continue;
 
     prn = U1(p + 17);
@@ -343,7 +343,7 @@ static int decode_rangecmpb(raw_t *raw) {
       trace(3, "cnav rangecmpb satellite number error: sys=%d,prn=%d\n", sys, prn);
       continue;
     }
-    if (sys == SYS_GLO && !parity) continue; /* invalid if GLO parity unknown */
+    if (sys == SYS_GLO && !parity) continue; /* Invalid if GLO parity unknown */
 
     dop = exsign(U4(p + 4) & 0xFFFFFFF, 28) / 256.0;
     psr = (U4(p + 7) >> 4) / 128.0 + U1(p + 11) * 2097152.0;
@@ -358,8 +358,8 @@ static int decode_rangecmpb(raw_t *raw) {
     adr_rolls = (psr / wavelen + adr) / MAXVAL;
     adr = -adr + MAXVAL * floor(adr_rolls + (adr_rolls <= 0 ? -0.5 : 0.5));
 
-    lockt = (U4(p + 18) & 0x1FFFFF) / 32.0; /* lock time */
-    if (lockt < 2) parity = 0;              /* pseudo-parity */
+    lockt = (U4(p + 18) & 0x1FFFFF) / 32.0; /* Lock time */
+    if (lockt < 2) parity = 0;              /* Pseudo-parity */
 
     if (raw->tobs[sat - 1][pos].time != 0) {
       tt = timediff(raw->time, raw->tobs[sat - 1][pos]);
@@ -369,7 +369,7 @@ static int decode_rangecmpb(raw_t *raw) {
     }
 
     if (!parity) lli |= LLI_HALFC;
-#if 0
+#ifdef RTK_DISABLED
     if (halfc) lli |= LLI_HALFA;
 #else
     if (halfc != raw->halfc[sat - 1][pos]) lli |= LLI_SLIP;
@@ -379,8 +379,8 @@ static int decode_rangecmpb(raw_t *raw) {
     raw->halfc[sat - 1][pos] = halfc;
 
     snr = ((U2(p + 20) & 0x3FF) >> 5) + 20.0;
-    if ((sys != SYS_GAL && !clock) || (sys == SYS_GAL && !plock)) psr = 0.0; /* code unlock */
-    if (!plock) adr = dop = 0.0;                                             /* phase unlock */
+    if ((sys != SYS_GAL && !clock) || (sys == SYS_GAL && !plock)) psr = 0.0; /* Code unlock */
+    if (!plock) adr = dop = 0.0;                                             /* Phase unlock */
 
     if (fabs(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
       raw->obs.n = 0;
@@ -393,7 +393,7 @@ static int decode_rangecmpb(raw_t *raw) {
           0.0 <= snr && snr < 255.0 ? (unsigned char)(snr * 4.0 + 0.5) : 0;
       raw->obs.data[index].LLI[pos] = (unsigned char)lli;
       raw->obs.data[index].code[pos] = code;
-#if 0
+#ifdef RTK_DISABLED
       /* L2C phase shift correction (L2C->L2P) */
       if (code == CODE_L2X) {
         raw->obs.data[index].L[pos] += 0.25;
@@ -404,7 +404,7 @@ static int decode_rangecmpb(raw_t *raw) {
   }
   return 1;
 }
-/* decode rangeb -------------------------------------------------------------*/
+/* Decode rangeb -------------------------------------------------------------*/
 static int decode_rangeb(raw_t *raw) {
   double psr, adr, dop, snr, lockt, tt;
   int i, index, nobs, prn, sat, sys, code, freq, pos;
@@ -423,12 +423,12 @@ static int decode_rangeb(raw_t *raw) {
     return -1;
   }
   for (i = 0, p += 4; i < nobs; i++, p += 44) {
-    /* decode tracking status */
+    /* Decode tracking status */
     if ((freq = decode_trackstat(U4(p + 40), &sys, &code, &track, &plock, &clock, &parity,
                                  &halfc)) < 0)
       continue;
 
-    /* obs position */
+    /* Obs position */
     if ((pos = checkpri(raw->opt, sys, code, freq)) < 0) continue;
 
     prn = U2(p);
@@ -438,7 +438,7 @@ static int decode_rangeb(raw_t *raw) {
       trace(3, "cnav rangeb satellite number error: sys=%d,prn=%d\n", sys, prn);
       continue;
     }
-    if (sys == SYS_GLO && !parity) continue; /* invalid if GLO parity unknown */
+    if (sys == SYS_GLO && !parity) continue; /* Invalid if GLO parity unknown */
 
     gfrq = U2(p + 2);
     psr = R8(p + 4);
@@ -446,9 +446,9 @@ static int decode_rangeb(raw_t *raw) {
     dop = R4(p + 28);
     snr = R4(p + 32);
     lockt = R4(p + 36);
-    if (lockt < 2) parity = 0; /* pseudo-parity */
+    if (lockt < 2) parity = 0; /* Pseudo-parity */
 
-    /* set glonass frequency channel number */
+    /* Set GLONASS frequency channel number */
     if (sys == SYS_GLO && raw->nav.geph[prn - 1].sat != sat) {
       raw->nav.geph[prn - 1].frq = gfrq - 7;
     }
@@ -464,8 +464,8 @@ static int decode_rangeb(raw_t *raw) {
     raw->lockt[sat - 1][pos] = lockt;
     raw->halfc[sat - 1][pos] = halfc;
 
-    if (!clock) psr = 0.0;       /* code unlock */
-    if (!plock) adr = dop = 0.0; /* phase unlock */
+    if (!clock) psr = 0.0;       /* Code unlock */
+    if (!plock) adr = dop = 0.0; /* Phase unlock */
 
     if (fabs(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
       raw->obs.n = 0;
@@ -478,7 +478,7 @@ static int decode_rangeb(raw_t *raw) {
           0.0 <= snr && snr < 255.0 ? (unsigned char)(snr * 4.0 + 0.5) : 0;
       raw->obs.data[index].LLI[pos] = (unsigned char)lli;
       raw->obs.data[index].code[pos] = code;
-#if 0
+#ifdef RTK_DISABLED
       /* L2C phase shift correction */
       if (code == CODE_L2X) {
         raw->obs.data[index].L[pos] += 0.25;
@@ -489,7 +489,7 @@ static int decode_rangeb(raw_t *raw) {
   }
   return 1;
 }
-/* decode rawephemb ----------------------------------------------------------*/
+/* Decode rawephemb ----------------------------------------------------------*/
 static int decode_rawephemb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
   eph_t eph = {0};
@@ -513,7 +513,7 @@ static int decode_rawephemb(raw_t *raw) {
     return -1;
   }
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (eph.iode == raw->nav.eph[sat - 1].iode) return 0; /* unchanged */
+    if (eph.iode == raw->nav.eph[sat - 1].iode) return 0; /* Unchanged */
   }
   eph.sat = sat;
   raw->nav.eph[sat - 1] = eph;
@@ -521,7 +521,7 @@ static int decode_rawephemb(raw_t *raw) {
   trace(4, "decode_rawephemb: sat=%2d\n", sat);
   return 2;
 }
-/* decode ionutcb ------------------------------------------------------------*/
+/* Decode ionutcb ------------------------------------------------------------*/
 static int decode_ionutcb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
   int i;
@@ -540,7 +540,7 @@ static int decode_ionutcb(raw_t *raw) {
   raw->nav.leaps = I4(p + 96);
   return 9;
 }
-/* decode rawwaasframeb ------------------------------------------------------*/
+/* Decode rawwaasframeb ------------------------------------------------------*/
 static int decode_rawwaasframeb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
   int i, prn;
@@ -563,14 +563,14 @@ static int decode_rawwaasframeb(raw_t *raw) {
   for (i = 0, p += 12; i < 29; i++, p++) raw->sbsmsg.msg[i] = *p;
   return 3;
 }
-/* decode rawsbasframeb ------------------------------------------------------*/
+/* Decode rawsbasframeb ------------------------------------------------------*/
 static int decode_rawsbasframeb(raw_t *raw) {
   trace(3, "decode_rawsbasframeb: len=%d\n", raw->len);
 
-  /* format same as rawwaasframeb */
+  /* Format same as rawwaasframeb */
   return decode_rawwaasframeb(raw);
 }
-/* decode gloephemerisb ------------------------------------------------------*/
+/* Decode gloephemerisb ------------------------------------------------------*/
 static int decode_gloephemerisb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
   geph_t geph = {0};
@@ -594,7 +594,7 @@ static int decode_gloephemerisb(raw_t *raw) {
   }
   geph.frq = U2(p + 2) + OFF_FRQNO;
   week = U2(p + 6);
-  tow = floor(U4(p + 8) / 1000.0 + 0.5); /* rounded to integer sec */
+  tow = floor(U4(p + 8) / 1000.0 + 0.5); /* Rounded to integer sec */
   toff = U4(p + 12);
   geph.iode = U4(p + 20) & 0x7F;
   geph.svh = U4(p + 24);
@@ -609,7 +609,7 @@ static int decode_gloephemerisb(raw_t *raw) {
   geph.acc[2] = R8(p + 92);
   geph.taun = R8(p + 100);
   geph.gamn = R8(p + 116);
-  tof = U4(p + 124) - toff; /* glonasst->gpst */
+  tof = U4(p + 124) - toff; /* Glonasst->gpst */
   geph.age = U4(p + 136);
   geph.toe = gpst2time(week, tow);
   tof += floor(tow / 86400.0) * 86400;
@@ -622,14 +622,14 @@ static int decode_gloephemerisb(raw_t *raw) {
   if (!strstr(raw->opt, "-EPHALL")) {
     if (fabs(timediff(geph.toe, raw->nav.geph[prn - 1].toe)) < 1.0 &&
         geph.svh == raw->nav.geph[prn - 1].svh)
-      return 0; /* unchanged */
+      return 0; /* Unchanged */
   }
   geph.sat = sat;
   raw->nav.geph[prn - 1] = geph;
   raw->ephsat = sat;
   return 2;
 }
-/* decode qzss rawephemb -----------------------------------------------------*/
+/* Decode QZSS rawephemb -----------------------------------------------------*/
 static int decode_qzssrawephemb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN, *q;
   eph_t eph = {0};
@@ -664,7 +664,7 @@ static int decode_qzssrawephemb(raw_t *raw) {
   }
   if (!strstr(raw->opt, "-EPHALL")) {
     if (eph.iodc == raw->nav.eph[sat - 1].iodc && eph.iode == raw->nav.eph[sat - 1].iode)
-      return 0; /* unchanged */
+      return 0; /* Unchanged */
   }
   eph.sat = sat;
   raw->nav.eph[sat - 1] = eph;
@@ -672,7 +672,7 @@ static int decode_qzssrawephemb(raw_t *raw) {
   trace(4, "decode_qzssrawephemb: sat=%2d\n", sat);
   return 2;
 }
-/* decode qzss rawsubframeb --------------------------------------------------*/
+/* Decode QZSS rawsubframeb --------------------------------------------------*/
 static int decode_qzssrawsubframeb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
   eph_t eph = {0};
@@ -700,7 +700,7 @@ static int decode_qzssrawsubframeb(raw_t *raw) {
   }
   if (!strstr(raw->opt, "-EPHALL")) {
     if (eph.iodc == raw->nav.eph[sat - 1].iodc && eph.iode == raw->nav.eph[sat - 1].iode)
-      return 0; /* unchanged */
+      return 0; /* Unchanged */
   }
   eph.sat = sat;
   raw->nav.eph[sat - 1] = eph;
@@ -708,7 +708,7 @@ static int decode_qzssrawsubframeb(raw_t *raw) {
   trace(4, "decode_qzssrawsubframeb: sat=%2d\n", sat);
   return 2;
 }
-/* decode qzssionutcb --------------------------------------------------------*/
+/* Decode qzssionutcb --------------------------------------------------------*/
 static int decode_qzssionutcb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
   int i;
@@ -727,7 +727,7 @@ static int decode_qzssionutcb(raw_t *raw) {
   raw->nav.leaps = I4(p + 96);
   return 9;
 }
-/* decode galephemerisb ------------------------------------------------------*/
+/* Decode galephemerisb ------------------------------------------------------*/
 static int decode_galephemerisb(raw_t *raw) {
   eph_t eph = {0};
   unsigned char *p = raw->buff + CNAVHLEN;
@@ -818,7 +818,7 @@ static int decode_galephemerisb(raw_t *raw) {
   eph.svh =
       (svh_e5b << 7) | (dvs_e5b << 6) | (svh_e5a << 4) | (dvs_e5a << 3) | (svh_e1b << 1) | dvs_e1b;
 
-  /* ephemeris selection (0:INAV,1:FNAV) */
+  /* Ephemeris selection (0:INAV,1:FNAV) */
   if (strstr(raw->opt, "-GALINAV"))
     sel_nav = 0;
   else if (strstr(raw->opt, "-GALFNAV"))
@@ -830,7 +830,7 @@ static int decode_galephemerisb(raw_t *raw) {
   eph.f0 = sel_nav ? af0_fnav : af0_inav;
   eph.f1 = sel_nav ? af1_fnav : af1_inav;
   eph.f2 = sel_nav ? af2_fnav : af2_inav;
-  eph.code = sel_nav ? 2 : 1; /* data source 1:I/NAV E1B,2:F/NAV E5a-I */
+  eph.code = sel_nav ? 2 : 1; /* Data source 1:I/NAV E1B,2:F/NAV E5a-I */
 
   if (raw->outtype) {
     rtkcatprintf(raw->msgtype, sizeof(raw->msgtype), " prn=%3d iod=%3d toes=%6.0f", prn, eph.iode,
@@ -841,10 +841,10 @@ static int decode_galephemerisb(raw_t *raw) {
     return -1;
   }
   tow = time2gpst(raw->time, &week);
-  eph.week = week; /* gps-week = gal-week */
+  eph.week = week; /* Gps-week = gal-week */
   eph.toe = gpst2time(eph.week, eph.toes);
 
-  /* for week-handover problem */
+  /* For week-handover problem */
   tt = timediff(eph.toe, raw->time);
   if (tt < -302400.0)
     eph.week++;
@@ -856,13 +856,13 @@ static int decode_galephemerisb(raw_t *raw) {
 
   if (!strstr(raw->opt, "-EPHALL")) {
     if (raw->nav.eph[eph.sat - 1].iode == eph.iode && raw->nav.eph[eph.sat - 1].code == eph.code)
-      return 0; /* unchanged */
+      return 0; /* Unchanged */
   }
   raw->nav.eph[eph.sat - 1] = eph;
   raw->ephsat = eph.sat;
   return 2;
 }
-/* decode galalmanacb --------------------------------------------------------*/
+/* Decode galalmanacb --------------------------------------------------------*/
 static int decode_galalmanacb(raw_t *raw) {
   alm_t alm = {0};
   unsigned char *p = raw->buff + CNAVHLEN;
@@ -890,7 +890,7 @@ static int decode_galalmanacb(raw_t *raw) {
   ioda = U4(p);
   p += 4;
   alm.week = U4(p);
-  p += 4; /* gst week */
+  p += 4; /* GST week */
   alm.toas = U4(p);
   p += 4;
   alm.e = R8(p);
@@ -921,7 +921,7 @@ static int decode_galalmanacb(raw_t *raw) {
   raw->nav.alm[alm.sat - 1] = alm;
   return 0;
 }
-/* decode galclockb ----------------------------------------------------------*/
+/* Decode galclockb ----------------------------------------------------------*/
 static int decode_galclockb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
   double a0, a1, a0g, a1g;
@@ -959,11 +959,11 @@ static int decode_galclockb(raw_t *raw) {
 
   raw->nav.utc_gal[0] = a0;
   raw->nav.utc_gal[1] = a1;
-  raw->nav.utc_gal[2] = tot; /* utc reference tow (s) */
-  raw->nav.utc_gal[3] = wnt; /* utc reference week */
+  raw->nav.utc_gal[2] = tot; /* UTC reference tow (s) */
+  raw->nav.utc_gal[3] = wnt; /* UTC reference week */
   return 9;
 }
-/* decode galionob -----------------------------------------------------------*/
+/* Decode galionob -----------------------------------------------------------*/
 static int decode_galionob(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
   double ai[3];
@@ -994,7 +994,7 @@ static int decode_galionob(raw_t *raw) {
   for (i = 0; i < 3; i++) raw->nav.ion_gal[i] = ai[i];
   return 9;
 }
-/* decode galfnavrawpageb ----------------------------------------------------*/
+/* Decode galfnavrawpageb ----------------------------------------------------*/
 static int decode_galfnavrawpageb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
   unsigned char buff[27];
@@ -1014,15 +1014,15 @@ static int decode_galfnavrawpageb(raw_t *raw) {
     buff[i] = U1(p);
     p += 1;
   }
-  page = getbitu(buff, 0, 6);
+  page = getbitu(buff, sizeof(buff), 0, 6);
 
   char tstr[40];
   trace(3, "%s E%2d FNAV     (%2d) ", time2str(raw->time, tstr, 0), satid, page);
-  traceb(3, buff, sizeo(buff), 27);
+  traceb(3, buff, sizeof(buff), 27);
 
   return 0;
 }
-/* decode galinavrawwordb ----------------------------------------------------*/
+/* Decode galinavrawwordb ----------------------------------------------------*/
 static int decode_galinavrawwordb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
   unsigned char buff[16];
@@ -1061,10 +1061,10 @@ static int decode_galinavrawwordb(raw_t *raw) {
     buff[i] = U1(p);
     p += 1;
   }
-  type = getbitu(buff, 0, 6);
-  if (type == 0 && getbitu(buff, 6, 2) == 2) {
-    week = getbitu(buff, 96, 12); /* gst week */
-    tow = getbitu(buff, 108, 20);
+  type = getbitu(buff, sizeof(buff), 0, 6);
+  if (type == 0 && getbitu(buff, sizeof(buff), 6, 2) == 2) {
+    week = getbitu(buff, sizeof(buff), 96, 12); /* GST week */
+    tow = getbitu(buff, sizeof(buff), 108, 20);
     time = gst2time(week, tow);
   }
   char tstr[40];
@@ -1073,7 +1073,7 @@ static int decode_galinavrawwordb(raw_t *raw) {
 
   return 0;
 }
-/* decode rawcnavframeb ------------------------------------------------------*/
+/* Decode rawcnavframeb ------------------------------------------------------*/
 static int decode_rawcnavframeb(raw_t *raw) {
   unsigned char *p = raw->buff + CNAVHLEN;
   unsigned char buff[38];
@@ -1102,7 +1102,7 @@ static int decode_rawcnavframeb(raw_t *raw) {
 
   return 0;
 }
-/* decode bdsephemerisb ------------------------------------------------------*/
+/* Decode bdsephemerisb ------------------------------------------------------*/
 static int decode_bdsephemerisb(raw_t *raw) {
   eph_t eph = {0};
   unsigned char *p = raw->buff + CNAVHLEN;
@@ -1181,29 +1181,29 @@ static int decode_bdsephemerisb(raw_t *raw) {
     trace(2, "oemv bdsephemeris satellite error: prn=%d\n", prn);
     return -1;
   }
-  eph.toe = bdt2gpst(bdt2time(eph.week, eph.toes)); /* bdt -> gpst */
-  eph.toc = bdt2gpst(bdt2time(eph.week, toc));      /* bdt -> gpst */
+  eph.toe = bdt2gpst(bdt2time(eph.week, eph.toes)); /* BDT -> GPST */
+  eph.toc = bdt2gpst(bdt2time(eph.week, toc));      /* BDT -> GPST */
   eph.ttr = raw->time;
 
   if (!strstr(raw->opt, "-EPHALL")) {
     if (timediff(raw->nav.eph[eph.sat - 1].toe, eph.toe) == 0.0 &&
         raw->nav.eph[eph.sat - 1].iode == eph.iode && raw->nav.eph[eph.sat - 1].iodc == eph.iodc)
-      return 0; /* unchanged */
+      return 0; /* Unchanged */
   }
   raw->nav.eph[eph.sat - 1] = eph;
   raw->ephsat = eph.sat;
   return 2;
 }
 
-/* decode cnav message -------------------------------------------------------*/
+/* Decode cnav message -------------------------------------------------------*/
 static int decode_cnav(raw_t *raw) {
   double tow;
   int msg, week, type = U2(raw->buff + 4);
 
   trace(3, "decode_cnav: type=%3d len=%d\n", type, raw->len);
 
-  /* check crc32 */
-  if (rtk_crc32(raw->buff, raw->len) != U4(raw->buff + raw->len)) {
+  /* Check crc32 */
+  if (rtk_crc32(raw->buff, sizeof(raw->buff), raw->len) != U4(raw->buff + raw->len)) {
     trace(2, "cnav crc error: type=%3d len=%d\n", type, raw->len);
     return -1;
   }
@@ -1220,7 +1220,7 @@ static int decode_cnav(raw_t *raw) {
     rtksnprintf(raw->msgtype, sizeof(raw->msgtype), "CNAV %4d (%4d): msg=%d %s", type, raw->len,
                 msg, time2str(gpst2time(week, tow), tstr, 2));
   }
-  if (msg != 0) return 0; /* message type: 0=binary,1=ascii */
+  if (msg != 0) return 0; /* Message type: 0=binary,1=ascii */
 
   switch (type) {
     case ID_RANGECMP:
@@ -1262,22 +1262,22 @@ static int decode_cnav(raw_t *raw) {
   }
   return 0;
 }
-/* sync header ---------------------------------------------------------------*/
+/* Sync header ---------------------------------------------------------------*/
 static int sync_cnav(unsigned char *buff, unsigned char data) {
   buff[0] = buff[1];
   buff[1] = buff[2];
   buff[2] = data;
   return buff[0] == CNAVSYNC1 && buff[1] == CNAVSYNC2 && buff[2] == CNAVSYNC3;
 }
-/* input comnav raw data from stream ----------------------------------------
- * fetch next comnav raw data and input a mesasge from stream
- * args   : raw_t *raw   IO     receiver raw data control struct
+/* Input comnav raw data from stream -------------------------------------------
+ * Fetch next comnav raw data and input a mesasge from stream
+ * Args   : raw_t *raw   IO     receiver raw data control struct
  *          unsigned char data I stream data (1 byte)
- * return : status (-1: error message, 0: no message, 1: input observation data,
- *                  2: input ephemeris, 3: input sbas message,
- *                  9: input ion/utc parameter)
+ * Return : status (-1: error message, 0: no message, 1: input observation data,
+ *                  2: input ephemeris, 3: input SBAS message,
+ *                  9: input ion/UTC parameter)
  *
- * notes  : to specify input options for cnav, set raw->opt to the following
+ * Notes  : to specify input options for cnav, set raw->opt to the following
  *          option strings separated by spaces.
  *
  *          -EPHALL : input all ephemerides
@@ -1288,11 +1288,11 @@ static int sync_cnav(unsigned char *buff, unsigned char data) {
  *          -GALINAV: use I/NAV for GAL ephemeris
  *          -GALFNAV: use F/NAV for GAL ephemeris
  *
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern int input_cnav(raw_t *raw, unsigned char data) {
   trace(5, "input_cnav: data=%02x\n", data);
 
-  /* synchronize frame */
+  /* Synchronize frame */
   if (raw->nbyte == 0) {
     if (sync_cnav(raw->buff, data)) raw->nbyte = 3;
     return 0;
@@ -1307,22 +1307,22 @@ extern int input_cnav(raw_t *raw, unsigned char data) {
   if (raw->nbyte < 10 || raw->nbyte < raw->len + 4) return 0;
   raw->nbyte = 0;
 
-  /* decode cnav message */
+  /* Decode cnav message */
   return decode_cnav(raw);
 }
-/* input comnav raw data from file ------------------------------------------
- * fetch next comnav raw data and input a message from file
- * args   : raw_t  *raw   IO     receiver raw data control struct
+/* Input comnav raw data from file ---------------------------------------------
+ * Fetch next comnav raw data and input a message from file
+ * Args   : raw_t  *raw   IO     receiver raw data control struct
  *          int    format I      receiver raw data format (STRFMT_???)
  *          FILE   *fp    I      file pointer
- * return : status(-2: end of file, -1...9: same as above)
- *-----------------------------------------------------------------------------*/
+ * Return : status(-2: end of file, -1...9: same as above)
+ *----------------------------------------------------------------------------*/
 extern int input_cnavf(raw_t *raw, FILE *fp) {
   int i, data;
 
   trace(4, "input_cnavf:\n");
 
-  /* synchronize frame */
+  /* Synchronize frame */
   if (raw->nbyte == 0) {
     for (i = 0;; i++) {
       if ((data = fgetc(fp)) == EOF) return -2;
@@ -1341,6 +1341,6 @@ extern int input_cnavf(raw_t *raw, FILE *fp) {
   if (fread(raw->buff + 10, raw->len - 6, 1, fp) < 1) return -2;
   raw->nbyte = 0;
 
-  /* decode cnav message */
+  /* Decode cnav message */
   return decode_cnav(raw);
 }

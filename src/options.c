@@ -3,8 +3,8 @@
  *
  *          Copyright (C) 2010-2020 by T.TAKASU, All rights reserved.
  *
- * version : $Revision:$ $Date:$
- * history : 2010/07/20  1.1  moved from postpos.c
+ * Version : $Revision:$ $Date:$
+ * History : 2010/07/20  1.1  moved from postpos.c
  *                            added api:
  *                                searchopt(),str2opt(),opt2str(),opt2buf(),
  *                                loadopts(),saveopts(),resetsysopts(),
@@ -27,11 +27,11 @@
  *           2020/11/30  1.12 change options pos1-frequency, pos1-ionoopt,
  *                             pos1-tropopt, pos1-sateph, pos1-navsys,
  *                             pos2-gloarmode,
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #define _POSIX_C_SOURCE 199506
 #include "rtklib.h"
 
-/* system options buffer -----------------------------------------------------*/
+/* System options buffer -----------------------------------------------------*/
 static prcopt_t prcopt_;
 static solopt_t solopt_;
 static filopt_t filopt_;
@@ -41,7 +41,7 @@ static double antpos_[2][3];
 static char exsats_[1024];
 static char snrmask_[NFREQ][1024];
 
-/* system options table ------------------------------------------------------*/
+/* System options table ------------------------------------------------------*/
 #define SWTOPT "0:off,1:on"
 #define MODOPT                                                                                 \
   "0:single,1:dgps,2:kinematic,3:static,4:static-start,5:movingbase,6:fixed,7:ppp-kine,8:ppp-" \
@@ -200,15 +200,15 @@ EXPORT opt_t sysopts[] = {
     {"file-solstatfile", 2, (void *)&filopt_.solstat, sizeof(filopt_.solstat), ""},
     {"file-tracefile", 2, (void *)&filopt_.trace, sizeof(filopt_.trace), ""},
 
-    {"", 0, NULL, 0, ""} /* terminator */
+    {"", 0, NULL, 0, ""} /* Terminator */
 };
-/* discard space characters at tail ------------------------------------------*/
+/* Discard space characters at tail ------------------------------------------*/
 static void chop(char *str) {
   char *p = strchr(str, '#');
-  if (p) *p = '\0'; /* comment */
+  if (p) *p = '\0'; /* Comment */
   for (p = str + strlen(str) - 1; p >= str && !isgraph((int)*p); p--) *p = '\0';
 }
-/* enum to string ------------------------------------------------------------*/
+/* Enum to string ------------------------------------------------------------*/
 static void enum2str(char *s, size_t size, const char *comment, int val) {
   char str[32];
   rtksnprintf(str, sizeof(str), "%d:", val);
@@ -227,7 +227,7 @@ static void enum2str(char *s, size_t size, const char *comment, int val) {
   size_t end = q - p;
   rtkesubstrcat(s, size, p, n, end);
 }
-/* String to enum ------------------------------------------------------------
+/* String to enum --------------------------------------------------------------
  * Note if str is empty then the first comment digit is returned.
  */
 static bool str2enum(const char *str, const char *comment, int *val) {
@@ -255,13 +255,13 @@ static bool str2enum(const char *str, const char *comment, int *val) {
   }
   return false;
 }
-/* search option ---------------------------------------------------------------
- * search option record
- * args   : char   *name     I  option name
+/* Search option ---------------------------------------------------------------
+ * Search option record
+ * Args   : char   *name     I  option name
  *          opt_t  *opts     I  options table
  *                              (terminated with table[i].name="")
- * return : option record (NULL: not found)
- *-----------------------------------------------------------------------------*/
+ * Return : option record (NULL: not found)
+ *----------------------------------------------------------------------------*/
 extern opt_t *searchopt(const char *name, const opt_t *opts) {
   trace(3, "searchopt: name=%s\n", name);
 
@@ -270,12 +270,12 @@ extern opt_t *searchopt(const char *name, const opt_t *opts) {
   }
   return NULL;
 }
-/* string to option value ------------------------------------------------------
- * convert string to option value
- * args   : opt_t  *opt      O  option
+/* String to option value ------------------------------------------------------
+ * Convert string to option value
+ * Args   : opt_t  *opt      O  option
  *          char   *str      I  option value string
- * return : status (true:ok,false:error)
- *-----------------------------------------------------------------------------*/
+ * Return : status (true:ok,false:error)
+ *----------------------------------------------------------------------------*/
 extern bool str2opt(opt_t *opt, const char *str) {
   switch (opt->format) {
     case 0:
@@ -295,14 +295,14 @@ extern bool str2opt(opt_t *opt, const char *str) {
   }
   return true;
 }
-/* option value to string ------------------------------------------------------
- * convert option value to string
- * args   : opt_t  *opt      I  option
+/* Option value to string ------------------------------------------------------
+ * Convert option value to string
+ * Args   : opt_t  *opt      I  option
  *          char   *str      O  option value string
  *          size_t size      I  option value string size
- * return : none
+ * Return : none
  * Note   : The output is appended to the buffer which must be nul terminated.
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern void opt2str(const opt_t *opt, char *str, size_t size) {
   trace(3, "opt2str : name=%s\n", opt->name);
 
@@ -321,14 +321,14 @@ extern void opt2str(const opt_t *opt, char *str, size_t size) {
       break;
   }
 }
-/* option to string -------------------------------------------------------------
- * convert option to string (keyword=value # comment)
- * args   : opt_t  *opt      I  option
+/* Option to string ------------------------------------------------------------
+ * Convert option to string (keyword=value # comment)
+ * Args   : opt_t  *opt      I  option
  *          char   *buff     O  option string
  *          size_t size      I  option string buffer size
- * return : none
+ * Return : none
  * Note   : The output is appended to the buffer which must be nul terminated.
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern void opt2buf(const opt_t *opt, char *buff, size_t size) {
   trace(3, "opt2buf : name=%s\n", opt->name);
 
@@ -342,13 +342,13 @@ extern void opt2buf(const opt_t *opt, char *buff, size_t size) {
     rtkcatprintf(buff, size, " # (%s)", opt->comment);
   }
 }
-/* load options ----------------------------------------------------------------
- * load options from file
- * args   : char   *file     I  options file
+/* Load options ----------------------------------------------------------------
+ * Load options from file
+ * Args   : char   *file     I  options file
  *          opt_t  *opts     IO options table
  *                              (terminated with table[i].name="")
- * return : status (true:ok,false:error)
- *-----------------------------------------------------------------------------*/
+ * Return : status (true:ok,false:error)
+ *----------------------------------------------------------------------------*/
 extern bool loadopts(const char *file, opt_t *opts) {
   trace(3, "loadopts: file=%s\n", file);
 
@@ -384,15 +384,15 @@ extern bool loadopts(const char *file, opt_t *opts) {
 
   return true;
 }
-/* save options to file --------------------------------------------------------
- * save options to file
- * args   : char   *file     I  options file
+/* Save options to file --------------------------------------------------------
+ * Save options to file
+ * Args   : char   *file     I  options file
  *          char   *mode     I  write mode ("w":overwrite,"a":append);
  *          char   *comment  I  header comment (NULL: no comment)
  *          opt_t  *opts     I  options table
  *                              (terminated with table[i].name="")
- * return : status (true:ok,false:error)
- *-----------------------------------------------------------------------------*/
+ * Return : status (true:ok,false:error)
+ *----------------------------------------------------------------------------*/
 extern bool saveopts(const char *file, const char *mode, const char *comment, const opt_t *opts) {
   trace(3, "saveopts: file=%s mode=%s\n", file, mode);
 
@@ -412,7 +412,7 @@ extern bool saveopts(const char *file, const char *mode, const char *comment, co
   fclose(fp);
   return true;
 }
-/* system options buffer to options ------------------------------------------*/
+/* System options buffer to options ------------------------------------------*/
 static void buff2sysopts(void) {
   prcopt_.elmin = elmask_ * D2R;
   prcopt_.elmaskar = elmaskar_ * D2R;
@@ -422,7 +422,7 @@ static void buff2sysopts(void) {
     int *ps = i == 0 ? &prcopt_.rovpos : &prcopt_.refpos;
     double *rr = i == 0 ? prcopt_.ru : prcopt_.rb;
 
-    if (antpostype_[i] == 0) { /* lat/lon/hgt */
+    if (antpostype_[i] == 0) { /* Lat/lon/hgt */
       *ps = 0;
       double pos[3];
       pos[0] = antpos_[i][0] * D2R;
@@ -437,7 +437,7 @@ static void buff2sysopts(void) {
     } else
       *ps = antpostype_[i] - 1;
   }
-  /* excluded satellites */
+  /* Excluded satellites */
   for (int i = 0; i < MAXSAT; i++) prcopt_.exsats[i] = 0;
   if (exsats_[0] != '\0') {
     char buff[1024];
@@ -454,7 +454,7 @@ static void buff2sysopts(void) {
       prcopt_.exsats[sat - 1] = *p == '+' ? 2 : 1;
     }
   }
-  /* snrmask */
+  /* Snrmask */
   for (int i = 0; i < NFREQ; i++) {
     for (int j = 0; j < 9; j++) prcopt_.snrmask.mask[i][j] = 0.0;
     char buff[1024];
@@ -471,13 +471,13 @@ static void buff2sysopts(void) {
             NFREQ, prcopt_.nf);
     prcopt_.nf = NFREQ;
   }
-  /* number of frequency (4:L1+L5) TODO ????*/
+  /* Number of frequency (4:L1+L5) TODO ????*/
   /*if (prcopt_.nf==4) {
       prcopt_.nf=3;
       prcopt_.freqopt=1;
   }*/
 }
-/* options to system options buffer ------------------------------------------*/
+/* Options to system options buffer ------------------------------------------*/
 static void sysopts2buff(void) {
   elmask_ = prcopt_.elmin * R2D;
   elmaskar_ = prcopt_.elmaskar * R2D;
@@ -497,7 +497,7 @@ static void sysopts2buff(void) {
     } else
       antpostype_[i] = *ps + 1;
   }
-  /* excluded satellites */
+  /* Excluded satellites */
   exsats_[0] = '\0';
   for (int sat = 1; sat <= MAXSAT && strlen(exsats_) < sizeof(exsats_) - 32; sat++) {
     if (prcopt_.exsats[sat - 1]) {
@@ -507,7 +507,7 @@ static void sysopts2buff(void) {
                    prcopt_.exsats[sat - 1] == 2 ? "+" : "", id);
     }
   }
-  /* snrmask */
+  /* Snrmask */
   for (int i = 0; i < NFREQ; i++) {
     snrmask_[i][0] = '\0';
     for (int j = 0; j < 9; j++) {
@@ -515,17 +515,17 @@ static void sysopts2buff(void) {
                    prcopt_.snrmask.mask[i][j]);
     }
   }
-  /* number of frequency (4:L1+L5) TODO ???? */
+  /* Number of frequency (4:L1+L5) TODO ???? */
   /*if (prcopt_.nf==3&&prcopt_.freqopt==1) {
       prcopt_.nf=4;
       prcopt_.freqopt=0;
   }*/
 }
-/* reset system options to default ---------------------------------------------
- * reset system options to default
- * args   : none
- * return : none
- *-----------------------------------------------------------------------------*/
+/* Reset system options to default ---------------------------------------------
+ * Reset system options to default
+ * Args   : none
+ * Return : none
+ *----------------------------------------------------------------------------*/
 extern void resetsysopts(void) {
   trace(3, "resetsysopts:\n");
 
@@ -549,14 +549,14 @@ extern void resetsysopts(void) {
     }
   exsats_[0] = '\0';
 }
-/* get system options ----------------------------------------------------------
- * get system options
- * args   : prcopt_t *popt   IO processing options (NULL: no output)
+/* Get system options ----------------------------------------------------------
+ * Get system options
+ * Args   : prcopt_t *popt   IO processing options (NULL: no output)
  *          solopt_t *sopt   IO solution options   (NULL: no output)
  *          folopt_t *fopt   IO file options       (NULL: no output)
- * return : none
- * notes  : to load system options, use loadopts() before calling the function
- *-----------------------------------------------------------------------------*/
+ * Return : none
+ * Notes  : to load system options, use loadopts() before calling the function
+ *----------------------------------------------------------------------------*/
 extern void getsysopts(prcopt_t *popt, solopt_t *sopt, filopt_t *fopt) {
   trace(3, "getsysopts:\n");
 
@@ -565,14 +565,14 @@ extern void getsysopts(prcopt_t *popt, solopt_t *sopt, filopt_t *fopt) {
   if (sopt) *sopt = solopt_;
   if (fopt) *fopt = filopt_;
 }
-/* set system options ----------------------------------------------------------
- * set system options
- * args   : prcopt_t *prcopt I  processing options (NULL: default)
+/* Set system options ----------------------------------------------------------
+ * Set system options
+ * Args   : prcopt_t *prcopt I  processing options (NULL: default)
  *          solopt_t *solopt I  solution options   (NULL: default)
  *          filopt_t *filopt I  file options       (NULL: default)
- * return : none
- * notes  : to save system options, use saveopts() after calling the function
- *-----------------------------------------------------------------------------*/
+ * Return : none
+ * Notes  : to save system options, use saveopts() after calling the function
+ *----------------------------------------------------------------------------*/
 extern void setsysopts(const prcopt_t *prcopt, const solopt_t *solopt, const filopt_t *filopt) {
   trace(3, "setsysopts:\n");
 

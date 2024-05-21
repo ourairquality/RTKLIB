@@ -4,13 +4,13 @@
  *          Copyright (C) 2016 Daniel A. Cook, All rights reserved.
  *          Copyright (C) 2020 T.TAKASU, All rights reserved.
  *
- * references:
+ * References:
  *     [1] https://github.com/astrodanco/RTKLIB/tree/cmr/src/rcv/rt17.c
  *     [2] Trimble, Trimble OEM BD9xx GNSS Receiver Family IDC, version 4.82
  *         Revision A, December, 2013
  *
- * version : $Revision:$ $Date:$
- * history : 2014/08/26 1.0  imported from GitHub (ref [1])
+ * Version : $Revision:$ $Date:$
+ * History : 2014/08/26 1.0  imported from GitHub (ref [1])
  *                           modified to get initial week number
  *                           modified obs types for raw obs data
  *                           function added to output message type
@@ -26,7 +26,7 @@
  *           2016/07/29 1.4  suppress warning
  *           2017/04/11 1.5  (char *) -> (signed char *)
  *           2020/11/30 1.6  use integer type in stdint.h
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 
 /*
 | Trimble real-time binary data stream and file handler functions.
@@ -501,7 +501,7 @@ EXPORT int init_rt17(raw_t *Raw) {
 |  0: no message (tells caller to please read more data from the stream)
 |  1: input observation data
 |  2: input ephemeris
-|  9: input ion/utc parameter
+|  9: input ion/UTC parameter
 |
 | Each message begins with a 4-byte header, followed by the bytes of data in the packet,
 | and the packet ends with a 2-byte trailer. Byte 3 is set to 0 (00h) when the packet
@@ -699,7 +699,7 @@ EXPORT int input_rt17(raw_t *Raw, uint8_t Data) {
 |  0: no message
 |  1: input observation data
 |  2: input ephemeris
-|  9: input ion/utc parameter
+|  9: input ion/UTC parameter
 */
 EXPORT int input_rt17f(raw_t *Raw, FILE *fp) {
   int i, Data, Ret;
@@ -709,7 +709,7 @@ EXPORT int input_rt17f(raw_t *Raw, FILE *fp) {
     if ((Ret = input_rt17(Raw, (uint8_t)Data))) return Ret;
   }
 
-  return 0; /* return at every 4k bytes */
+  return 0; /* Return at every 4k bytes */
 }
 
 /*
@@ -728,7 +728,7 @@ EXPORT int input_rt17f(raw_t *Raw, FILE *fp) {
 static int CheckPacketChecksum(uint8_t *PacketBuffer) {
   uint8_t Checksum = 0;
   uint8_t *p = &PacketBuffer[1];         /* Starting with status */
-  uint32_t Length = PacketBuffer[3] + 3; /* status, type, length, data */
+  uint32_t Length = PacketBuffer[3] + 3; /* Status, type, length, data */
 
   /* Compute the packet checksum */
   while (Length > 0) {
@@ -766,20 +766,20 @@ static void ClearPacketBuffer(rt17_t *rt17) {
 }
 
 /*
-| DecodeBeidouEphemeris - Decode a Beidou Ephemeris record
+| DecodeBeidouEphemeris - Decode a BeiDou Ephemeris record
 |
 | Returns:
 |
 | -1: error message
 |  2: input ephemeris
 |
-| See reference #1 above for documentation of the RETSVDATA Beidou Ephemeris.
+| See reference #1 above for documentation of the RETSVDATA BeiDou Ephemeris.
 */
 static int DecodeBeidouEphemeris(raw_t *Raw) {
   tracet(3, "DecodeBeidouEphemeris(); not yet implemented.\n");
   return 0;
 
-#if 0
+#ifdef RTK_DISABLED
   rt17_t *rt17 = (rt17_t *)Raw->rcv_data;
   uint8_t *p = rt17->PacketBuffer;
   int prn, sat, toc, tow;
@@ -884,7 +884,7 @@ static int DecodeBeidouEphemeris(raw_t *Raw) {
   tracet(3, "RT17: DecodeBeidouEphemeris(); SAT=%d, IODC=%d, IODE=%d, WEEK=%d.\n", sat, eph.iodc,
          eph.iode, eph.week);
   if (!strstr(Raw->opt, "-EPHALL")) {
-    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* unchanged */
+    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* Unchanged */
   }
   eph.sat = sat;
   Raw->nav.eph[sat - 1][0] = eph;
@@ -908,7 +908,7 @@ static int DecodeGalileoEphemeris(raw_t *Raw) {
   tracet(3, "DecodeGalileoEphemeris(); not yet implemented.\n");
   return 0;
 
-#if 0
+#ifdef RTK_DISABLED
   rt17_t *rt17 = (rt17_t *)Raw->rcv_data;
   uint8_t *p = rt17->PacketBuffer;
   int prn, sat, toc, tow;
@@ -987,7 +987,7 @@ static int DecodeGalileoEphemeris(raw_t *Raw) {
   tracet(3, "RT17: DecodeGalileoEphemeris(); SAT=%d, IODC=%d, IODE=%d, WEEK=%d.\n", sat, eph.iodc,
          eph.iode, eph.week);
   if (!strstr(Raw->opt, "-EPHALL")) {
-    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* unchanged */
+    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* Unchanged */
   }
   eph.sat = sat;
   Raw->nav.eph[sat - 1][0] = eph;
@@ -1158,7 +1158,7 @@ static int DecodeGPSEphemeris(raw_t *Raw) {
   }
 
   if (!strstr(Raw->opt, "-EPHALL")) {
-    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* unchanged */
+    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* Unchanged */
   }
 
   eph.sat = sat;
@@ -1313,7 +1313,7 @@ static int DecodeGSOF41(raw_t *raw, uint8_t *p) {
 | Returns:
 |
 | -1: error message
-|  9: input ion/utc parameter|
+|  9: input ion/UTC parameter|
 |
 | See ICD-GPS-200C.PDF for documetation of GPS ION / UTC data.
 | See reference #1 above for documentation of RETSVDATA and ION / UTC data.
@@ -1375,7 +1375,7 @@ static int DecodeQZSSEphemeris(raw_t *Raw) {
   tracet(3, "DecodeQZSSEphemeris(); not yet implemented.\n");
   return 0;
 
-#if 0
+#ifdef RTK_DISABLED
   rt17_t *rt17 = (rt17_t *)Raw->rcv_data;
   uint8_t *p = rt17->PacketBuffer;
   int prn, sat, toc, tow;
@@ -1483,7 +1483,7 @@ static int DecodeQZSSEphemeris(raw_t *Raw) {
   tracet(3, "RT17: DecodeQZSSEphemeris(); SAT=%d, IODC=%d, IODE=%d, WEEK=%d.\n", sat, eph.iodc,
          eph.iode, eph.week);
   if (!strstr(Raw->opt, "-EPHALL")) {
-    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* unchanged */
+    if (eph.iode == Raw->nav.eph[sat - 1][0].iode) return 0; /* Unchanged */
   }
   eph.sat = sat;
   Raw->nav.eph[sat - 1][0] = eph;
@@ -1547,7 +1547,7 @@ static int DecodeRawdata(raw_t *Raw) {
 | -1: error message
 |  0: no message (tells caller to please read more data from the stream)
 |  2: input ephemeris
-|  9: input ion/utc parameter
+|  9: input ion/UTC parameter
 */
 static int DecodeRetsvdata(raw_t *Raw) {
   rt17_t *rt17 = (rt17_t *)Raw->rcv_data;
@@ -1615,7 +1615,7 @@ static int DecodeType17(raw_t *Raw, uint32_t rif) {
   ClockOffset = R8(p) * 0.001;
   p += 8; /* Clock offset value. 0.0 = not known */
 
-#if 0
+#ifdef RTK_DISABLED
   tow += ClockOffset;
 #endif
 
@@ -1794,7 +1794,7 @@ static int DecodeType17(raw_t *Raw, uint32_t rif) {
       continue;
     }
 
-#if 0
+#ifdef RTK_DISABLED
     /* Apply clock offset to observables */
     if (ClockOffset != 0.0) {
       obs->P[0] += ClockOffset * (CLIGHT / FREQL1);

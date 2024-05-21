@@ -27,12 +27,12 @@ __fastcall TOptDialog::TOptDialog(TComponent *Owner) : TForm(Owner) {
   int nglo = MAXPRNGLO, ngal = MAXPRNGAL, nqzs = MAXPRNQZS, ncmp = MAXPRNCMP;
   int nirn = MAXPRNIRN;
 
-#if 0
-    Freq->Items->Clear();
-    for (int i=0;i<NFREQ;i++) {
-        label=label+(i>0?"+":"")+s.sprintf("%s",freqs[i]);
-        Freq->Items->Add(label);
-    }
+#ifdef RTK_DISABLED
+  Freq->Items->Clear();
+  for (int i = 0; i < NFREQ; i++) {
+    label = label + (i > 0 ? "+" : "") + s.sprintf("%s", freqs[i]);
+    Freq->Items->Add(label);
+  }
 #endif
   if (nglo <= 0) NavSys2->Enabled = false;
   if (ngal <= 0) NavSys3->Enabled = false;

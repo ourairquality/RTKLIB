@@ -1,5 +1,5 @@
 /*------------------------------------------------------------------------------
- * rtcm2.c : rtcm ver.2 message functions
+ * rtcm2.c : RTCM ver.2 message functions
  *
  *          Copyright (C) 2009-2014 by T.TAKASU, All rights reserved.
  *
@@ -8,11 +8,11 @@
  *
  * Version : $Revision:$ $Date:$
  * History : 2011/11/28 1.0  separated from rtcm.c
- *           2014/10/21 1.1  fix problem on week rollover in rtcm 2 type 14
- *-----------------------------------------------------------------------------*/
+ *           2014/10/21 1.1  fix problem on week rollover in RTCM 2 type 14
+ *----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
-/* Adjust hourly rollover of rtcm 2 time -------------------------------------*/
+/* Adjust hourly rollover of RTCM 2 time -------------------------------------*/
 static void adjhour(rtcm_t *rtcm, double zcnt) {
   /* If no time, get cpu time */
   if (rtcm->time.time == 0) rtcm->time = utc2gpst(timeget());
@@ -30,11 +30,11 @@ static void adjhour(rtcm_t *rtcm, double zcnt) {
 static int obsindex(obs_t *obs, gtime_t time, int sat) {
   int i = 0;
   for (; i < obs->n; i++) {
-    if (obs->data[i].sat == sat) return i; /* field already exists */
+    if (obs->data[i].sat == sat) return i; /* Field already exists */
   }
-  if (i >= MAXOBS) return -1; /* overflow */
+  if (i >= MAXOBS) return -1; /* Overflow */
 
-  /* add new field */
+  /* Add new field */
   obs->data[i].time = time;
   obs->data[i].sat = sat;
   for (int j = 0; j < NFREQ; j++) {
@@ -45,23 +45,31 @@ static int obsindex(obs_t *obs, gtime_t time, int sat) {
   obs->n++;
   return i;
 }
-/* decode type 1/9: differential gps correction/partial correction set -------*/
+
+static uint32_t rtcm_getbitu(const rtcm_t *rtcm, unsigned pos, unsigned len) {
+  return getbitu(rtcm->buff, sizeof(rtcm->buff), pos, len);
+}
+static int32_t rtcm_getbits(const rtcm_t *rtcm, unsigned pos, unsigned len) {
+  return getbits(rtcm->buff, sizeof(rtcm->buff), pos, len);
+}
+
+/* Decode type 1/9: differential GPS correction/partial correction set -------*/
 static int decode_type1(rtcm_t *rtcm) {
   trace(4, "decode_type1: len=%d\n", rtcm->len);
 
   int i = 48;
   while (i + 40 <= rtcm->len * 8) {
-    int fact = getbitu(rtcm->buff, i, 1);
+    int fact = rtcm_getbitu(rtcm, i, 1);
     i += 1;
-    int udre = getbitu(rtcm->buff, i, 2);
+    int udre = rtcm_getbitu(rtcm, i, 2);
     i += 2;
-    int prn = getbitu(rtcm->buff, i, 5);
+    int prn = rtcm_getbitu(rtcm, i, 5);
     i += 5;
-    double prc = getbits(rtcm->buff, i, 16);
+    double prc = rtcm_getbits(rtcm, i, 16);
     i += 16;
-    double rrc = getbits(rtcm->buff, i, 8);
+    double rrc = rtcm_getbits(rtcm, i, 8);
     i += 8;
-    int iod = getbits(rtcm->buff, i, 8);
+    int iod = rtcm_getbits(rtcm, i, 8);
     i += 8;
     if (prn == 0) prn = 32;
     if (prc == 0x80000000 || rrc == 0xFFFF8000) {
@@ -79,7 +87,7 @@ static int decode_type1(rtcm_t *rtcm) {
   }
   return 7;
 }
-/* decode type 3: reference station parameter --------------------------------*/
+/* Decode type 3: reference station parameter --------------------------------*/
 static int decode_type3(rtcm_t *rtcm) {
   trace(4, "decode_type3: len=%d\n", rtcm->len);
 
@@ -88,40 +96,40 @@ static int decode_type3(rtcm_t *rtcm) {
     trace(2, "rtcm2 3 length error: len=%d\n", rtcm->len);
     return -1;
   }
-  rtcm->sta.pos[0] = getbits(rtcm->buff, i, 32) * 0.01;
+  rtcm->sta.pos[0] = rtcm_getbits(rtcm, i, 32) * 0.01;
   i += 32;
-  rtcm->sta.pos[1] = getbits(rtcm->buff, i, 32) * 0.01;
+  rtcm->sta.pos[1] = rtcm_getbits(rtcm, i, 32) * 0.01;
   i += 32;
-  rtcm->sta.pos[2] = getbits(rtcm->buff, i, 32) * 0.01;
+  rtcm->sta.pos[2] = rtcm_getbits(rtcm, i, 32) * 0.01;
   return 5;
 }
-/* decode type 14: gps time of week ------------------------------------------*/
+/* Decode type 14: GPS time of week ------------------------------------------*/
 static int decode_type14(rtcm_t *rtcm) {
   trace(4, "decode_type14: len=%d\n", rtcm->len);
 
   int i = 48;
-  double zcnt = getbitu(rtcm->buff, 24, 13);
+  double zcnt = rtcm_getbitu(rtcm, 24, 13);
   if (i + 24 > rtcm->len * 8) {
     trace(2, "rtcm2 14 length error: len=%d\n", rtcm->len);
     return -1;
   }
-  int week = getbitu(rtcm->buff, i, 10);
+  int week = rtcm_getbitu(rtcm, i, 10);
   i += 10;
-  int hour = getbitu(rtcm->buff, i, 8);
+  int hour = rtcm_getbitu(rtcm, i, 8);
   i += 8;
-  int leaps = getbitu(rtcm->buff, i, 6);
+  int leaps = rtcm_getbitu(rtcm, i, 6);
   week = adjgpsweek(week);
   rtcm->time = gpst2time(week, hour * 3600.0 + zcnt * 0.6);
   rtcm->nav.utc_gps[4] = leaps;
   return 6;
 }
-/* decode type 16: gps special message ---------------------------------------*/
+/* Decode type 16: GPS special message ---------------------------------------*/
 static int decode_type16(rtcm_t *rtcm) {
   trace(4, "decode_type16: len=%d\n", rtcm->len);
 
   int i = 48, n = 0;
   while (i + 8 <= rtcm->len * 8 && n < 90) {
-    rtcm->msg[n++] = getbitu(rtcm->buff, i, 8);
+    rtcm->msg[n++] = rtcm_getbitu(rtcm, i, 8);
     i += 8;
   }
   rtcm->msg[n] = '\0';
@@ -129,7 +137,7 @@ static int decode_type16(rtcm_t *rtcm) {
   trace(3, "rtcm2 16 message: %s\n", rtcm->msg);
   return 9;
 }
-/* decode type 17: gps ephemerides -------------------------------------------*/
+/* Decode type 17: GPS ephemerides -------------------------------------------*/
 static int decode_type17(rtcm_t *rtcm) {
   trace(4, "decode_type17: len=%d\n", rtcm->len);
 
@@ -139,63 +147,63 @@ static int decode_type17(rtcm_t *rtcm) {
     return -1;
   }
   eph_t eph = {0};
-  int week = getbitu(rtcm->buff, i, 10);
+  int week = rtcm_getbitu(rtcm, i, 10);
   i += 10;
-  eph.idot = getbits(rtcm->buff, i, 14) * P2_43 * SC2RAD;
+  eph.idot = rtcm_getbits(rtcm, i, 14) * P2_43 * SC2RAD;
   i += 14;
-  eph.iode = getbitu(rtcm->buff, i, 8);
+  eph.iode = rtcm_getbitu(rtcm, i, 8);
   i += 8;
-  double toc = getbitu(rtcm->buff, i, 16) * 16.0;
+  double toc = rtcm_getbitu(rtcm, i, 16) * 16.0;
   i += 16;
-  eph.f1 = getbits(rtcm->buff, i, 16) * P2_43;
+  eph.f1 = rtcm_getbits(rtcm, i, 16) * P2_43;
   i += 16;
-  eph.f2 = getbits(rtcm->buff, i, 8) * P2_55;
+  eph.f2 = rtcm_getbits(rtcm, i, 8) * P2_55;
   i += 8;
-  eph.crs = getbits(rtcm->buff, i, 16) * P2_5;
+  eph.crs = rtcm_getbits(rtcm, i, 16) * P2_5;
   i += 16;
-  eph.deln = getbits(rtcm->buff, i, 16) * P2_43 * SC2RAD;
+  eph.deln = rtcm_getbits(rtcm, i, 16) * P2_43 * SC2RAD;
   i += 16;
-  eph.cuc = getbits(rtcm->buff, i, 16) * P2_29;
+  eph.cuc = rtcm_getbits(rtcm, i, 16) * P2_29;
   i += 16;
-  eph.e = getbitu(rtcm->buff, i, 32) * P2_33;
+  eph.e = rtcm_getbitu(rtcm, i, 32) * P2_33;
   i += 32;
-  eph.cus = getbits(rtcm->buff, i, 16);
+  eph.cus = rtcm_getbits(rtcm, i, 16);
   i += 16;
-  double sqrtA = getbitu(rtcm->buff, i, 32) * P2_19;
+  double sqrtA = rtcm_getbitu(rtcm, i, 32) * P2_19;
   i += 32;
-  eph.toes = getbitu(rtcm->buff, i, 16);
+  eph.toes = rtcm_getbitu(rtcm, i, 16);
   i += 16;
-  eph.OMG0 = getbits(rtcm->buff, i, 32) * P2_31 * SC2RAD;
+  eph.OMG0 = rtcm_getbits(rtcm, i, 32) * P2_31 * SC2RAD;
   i += 32;
-  eph.cic = getbits(rtcm->buff, i, 16) * P2_29;
+  eph.cic = rtcm_getbits(rtcm, i, 16) * P2_29;
   i += 16;
-  eph.i0 = getbits(rtcm->buff, i, 32) * P2_31 * SC2RAD;
+  eph.i0 = rtcm_getbits(rtcm, i, 32) * P2_31 * SC2RAD;
   i += 32;
-  eph.cis = getbits(rtcm->buff, i, 16) * P2_29;
+  eph.cis = rtcm_getbits(rtcm, i, 16) * P2_29;
   i += 16;
-  eph.omg = getbits(rtcm->buff, i, 32) * P2_31 * SC2RAD;
+  eph.omg = rtcm_getbits(rtcm, i, 32) * P2_31 * SC2RAD;
   i += 32;
-  eph.crc = getbits(rtcm->buff, i, 16) * P2_5;
+  eph.crc = rtcm_getbits(rtcm, i, 16) * P2_5;
   i += 16;
-  eph.OMGd = getbits(rtcm->buff, i, 24) * P2_43 * SC2RAD;
+  eph.OMGd = rtcm_getbits(rtcm, i, 24) * P2_43 * SC2RAD;
   i += 24;
-  eph.M0 = getbits(rtcm->buff, i, 32) * P2_31 * SC2RAD;
+  eph.M0 = rtcm_getbits(rtcm, i, 32) * P2_31 * SC2RAD;
   i += 32;
-  eph.iodc = getbitu(rtcm->buff, i, 10);
+  eph.iodc = rtcm_getbitu(rtcm, i, 10);
   i += 10;
-  eph.f0 = getbits(rtcm->buff, i, 22) * P2_31;
+  eph.f0 = rtcm_getbits(rtcm, i, 22) * P2_31;
   i += 22;
-  int prn = getbitu(rtcm->buff, i, 5);
+  int prn = rtcm_getbitu(rtcm, i, 5);
   i += 5 + 3;
-  eph.tgd[0] = getbits(rtcm->buff, i, 8) * P2_31;
+  eph.tgd[0] = rtcm_getbits(rtcm, i, 8) * P2_31;
   i += 8;
-  eph.code = getbitu(rtcm->buff, i, 2);
+  eph.code = rtcm_getbitu(rtcm, i, 2);
   i += 2;
-  eph.sva = getbitu(rtcm->buff, i, 4);
+  eph.sva = rtcm_getbitu(rtcm, i, 4);
   i += 4;
-  eph.svh = getbitu(rtcm->buff, i, 6);
+  eph.svh = rtcm_getbitu(rtcm, i, 6);
   i += 6;
-  eph.flag = getbitu(rtcm->buff, i, 1);
+  eph.flag = rtcm_getbitu(rtcm, i, 1);
   if (prn == 0) prn = 32;
   int sat = satno(SYS_GPS, prn);
   eph.sat = sat;
@@ -209,7 +217,7 @@ static int decode_type17(rtcm_t *rtcm) {
   rtcm->ephsat = sat;
   return 2;
 }
-/* decode type 18: rtk uncorrected carrier-phase -----------------------------*/
+/* Decode type 18: rtk uncorrected carrier-phase -----------------------------*/
 static int decode_type18(rtcm_t *rtcm) {
   trace(4, "decode_type18: len=%d\n", rtcm->len);
 
@@ -218,9 +226,9 @@ static int decode_type18(rtcm_t *rtcm) {
     trace(2, "rtcm2 18 length error: len=%d\n", rtcm->len);
     return -1;
   }
-  int freq = getbitu(rtcm->buff, i, 2);
+  int freq = rtcm_getbitu(rtcm, i, 2);
   i += 2 + 2;
-  double usec = getbitu(rtcm->buff, i, 20);
+  double usec = rtcm_getbitu(rtcm, i, 20);
   i += 20;
   if (freq & 0x1) {
     trace(2, "rtcm2 18 not supported frequency: freq=%d\n", freq);
@@ -230,17 +238,17 @@ static int decode_type18(rtcm_t *rtcm) {
 
   int sync = 1;
   while (i + 48 <= rtcm->len * 8 && rtcm->obs.n < MAXOBS) {
-    sync = getbitu(rtcm->buff, i, 1);
+    sync = rtcm_getbitu(rtcm, i, 1);
     i += 1;
-    int code = getbitu(rtcm->buff, i, 1);
+    int code = rtcm_getbitu(rtcm, i, 1);
     i += 1;
-    int sys = getbitu(rtcm->buff, i, 1);
+    int sys = rtcm_getbitu(rtcm, i, 1);
     i += 1;
-    int prn = getbitu(rtcm->buff, i, 5);
+    int prn = rtcm_getbitu(rtcm, i, 5);
     i += 5 + 3;
-    int loss = getbitu(rtcm->buff, i, 5);
+    int loss = rtcm_getbitu(rtcm, i, 5);
     i += 5;
-    double cp = getbits(rtcm->buff, i, 32);
+    double cp = rtcm_getbits(rtcm, i, 32);
     i += 32;
     if (prn == 0) prn = 32;
     int sat = satno(sys ? SYS_GLO : SYS_GPS, prn);
@@ -249,7 +257,7 @@ static int decode_type18(rtcm_t *rtcm) {
       continue;
     }
     gtime_t time = timeadd(rtcm->time, usec * 1E-6);
-    if (sys) time = utc2gpst(time); /* convert glonass time to gpst */
+    if (sys) time = utc2gpst(time); /* Convert GLONASS time to GPST */
 
     double tt = timediff(rtcm->obs.data[0].time, time);
     if (rtcm->obsflag || fabs(tt) > 1E-9) {
@@ -267,7 +275,7 @@ static int decode_type18(rtcm_t *rtcm) {
   rtcm->obsflag = !sync;
   return sync ? 0 : 1;
 }
-/* decode type 19: rtk uncorrected pseudorange -------------------------------*/
+/* Decode type 19: rtk uncorrected pseudorange -------------------------------*/
 static int decode_type19(rtcm_t *rtcm) {
   trace(4, "decode_type19: len=%d\n", rtcm->len);
 
@@ -276,9 +284,9 @@ static int decode_type19(rtcm_t *rtcm) {
     trace(2, "rtcm2 19 length error: len=%d\n", rtcm->len);
     return -1;
   }
-  int freq = getbitu(rtcm->buff, i, 2);
+  int freq = rtcm_getbitu(rtcm, i, 2);
   i += 2 + 2;
-  double usec = getbitu(rtcm->buff, i, 20);
+  double usec = rtcm_getbitu(rtcm, i, 20);
   i += 20;
   if (freq & 0x1) {
     trace(2, "rtcm2 19 not supported frequency: freq=%d\n", freq);
@@ -288,15 +296,15 @@ static int decode_type19(rtcm_t *rtcm) {
 
   int sync = 1;
   while (i + 48 <= rtcm->len * 8 && rtcm->obs.n < MAXOBS) {
-    sync = getbitu(rtcm->buff, i, 1);
+    sync = rtcm_getbitu(rtcm, i, 1);
     i += 1;
-    int code = getbitu(rtcm->buff, i, 1);
+    int code = rtcm_getbitu(rtcm, i, 1);
     i += 1;
-    int sys = getbitu(rtcm->buff, i, 1);
+    int sys = rtcm_getbitu(rtcm, i, 1);
     i += 1;
-    int prn = getbitu(rtcm->buff, i, 5);
+    int prn = rtcm_getbitu(rtcm, i, 5);
     i += 5 + 8;
-    double pr = getbitu(rtcm->buff, i, 32);
+    double pr = rtcm_getbitu(rtcm, i, 32);
     i += 32;
     if (prn == 0) prn = 32;
     int sat = satno(sys ? SYS_GLO : SYS_GPS, prn);
@@ -305,7 +313,7 @@ static int decode_type19(rtcm_t *rtcm) {
       continue;
     }
     gtime_t time = timeadd(rtcm->time, usec * 1E-6);
-    if (sys) time = utc2gpst(time); /* convert glonass time to gpst */
+    if (sys) time = utc2gpst(time); /* Convert GLONASS time to GPST */
 
     double tt = timediff(rtcm->obs.data[0].time, time);
     if (rtcm->obsflag || fabs(tt) > 1E-9) {
@@ -321,7 +329,7 @@ static int decode_type19(rtcm_t *rtcm) {
   rtcm->obsflag = !sync;
   return sync ? 0 : 1;
 }
-/* decode type 22: extended reference station parameter ----------------------*/
+/* Decode type 22: extended reference station parameter ----------------------*/
 static int decode_type22(rtcm_t *rtcm) {
   trace(4, "decode_type22: len=%d\n", rtcm->len);
 
@@ -331,63 +339,63 @@ static int decode_type22(rtcm_t *rtcm) {
     return -1;
   }
   double del[2][3] = {{0}};
-  del[0][0] = getbits(rtcm->buff, i, 8) / 25600.0;
+  del[0][0] = rtcm_getbits(rtcm, i, 8) / 25600.0;
   i += 8;
-  del[0][1] = getbits(rtcm->buff, i, 8) / 25600.0;
+  del[0][1] = rtcm_getbits(rtcm, i, 8) / 25600.0;
   i += 8;
-  del[0][2] = getbits(rtcm->buff, i, 8) / 25600.0;
+  del[0][2] = rtcm_getbits(rtcm, i, 8) / 25600.0;
   i += 8;
   double hgt = 0.0;
   if (i + 24 <= rtcm->len * 8) {
     i += 5;
-    int noh = getbits(rtcm->buff, i, 1);
+    int noh = rtcm_getbits(rtcm, i, 1);
     i += 1;
-    hgt = noh ? 0.0 : getbitu(rtcm->buff, i, 18) / 25600.0;
+    hgt = noh ? 0.0 : rtcm_getbitu(rtcm, i, 18) / 25600.0;
     i += 18;
   }
   /* TODO should this path be taken if the above was not read? */
   if (i + 24 <= rtcm->len * 8) {
-    del[1][0] = getbits(rtcm->buff, i, 8) / 1600.0;
+    del[1][0] = rtcm_getbits(rtcm, i, 8) / 1600.0;
     i += 8;
-    del[1][1] = getbits(rtcm->buff, i, 8) / 1600.0;
+    del[1][1] = rtcm_getbits(rtcm, i, 8) / 1600.0;
     i += 8;
-    del[1][2] = getbits(rtcm->buff, i, 8) / 1600.0;
+    del[1][2] = rtcm_getbits(rtcm, i, 8) / 1600.0;
   }
-  rtcm->sta.deltype = 1; /* xyz */
+  rtcm->sta.deltype = 1; /* XYZ */
   for (int j = 0; j < 3; j++) rtcm->sta.del[j] = del[0][j];
   rtcm->sta.hgt = hgt;
   return 5;
 }
-/* decode type 23: antenna type definition record ----------------------------*/
+/* Decode type 23: antenna type definition record ----------------------------*/
 static int decode_type23(rtcm_t *rtcm) { return 0; }
-/* decode type 24: antenna reference point (arp) -----------------------------*/
+/* Decode type 24: antenna reference point (arp) -----------------------------*/
 static int decode_type24(rtcm_t *rtcm) { return 0; }
-/* decode type 31: differential glonass correction ---------------------------*/
+/* Decode type 31: differential GLONASS correction ---------------------------*/
 static int decode_type31(rtcm_t *rtcm) { return 0; }
-/* decode type 32: differential glonass reference station parameters ---------*/
+/* Decode type 32: differential GLONASS reference station parameters ---------*/
 static int decode_type32(rtcm_t *rtcm) { return 0; }
-/* decode type 34: glonass partial differential correction set ---------------*/
+/* Decode type 34: GLONASS partial differential correction set ---------------*/
 static int decode_type34(rtcm_t *rtcm) { return 0; }
-/* decode type 36: glonass special message -----------------------------------*/
+/* Decode type 36: GLONASS special message -----------------------------------*/
 static int decode_type36(rtcm_t *rtcm) { return 0; }
-/* decode type 37: gnss system time offset -----------------------------------*/
+/* Decode type 37: GNSS system time offset -----------------------------------*/
 static int decode_type37(rtcm_t *rtcm) { return 0; }
-/* decode type 59: proprietary message ---------------------------------------*/
+/* Decode type 59: proprietary message ---------------------------------------*/
 static int decode_type59(rtcm_t *rtcm) { return 0; }
-/* decode rtcm ver.2 message -------------------------------------------------*/
+/* Decode RTCM ver.2 message -------------------------------------------------*/
 extern int decode_rtcm2(rtcm_t *rtcm) {
-  int type = getbitu(rtcm->buff, 8, 6);
+  int type = rtcm_getbitu(rtcm, 8, 6);
   trace(3, "decode_rtcm2: type=%2d len=%3d\n", type, rtcm->len);
 
-  double zcnt = getbitu(rtcm->buff, 24, 13) * 0.6;
+  double zcnt = rtcm_getbitu(rtcm, 24, 13) * 0.6;
   if (zcnt >= 3600.0) {
     trace(2, "rtcm2 modified z-count error: zcnt=%.1f\n", zcnt);
     return -1;
   }
   adjhour(rtcm, zcnt);
-  int staid = getbitu(rtcm->buff, 14, 10);
-  int seqno = getbitu(rtcm->buff, 37, 3);
-  int stah = getbitu(rtcm->buff, 45, 3);
+  int staid = rtcm_getbitu(rtcm, 14, 10);
+  int seqno = rtcm_getbitu(rtcm, 37, 3);
+  int stah = rtcm_getbitu(rtcm, 45, 3);
   if (seqno - rtcm->seqno != 1 && seqno - rtcm->seqno != -7) {
     trace(2, "rtcm2 message outage: seqno=%d->%d\n", rtcm->seqno, seqno);
   }
@@ -440,28 +448,28 @@ extern int decode_rtcm2(rtcm_t *rtcm) {
       break;
     case 23:
       ret = decode_type23(rtcm);
-      break; /* not supported */
+      break; /* Not supported */
     case 24:
       ret = decode_type24(rtcm);
-      break; /* not supported */
+      break; /* Not supported */
     case 31:
       ret = decode_type31(rtcm);
-      break; /* not supported */
+      break; /* Not supported */
     case 32:
       ret = decode_type32(rtcm);
-      break; /* not supported */
+      break; /* Not supported */
     case 34:
       ret = decode_type34(rtcm);
-      break; /* not supported */
+      break; /* Not supported */
     case 36:
       ret = decode_type36(rtcm);
-      break; /* not supported */
+      break; /* Not supported */
     case 37:
       ret = decode_type37(rtcm);
-      break; /* not supported */
+      break; /* Not supported */
     case 59:
       ret = decode_type59(rtcm);
-      break; /* not supported */
+      break; /* Not supported */
   }
   if (ret >= 0) {
     if (1 <= type && type <= 99)

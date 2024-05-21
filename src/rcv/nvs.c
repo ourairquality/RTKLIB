@@ -8,31 +8,31 @@
  *         files accumulation, NVS
  *     [2] NAVIS Navis Standard Interface Protocol BINR, NVS
  *
- * version : $Revision:$ $Date:$
- * history : 2012/01/30 1.0  first version by M.BAVARO
+ * Version : $Revision:$ $Date:$
+ * History : 2012/01/30 1.0  first version by M.BAVARO
  *           2012/11/08 1.1  modified by T.TAKASU
  *           2013/02/23 1.2  fix memory access violation problem on arm
  *           2013/04/24 1.3  fix bug on cycle-slip detection
- *                           add range check of gps ephemeris week
+ *                           add range check of GPS ephemeris week
  *           2013/09/01 1.4  add check error of week, time jump, obs data range
- *           2014/08/26 1.5  fix bug on iode in glonass ephemeris
+ *           2014/08/26 1.5  fix bug on iode in GLONASS ephemeris
  *           2016/01/26 1.6  fix bug on unrecognized meas data (#130)
  *           2017/04/11 1.7  (char *) -> (signed char *)
  *           2020/07/10 1.8  suppress warnings
  *           2020/11/30 1.9  use integer type in stdint.h
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #define _POSIX_C_SOURCE 199506
 #include "rtklib.h"
 
-#define NVSSYNC 0x10   /* nvs message sync code 1 */
-#define NVSENDMSG 0x03 /* nvs message sync code 1 */
-#define NVSCFG 0x06    /* nvs message cfg-??? */
+#define NVSSYNC 0x10   /* Nvs message sync code 1 */
+#define NVSENDMSG 0x03 /* Nvs message sync code 1 */
+#define NVSCFG 0x06    /* Nvs message cfg-??? */
 
-#define ID_XF5RAW 0xf5  /* nvs msg id: raw measurement data */
-#define ID_X4AIONO 0x4a /* nvs msg id: gps ionospheric data */
-#define ID_X4BTIME 0x4b /* nvs msg id: GPS/GLONASS/UTC timescale data */
-#define ID_XF7EPH 0xf7  /* nvs msg id: subframe buffer */
-#define ID_XE5BIT 0xe5  /* nvs msg id: bit information */
+#define ID_XF5RAW 0xf5  /* Nvs msg id: raw measurement data */
+#define ID_X4AIONO 0x4a /* Nvs msg id: GPS ionospheric data */
+#define ID_X4BTIME 0x4b /* Nvs msg id: GPS/GLONASS/UTC timescale data */
+#define ID_XF7EPH 0xf7  /* Nvs msg id: subframe buffer */
+#define ID_XE5BIT 0xe5  /* Nvs msg id: bit information */
 
 #define ID_XD7ADVANCED 0xd7 /* */
 #define ID_X02RATEPVT 0x02  /* */
@@ -40,7 +40,7 @@
 #define ID_XD7SMOOTH 0xd7   /* */
 #define ID_XD5BIT 0xd5      /* */
 
-/* get fields (little-endian) ------------------------------------------------*/
+/* Get fields (little-endian) ------------------------------------------------*/
 #define U1(p) (*((uint8_t *)(p)))
 #define I1(p) (*((int8_t *)(p)))
 static uint16_t U2(uint8_t *p) {
@@ -74,17 +74,17 @@ static double R8(uint8_t *p) {
   return r;
 }
 
-/* ura values (ref [3] 20.3.3.3.1.1) -----------------------------------------*/
+/* URA values (ref [3] 20.3.3.3.1.1) -----------------------------------------*/
 static const double ura_eph[] = {2.4,  3.4,   4.85,  6.85,  9.65,   13.65,  24.0,   48.0,
                                  96.0, 192.0, 384.0, 768.0, 1536.0, 3072.0, 6144.0, 0.0};
-/* ura value (m) to ura index ------------------------------------------------*/
+/* URA value (m) to URA index ------------------------------------------------*/
 static int uraindex(double value) {
   int i;
   for (i = 0; i < 15; i++)
     if (ura_eph[i] >= value) break;
   return i;
 }
-/* decode NVS xf5-raw: raw measurement data ----------------------------------*/
+/* Decode NVS xf5-raw: raw measurement data ----------------------------------*/
 static int decode_xf5raw(raw_t *raw) {
   gtime_t time;
   double tadj = 0.0, toff = 0.0, tn;
@@ -98,17 +98,17 @@ static int decode_xf5raw(raw_t *raw) {
 
   trace(4, "decode_xf5raw: len=%d\n", raw->len);
 
-  /* time tag adjustment option (-TADJ) */
+  /* Time tag adjustment option (-TADJ) */
   if ((q = strstr(raw->opt, "-tadj"))) {
     sscanf(q, "-TADJ=%lf", &tadj);
   }
   dTowUTC = R8(p);
   week = U2(p + 8);
   gpsutcTimescale = R8(p + 10);
-  /* glonassutcTimescale = R8(p+18); */
+  /* GlonassutcTimescale = R8(p+18); */
   rcvTimeScaleCorr = I1(p + 26);
 
-  /* check gps week range */
+  /* Check GPS week range */
   if (week >= 4096) {
     trace(2, "nvs xf5raw obs week error: week=%d\n", week);
     return -1;
@@ -124,18 +124,18 @@ static int decode_xf5raw(raw_t *raw) {
 
   dTowGPS = dTowUTC + gpsutcTimescale;
 
-  /* Tweak pseudoranges to allow Rinex to represent the NVS time of measure */
+  /* Tweak pseudoranges to allow RINEX to represent the NVS time of measure */
   dTowInt = 10.0 * floor((dTowGPS / 10.0) + 0.5);
   dTowFrac = dTowGPS - (double)dTowInt;
   time = gpst2time(week, dTowInt * 0.001);
 
-  /* time tag adjustment */
+  /* Time tag adjustment */
   if (tadj > 0.0) {
     tn = time2gpst(time, &week) / tadj;
     toff = (tn - floor(tn + 0.5)) * tadj;
     time = timeadd(time, -toff);
   }
-  /* check time tag jump and output warning */
+  /* Check time tag jump and output warning */
   if (raw->time.time && fabs(timediff(time, raw->time)) > 86400.0) {
     time2str(time, tstr, 3);
     trace(2, "nvs xf5raw time tag jump warning: time=%s\n", tstr);
@@ -159,7 +159,7 @@ static int decode_xf5raw(raw_t *raw) {
     P1 = R8(p + 12);
     D1 = R8(p + 20);
 
-    /* check range error */
+    /* Check range error */
     if (L1 < -1E10 || L1 > 1E10 || P1 < -1E10 || P1 > 1E10 || D1 < -1E5 || D1 > 1E5) {
       trace(2, "nvs xf5raw obs range error: sat=%2d L1=%12.5e P1=%12.5e D1=%12.5e\n", sat, L1, P1,
             D1);
@@ -172,10 +172,10 @@ static int decode_xf5raw(raw_t *raw) {
       raw->obs.data[n].L[0] = L1 - toff * FREQL1;
     }
     raw->obs.data[n].P[0] =
-        (P1 - dTowFrac) * CLIGHT * 0.001 - toff * CLIGHT; /* in ms, needs to be converted */
+        (P1 - dTowFrac) * CLIGHT * 0.001 - toff * CLIGHT; /* In ms, needs to be converted */
     raw->obs.data[n].D[0] = (float)D1;
 
-    /* set LLI if meas flag 4 (carrier phase present) off -> on */
+    /* Set LLI if meas flag 4 (carrier phase present) off -> on */
     flag = U1(p + 28);
     raw->obs.data[n].LLI[0] = (flag & 0x08) && !(raw->halfc[sat - 1][0] & 0x08) ? 1 : 0;
     raw->halfc[sat - 1][0] = flag;
@@ -195,7 +195,7 @@ static int decode_xf5raw(raw_t *raw) {
   raw->obs.n = n;
   return 1;
 }
-/* decode ephemeris ----------------------------------------------------------*/
+/* Decode ephemeris ----------------------------------------------------------*/
 static int decode_gpsephem(int sat, raw_t *raw) {
   eph_t eph = {0};
   uint8_t *puiTmp = (raw->buff) + 2;
@@ -243,7 +243,7 @@ static int decode_gpsephem(int sat, raw_t *raw) {
   eph.ttr = raw->time;
 
   if (!strstr(raw->opt, "-EPHALL")) {
-    if (eph.iode == raw->nav.eph[sat - 1][0].iode) return 0; /* unchanged */
+    if (eph.iode == raw->nav.eph[sat - 1][0].iode) return 0; /* Unchanged */
   }
   eph.sat = sat;
   raw->nav.eph[sat - 1][0] = eph;
@@ -251,7 +251,7 @@ static int decode_gpsephem(int sat, raw_t *raw) {
   raw->ephset = 0;
   return 2;
 }
-/* adjust daily rollover of time ---------------------------------------------*/
+/* Adjust daily rollover of time ---------------------------------------------*/
 static gtime_t adjday(gtime_t time, double tod) {
   double ep[6], tod_p;
   time2epoch(time, ep);
@@ -263,7 +263,7 @@ static gtime_t adjday(gtime_t time, double tod) {
   ep[3] = ep[4] = ep[5] = 0.0;
   return timeadd(epoch2time(ep), tod);
 }
-/* decode gloephem -----------------------------------------------------------*/
+/* Decode gloephem -----------------------------------------------------------*/
 static int decode_gloephem(int sat, raw_t *raw) {
   geph_t geph = {0};
   uint8_t *p = (raw->buff) + 2;
@@ -299,16 +299,16 @@ static int decode_gloephem(int sat, raw_t *raw) {
   geph.iode = (tb / 900) & 0x7F;
   geph.toe = utc2gpst(adjday(raw->time, tb - 10800.0));
   geph.tof = utc2gpst(adjday(raw->time, tk - 10800.0));
-#if 0
-  /* check illegal ephemeris by toe */
+#ifdef RTK_DISABLED
+  /* Check illegal ephemeris by toe */
   double tt = timediff(raw->time, geph.toe);
   if (fabs(tt) > 3600.0) {
     trace(3, "nvs NE illegal toe: prn=%2d tt=%6.0f\n", prn, tt);
     return 0;
   }
 #endif
-#if 0
-  /* check illegal ephemeris by frequency number consistency */
+#ifdef RTK_DISABLED
+  /* Check illegal ephemeris by frequency number consistency */
   if (raw->nav.geph[prn - MINPRNGLO][0].toe.time &&
       geph.frq != raw->nav.geph[prn - MINPRNGLO][0].frq) {
     trace(2, "nvs NE illegal freq change: prn=%2d frq=%2d->%2d\n", prn,
@@ -327,7 +327,7 @@ static int decode_gloephem(int sat, raw_t *raw) {
 
   return 2;
 }
-/* decode NVS ephemerides in clear -------------------------------------------*/
+/* Decode NVS ephemerides in clear -------------------------------------------*/
 static int decode_xf7eph(raw_t *raw) {
   int prn, sat, sys;
   uint8_t *p = raw->buff;
@@ -351,7 +351,7 @@ static int decode_xf7eph(raw_t *raw) {
   }
   return 0;
 }
-/* decode NVS rxm-sfrb: subframe buffer --------------------------------------*/
+/* Decode NVS rxm-sfrb: subframe buffer --------------------------------------*/
 static int decode_xe5bit(raw_t *raw) {
   int prn;
   int iBlkStartIdx, iExpLen, iIdx;
@@ -378,7 +378,7 @@ static int decode_xe5bit(raw_t *raw) {
     uiDataType = U1(p + iBlkStartIdx + 1);
 
     switch (uiDataType) {
-      case 1: /* Glonass */
+      case 1: /* GLONASS */
         iBlkStartIdx += 19;
         break;
       case 2: /* GPS */
@@ -387,8 +387,8 @@ static int decode_xe5bit(raw_t *raw) {
       case 4: /* SBAS */
         prn = U1(p + (iBlkStartIdx + 2)) + 120;
 
-        /* sat = satno(SYS_SBS, prn); */
-        /* sys = satsys(sat,&prn); */
+        /* Sat = satno(SYS_SBS, prn); */
+        /* Sys = satsys(sat,&prn); */
         memset(words, 0, 10 * sizeof(uint32_t));
         for (iIdx = 0, iBlkStartIdx += 7; iIdx < 10; iIdx++, iBlkStartIdx += 4) {
           words[iIdx] = U4(p + iBlkStartIdx);
@@ -402,7 +402,7 @@ static int decode_xe5bit(raw_t *raw) {
   }
   return 0;
 }
-/* decode NVS x4aiono --------------------------------------------------------*/
+/* Decode NVS x4aiono --------------------------------------------------------*/
 static int decode_x4aiono(raw_t *raw) {
   uint8_t *p = raw->buff + 2;
 
@@ -419,7 +419,7 @@ static int decode_x4aiono(raw_t *raw) {
 
   return 9;
 }
-/* decode NVS x4btime --------------------------------------------------------*/
+/* Decode NVS x4btime --------------------------------------------------------*/
 static int decode_x4btime(raw_t *raw) {
   uint8_t *p = raw->buff + 2;
 
@@ -433,7 +433,7 @@ static int decode_x4btime(raw_t *raw) {
 
   return 9;
 }
-/* decode NVS raw message ----------------------------------------------------*/
+/* Decode NVS raw message ----------------------------------------------------*/
 static int decode_nvs(raw_t *raw) {
   int type = U1(raw->buff + 1);
 
@@ -457,25 +457,25 @@ static int decode_nvs(raw_t *raw) {
   }
   return 0;
 }
-/* input NVS raw message from stream -------------------------------------------
- * fetch next NVS raw data and input a message from stream
- * args   : raw_t *raw   IO    receiver raw data control struct
+/* Input NVS raw message from stream -------------------------------------------
+ * Fetch next NVS raw data and input a message from stream
+ * Args   : raw_t *raw   IO    receiver raw data control struct
  *          uint8_t data I     stream data (1 byte)
- * return : status (-1: error message, 0: no message, 1: input observation data,
- *                  2: input ephemeris, 3: input sbas message,
- *                  9: input ion/utc parameter)
+ * Return : status (-1: error message, 0: no message, 1: input observation data,
+ *                  2: input ephemeris, 3: input SBAS message,
+ *                  9: input ion/UTC parameter)
  *
- * notes  : to specify input options, set raw->opt to the following option
+ * Notes  : to specify input options, set raw->opt to the following option
  *          strings separated by spaces.
  *
  *          -EPHALL    : input all ephemerides
  *          -TADJ=tint : adjust time tags to multiples of tint (sec)
  *
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern int input_nvs(raw_t *raw, uint8_t data) {
   trace(5, "input_nvs: data=%02x\n", data);
 
-  /* synchronize frame */
+  /* Synchronize frame */
   if ((raw->nbyte == 0) && (data == NVSSYNC)) {
     /* Search a 0x10 */
     raw->buff[0] = data;
@@ -510,18 +510,18 @@ extern int input_nvs(raw_t *raw, uint8_t data) {
   }
   return 0;
 }
-/* input NVS raw message from file ---------------------------------------------
- * fetch next NVS raw data and input a message from file
- * args   : raw_t  *raw  IO    receiver raw data control struct
+/* Input NVS raw message from file ---------------------------------------------
+ * Fetch next NVS raw data and input a message from file
+ * Args   : raw_t  *raw  IO    receiver raw data control struct
  *          FILE   *fp   I     file pointer
- * return : status(-2: end of file, -1...9: same as above)
- *-----------------------------------------------------------------------------*/
+ * Return : status(-2: end of file, -1...9: same as above)
+ *----------------------------------------------------------------------------*/
 extern int input_nvsf(raw_t *raw, FILE *fp) {
   int i, data, odd = 0;
 
   trace(4, "input_nvsf:\n");
 
-  /* synchronize frame */
+  /* Synchronize frame */
   for (i = 0;; i++) {
     if ((data = fgetc(fp)) == EOF) return -2;
 
@@ -556,20 +556,20 @@ extern int input_nvsf(raw_t *raw, FILE *fp) {
     trace(2, "nvs length error: len=%d\n", raw->len);
     return -1;
   }
-  /* decode nvs raw message */
+  /* Decode nvs raw message */
   return decode_nvs(raw);
 }
-/* generate NVS binary message -------------------------------------------------
- * generate NVS binary message from message string
- * args   : char  *msg   I      message string
+/* Generate NVS binary message -------------------------------------------------
+ * Generate NVS binary message from message string
+ * Args   : char  *msg   I      message string
  *            "RESTART  [arg...]" system reset
  *            "CFG-SERI [arg...]" configure serial port property
  *            "CFG-FMT  [arg...]" configure output message format
  *            "CFG-RATE [arg...]" configure binary measurement output rates
  *          uint8_t *buff O binary message
- * return : length of binary message (0: error)
- * note   : see reference [1][2] for details.
- *-----------------------------------------------------------------------------*/
+ * Return : length of binary message (0: error)
+ * Note   : see reference [1][2] for details.
+ *----------------------------------------------------------------------------*/
 extern int gen_nvs(const char *msg, uint8_t *buff, size_t size) {
   /* TODO respect the buff size */
   char mbuff[1024], *args[32], *p;

@@ -3,29 +3,29 @@
  *
  *          Copyright (C) 2007-2020 by T.TAKASU, All rights reserved.
  *
- * reference :
+ * Reference :
  *     [1] EGM96 The NASA GSFC and NIMA Joint Geopotential Model
  *     [2] Earth Gravitational Model 2008 (EGM2008)
  *
- * version : $Revision: 1.1 $ $Date: 2008/07/17 21:48:06 $
- * history : 2007/01/07 1.0  new
+ * Version : $Revision: 1.1 $ $Date: 2008/07/17 21:48:06 $
+ * History : 2007/01/07 1.0  new
  *           2009/09/04 1.1  replace geoid data by global model
  *           2009/12/05 1.2  added api:
  *                               opengeoid(),closegeoid()
  *           2020/11/30 1.3  use integer types in stdint.h
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
-static const double range[4];            /* embedded geoid area range {W,E,S,N} (deg) */
-static const float geoid[361][181];      /* embedded geoid heights (m) (lon x lat) */
-static FILE *fp_geoid = NULL;            /* geoid file pointer */
-static int model_geoid = GEOID_EMBEDDED; /* geoid model */
+static const double range[4];            /* Embedded geoid area range {W,E,S,N} (deg) */
+static const float geoid[361][181];      /* Embedded geoid heights (m) (lon x lat) */
+static FILE *fp_geoid = NULL;            /* Geoid file pointer */
+static int model_geoid = GEOID_EMBEDDED; /* Geoid model */
 
-/* bilinear interpolation ----------------------------------------------------*/
+/* Bilinear interpolation ----------------------------------------------------*/
 static double interpb(const double *y, double a, double b) {
   return y[0] * (1.0 - a) * (1.0 - b) + y[1] * a * (1.0 - b) + y[2] * (1.0 - a) * b + y[3] * a * b;
 }
-/* embedded geoid model ------------------------------------------------------*/
+/* Embedded geoid model ------------------------------------------------------*/
 static double geoidh_emb(const double *pos) {
   const double dlon = 1.0, dlat = 1.0;
 
@@ -48,15 +48,15 @@ static double geoidh_emb(const double *pos) {
   y[3] = geoid[i2][j2];
   return interpb(y, a, b);
 }
-/* get 2 byte signed integer from file ---------------------------------------*/
+/* Get 2 byte signed integer from file ---------------------------------------*/
 static int16_t fget2b(FILE *fp, int32_t off) {
   uint8_t v[2] = {0x00};
   if (fseek(fp, off, SEEK_SET) == EOF || fread(v, 2, 1, fp) < 1) {
     trace(2, "geoid data file range error: off=%ld\n", off);
   }
-  return ((int16_t)v[0] << 8) + v[1]; /* big-endian */
+  return ((int16_t)v[0] << 8) + v[1]; /* Big-endian */
 }
-/* egm96 15x15" model --------------------------------------------------------*/
+/* Egm96 15x15" model --------------------------------------------------------*/
 static double geoidh_egm96(const double *pos) {
   if (!fp_geoid) return 0.0;
 
@@ -78,15 +78,15 @@ static double geoidh_egm96(const double *pos) {
   y[3] = fget2b(fp_geoid, 2L * (i2 + j2 * nlon)) * 0.01;
   return interpb(y, a, b);
 }
-/* get 4byte float from file -------------------------------------------------*/
+/* Get 4byte float from file -------------------------------------------------*/
 static float fget4f(FILE *fp, int off) {
   float v = 0.0;
   if (fseek(fp, (long)off, SEEK_SET) == EOF || fread(&v, 4, 1, fp) < 1) {
     trace(2, "geoid data file range error: off=%ld\n", off);
   }
-  return v; /* small-endian */
+  return v; /* Small-endian */
 }
-/* egm2008 model -------------------------------------------------------------*/
+/* Egm2008 model -------------------------------------------------------------*/
 static double geoidh_egm08(const double *pos, int model) {
   const double lon0 = 0.0, lat0 = 90.0;
 
@@ -114,20 +114,20 @@ static double geoidh_egm08(const double *pos, int model) {
   b -= j1;
   int j2 = j1 < nlat - 1 ? j1 + 1 : j1;
 
-  /* notes: 4byte-zeros are inserted at first and last field of a record */
+  /* Notes: 4byte-zeros are inserted at first and last field of a record */
   /*        for current geoid data files */
-  /* http://earth-info.nga.mil/GandG/wgs84/gravitymod/egm2008/egm08_wgs84.html */
+  /* http://earth-info.nga.mil/GandG/WGS84/gravitymod/egm2008/egm08_wgs84.html */
   /* (1) Und_min1x1_egm2008_isw=82_WGS84_TideFree_SE.gz */
   /* (2) Und_min2.5x2.5_egm2008_isw=82_WGS84_TideFree_SE.gz */
   double y[4];
-#if 0
-  /* not zero-inserted */
+#ifdef RTK_DISABLED
+  /* Not zero-inserted */
   y[0] = fget4f(fp_geoid, 4L * (i1 + j1 * (nlon)));
   y[1] = fget4f(fp_geoid, 4L * (i2 + j1 * (nlon)));
   y[2] = fget4f(fp_geoid, 4L * (i1 + j2 * (nlon)));
   y[3] = fget4f(fp_geoid, 4L * (i2 + j2 * (nlon)));
 #else
-  /* zero-inserted version (2009/12/10) */
+  /* Zero-inserted version (2009/12/10) */
   y[0] = fget4f(fp_geoid, 4L * (i1 + j1 * (nlon + 2) + 1));
   y[1] = fget4f(fp_geoid, 4L * (i2 + j1 * (nlon + 2) + 1));
   y[2] = fget4f(fp_geoid, 4L * (i1 + j2 * (nlon + 2) + 1));
@@ -135,7 +135,7 @@ static double geoidh_egm08(const double *pos, int model) {
 #endif
   return interpb(y, a, b);
 }
-/* get gsi geoid data --------------------------------------------------------*/
+/* Get gsi geoid data --------------------------------------------------------*/
 static double fgetgsi(FILE *fp, int nlon, int nlat, int i, int j) {
   const int nf = 28, wf = 9, nl = nf * wf + 2, nr = (nlon - 1) / nf + 1;
   int off = nl + j * nr * nl + i / nf * nl + i % nf * wf;
@@ -152,7 +152,7 @@ static double fgetgsi(FILE *fp, int nlon, int nlat, int i, int j) {
   }
   return v;
 }
-/* gsi geoid 2000 1.0x1.5" model ---------------------------------------------*/
+/* Gsi geoid 2000 1.0x1.5" model ---------------------------------------------*/
 static double geoidh_gsi(const double *pos) {
   const double lon0 = 120.0, lon1 = 150.0, lat0 = 20.0, lat1 = 50.0;
   const double dlon = 1.5 / 60.0, dlat = 1.0 / 60.0;
@@ -181,23 +181,23 @@ static double geoidh_gsi(const double *pos) {
   }
   return interpb(y, a, b);
 }
-/* open geoid model file -------------------------------------------------------
- * open geoid model file
- * args   : int    model     I   geoid model type
+/* Open geoid model file -------------------------------------------------------
+ * Open geoid model file
+ * Args   : int    model     I   geoid model type
  *                               GEOID_EMBEDDED   : embedded model(1x1deg)
  *                               GEOID_EGM96_M150 : EGM96 15x15"
  *                               GEOID_EGM2008_M25: EGM2008 2.5x2.5"
  *                               GEOID_EGM2008_M10: EGM2008 1.0x1.0"
  *                               GEOID_GSI2000_M15: GSI geoid 2000 1.0x1.5"
  *          char   *file     I   geoid model file path
- * return : status (true:ok,false:error)
- * notes  : the following geoid models can be used
+ * Return : status (true:ok,false:error)
+ * Notes  : the following geoid models can be used
  *          WW15MGH.DAC   : EGM96 15x15" binary grid height
  *          Und_min2.5x2.5_egm2008_isw=82_WGS84_TideFree_SE: EGM2008 2.5x2.5"
  *          Und_min1x1_egm2008_isw=82_WGS84_TideFree_SE    : EGM2008 1.0x1.0"
  *          gsigeome_ver4 : GSI geoid 2000 1.0x1.5" (japanese area)
  *          (byte-order of binary files must be compatible to cpu)
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern bool opengeoid(int model, const char *file) {
   trace(3, "opengeoid: model=%d file=%s\n", model, file);
 
@@ -218,11 +218,11 @@ extern bool opengeoid(int model, const char *file) {
   model_geoid = model;
   return true;
 }
-/* close geoid model file ------------------------------------------------------
- * close geoid model file
- * args   : none
- * return : none
- *-----------------------------------------------------------------------------*/
+/* Close geoid model file ------------------------------------------------------
+ * Close geoid model file
+ * Args   : none
+ * Return : none
+ *----------------------------------------------------------------------------*/
 extern void closegeoid(void) {
   trace(3, "closegoid:\n");
 
@@ -230,14 +230,14 @@ extern void closegeoid(void) {
   fp_geoid = NULL;
   model_geoid = GEOID_EMBEDDED;
 }
-/* geoid height ----------------------------------------------------------------
- * get geoid height from geoid model
- * args   : double *pos      I   geodetic position {lat,lon} (rad)
- * return : geoid height (m) (0.0:error)
- * notes  : to use external geoid model, call function opengeoid() to open
+/* Geoid height ----------------------------------------------------------------
+ * Get geoid height from geoid model
+ * Args   : double *pos      I   geodetic position {lat,lon} (rad)
+ * Return : geoid height (m) (0.0:error)
+ * Notes  : to use external geoid model, call function opengeoid() to open
  *          geoid model before calling the function. If the external geoid model
  *          is not open, the function uses embedded geoid model.
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern double geoidh(const double *pos) {
   double posd[2];
 
@@ -276,9 +276,9 @@ extern double geoidh(const double *pos) {
   return h;
 }
 /*------------------------------------------------------------------------------
- * embedded geoid model
- * notes  : geoid heights are derived from EGM96 (1 x 1 deg grid)
- *-----------------------------------------------------------------------------*/
+ * Embedded geoid model
+ * Notes  : geoid heights are derived from EGM96 (1 x 1 deg grid)
+ *----------------------------------------------------------------------------*/
 static const double range[] = {0.00, 360.00, -90.00, 90.00};
 
 static const float geoid[361][181] = {

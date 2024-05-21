@@ -1,10 +1,10 @@
 /*------------------------------------------------------------------------------
- * download.c : gnss data downloader
+ * download.c : GNSS data downloader
  *
  *          Copyright (C) 2012-2020 by T.TAKASU, All rights reserved.
  *
- * version : $Revision:$ $Date:$
- * history : 2012/12/28  1.0  new
+ * Version : $Revision:$ $Date:$
+ * History : 2012/12/28  1.0  new
  *           2013/06/02  1.1  replace S_IREAD by S_IRUSR
  *           2020/11/30  1.2  support protocol https:// and ftps://
  *                            support compressed RINEX (CRX) files
@@ -13,7 +13,7 @@
  *                            fix bug on double-free of download paths
  *                            limit max number of download paths
  *                            use integer types in stdint.h
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 #define _POSIX_C_SOURCE 199506
 #include <errno.h>
 #include <sys/stat.h>
@@ -27,21 +27,21 @@
 #define FTP_NOFILE 2048        /* FTP error no file */
 #define HTTP_NOFILE 1          /* HTTP error no file */
 #define FTP_RETRY 3            /* FTP number of retry */
-#define MAX_PATHS 131072       /* max number of download paths */
+#define MAX_PATHS 131072       /* Max number of download paths */
 
-/* type definitions ----------------------------------------------------------*/
+/* Type definitions ----------------------------------------------------------*/
 
-typedef struct { /* download path type */
-  char *remot;   /* remote path */
-  char *local;   /* local path */
+typedef struct { /* Download path type */
+  char *remot;   /* Remote path */
+  char *local;   /* Local path */
 } path_t;
 
-typedef struct { /* download paths type */
-  path_t *path;  /* download paths */
-  int n, nmax;   /* number and max number of paths */
+typedef struct { /* Download paths type */
+  path_t *path;  /* Download paths */
+  int n, nmax;   /* Number and max number of paths */
 } paths_t;
 
-/* execute command with test timeout -----------------------------------------*/
+/* Execute command with test timeout -----------------------------------------*/
 extern int execcmd_to(const char *cmd) {
 #ifdef WIN32
   PROCESS_INFORMATION info;
@@ -66,7 +66,7 @@ extern int execcmd_to(const char *cmd) {
   return system(cmd);
 #endif
 }
-/* generate path by replacing keywords ---------------------------------------*/
+/* Generate path by replacing keywords ---------------------------------------*/
 static void genpath(const char *file, const char *name, gtime_t time, int seqno, char *path,
                     size_t size) {
   char l_name[FNSIZE] = "", u_name[FNSIZE] = "";
@@ -112,14 +112,14 @@ static void genpath(const char *file, const char *name, gtime_t time, int seqno,
   buff[i] = '\0';
   reppath(buff, path, size, time, "", "");
 }
-/* parse field strings separated by spaces -----------------------------------*/
+/* Parse field strings separated by spaces -----------------------------------*/
 static char *parse_str(char *buff, char *str, int nmax) {
   char *p, *q, sep[] = " \r\n";
 
   for (p = buff; *p == ' '; p++)
     ;
 
-  if (*p == '"') sep[0] = *p++; /* enclosed within quotation marks */
+  if (*p == '"') sep[0] = *p++; /* Enclosed within quotation marks */
 
   for (q = str; *p && !strchr(sep, *p); p++) {
     if (q < str + nmax - 1) *q++ = *p;
@@ -127,7 +127,7 @@ static char *parse_str(char *buff, char *str, int nmax) {
   *q = '\0';
   return *p ? p + 1 : p;
 }
-/* compare str1 and str2 with wildcards (*) ----------------------------------*/
+/* Compare str1 and str2 with wildcards (*) ----------------------------------*/
 static bool cmp_str(const char *str1, const char *str2) {
   char s1[1026], s2[1026];
 
@@ -144,7 +144,7 @@ static bool cmp_str(const char *str1, const char *str2) {
   }
   return p != NULL;
 }
-/* remote to local file path -------------------------------------------------*/
+/* Remote to local file path -------------------------------------------------*/
 static void remot2local(const char *remot, const char *dir, char *local, size_t size) {
   char *p = strrchr(remot, '=');
   if (p)
@@ -156,7 +156,7 @@ static void remot2local(const char *remot, const char *dir, char *local, size_t 
 
   rtksnprintf(local, size, "%s%c%s", dir, RTKLIB_FILEPATHSEP, p);
 }
-/* test file existence -------------------------------------------------------*/
+/* Test file existence -------------------------------------------------------*/
 static bool exist_file(const char *local) {
 #ifdef WIN32
   DWORD stat = GetFileAttributes(local);
@@ -167,9 +167,9 @@ static bool exist_file(const char *local) {
   return (buff.st_mode & S_IRUSR) != 0;
 #endif
 }
-/* test local file existence -------------------------------------------------*/
+/* Test local file existence -------------------------------------------------*/
 static int test_file(const char *local) {
-  if (strchr(local, '*')) { /* test wild-card (*) in path */
+  if (strchr(local, '*')) { /* Test wild-card (*) in path */
     return 0;
   }
   int comp = 0;
@@ -200,7 +200,7 @@ static int test_file(const char *local) {
   if (!exist_file(buff)) return 0;
   return comp ? 2 : 1;
 }
-/* free download paths -------------------------------------------------------*/
+/* Free download paths -------------------------------------------------------*/
 static void free_path(paths_t *paths) {
   if (!paths) return;
   for (int i = 0; i < paths->n; i++) {
@@ -209,7 +209,7 @@ static void free_path(paths_t *paths) {
   }
   free(paths->path);
 }
-/* add download paths --------------------------------------------------------*/
+/* Add download paths --------------------------------------------------------*/
 static bool add_path(paths_t *paths, const char *remot, const char *dir) {
   path_t *paths_path;
 
@@ -245,7 +245,7 @@ static bool add_path(paths_t *paths, const char *remot, const char *dir) {
   paths->n++;
   return true;
 }
-/* generate download path ----------------------------------------------------*/
+/* Generate download path ----------------------------------------------------*/
 static bool gen_path(gtime_t time, gtime_t time_p, int seqnos, int seqnoe, const url_t *url,
                      const char *sta, const char *dir, paths_t *paths) {
   if (!*dir) dir = url->dir;
@@ -276,7 +276,7 @@ static bool gen_path(gtime_t time, gtime_t time_p, int seqnos, int seqnoe, const
   }
   return true;
 }
-/* generate download paths ---------------------------------------------------*/
+/* Generate download paths ---------------------------------------------------*/
 static bool gen_paths(gtime_t time, gtime_t time_p, int seqnos, int seqnoe, const url_t *url,
                       const char **stas, int nsta, const char *dir, paths_t *paths) {
   if (strstr(url->path, "%s") || strstr(url->path, "%S")) {
@@ -292,7 +292,7 @@ static bool gen_paths(gtime_t time, gtime_t time_p, int seqnos, int seqnoe, cons
   }
   return true;
 }
-/* compact download paths ----------------------------------------------------*/
+/* Compact download paths ----------------------------------------------------*/
 static void compact_paths(paths_t *paths) {
   for (int i = 0; i < paths->n; i++) {
     for (int j = i + 1; j < paths->n; j++) {
@@ -305,7 +305,7 @@ static void compact_paths(paths_t *paths) {
     }
   }
 }
-/* generate local directory recursively --------------------------------------*/
+/* Generate local directory recursively --------------------------------------*/
 static bool mkdir_r(const char *dir) {
 #ifdef WIN32
   if (!*dir || !strcmp(dir + 1, ":\\")) return 1;
@@ -346,7 +346,7 @@ static bool mkdir_r(const char *dir) {
   return false;
 #endif
 }
-/* get remote file list for FTP or FTPS --------------------------------------*/
+/* Get remote file list for FTP or FTPS --------------------------------------*/
 static bool get_list(const path_t *path, const char *usr, const char *pwd, const char *proxy) {
   const char *opt2 = "";
 #ifndef WIN32
@@ -382,7 +382,7 @@ static bool get_list(const path_t *path, const char *usr, const char *pwd, const
   fclose(fp);
   return true;
 }
-/* replace wild-card (*) in the paths ----------------------------------------*/
+/* Replace wild-card (*) in the paths ----------------------------------------*/
 static bool rep_paths(path_t *path, const char *file) {
   char buff1[FNSIZE], buff2[FNSIZE];
   rtkstrcpy(buff1, sizeof(buff1), path->remot);
@@ -412,7 +412,7 @@ static bool rep_paths(path_t *path, const char *file) {
   path->local = local;
   return true;
 }
-/* test file in remote file list ---------------------------------------------*/
+/* Test file in remote file list ---------------------------------------------*/
 static bool test_list(path_t *path) {
   FILE *fp = fopen(FTP_LISTING, "r");
   if (!fp) return true;
@@ -424,10 +424,10 @@ static bool test_list(path_t *path) {
   }
   const char *file = p + 1;
 
-  /* search file in remote file list */
+  /* Search file in remote file list */
   char buff[FNSIZE];
   while (fgets(buff, sizeof(buff), fp)) {
-    /* remove symbolic link */
+    /* Remove symbolic link */
     p = strstr(buff, "->");
     if (p) *p = '\0';
 
@@ -437,7 +437,7 @@ static bool test_list(path_t *path) {
       else
         break;
     }
-    /* file as last field */
+    /* File as last field */
     const char *list;
     p = strrchr(buff, ' ');
     if (p)
@@ -449,9 +449,9 @@ static bool test_list(path_t *path) {
       fclose(fp);
       return true;
     }
-    /* compare with wild-card (*) */
+    /* Compare with wild-card (*) */
     if (cmp_str(list, file)) {
-      /* replace wild-card (*) in the paths */
+      /* Replace wild-card (*) in the paths */
       if (!rep_paths(path, list)) {
         fclose(fp);
         return false;
@@ -463,7 +463,7 @@ static bool test_list(path_t *path) {
   fclose(fp);
   return false;
 }
-/* execute download ----------------------------------------------------------*/
+/* Execute download ----------------------------------------------------------*/
 static bool exec_down(path_t *path, char *remot_p, size_t rsize, const char *usr, const char *pwd,
                       const char *proxy, int opts, int *n, FILE *fp) {
   char dir[FNSIZE];
@@ -487,7 +487,7 @@ static bool exec_down(path_t *path, char *remot_p, size_t rsize, const char *usr
     n[1]++;
     return false;
   }
-  /* test local file existence */
+  /* Test local file existence */
   if (!(opts & DLOPT_FORCE) && test_file(path->local)) {
     showmsg("STAT=.");
     if (fp) fprintf(fp, "%s in %s\n", path->remot, dir);
@@ -496,35 +496,35 @@ static bool exec_down(path_t *path, char *remot_p, size_t rsize, const char *usr
   }
   showmsg("STAT=_");
 
-  /* get remote file list for FTP or FTPS */
+  /* Get remote file list for FTP or FTPS */
   if ((proto == 0 || proto == 2) && (p = strrchr(path->remot, '/')) &&
       strncmp(path->remot, remot_p, p - path->remot)) {
     if (get_list(path, usr, pwd, proxy)) {
       rtkstrcpy(remot_p, rsize, path->remot);
     }
   }
-  /* test file in listing for FTP or FTPS or extend wild-card in file path */
+  /* Test file in listing for FTP or FTPS or extend wild-card in file path */
   if ((proto == 0 || proto == 2) && !test_list(path)) {
     showmsg("STAT=x");
     if (fp) fprintf(fp, "%s NO_FILE\n", path->remot);
     n[1]++;
     return false;
   }
-  /* generate local directory recursively */
+  /* Generate local directory recursively */
   if (!mkdir_r(dir)) {
     showmsg("STAT=X");
     if (fp) fprintf(fp, "%s -> %s ERROR (LOCAL DIR)\n", path->remot, dir);
     n[3]++;
     return false;
   }
-  /* re-test local file existence for file with wild-card */
+  /* Re-test local file existence for file with wild-card */
   if (!(opts & DLOPT_FORCE) && test_file(path->local)) {
     showmsg("STAT=.");
     if (fp) fprintf(fp, "%s in %s\n", path->remot, dir);
     n[2]++;
     return false;
   }
-  /* proxy option */
+  /* Proxy option */
   char opt[1024] = "";
   char env[1024] = "";
   if (*proxy) {
@@ -532,7 +532,7 @@ static bool exec_down(path_t *path, char *remot_p, size_t rsize, const char *usr
                 proto == 0 || proto == 2 ? "ftp" : "http", proxy);
     rtksnprintf(opt, sizeof(opt), " --proxy=on ");
   }
-  /* download command */
+  /* Download command */
 #ifdef WIN32
   const char *opt2 = "";
 #else
@@ -556,7 +556,7 @@ static bool exec_down(path_t *path, char *remot_p, size_t rsize, const char *usr
   }
   if (fp) fprintf(fp, "%s -> %s", path->remot, dir);
 
-  /* execute download command */
+  /* Execute download command */
   int ret = execcmd_to(cmd);
   if (ret) {
     if ((proto == 0 && ret == FTP_NOFILE) || (proto == 1 && ret == HTTP_NOFILE)) {
@@ -577,7 +577,7 @@ static bool exec_down(path_t *path, char *remot_p, size_t rsize, const char *usr
   }
   remove(errfile);
 
-  /* uncompress download file */
+  /* Uncompress download file */
   if (!(opts & DLOPT_KEEPCMP) && (p = strrchr(path->local, '.')) &&
       (!strcmp(p, ".z") || !strcmp(p, ".gz") || !strcmp(p, ".zip") || !strcmp(p, ".Z") ||
        !strcmp(p, ".GZ") || !strcmp(p, ".ZIP"))) {
@@ -597,7 +597,7 @@ static bool exec_down(path_t *path, char *remot_p, size_t rsize, const char *usr
   n[0]++;
   return false;
 }
-/* test local file -----------------------------------------------------------*/
+/* Test local file -----------------------------------------------------------*/
 static bool test_local(gtime_t ts, gtime_t te, double ti, const char *path, const char *sta,
                        const char *dir, int *nc, int *nt, FILE *fp) {
   bool abort = false;
@@ -629,7 +629,7 @@ static bool test_local(gtime_t ts, gtime_t te, double ti, const char *path, cons
   fprintf(fp, "\n");
   return abort;
 }
-/* test local files ----------------------------------------------------------*/
+/* Test local files ----------------------------------------------------------*/
 static bool test_locals(gtime_t ts, gtime_t te, double ti, const url_t *url, const char **stas,
                         int nsta, const char *dir, int *nc, int *nt, FILE *fp) {
   if (strstr(url->path, "%s") || strstr(url->path, "%S")) {
@@ -648,7 +648,7 @@ static bool test_locals(gtime_t ts, gtime_t te, double ti, const url_t *url, con
   }
   return false;
 }
-/* print total count of local files ------------------------------------------*/
+/* Print total count of local files ------------------------------------------*/
 static int print_total(const url_t *url, const char **stas, int nsta, const int *nc, const int *nt,
                        FILE *fp) {
   if (strstr(url->path, "%s") || strstr(url->path, "%S")) {
@@ -661,15 +661,15 @@ static int print_total(const url_t *url, const char **stas, int nsta, const int 
   fprintf(fp, "%-12s: %5d/%5d\n", url->type, nc[0], nt[0]);
   return 1;
 }
-/* read URL list file ----------------------------------------------------------
- * read URL list file for GNSS data
- * args   : char   *file     I   URL list file
+/* Read URL list file ----------------------------------------------------------
+ * Read URL list file for GNSS data
+ * Args   : char   *file     I   URL list file
  *          char   **types   I   selected types ("*":wildcard)
  *          int    ntype     I   number of selected types
  *          urls_t *urls     O   URL list
  *          int    nmax      I   max number of URL list
- * return : number of URL addresses (0:error)
- * notes  :
+ * Return : number of URL addresses (0:error)
+ * Notes  :
  *    (1) URL list file contains records containing the following fields
  *        separated by spaces. if a field contains spaces, enclose it within "".
  *
@@ -695,14 +695,14 @@ static int print_total(const url_t *url, const char **stas, int nsta, const int 
  *        %H -> a       : hour code       (a-x)
  *        %M -> mm      : minutes         (00-59)
  *        %n -> ddd     : day of year     (001-366)
- *        %W -> wwww    : gps week        (0001-9999)
- *        %D -> d       : day of gps week (0-6)
+ *        %W -> wwww    : GPS week        (0001-9999)
+ *        %D -> d       : day of GPS week (0-6)
  *        %N -> nnn     : general number
  *        %s -> ssss    : station name    (lower-case)
  *        %S -> SSSS    : station name    (upper-case)
  *        %r -> rrrr    : station name
  *        %{env} -> env : environment variable
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern int dl_readurls(const char *file, const char **types, int ntype, url_t *urls, int nmax) {
   FILE *fp = fopen(file, "r");
   if (!fp) {
@@ -737,17 +737,17 @@ extern int dl_readurls(const char *file, const char **types, int ntype, url_t *u
   }
   return n;
 }
-/* read station list file ------------------------------------------------------
- * read station list file
- * args   : char   *file     I   station list file
+/* Read station list file ------------------------------------------------------
+ * Read station list file
+ * Args   : char   *file     I   station list file
  *          char   **stas    O   stations
  *          size_t size      I   stations buffer size
  *          int    nmax      I   max number of stations
- * return : number of stations (0:error)
- * notes  :
+ * Return : number of stations (0:error)
+ * Notes  :
  *    (1) station list file contains station names separated by spaces.
  *    (2) strings after # in a line are treated as comments
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern int dl_readstas(const char *file, char **stas, size_t size, int nmax) {
   FILE *fp = fopen(file, "r");
   if (!fp) {
@@ -772,9 +772,9 @@ extern int dl_readstas(const char *file, char **stas, size_t size, int nmax) {
   }
   return n;
 }
-/* execute download ------------------------------------------------------------
- * execute download
- * args   : gtime_t ts,te    I   time start and end
+/* Execute download ------------------------------------------------------------
+ * Execute download
+ * Args   : gtime_t ts,te    I   time start and end
  *          double tint      I   time interval (s)
  *          int    seqnos    I   sequence number start
  *          int    seqnoe    I   sequence number end
@@ -794,15 +794,15 @@ extern int dl_readstas(const char *file, char **stas, size_t size, int nmax) {
  *                                 DLOPT_HOLDLST=hold on listing file
  *          char   *msg      O   output messages
  *          FILE   *fp       IO  log file pointer (NULL: no output log)
- * return : status (1:ok,0:error,-1:aborted)
- * notes  : The URL list should be read by using dl_readurl()
+ * Return : status (1:ok,0:error,-1:aborted)
+ * Notes  : The URL list should be read by using dl_readurl()
  *          In the FTP or FTPS cases, the file name in a URL can contain wild-
  *          cards (*). The directory in a URL can not contain any wild-cards.
  *          If the file name contains wild-cards, dl_exec() gets a file-list in
  *          the remote directory and downloads the firstly matched file in the
  *          remote file-list. The secondary matched or the following files are
  *          not downloaded.
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe, const url_t *urls,
                    int nurl, const char **stas, int nsta, const char *dir, const char *usr,
                    const char *pwd, const char *proxy, int opts, char *msg, size_t msize,
@@ -814,7 +814,7 @@ extern int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe, co
 
   showmsg("STAT=_");
 
-  /* generate download paths  */
+  /* Generate download paths  */
   while (timediff(ts, te) < 1E-3) {
     for (int i = 0; i < nurl; i++) {
       if (!gen_paths(ts, ts_p, seqnos, seqnoe, urls + i, stas, nsta, dir, &paths)) {
@@ -826,7 +826,7 @@ extern int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe, co
     ts_p = ts;
     ts = timeadd(ts, ti);
   }
-  /* compact download paths */
+  /* Compact download paths */
   compact_paths(&paths);
 
   if (paths.n <= 0) {
@@ -839,7 +839,7 @@ extern int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe, co
                 paths.n);
     if (showmsg(str)) break;
 
-    /* execute download */
+    /* Execute download */
     char remot_p[FNSIZE] = "";
     if (exec_down(paths.path + i, remot_p, sizeof(remot_p), usr, pwd, proxy, opts, n, fp)) {
       break;
@@ -855,9 +855,9 @@ extern int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe, co
 
   return 1;
 }
-/* execute local file test -----------------------------------------------------
- * execute local file test
- * args   : gtime_t ts,te    I   time start and end
+/* Execute local file test -----------------------------------------------------
+ * Execute local file test
+ * Args   : gtime_t ts,te    I   time start and end
  *          double tint      I   time interval (s)
  *          url_t  *urls     I   remote URL addresses
  *          int    nurl      I   number of remote URL addresses
@@ -867,8 +867,8 @@ extern int dl_exec(gtime_t ts, gtime_t te, double ti, int seqnos, int seqnoe, co
  *          int    ncol      I   number of column
  *          int    datefmt   I   date format (0:year-dow,1:year-dd/mm,2:week)
  *          FILE   *fp       IO  log test result file pointer
- * return : status (1:ok,0:error,-1:aborted)
- *-----------------------------------------------------------------------------*/
+ * Return : status (1:ok,0:error,-1:aborted)
+ *----------------------------------------------------------------------------*/
 extern void dl_test(gtime_t ts, gtime_t te, double ti, const url_t *urls, int nurl,
                     const char **stas, int nsta, const char *dir, int ncol, int datefmt, FILE *fp) {
   if (ncol < 1)
@@ -927,7 +927,7 @@ extern void dl_test(gtime_t ts, gtime_t te, double ti, const url_t *urls, int nu
       gtime_t time = timeadd(ts, ti * ncol - 1.0);
       if (timediff(time, te) >= 0.0) time = te;
 
-      /* test local files */
+      /* Test local files */
       abort = test_locals(ts, time, ti, urls + i, stas, nsta, dir, nc + j, nt + j, fp);
 
       j += strstr(urls[i].path, "%s") || strstr(urls[i].path, "%S") ? nsta : 1;

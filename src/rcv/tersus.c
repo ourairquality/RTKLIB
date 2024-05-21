@@ -3,35 +3,35 @@
  *
  *          Copyright (C) 2017-2019 by T.TAKASU, All rights reserved.
  *
- * reference :
+ * Reference :
  *     [1] Tersus GNSS Inc., Command & Log Reference For Precis-BX306 & BX316
  *         GNSS RTK Board, Version V1.0-20170421
  *
- * version : $Revision:$ $Date:$
- * history : 2017/05/26 1.0  new
- *           2019/05/10 1.1  save galileo E5b data to obs index 2
- *-----------------------------------------------------------------------------*/
+ * Version : $Revision:$ $Date:$
+ * History : 2017/05/26 1.0  new
+ *           2019/05/10 1.1  save Galileo E5b data to obs index 2
+ *----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
-#define TERSUSSYNC1 0xAA /* tersus message start sync code 1 */
-#define TERSUSSYNC2 0x44 /* tersus message start sync code 2 */
-#define TERSUSSYNC3 0x12 /* tersus message start sync code 3 */
+#define TERSUSSYNC1 0xAA /* Tersus message start sync code 1 */
+#define TERSUSSYNC2 0x44 /* Tersus message start sync code 2 */
+#define TERSUSSYNC3 0x12 /* Tersus message start sync code 3 */
 
-#define TERSUSHLEN 28 /* tersus message header length (bytes) */
+#define TERSUSHLEN 28 /* Tersus message header length (bytes) */
 
-#define ID_RANGE 43          /* message id: tersus range measurement */
-#define ID_RANGECMP 140      /* message id: tersus range compressed */
-#define ID_IONUTC 8          /* message id: tersus iono and utc data */
-#define ID_GPSEPHEM 7        /* message id: tersus gps ephemeris */
-#define ID_GLOEPHEMERIS 723  /* message id: tersus glonass ephemeris */
-#define ID_BDSEPHEMERIS 1696 /* message id: tersus beidou ephemeris BX306 */
-#define ID_BD2EPHEM 1047     /* message id: tersus beidou ephemeris BX305 */
+#define ID_RANGE 43          /* Message id: tersus range measurement */
+#define ID_RANGECMP 140      /* Message id: tersus range compressed */
+#define ID_IONUTC 8          /* Message id: tersus iono and UTC data */
+#define ID_GPSEPHEM 7        /* Message id: tersus GPS ephemeris */
+#define ID_GLOEPHEMERIS 723  /* Message id: tersus GLONASS ephemeris */
+#define ID_BDSEPHEMERIS 1696 /* Message id: tersus BeiDou ephemeris BX306 */
+#define ID_BD2EPHEM 1047     /* Message id: tersus BeiDou ephemeris BX305 */
 
 #define MAXVAL 8388608.0
 
-#define OFF_FRQNO -7 /* offset of glonass freq number */
+#define OFF_FRQNO -7 /* Offset of GLONASS freq number */
 
-/* get fields (little-endian) ------------------------------------------------*/
+/* Get fields (little-endian) ------------------------------------------------*/
 #define U1(p) (*((unsigned char *)(p)))
 static unsigned short U2(unsigned char *p) {
   unsigned short u;
@@ -59,11 +59,11 @@ static double R8(unsigned char *p) {
   return r;
 }
 
-/* extend sign ---------------------------------------------------------------*/
+/* Extend sign ---------------------------------------------------------------*/
 static int exsign(unsigned int v, int bits) {
   return (int)(v & (1 << (bits - 1)) ? v | (~0u << bits) : v);
 }
-/* adjust weekly rollover of gps time ----------------------------------------*/
+/* Adjust weekly rollover of GPS time ----------------------------------------*/
 static gtime_t adjweek(gtime_t time, double tow) {
   double tow_p;
   int week;
@@ -74,7 +74,7 @@ static gtime_t adjweek(gtime_t time, double tow) {
     tow -= 604800.0;
   return gpst2time(week, tow);
 }
-/* get observation data index ------------------------------------------------*/
+/* Get observation data index ------------------------------------------------*/
 static int obsindex(obs_t *obs, gtime_t time, int sat) {
   int i, j;
 
@@ -93,9 +93,9 @@ static int obsindex(obs_t *obs, gtime_t time, int sat) {
   obs->n++;
   return i;
 }
-/* decode tersus tracking status -----------------------------------------------
- * deocode tersus tracking status
- * args   : unsigned int stat I  tracking status field
+/* Decode tersus tracking status -----------------------------------------------
+ * Deocode tersus tracking status
+ * Args   : unsigned int stat I  tracking status field
  *          int    *sys   O      system (SYS_???)
  *          int    *code  O      signal code (CODE_L??)
  *          int    *track O      tracking state
@@ -108,8 +108,8 @@ static int obsindex(obs_t *obs, gtime_t time, int sat) {
  *          int    *parity O     parity known flag (0=not known,  1=known)
  *          int    *halfc O      phase measurement (0=half-cycle not added,
  *                                                  1=added)
- * return : signal frequency (0:L1,1:L2,2:L5,3:L6,4:L7,5:L8,-1:error)
- *-----------------------------------------------------------------------------*/
+ * Return : signal frequency (0:L1,1:L2,2:L5,3:L6,4:L7,5:L8,-1:error)
+ *----------------------------------------------------------------------------*/
 static int decode_trackstat(unsigned int stat, int *sys, int *code, int *track, int *plock,
                             int *clock, int *parity, int *halfc) {
   int satsys, sigtype, freq = 0;
@@ -262,9 +262,9 @@ static int decode_trackstat(unsigned int stat, int *sys, int *code, int *track, 
   }
   return freq;
 }
-/* check code priority and return obs position -------------------------------*/
+/* Check code priority and return obs position -------------------------------*/
 static int checkpri(const char *opt, int sys, int code, int freq) {
-  int nex = NEXOBS; /* number of extended obs data */
+  int nex = NEXOBS; /* Number of extended obs data */
 
   if (sys == SYS_GPS) {
     if (strstr(opt, "-GL1P") && freq == 0) return code == CODE_L1P ? 0 : -1;
@@ -281,7 +281,7 @@ static int checkpri(const char *opt, int sys, int code, int freq) {
   }
   return freq < NFREQ ? freq : -1;
 }
-/* decode rangeb -------------------------------------------------------------*/
+/* Decode rangeb -------------------------------------------------------------*/
 static int decode_rangeb(raw_t *raw) {
   double psr, adr, dop, snr, lockt, tt;
   char *msg;
@@ -301,12 +301,12 @@ static int decode_rangeb(raw_t *raw) {
     return -1;
   }
   for (i = 0, p += 4; i < nobs; i++, p += 44) {
-    /* decode tracking status */
+    /* Decode tracking status */
     if ((freq = decode_trackstat(U4(p + 40), &sys, &code, &track, &plock, &clock, &parity,
                                  &halfc)) < 0)
       continue;
 
-    /* obs position */
+    /* Obs position */
     if ((pos = checkpri(raw->opt, sys, code, freq)) < 0) continue;
 
     prn = U2(p);
@@ -319,7 +319,7 @@ static int decode_rangeb(raw_t *raw) {
       trace(3, "tersus rangeb satellite number error: sys=%d,prn=%d\n", sys, prn);
       continue;
     }
-    if (sys == SYS_GLO && !parity) continue; /* invalid if GLO parity unknown */
+    if (sys == SYS_GLO && !parity) continue; /* Invalid if GLO parity unknown */
 
     gfrq = U2(p + 2);
     psr = R8(p + 4);
@@ -328,7 +328,7 @@ static int decode_rangeb(raw_t *raw) {
     snr = R4(p + 32);
     lockt = R4(p + 36);
 
-    /* set glonass frequency channel number */
+    /* Set GLONASS frequency channel number */
     if (sys == SYS_GLO && raw->nav.geph[prn - 1].sat != sat) {
       raw->nav.geph[prn - 1].frq = gfrq - 7;
     }
@@ -344,8 +344,8 @@ static int decode_rangeb(raw_t *raw) {
     raw->lockt[sat - 1][pos] = lockt;
     raw->halfc[sat - 1][pos] = halfc;
 
-    if (!clock) psr = 0.0;       /* code unlock */
-    if (!plock) adr = dop = 0.0; /* phase unlock */
+    if (!clock) psr = 0.0;       /* Code unlock */
+    if (!plock) adr = dop = 0.0; /* Phase unlock */
 
     if (fabs(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
       raw->obs.n = 0;
@@ -362,7 +362,7 @@ static int decode_rangeb(raw_t *raw) {
   }
   return 1;
 }
-/* decode rangecmpb ----------------------------------------------------------*/
+/* Decode rangecmpb ----------------------------------------------------------*/
 static int decode_rangecmpb(raw_t *raw) {
   double psr, adr, adr_rolls, lockt, tt, dop, snr, wavelen;
   int i, index, nobs, prn, sat, sys, code, freq, pos;
@@ -382,11 +382,11 @@ static int decode_rangecmpb(raw_t *raw) {
     return -1;
   }
   for (i = 0, p += 4; i < nobs; i++, p += 24) {
-    /* decode tracking status */
+    /* Decode tracking status */
     if ((freq = decode_trackstat(U4(p), &sys, &code, &track, &plock, &clock, &parity, &halfc)) < 0)
       continue;
 
-    /* obs position */
+    /* Obs position */
     if ((pos = checkpri(raw->opt, sys, code, freq)) < 0) continue;
 
     prn = U1(p + 17);
@@ -399,7 +399,7 @@ static int decode_rangecmpb(raw_t *raw) {
       trace(3, "tersus rangecmpb satellite number error: sys=%d,prn=%d\n", sys, prn);
       continue;
     }
-    if (sys == SYS_GLO && !parity) continue; /* invalid if GLO parity unknown */
+    if (sys == SYS_GLO && !parity) continue; /* Invalid if GLO parity unknown */
 
     dop = exsign(U4(p + 4) & 0xFFFFFFF, 28) / 256.0;
     psr = (U4(p + 7) >> 4) / 128.0 + U1(p + 11) * 2097152.0;
@@ -414,7 +414,7 @@ static int decode_rangecmpb(raw_t *raw) {
     adr_rolls = (psr / wavelen + adr) / MAXVAL;
     adr = -adr + MAXVAL * floor(adr_rolls + (adr_rolls <= 0 ? -0.5 : 0.5));
 
-    lockt = (U4(p + 18) & 0x1FFFFF) / 32.0; /* lock time */
+    lockt = (U4(p + 18) & 0x1FFFFF) / 32.0; /* Lock time */
 
     if (raw->tobs[sat - 1][pos].time != 0) {
       tt = timediff(raw->time, raw->tobs[sat - 1][pos]);
@@ -429,8 +429,8 @@ static int decode_rangecmpb(raw_t *raw) {
     raw->halfc[sat - 1][pos] = halfc;
 
     snr = ((U2(p + 20) & 0x3FF) >> 5) + 20.0;
-    if (!clock) psr = 0.0;       /* code unlock */
-    if (!plock) adr = dop = 0.0; /* phase unlock */
+    if (!clock) psr = 0.0;       /* Code unlock */
+    if (!plock) adr = dop = 0.0; /* Phase unlock */
 
     if (fabs(timediff(raw->obs.data[0].time, raw->time)) > 1E-9) {
       raw->obs.n = 0;
@@ -444,7 +444,7 @@ static int decode_rangecmpb(raw_t *raw) {
       raw->obs.data[index].LLI[pos] = (unsigned char)lli;
       raw->obs.data[index].code[pos] = code;
     }
-#if 0 /* for debug */
+#ifdef RTK_DISABLED /* For debug */
     char tstr[40];
     trace(3,
           "sys=%d prn=%3d cp=%12.5f lli=%2d plock=%2d clock=%2d lockt=%4.2f halfc=%2d parity=%2d "
@@ -454,7 +454,7 @@ static int decode_rangecmpb(raw_t *raw) {
   }
   return 1;
 }
-/* decode gpsphemb -----------------------------------------------------------*/
+/* Decode gpsphemb -----------------------------------------------------------*/
 static int decode_gpsephemb(raw_t *raw) {
   unsigned char *p = raw->buff + TERSUSHLEN;
   eph_t eph = {0};
@@ -560,13 +560,13 @@ static int decode_gpsephemb(raw_t *raw) {
   if (!strstr(raw->opt, "-EPHALL")) {
     if (timediff(raw->nav.eph[eph.sat - 1].toe, eph.toe) == 0.0 &&
         raw->nav.eph[eph.sat - 1].iode == eph.iode && raw->nav.eph[eph.sat - 1].iodc == eph.iodc)
-      return 0; /* unchanged */
+      return 0; /* Unchanged */
   }
   raw->nav.eph[eph.sat - 1] = eph;
   raw->ephsat = eph.sat;
   return 2;
 }
-/* decode gloephemerisb ------------------------------------------------------*/
+/* Decode gloephemerisb ------------------------------------------------------*/
 static int decode_gloephemerisb(raw_t *raw) {
   unsigned char *p = raw->buff + TERSUSHLEN;
   geph_t geph = {0};
@@ -591,7 +591,7 @@ static int decode_gloephemerisb(raw_t *raw) {
   }
   geph.frq = U2(p + 2) + OFF_FRQNO;
   week = U2(p + 6);
-  tow = floor(U4(p + 8) / 1000.0 + 0.5); /* rounded to integer sec */
+  tow = floor(U4(p + 8) / 1000.0 + 0.5); /* Rounded to integer sec */
   toff = U4(p + 12);
   geph.iode = U4(p + 20) & 0x7F;
   geph.svh = U4(p + 24);
@@ -606,7 +606,7 @@ static int decode_gloephemerisb(raw_t *raw) {
   geph.acc[2] = R8(p + 92);
   geph.taun = R8(p + 100);
   geph.gamn = R8(p + 116);
-  tof = U4(p + 124) - toff; /* glonasst->gpst */
+  tof = U4(p + 124) - toff; /* Glonasst->gpst */
   geph.age = U4(p + 136);
   geph.toe = gpst2time(week, tow);
   tof += floor(tow / 86400.0) * 86400;
@@ -619,14 +619,14 @@ static int decode_gloephemerisb(raw_t *raw) {
   if (!strstr(raw->opt, "-EPHALL")) {
     if (fabs(timediff(geph.toe, raw->nav.geph[prn - 1].toe)) < 1.0 &&
         geph.svh == raw->nav.geph[prn - 1].svh)
-      return 0; /* unchanged */
+      return 0; /* Unchanged */
   }
   geph.sat = sat;
   raw->nav.geph[prn - 1] = geph;
   raw->ephsat = sat;
   return 2;
 }
-/* decode bdsephemeris -------------------------------------------------------*/
+/* Decode bdsephemeris -------------------------------------------------------*/
 static int decode_bdsephemerisb(raw_t *raw) {
   eph_t eph = {0};
   unsigned char *p = raw->buff + TERSUSHLEN;
@@ -706,25 +706,25 @@ static int decode_bdsephemerisb(raw_t *raw) {
     trace(2, "tersus bdsephemeris satellite error: prn=%d\n", prn);
     return -1;
   }
-  eph.toe = bdt2gpst(bdt2time(eph.week, eph.toes)); /* bdt -> gpst */
-  eph.toc = bdt2gpst(bdt2time(eph.week, toc));      /* bdt -> gpst */
+  eph.toe = bdt2gpst(bdt2time(eph.week, eph.toes)); /* BDT -> GPST */
+  eph.toc = bdt2gpst(bdt2time(eph.week, toc));      /* BDT -> GPST */
   eph.ttr = raw->time;
 
   if (!strstr(raw->opt, "-EPHALL")) {
     if (timediff(raw->nav.eph[eph.sat - 1].toe, eph.toe) == 0.0 &&
         raw->nav.eph[eph.sat - 1].iode == eph.iode && raw->nav.eph[eph.sat - 1].iodc == eph.iodc)
-      return 0; /* unchanged */
+      return 0; /* Unchanged */
   }
   raw->nav.eph[eph.sat - 1] = eph;
   raw->ephsat = eph.sat;
   return 2;
 }
-/* decode bd2ephemb ----------------------------------------------------------*/
+/* Decode bd2ephemb ----------------------------------------------------------*/
 static int decode_bd2ephemb(raw_t *raw) {
   trace(2, "tersus bd2ephemb not supported\n");
   return 0;
 }
-/* decode ionutcb ------------------------------------------------------------*/
+/* Decode ionutcb ------------------------------------------------------------*/
 static int decode_ionutcb(raw_t *raw) {
   unsigned char *p = raw->buff + TERSUSHLEN;
   int i;
@@ -743,15 +743,15 @@ static int decode_ionutcb(raw_t *raw) {
   raw->nav.leaps = I4(p + 96);
   return 9;
 }
-/* decode tersus message -----------------------------------------------------*/
+/* Decode tersus message -----------------------------------------------------*/
 static int decode_tersus(raw_t *raw) {
   double tow;
   int msg, week, type = U2(raw->buff + 4);
 
   trace(3, "decode_tersus: type=%3d len=%d\n", type, raw->len);
 
-  /* check crc32 */
-  if (rtk_crc32(raw->buff, raw->len) != U4(raw->buff + raw->len)) {
+  /* Check crc32 */
+  if (rtk_crc32(raw->buff, sizeof(raw->buff), raw->len) != U4(raw->buff + raw->len)) {
     trace(2, "tersus crc error: type=%3d len=%d\n", type, raw->len);
     return -1;
   }
@@ -786,30 +786,30 @@ static int decode_tersus(raw_t *raw) {
   }
   return 0;
 }
-/* sync header ---------------------------------------------------------------*/
+/* Sync header ---------------------------------------------------------------*/
 static int sync_tersus(unsigned char *buff, unsigned char data) {
   buff[0] = buff[1];
   buff[1] = buff[2];
   buff[2] = data;
   return buff[0] == TERSUSSYNC1 && buff[1] == TERSUSSYNC2 && buff[2] == TERSUSSYNC3;
 }
-/* input tersus raw data from stream -------------------------------------------
- * fetch next tersus raw data and input a mesasge from stream
- * args   : raw_t *raw   IO     receiver raw data control struct
+/* Input tersus raw data from stream -------------------------------------------
+ * Fetch next tersus raw data and input a mesasge from stream
+ * Args   : raw_t *raw   IO     receiver raw data control struct
  *          unsigned char data I stream data (1 byte)
- * return : status (-1: error message, 0: no message, 1: input observation data,
- *                  2: input ephemeris, 3: input sbas message,
- *                  9: input ion/utc parameter)
+ * Return : status (-1: error message, 0: no message, 1: input observation data,
+ *                  2: input ephemeris, 3: input SBAS message,
+ *                  9: input ion/UTC parameter)
  *
- * notes  : to specify input options for tersus, set raw->opt to the following
+ * Notes  : to specify input options for tersus, set raw->opt to the following
  *          option strings separated by spaces.
  *
  *          -EPHALL : input all ephemerides
- *-----------------------------------------------------------------------------*/
+ *----------------------------------------------------------------------------*/
 extern int input_tersus(raw_t *raw, unsigned char data) {
   trace(5, "input_tersus: data=%02x\n", data);
 
-  /* synchronize frame */
+  /* Synchronize frame */
   if (raw->nbyte == 0) {
     if (sync_tersus(raw->buff, data)) raw->nbyte = 3;
     return 0;
@@ -824,22 +824,22 @@ extern int input_tersus(raw_t *raw, unsigned char data) {
   if (raw->nbyte < 10 || raw->nbyte < raw->len + 4) return 0;
   raw->nbyte = 0;
 
-  /* decode tersus message */
+  /* Decode tersus message */
   return decode_tersus(raw);
 }
-/* input tersus raw data from file ---------------------------------------------
- * fetch next tersus raw data and input a message from file
- * args   : raw_t  *raw   IO     receiver raw data control struct
+/* Input tersus raw data from file ---------------------------------------------
+ * Fetch next tersus raw data and input a message from file
+ * Args   : raw_t  *raw   IO     receiver raw data control struct
  *          int    format I      receiver raw data format (STRFMT_???)
  *          FILE   *fp    I      file pointer
- * return : status(-2: end of file, -1...9: same as above)
- *-----------------------------------------------------------------------------*/
+ * Return : status(-2: end of file, -1...9: same as above)
+ *----------------------------------------------------------------------------*/
 extern int input_tersusf(raw_t *raw, FILE *fp) {
   int i, data;
 
   trace(4, "input_tersusf:\n");
 
-  /* synchronize frame */
+  /* Synchronize frame */
   if (raw->nbyte == 0) {
     for (i = 0;; i++) {
       if ((data = fgetc(fp)) == EOF) return -2;
@@ -858,6 +858,6 @@ extern int input_tersusf(raw_t *raw, FILE *fp) {
   if (fread(raw->buff + 10, raw->len - 6, 1, fp) < 1) return -2;
   raw->nbyte = 0;
 
-  /* decode tersus message */
+  /* Decode tersus message */
   return decode_tersus(raw);
 }
