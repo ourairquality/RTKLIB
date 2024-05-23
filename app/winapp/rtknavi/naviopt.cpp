@@ -49,7 +49,7 @@ static char proxyaddr[MAXSTR]="";       /* proxy address */
 #define OSTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,5:ntripsvr,9:ntripcas"
 #define FMTOPT  "0:rtcm2,1:rtcm3,2:oem4,4:ubx,5:swift,6:hemis,7:skytraq,8:javad,9:nvs,10:binex,11:rt17,12:sbf,15:sp3"
 #define NMEOPT  "0:off,1:latlon,2:single"
-#define SOLOPT  "0:llh,1:xyz,2:enu,3:nmea"
+#define SOLOPT  "0:llh,1:xyz,2:enu,3:nmea:4:stat"
 #define MSGOPT  "0:all,1:rover,2:base,3:corr"
 
 static opt_t rcvopts[]={
