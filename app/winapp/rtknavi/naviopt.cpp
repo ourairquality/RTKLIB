@@ -589,7 +589,7 @@ void __fastcall TOptDialog::SetOpt(void)
 	
 	SolOpt.posf      =SolFormat   ->ItemIndex;
 	SolOpt.timef     =TimeFormat->ItemIndex==0?0:1;
-	SolOpt.times     =TimeFormat->ItemIndex==0?0:TimeFormat->ItemIndex-1;
+	SolOpt.times     =TimeFormat->ItemIndex==0?TIMES_GPST:(TimeFormat->ItemIndex-1);
 	SolOpt.timeu     =(int)str2dbl(TimeDecimal->Text);
 	SolOpt.degf      =LatLonFormat->ItemIndex;
 	strcpy(SolOpt.sep,FieldSep_Text.c_str());

@@ -854,7 +854,7 @@ int ppp=PosMode->ItemIndex>=PMODE_PPP_KINEMA;
 	}
 	solopt.posf		=SolFormat	->ItemIndex;
 	solopt.timef	=TimeFormat	->ItemIndex==0?0:1;
-	solopt.times	=TimeFormat	->ItemIndex==0?0:TimeFormat->ItemIndex-1;
+	solopt.times	=TimeFormat	->ItemIndex==0?TIMES_GPST:(TimeFormat->ItemIndex - 1);
 	solopt.timeu	=str2dbl(TimeDecimal ->Text);
 	solopt.degf		=LatLonFormat->ItemIndex;
 	strcpy(solopt.sep,FieldSep_Text.c_str());

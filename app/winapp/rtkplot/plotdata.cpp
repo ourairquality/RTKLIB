@@ -62,7 +62,7 @@ void __fastcall TPlot::ReadSol(TStrings *files, int sel)
     ShowMsg(s.sprintf("reading %s...",paths[0]));
     ShowLegend(NULL);
     
-    if (!readsolt(paths,n,ts,te,tint,0,&sol)) {
+    if (!readsolt(paths,n,ts,te,tint,SOLQ_NONE,&sol)) {
         ShowMsg(s.sprintf("no solution data : %s...",paths[0]));
         ShowLegend(NULL);
         ReadWaitEnd();
@@ -1097,7 +1097,7 @@ void __fastcall TPlot::Connect(void)
             Clear();
             initsolbuf(SolData+i,1,RtBuffSize+1);
         }
-        if (RtStream[i]==STR_SERIAL) mode|=STR_MODE_W;
+        if (RtStream[i]==STR_SERIAL) mode=STR_MODE_RW;
         
         strcpy(buff,path);
         if ((p=strstr(buff,"::"))) *p='\0';

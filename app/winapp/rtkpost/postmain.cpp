@@ -960,7 +960,7 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt,
     
     // solution options
     solopt.posf     =SolFormat;
-    solopt.times    =TimeFormat==0?0:TimeFormat-1;
+    solopt.times    =TimeFormat==0?TIMES_GPST:(TimeFormat - 1);
     solopt.timef    =TimeFormat==0?0:1;
     solopt.timeu    =TimeDecimal<=0?0:TimeDecimal;
     solopt.degf     =LatLonFormat;

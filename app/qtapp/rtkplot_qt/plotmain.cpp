@@ -1891,7 +1891,7 @@ void Plot::timerTimer()
     if (connectState) { // real-time input mode
         for (int streamNo = 0; streamNo < 2; streamNo++) {
             solopt.posf = rtFormat[streamNo];
-            solopt.times = (rtTimeFormat == 0) ? 0 : rtTimeFormat - 1;
+            solopt.times = (rtTimeFormat == 0) ? TIMES_GPST : (rtTimeFormat - 1);
             solopt.timef = rtTimeFormat >= 1;
             solopt.degf = rtDegFormat;
             strncpy(solopt.sep, qPrintable(rtFieldSeperator), 63);
@@ -1902,7 +1902,7 @@ void Plot::timerTimer()
                 connectmsg += QStringLiteral("(%1) %2 ").arg(streamNo + 1).arg(msg);
             while ((n = strread(stream + streamNo, buff, sizeof(buff))) > 0) {
                 for (j = 0; j < n; j++) {
-                    istat = inputsol(buff[j], ts, ts, tint, 0, &solopt, solutionData + streamNo);
+                    istat = inputsol(buff[j], ts, ts, tint, SOLQ_NONE, &solopt, solutionData + streamNo);
                     if (istat == 0) continue;
                     if (istat < 0) { // disconnect received
                         disconnectStream();
