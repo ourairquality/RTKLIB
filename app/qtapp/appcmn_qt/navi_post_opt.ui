@@ -2233,11 +2233,6 @@
             </item>
             <item>
              <property name="text">
-              <string>RTCM/Raw Antenna Position</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
               <string>Average of Single Position</string>
              </property>
             </item>
@@ -2249,6 +2244,11 @@
             <item>
              <property name="text">
               <string>RINEX Header Position</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>RTCM/Raw Antenna Position</string>
              </property>
             </item>
            </widget>
