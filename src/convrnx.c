@@ -335,7 +335,7 @@ static void unsetopt_file(rnxopt_t *opt) {
   }
 }
 /* Sort obs-types ------------------------------------------------------------*/
-static void sort_obstype(uint8_t *codes, uint8_t *types, int n, int sys) {
+static void sort_obstype(enum code *codes, uint8_t *types, int n, int sys) {
   for (int i = 0; i < n - 1; i++)
     for (int j = i + 1; j < n; j++) {
       int idx1 = code2idx(navsys[sys], codes[i]);
@@ -343,7 +343,7 @@ static void sort_obstype(uint8_t *codes, uint8_t *types, int n, int sys) {
       int pri1 = getcodepri(navsys[sys], codes[i], "");
       int pri2 = getcodepri(navsys[sys], codes[j], "");
       if (idx1 < idx2 || (idx1 == idx2 && pri1 >= pri2)) continue;
-      uint8_t tmp = codes[i];
+      enum code tmp = codes[i];
       codes[i] = codes[j];
       codes[j] = tmp;
       tmp = types[i];
@@ -352,7 +352,7 @@ static void sort_obstype(uint8_t *codes, uint8_t *types, int n, int sys) {
     }
 }
 /* Set obs-types in RINEX options --------------------------------------------*/
-static void setopt_obstype(const uint8_t *codes, const uint8_t *types, int sys, rnxopt_t *opt) {
+static void setopt_obstype(const enum code *codes, const uint8_t *types, int sys, rnxopt_t *opt) {
   trace(3, "setopt_obstype: sys=%d\n", sys);
 
   opt->nobs[sys] = 0;
@@ -409,7 +409,7 @@ static void setopt_phshift(rnxopt_t *opt) {
   for (int i = 0; i < NSATSYS; i++)
     for (int j = 0; j < opt->nobs[i]; j++) {
       if (opt->tobs[i][j][0] != 'L') continue;
-      uint8_t code = obs2code(opt->tobs[i][j] + 1);
+      enum code code = obs2code(opt->tobs[i][j] + 1);
 
       if (navsys[i] == SYS_GPS) {
         if (code == CODE_L1S || code == CODE_L1L || code == CODE_L1X || code == CODE_L1P ||
@@ -673,7 +673,7 @@ static void resolve_halfc(const strfile_t *str, obsd_t *data, int n) {
 static bool scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str, int *mask) {
   trace(3, "scan_file: nf=%d\n", nf);
 
-  uint8_t codes[NSATSYS][33] = {{0}};
+  enum code codes[NSATSYS][33] = {{0}};
   uint8_t types[NSATSYS][33] = {{0}};
   int c = 0, abort = 0, n[NSATSYS] = {0};
 

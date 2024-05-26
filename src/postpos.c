@@ -412,7 +412,7 @@ static void corr_phase_bias_ssr(obsd_t *obs, int n, const nav_t *nav) {
 }
 /* Process positioning -------------------------------------------------------*/
 static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *sopt, rtk_t *rtk,
-                    int mode) {
+                    enum solmode mode) {
   gtime_t time = {0};
   const int pri[] = {6, 1, 2, 3, 4, 5, 1, 6};
 
@@ -864,7 +864,7 @@ static bool antpos(prcopt_t *opt, int rcvno, const obs_t *obs, const nav_t *nav,
   trace(3, "antpos  : rcvno=%d\n", rcvno);
 
   long double *rr = rcvno == 1 ? opt->ru : opt->rb;
-  int postype = rcvno == 1 ? opt->rovpos : opt->refpos;
+  enum posopt postype = rcvno == 1 ? opt->rovpos : opt->refpos;
   if (postype == POSOPT_SINGLE) { /* Average of single position */
     if (!avepos(rr, rcvno, obs, nav, opt)) {
       showmsg("error : station pos computation");

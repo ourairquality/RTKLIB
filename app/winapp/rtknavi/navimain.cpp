@@ -779,7 +779,7 @@ void __fastcall TMainForm::BtnOutputStrClick(TObject *Sender) {
       StreamC[i] = 0;
       continue;
     }
-    SolOpt.posf = Format[i];
+    SolOpt.posf = (enum solf)Format[i];
     rtksvropenstr(&rtksvr, i, str, path, &SolOpt);
   }
 }
@@ -1103,7 +1103,7 @@ void __fastcall TMainForm::SvrStart(void) {
     tracelevel(DebugTraceF);
   }
   if (RovPosTypeF <= 2) {  // LLH,XYZ
-    PrcOpt.rovpos = POSOPT_POS;
+    PrcOpt.rovpos = RovPosTypeF < 2 ? POSOPT_POS_LLH : POSOPT_POS_XYZ;
     PrcOpt.ru[0] = RovPos[0];
     PrcOpt.ru[1] = RovPos[1];
     PrcOpt.ru[2] = RovPos[2];
@@ -1112,7 +1112,7 @@ void __fastcall TMainForm::SvrStart(void) {
     for (i = 0; i < 3; i++) PrcOpt.ru[i] = 0.0;
   }
   if (RefPosTypeF <= 2) {  // LLH,XYZ
-    PrcOpt.refpos = POSOPT_POS;
+    PrcOpt.refpos = RefPosTypeF < 2 ? POSOPT_POS_LLH : POSOPT_POS_XYZ;
     PrcOpt.rb[0] = RefPos[0];
     PrcOpt.rb[1] = RefPos[1];
     PrcOpt.rb[2] = RefPos[2];
@@ -1228,14 +1228,14 @@ void __fastcall TMainForm::SvrStart(void) {
     rtkopenstat(STATFILE, DebugStatusF);
   }
   if (SolOpt.geoid > 0 && GeoidDataFileF != "") {
-    opengeoid(SolOpt.geoid, GeoidDataFileF.c_str());
+    opengeoid((enum geoid)SolOpt.geoid, GeoidDataFileF.c_str());
   }
   if (DCBFileF != "") {
     readdcb(DCBFileF.c_str(), &rtksvr.nav, NULL);
   }
   for (i = 0; i < 2; i++) {
     solopt[i] = SolOpt;
-    solopt[i].posf = Format[i + 3];
+    solopt[i].posf = (enum solf)Format[i + 3];
   }
   stropt[0] = TimeoutTime;
   stropt[1] = ReconTime;
@@ -2227,7 +2227,7 @@ void __fastcall TMainForm::SaveLog(void) {
     return;
   }
   opt = SolOpt;
-  opt.posf = posf[SolType];
+  opt.posf = (enum solf)posf[SolType];
   if (SolOpt.outhead) {
     fprintf(fp, "%% program   : %s ver.%s %s\n", PRGNAME, VER_RTKLIB, PATCH_LEVEL);
     if (PrcOpt.mode == PMODE_DGPS || PrcOpt.mode == PMODE_KINEMA || PrcOpt.mode == PMODE_STATIC) {
@@ -2240,7 +2240,7 @@ void __fastcall TMainForm::SaveLog(void) {
   for (i = PSolS; i != PSolE;) {
     sol.time = Time[i];
     matcpy(sol.rr, SolRov + i * 3, 3, 1);
-    sol.stat = SolStat[i];
+    sol.stat = (enum solq)SolStat[i];
     sol.ns = Nvsat[i];
     sol.ratio = Ratio[i];
     sol.age = Age[i];
@@ -2407,7 +2407,7 @@ void __fastcall TMainForm::LoadOpt(void) {
           break;
       }
     }
-  PrcOpt.mode = ini->ReadInteger("prcopt", "mode", 2);
+  PrcOpt.mode = (enum pmode)ini->ReadInteger("prcopt", "mode", 2);
   PrcOpt.nf = ini->ReadInteger("prcopt", "nf", 2);
   PrcOpt.elmin = ini->ReadFloat("prcopt", "elmin", 15.0 * D2R);
   PrcOpt.snrmask.ena[0] = ini->ReadInteger("prcopt", "snrmask_ena1", 0);
@@ -2419,15 +2419,15 @@ void __fastcall TMainForm::LoadOpt(void) {
     }
   PrcOpt.dynamics = ini->ReadInteger("prcopt", "dynamics", 1);
   PrcOpt.tidecorr = ini->ReadInteger("prcopt", "tidecorr", 0);
-  PrcOpt.modear = ini->ReadInteger("prcopt", "modear", 3);
-  PrcOpt.glomodear = ini->ReadInteger("prcopt", "glomodear", 3);
+  PrcOpt.modear = (enum armode)ini->ReadInteger("prcopt", "modear", 3);
+  PrcOpt.glomodear = (enum glo_armode)ini->ReadInteger("prcopt", "glomodear", 3);
   PrcOpt.bdsmodear = ini->ReadInteger("prcopt", "bdsmodear", 0);
   PrcOpt.maxout = ini->ReadInteger("prcopt", "maxout", 20);
   PrcOpt.minlock = ini->ReadInteger("prcopt", "minlock", 0);
   PrcOpt.minfix = ini->ReadInteger("prcopt", "minfix", 20);
-  PrcOpt.ionoopt = ini->ReadInteger("prcopt", "ionoopt", IONOOPT_BRDC);
-  PrcOpt.tropopt = ini->ReadInteger("prcopt", "tropopt", TROPOPT_SAAS);
-  PrcOpt.sateph = ini->ReadInteger("prcopt", "ephopt", EPHOPT_BRDC);
+  PrcOpt.ionoopt = (enum ionoopt)ini->ReadInteger("prcopt", "ionoopt", IONOOPT_BRDC);
+  PrcOpt.tropopt = (enum tropopt)ini->ReadInteger("prcopt", "tropopt", TROPOPT_SAAS);
+  PrcOpt.sateph = (enum ephopt)ini->ReadInteger("prcopt", "ephopt", EPHOPT_BRDC);
   PrcOpt.armaxiter = ini->ReadInteger("prcopt", "ariter", 1);
   PrcOpt.minfixsats = ini->ReadInteger("prcopt", "minfixsats", 4);
   PrcOpt.minholdsats = ini->ReadInteger("prcopt", "minholdsats", 5);
@@ -2481,8 +2481,8 @@ void __fastcall TMainForm::LoadOpt(void) {
   Baseline[0] = ini->ReadFloat("prcopt", "baseline1", 0.0);
   Baseline[1] = ini->ReadFloat("prcopt", "baseline2", 0.0);
 
-  SolOpt.posf = ini->ReadInteger("solopt", "posf", 0);
-  SolOpt.times = ini->ReadInteger("solopt", "times", 0);
+  SolOpt.posf = (enum solf)ini->ReadInteger("solopt", "posf", 0);
+  SolOpt.times = (enum times)ini->ReadInteger("solopt", "times", 0);
   SolOpt.timef = ini->ReadInteger("solopt", "timef", 1);
   SolOpt.timeu = ini->ReadInteger("solopt", "timeu", 3);
   SolOpt.degf = ini->ReadInteger("solopt", "degf", 0);
@@ -2894,7 +2894,7 @@ void __fastcall TMainForm::BtnMarkClick(TObject *Sender) {
   MarkDialog->Marker = MarkerName;
   MarkDialog->Comment = MarkerComment;
   if (MarkDialog->ShowModal() != mrOk) return;
-  rtksvr.rtk.opt.mode = MarkDialog->PosMode;
+  rtksvr.rtk.opt.mode = (enum pmode)MarkDialog->PosMode;
   MarkerName = MarkDialog->Marker;
   MarkerComment = MarkDialog->Comment;
   UpdatePos();

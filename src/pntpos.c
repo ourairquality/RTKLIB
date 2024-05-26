@@ -281,7 +281,8 @@ static long double prange(const obsd_t *obs, const nav_t *nav, const prcopt_t *o
  * Return : status(true:ok,false:error)
  *----------------------------------------------------------------------------*/
 extern bool ionocorr(gtime_t time, const nav_t *nav, int sat, const long double *pos,
-                     const long double *azel, int ionoopt, long double *ion, long double *var) {
+                     const long double *azel, enum ionoopt ionoopt, long double *ion,
+                     long double *var) {
   int err = 0;
 
   char tstr[40];
@@ -321,13 +322,14 @@ extern bool ionocorr(gtime_t time, const nav_t *nav, int sat, const long double 
  *          nav_t  *nav      I   navigation data
  *          long double *pos      I   receiver position {lat,lon,h} (rad|m)
  *          long double *azel     I   azimuth/elevation angle {az,el} (rad)
- *          int    tropopt   I   tropospheric correction option (TROPOPT_???)
+ *          enum tropopt tropopt  I   tropospheric correction option (TROPOPT_???)
  *          long double *trp      O   tropospheric delay (m)
  *          long double *var      O   tropospheric delay variance (m^2)
  * Return : status(true:ok,false:error)
  *----------------------------------------------------------------------------*/
 extern bool tropcorr(gtime_t time, const nav_t *nav, const long double *pos,
-                     const long double *azel, int tropopt, long double *trp, long double *var) {
+                     const long double *azel, enum tropopt tropopt, long double *trp,
+                     long double *var) {
   char tstr[40];
   trace(4, "tropcorr: time=%s opt=%d pos=%.3Lf %.3Lf azel=%.3Lf %.3Lf\n", time2str(time, tstr, 3),
         tropopt, pos[0] * R2D, pos[1] * R2D, azel[0] * R2D, azel[1] * R2D);

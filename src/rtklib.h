@@ -118,13 +118,15 @@ extern "C" {
 #define SYS_LEO 0x80  /* Navigation system: LEO */
 #define SYS_ALL 0xFF  /* Navigation system: all */
 
-#define TSYS_GPS 0 /* Time system: GPS time */
-#define TSYS_UTC 1 /* Time system: UTC */
-#define TSYS_GLO 2 /* Time system: GLONASS time */
-#define TSYS_GAL 3 /* Time system: Galileo time */
-#define TSYS_QZS 4 /* Time system: QZSS time */
-#define TSYS_CMP 5 /* Time system: BeiDou time */
-#define TSYS_IRN 6 /* Time system: IRNSS time */
+enum tsys {
+  TSYS_GPS = 0, /* Time system: GPS time */
+  TSYS_UTC = 1, /* Time system: UTC */
+  TSYS_GLO = 2, /* Time system: GLONASS time */
+  TSYS_GAL = 3, /* Time system: Galileo time */
+  TSYS_QZS = 4, /* Time system: QZSS time */
+  TSYS_CMP = 5, /* Time system: BeiDou time */
+  TSYS_IRN = 6  /* Time system: IRNSS time */
+};
 
 #ifndef NFREQ
 #define NFREQ 3 /* Number of carrier frequencies */
@@ -289,203 +291,241 @@ extern "C" {
 #define FREQTYPE_L5 0x10  /* Frequency type: E5ab */
 #define FREQTYPE_ALL 0xFF /* Frequency type: all */
 
-#define CODE_NONE 0 /* Obs code: none or unknown */
-#define CODE_L1C 1  /* Obs code: L1C/A,G1C/A,E1C (GPS,GLO,GAL,QZS,SBS) */
-#define CODE_L1P 2  /* Obs code: L1P,G1P,B1P (GPS,GLO,BDS) */
-#define CODE_L1W 3  /* Obs code: L1 Z-track (GPS) */
-#define CODE_L1Y 4  /* Obs code: L1Y        (GPS) */
-#define CODE_L1M 5  /* Obs code: L1M        (GPS) */
-#define CODE_L1N 6  /* Obs code: L1codeless,B1codeless (GPS,BDS) */
-#define CODE_L1S 7  /* Obs code: L1C(D)     (GPS,QZS) */
-#define CODE_L1L 8  /* Obs code: L1C(P)     (GPS,QZS) */
-#define CODE_L1E 9  /* (not used) */
-#define CODE_L1A 10 /* Obs code: E1A,B1A    (GAL,BDS) */
-#define CODE_L1B 11 /* Obs code: E1B        (GAL) */
-#define CODE_L1X 12 /* Obs code: E1B+C,L1C(D+P),B1D+P (GAL,QZS,BDS) */
-#define CODE_L1Z 13 /* Obs code: E1A+B+C,L1S (GAL,QZS) */
-#define CODE_L2C 14 /* Obs code: L2C/A,G1C/A (GPS,GLO) */
-#define CODE_L2D 15 /* Obs code: L2 L1C/A-(P2-P1) (GPS) */
-#define CODE_L2S 16 /* Obs code: L2C(M)     (GPS,QZS) */
-#define CODE_L2L 17 /* Obs code: L2C(L)     (GPS,QZS) */
-#define CODE_L2X 18 /* Obs code: L2C(M+L),B1_2I+Q (GPS,QZS,BDS) */
-#define CODE_L2P 19 /* Obs code: L2P,G2P    (GPS,GLO) */
-#define CODE_L2W 20 /* Obs code: L2 Z-track (GPS) */
-#define CODE_L2Y 21 /* Obs code: L2Y        (GPS) */
-#define CODE_L2M 22 /* Obs code: L2M        (GPS) */
-#define CODE_L2N 23 /* Obs code: L2codeless (GPS) */
-#define CODE_L5I 24 /* Obs code: L5I,E5aI   (GPS,GAL,QZS,SBS) */
-#define CODE_L5Q 25 /* Obs code: L5Q,E5aQ   (GPS,GAL,QZS,SBS) */
-#define CODE_L5X 26 /* Obs code: L5I+Q,E5aI+Q,L5B+C,B2aD+P (GPS,GAL,QZS,IRN,SBS,BDS) */
-#define CODE_L7I 27 /* Obs code: E5bI,B2bI  (GAL,BDS) */
-#define CODE_L7Q 28 /* Obs code: E5bQ,B2bQ  (GAL,BDS) */
-#define CODE_L7X 29 /* Obs code: E5bI+Q,B2bI+Q (GAL,BDS) */
-#define CODE_L6A 30 /* Obs code: E6A,B3A    (GAL,BDS) */
-#define CODE_L6B 31 /* Obs code: E6B        (GAL) */
-#define CODE_L6C 32 /* Obs code: E6C        (GAL) */
-#define CODE_L6X 33 /* Obs code: E6B+C,LEXS+L,B3I+Q (GAL,QZS,BDS) */
-#define CODE_L6Z 34 /* Obs code: E6A+B+C,L6D+E (GAL,QZS) */
-#define CODE_L6S 35 /* Obs code: L6S        (QZS) */
-#define CODE_L6L 36 /* Obs code: L6L        (QZS) */
-#define CODE_L8I 37 /* Obs code: E5abI      (GAL) */
-#define CODE_L8Q 38 /* Obs code: E5abQ      (GAL) */
-#define CODE_L8X 39 /* Obs code: E5abI+Q,B2abD+P (GAL,BDS) */
-#define CODE_L2I 40 /* Obs code: B1_2I      (BDS) */
-#define CODE_L2Q 41 /* Obs code: B1_2Q      (BDS) */
-#define CODE_L6I 42 /* Obs code: B3I        (BDS) */
-#define CODE_L6Q 43 /* Obs code: B3Q        (BDS) */
-#define CODE_L3I 44 /* Obs code: G3I        (GLO) */
-#define CODE_L3Q 45 /* Obs code: G3Q        (GLO) */
-#define CODE_L3X 46 /* Obs code: G3I+Q      (GLO) */
-#define CODE_L1I 47 /* Obs code: B1I        (BDS) (obsolete) */
-#define CODE_L1Q 48 /* Obs code: B1Q        (BDS) (obsolete) */
-#define CODE_L5A 49 /* Obs code: L5A SPS    (IRN) */
-#define CODE_L5B 50 /* Obs code: L5B RS(D)  (IRN) */
-#define CODE_L5C 51 /* Obs code: L5C RS(P)  (IRN) */
-#define CODE_L9A 52 /* Obs code: SA SPS     (IRN) */
-#define CODE_L9B 53 /* Obs code: SB RS(D)   (IRN) */
-#define CODE_L9C 54 /* Obs code: SC RS(P)   (IRN) */
-#define CODE_L9X 55 /* Obs code: SB+C       (IRN) */
-#define CODE_L1D 56 /* Obs code: B1D        (BDS) */
-#define CODE_L5D 57 /* Obs code: L5D(L5S),B2aD (QZS,BDS) */
-#define CODE_L5P 58 /* Obs code: L5P(L5S),B2aP (QZS,BDS) */
-#define CODE_L5Z 59 /* Obs code: L5D+P(L5S) (QZS) */
-#define CODE_L6E 60 /* Obs code: L6E        (QZS) */
-#define CODE_L7D 61 /* Obs code: B2bD       (BDS) */
-#define CODE_L7P 62 /* Obs code: B2bP       (BDS) */
-#define CODE_L7Z 63 /* Obs code: B2bD+P     (BDS) */
-#define CODE_L8D 64 /* Obs code: B2abD      (BDS) */
-#define CODE_L8P 65 /* Obs code: B2abP      (BDS) */
-#define CODE_L4A 66 /* Obs code: G1aL1OCd   (GLO) */
-#define CODE_L4B 67 /* Obs code: G1aL1OCd   (GLO) */
-#define CODE_L4X 68 /* Obs code: G1al1OCd+p (GLO) */
-#define MAXCODE 68  /* Max number of obs code */
+enum code {
+  CODE_NONE = 0, /* Obs code: none or unknown */
+  CODE_L1C = 1,  /* Obs code: L1C/A,G1C/A,E1C (GPS,GLO,GAL,QZS,SBS) */
+  CODE_L1P = 2,  /* Obs code: L1P,G1P,B1P (GPS,GLO,BDS) */
+  CODE_L1W = 3,  /* Obs code: L1 Z-track (GPS) */
+  CODE_L1Y = 4,  /* Obs code: L1Y        (GPS) */
+  CODE_L1M = 5,  /* Obs code: L1M        (GPS) */
+  CODE_L1N = 6,  /* Obs code: L1codeless,B1codeless (GPS,BDS) */
+  CODE_L1S = 7,  /* Obs code: L1C(D)     (GPS,QZS) */
+  CODE_L1L = 8,  /* Obs code: L1C(P)     (GPS,QZS) */
+  CODE_L1E = 9,  /* (not used) */
+  CODE_L1A = 10, /* Obs code: E1A,B1A    (GAL,BDS) */
+  CODE_L1B = 11, /* Obs code: E1B        (GAL) */
+  CODE_L1X = 12, /* Obs code: E1B+C,L1C(D+P),B1D+P (GAL,QZS,BDS) */
+  CODE_L1Z = 13, /* Obs code: E1A+B+C,L1S (GAL,QZS) */
+  CODE_L2C = 14, /* Obs code: L2C/A,G1C/A (GPS,GLO) */
+  CODE_L2D = 15, /* Obs code: L2 L1C/A-(P2-P1) (GPS) */
+  CODE_L2S = 16, /* Obs code: L2C(M)     (GPS,QZS) */
+  CODE_L2L = 17, /* Obs code: L2C(L)     (GPS,QZS) */
+  CODE_L2X = 18, /* Obs code: L2C(M+L),B1_2I+Q (GPS,QZS,BDS) */
+  CODE_L2P = 19, /* Obs code: L2P,G2P    (GPS,GLO) */
+  CODE_L2W = 20, /* Obs code: L2 Z-track (GPS) */
+  CODE_L2Y = 21, /* Obs code: L2Y        (GPS) */
+  CODE_L2M = 22, /* Obs code: L2M        (GPS) */
+  CODE_L2N = 23, /* Obs code: L2codeless (GPS) */
+  CODE_L5I = 24, /* Obs code: L5I,E5aI   (GPS,GAL,QZS,SBS) */
+  CODE_L5Q = 25, /* Obs code: L5Q,E5aQ   (GPS,GAL,QZS,SBS) */
+  CODE_L5X = 26, /* Obs code: L5I+Q,E5aI+Q,L5B+C,B2aD+P (GPS,GAL,QZS,IRN,SBS,BDS) */
+  CODE_L7I = 27, /* Obs code: E5bI,B2bI  (GAL,BDS) */
+  CODE_L7Q = 28, /* Obs code: E5bQ,B2bQ  (GAL,BDS) */
+  CODE_L7X = 29, /* Obs code: E5bI+Q,B2bI+Q (GAL,BDS) */
+  CODE_L6A = 30, /* Obs code: E6A,B3A    (GAL,BDS) */
+  CODE_L6B = 31, /* Obs code: E6B        (GAL) */
+  CODE_L6C = 32, /* Obs code: E6C        (GAL) */
+  CODE_L6X = 33, /* Obs code: E6B+C,LEXS+L,B3I+Q (GAL,QZS,BDS) */
+  CODE_L6Z = 34, /* Obs code: E6A+B+C,L6D+E (GAL,QZS) */
+  CODE_L6S = 35, /* Obs code: L6S        (QZS) */
+  CODE_L6L = 36, /* Obs code: L6L        (QZS) */
+  CODE_L8I = 37, /* Obs code: E5abI      (GAL) */
+  CODE_L8Q = 38, /* Obs code: E5abQ      (GAL) */
+  CODE_L8X = 39, /* Obs code: E5abI+Q,B2abD+P (GAL,BDS) */
+  CODE_L2I = 40, /* Obs code: B1_2I      (BDS) */
+  CODE_L2Q = 41, /* Obs code: B1_2Q      (BDS) */
+  CODE_L6I = 42, /* Obs code: B3I        (BDS) */
+  CODE_L6Q = 43, /* Obs code: B3Q        (BDS) */
+  CODE_L3I = 44, /* Obs code: G3I        (GLO) */
+  CODE_L3Q = 45, /* Obs code: G3Q        (GLO) */
+  CODE_L3X = 46, /* Obs code: G3I+Q      (GLO) */
+  CODE_L1I = 47, /* Obs code: B1I        (BDS) (obsolete) */
+  CODE_L1Q = 48, /* Obs code: B1Q        (BDS) (obsolete) */
+  CODE_L5A = 49, /* Obs code: L5A SPS    (IRN) */
+  CODE_L5B = 50, /* Obs code: L5B RS(D)  (IRN) */
+  CODE_L5C = 51, /* Obs code: L5C RS(P)  (IRN) */
+  CODE_L9A = 52, /* Obs code: SA SPS     (IRN) */
+  CODE_L9B = 53, /* Obs code: SB RS(D)   (IRN) */
+  CODE_L9C = 54, /* Obs code: SC RS(P)   (IRN) */
+  CODE_L9X = 55, /* Obs code: SB+C       (IRN) */
+  CODE_L1D = 56, /* Obs code: B1D        (BDS) */
+  CODE_L5D = 57, /* Obs code: L5D(L5S),B2aD (QZS,BDS) */
+  CODE_L5P = 58, /* Obs code: L5P(L5S),B2aP (QZS,BDS) */
+  CODE_L5Z = 59, /* Obs code: L5D+P(L5S) (QZS) */
+  CODE_L6E = 60, /* Obs code: L6E        (QZS) */
+  CODE_L7D = 61, /* Obs code: B2bD       (BDS) */
+  CODE_L7P = 62, /* Obs code: B2bP       (BDS) */
+  CODE_L7Z = 63, /* Obs code: B2bD+P     (BDS) */
+  CODE_L8D = 64, /* Obs code: B2abD      (BDS) */
+  CODE_L8P = 65, /* Obs code: B2abP      (BDS) */
+  CODE_L4A = 66, /* Obs code: G1aL1OCd   (GLO) */
+  CODE_L4B = 67, /* Obs code: G1aL1OCd   (GLO) */
+  CODE_L4X = 68  /* Obs code: G1al1OCd+p (GLO) */
+};
+#define MAXCODE 68 /* Max number of obs code */
 
-#define PMODE_SINGLE 0       /* Positioning mode: single */
-#define PMODE_DGPS 1         /* Positioning mode: DGPS/DGNSS */
-#define PMODE_KINEMA 2       /* Positioning mode: kinematic */
-#define PMODE_STATIC 3       /* Positioning mode: static */
-#define PMODE_STATIC_START 4 /* Positioning mode: static */
-#define PMODE_MOVEB 5        /* Positioning mode: moving-base */
-#define PMODE_FIXED 6        /* Positioning mode: fixed */
-#define PMODE_PPP_KINEMA 7   /* Positioning mode: PPP-kinemaric */
-#define PMODE_PPP_STATIC 8   /* Positioning mode: PPP-static */
-#define PMODE_PPP_FIXED 9    /* Positioning mode: PPP-fixed */
+enum pmode {
+  PMODE_SINGLE = 0,       /* Positioning mode: single */
+  PMODE_DGPS = 1,         /* Positioning mode: DGPS/DGNSS */
+  PMODE_KINEMA = 2,       /* Positioning mode: kinematic */
+  PMODE_STATIC = 3,       /* Positioning mode: static */
+  PMODE_STATIC_START = 4, /* Positioning mode: static */
+  PMODE_MOVEB = 5,        /* Positioning mode: moving-base */
+  PMODE_FIXED = 6,        /* Positioning mode: fixed */
+  PMODE_PPP_KINEMA = 7,   /* Positioning mode: PPP-kinemaric */
+  PMODE_PPP_STATIC = 8,   /* Positioning mode: PPP-static */
+  PMODE_PPP_FIXED = 9     /* Positioning mode: PPP-fixed */
+};
 
-#define SOLF_LLH 0  /* Solution format: lat/lon/height */
-#define SOLF_XYZ 1  /* Solution format: x/y/z-ecef */
-#define SOLF_ENU 2  /* Solution format: e/n/u-baseline */
-#define SOLF_NMEA 3 /* Solution format: NMEA-183 */
-#define SOLF_STAT 4 /* Solution format: solution status */
-#define SOLF_GSIF 5 /* Solution format: GSI F1/F2 */
+enum solf {
+  SOLF_LLH = 0,  /* Solution format: lat/lon/height */
+  SOLF_XYZ = 1,  /* Solution format: x/y/z-ecef */
+  SOLF_ENU = 2,  /* Solution format: e/n/u-baseline */
+  SOLF_NMEA = 3, /* Solution format: NMEA-183 */
+  SOLF_STAT = 4, /* Solution format: solution status */
+  SOLF_GSIF = 5  /* Solution format: GSI F1/F2 */
+};
 
-#define SOLQ_NONE 0   /* Solution status: no solution */
-#define SOLQ_FIX 1    /* Solution status: fix */
-#define SOLQ_FLOAT 2  /* Solution status: float */
-#define SOLQ_SBAS 3   /* Solution status: SBAS */
-#define SOLQ_DGPS 4   /* Solution status: DGPS/DGNSS */
-#define SOLQ_SINGLE 5 /* Solution status: single */
-#define SOLQ_PPP 6    /* Solution status: PPP */
-#define SOLQ_DR 7     /* Solution status: dead reckoning */
-#define MAXSOLQ 7     /* Max number of solution status */
+enum solq {
+  SOLQ_NONE = 0,   /* Solution status: no solution */
+  SOLQ_FIX = 1,    /* Solution status: fix */
+  SOLQ_FLOAT = 2,  /* Solution status: float */
+  SOLQ_SBAS = 3,   /* Solution status: SBAS */
+  SOLQ_DGPS = 4,   /* Solution status: DGPS/DGNSS */
+  SOLQ_SINGLE = 5, /* Solution status: single */
+  SOLQ_PPP = 6,    /* Solution status: PPP */
+  SOLQ_DR = 7      /* Solution status: dead reckoning */
+};
+#define MAXSOLQ 7 /* Max number of solution status */
 
-#define SOLTYPE_FORWARD 0          /* Solution type: forward */
-#define SOLTYPE_BACKWARD 1         /* Solution type: backward */
-#define SOLTYPE_COMBINED 2         /* Solution type: combined */
-#define SOLTYPE_COMBINED_NORESET 3 /* Solution type: combined no phase reset*/
-#define SOLMODE_SINGLE_DIR 0       /* Single direction solution */
-#define SOLMODE_COMBINED 1         /* Combined solution */
+enum soltype {
+  SOLTYPE_FORWARD = 0,         /* Solution type: forward */
+  SOLTYPE_BACKWARD = 1,        /* Solution type: backward */
+  SOLTYPE_COMBINED = 2,        /* Solution type: combined */
+  SOLTYPE_COMBINED_NORESET = 3 /* Solution type: combined no phase reset*/
+};
 
-#define TIMES_GPST 0 /* Time system: GPS time */
-#define TIMES_UTC 1  /* Time system: UTC */
-#define TIMES_JST 2  /* Time system: jst */
+enum solmode {
+  SOLMODE_SINGLE_DIR = 0, /* Single direction solution */
+  SOLMODE_COMBINED = 1    /* Combined solution */
+};
 
-#define IONOOPT_OFF 0  /* Ionosphere option: correction off */
-#define IONOOPT_BRDC 1 /* Ionosphere option: broadcast model */
-#define IONOOPT_SBAS 2 /* Ionosphere option: SBAS model */
-#define IONOOPT_IFLC 3 /* Ionosphere option: L1/L2 or L1/L5 iono-free LC */
-#define IONOOPT_EST 4  /* Ionosphere option: estimation */
-#define IONOOPT_TEC 5  /* Ionosphere option: IONEX TEC model */
-#define IONOOPT_QZS 6  /* Ionosphere option: QZSS broadcast model */
-#define IONOOPT_STEC 8 /* Ionosphere option: SLANT TEC model */
+enum times {
+  TIMES_GPST = 0, /* Time system: GPS time */
+  TIMES_UTC = 1,  /* Time system: UTC */
+  TIMES_JST = 2   /* Time system: JST */
+};
 
-#define TROPOPT_OFF 0  /* Troposphere option: correction off */
-#define TROPOPT_SAAS 1 /* Troposphere option: Saastamoinen model */
-#define TROPOPT_SBAS 2 /* Troposphere option: SBAS model */
-#define TROPOPT_EST 3  /* Troposphere option: ZTD estimation */
-#define TROPOPT_ESTG 4 /* Troposphere option: ZTD+grad estimation */
+enum ionoopt {
+  IONOOPT_OFF = 0,  /* Ionosphere option: correction off */
+  IONOOPT_BRDC = 1, /* Ionosphere option: broadcast model */
+  IONOOPT_SBAS = 2, /* Ionosphere option: SBAS model */
+  IONOOPT_IFLC = 3, /* Ionosphere option: L1/L2 or L1/L5 iono-free LC */
+  IONOOPT_EST = 4,  /* Ionosphere option: estimation */
+  IONOOPT_TEC = 5,  /* Ionosphere option: IONEX TEC model */
+  IONOOPT_QZS = 6,  /* Ionosphere option: QZSS broadcast model */
+  IONOOPT_STEC = 8  /* Ionosphere option: SLANT TEC model */
+};
 
-#define EPHOPT_BRDC 0   /* Ephemeris option: broadcast ephemeris */
-#define EPHOPT_PREC 1   /* Ephemeris option: precise ephemeris */
-#define EPHOPT_SBAS 2   /* Ephemeris option: broadcast + SBAS */
-#define EPHOPT_SSRAPC 3 /* Ephemeris option: broadcast + SSR_APC */
-#define EPHOPT_SSRCOM 4 /* Ephemeris option: broadcast + SSR_COM */
+enum tropopt {
+  TROPOPT_OFF = 0,  /* Troposphere option: correction off */
+  TROPOPT_SAAS = 1, /* Troposphere option: Saastamoinen model */
+  TROPOPT_SBAS = 2, /* Troposphere option: SBAS model */
+  TROPOPT_EST = 3,  /* Troposphere option: ZTD estimation */
+  TROPOPT_ESTG = 4  /* Troposphere option: ZTD+grad estimation */
+};
 
-#define ARMODE_OFF 0     /* AR mode: off */
-#define ARMODE_CONT 1    /* AR mode: continuous */
-#define ARMODE_INST 2    /* AR mode: instantaneous */
-#define ARMODE_FIXHOLD 3 /* AR mode: fix and hold */
+enum ephopt {
+  EPHOPT_BRDC = 0,   /* Ephemeris option: broadcast ephemeris */
+  EPHOPT_PREC = 1,   /* Ephemeris option: precise ephemeris */
+  EPHOPT_SBAS = 2,   /* Ephemeris option: broadcast + SBAS */
+  EPHOPT_SSRAPC = 3, /* Ephemeris option: broadcast + SSR_APC */
+  EPHOPT_SSRCOM = 4  /* Ephemeris option: broadcast + SSR_COM */
+};
 
-#define GLO_ARMODE_OFF 0     /* GLO AR mode: off */
-#define GLO_ARMODE_ON 1      /* GLO AR mode: on */
-#define GLO_ARMODE_AUTOCAL 2 /* GLO AR mode: autocal */
-#define GLO_ARMODE_FIXHOLD 3 /* GLO AR mode: fix and hold */
+enum armode {
+  ARMODE_OFF = 0,    /* AR mode: off */
+  ARMODE_CONT = 1,   /* AR mode: continuous */
+  ARMODE_INST = 2,   /* AR mode: instantaneous */
+  ARMODE_FIXHOLD = 3 /* AR mode: fix and hold */
+};
 
-#define SBSOPT_LCORR 1 /* SBAS option: long term correction */
-#define SBSOPT_FCORR 2 /* SBAS option: fast correction */
-#define SBSOPT_ICORR 4 /* SBAS option: ionosphere correction */
-#define SBSOPT_RANGE 8 /* SBAS option: ranging */
+enum glo_armode {
+  GLO_ARMODE_OFF = 0,     /* GLO AR mode: off */
+  GLO_ARMODE_ON = 1,      /* GLO AR mode: on */
+  GLO_ARMODE_AUTOCAL = 2, /* GLO AR mode: autocal */
+  GLO_ARMODE_FIXHOLD = 3  /* GLO AR mode: fix and hold */
+};
 
-#define POSOPT_POS 0    /* Pos option: LLH/XYZ */
-#define POSOPT_SINGLE 1 /* Pos option: average of single pos */
-#define POSOPT_FILE 2   /* Pos option: read from pos file */
-#define POSOPT_RINEX 3  /* Pos option: RINEX header pos */
-#define POSOPT_RTCM 4   /* Pos option: RTCM/raw station pos */
+enum sbsopt {
+  SBSOPT_LCORR = 1, /* SBAS option: long term correction */
+  SBSOPT_FCORR = 2, /* SBAS option: fast correction */
+  SBSOPT_ICORR = 4, /* SBAS option: ionosphere correction */
+  SBSOPT_RANGE = 8  /* SBAS option: ranging */
+};
 
-#define STR_NONE 0     /* Stream type: none */
-#define STR_SERIAL 1   /* Stream type: serial */
-#define STR_FILE 2     /* Stream type: file */
-#define STR_TCPSVR 3   /* Stream type: TCP server */
-#define STR_TCPCLI 4   /* Stream type: TCP client */
-#define STR_NTRIPSVR 5 /* Stream type: NTRIP server */
-#define STR_NTRIPCLI 6 /* Stream type: NTRIP client */
-#define STR_FTP 7      /* Stream type: FTP */
-#define STR_HTTP 8     /* Stream type: HTTP */
-#define STR_NTRIPCAS 9 /* Stream type: NTRIP caster */
-#define STR_UDPSVR 10  /* Stream type: UDP server */
-#define STR_UDPCLI 11  /* Stream type: UDP server */
-#define STR_MEMBUF 12  /* Stream type: memory buffer */
+enum posopt {
+  POSOPT_POS_LLH = 0, /* Pos option: LLH */
+  POSOPT_POS_XYZ = 1, /* Pos option: XYZ */
+  POSOPT_SINGLE = 2,  /* Pos option: average of single pos */
+  POSOPT_FILE = 3,    /* Pos option: read from pos file */
+  POSOPT_RINEX = 4,   /* Pos option: RINEX header pos */
+  POSOPT_RTCM = 5     /* Pos option: RTCM/raw station pos */
+};
 
-#define STRFMT_RTCM2 0   /* Stream format: RTCM 2 */
-#define STRFMT_RTCM3 1   /* Stream format: RTCM 3 */
-#define STRFMT_OEM4 2    /* Stream format: NovAtel OEMV/4 */
-#define STRFMT_CNAV 3    /* Stream format: ComNav */
-#define STRFMT_UBX 4     /* Stream format: u-blox LEA-*T */
-#define STRFMT_SBP 5     /* Stream format: Swift Navigation SBP */
-#define STRFMT_CRES 6    /* Stream format: Hemisphere */
-#define STRFMT_STQ 7     /* Stream format: SkyTraq S1315F */
-#define STRFMT_JAVAD 8   /* Stream format: JAVAD GRIL/GREIS */
-#define STRFMT_NVS 9     /* Stream format: NVS NVC08C */
-#define STRFMT_BINEX 10  /* Stream format: BINEX */
-#define STRFMT_RT17 11   /* Stream format: Trimble RT17 */
-#define STRFMT_SEPT 12   /* Stream format: Septentrio */
-#define STRFMT_TERSUS 13 /* Stream format: TERSUS */
-#define STRFMT_RINEX 14  /* Stream format: RINEX */
-#define STRFMT_SP3 15    /* Stream format: SP3 */
-#define STRFMT_RNXCLK 16 /* Stream format: RINEX CLK */
-#define STRFMT_SBAS 17   /* Stream format: SBAS messages */
-#define STRFMT_NMEA 18   /* Stream format: NMEA 0183 */
-#define MAXRCVFMT 13     /* Max number of receiver format */
+enum str {
+  STR_NONE = 0,     /* Stream type: none */
+  STR_SERIAL = 1,   /* Stream type: serial */
+  STR_FILE = 2,     /* Stream type: file */
+  STR_TCPSVR = 3,   /* Stream type: TCP server */
+  STR_TCPCLI = 4,   /* Stream type: TCP client */
+  STR_NTRIPSVR = 5, /* Stream type: NTRIP server */
+  STR_NTRIPCLI = 6, /* Stream type: NTRIP client */
+  STR_FTP = 7,      /* Stream type: FTP */
+  STR_HTTP = 8,     /* Stream type: HTTP */
+  STR_NTRIPCAS = 9, /* Stream type: NTRIP caster */
+  STR_UDPSVR = 10,  /* Stream type: UDP server */
+  STR_UDPCLI = 11,  /* Stream type: UDP server */
+  STR_MEMBUF = 12   /* Stream type: memory buffer */
+};
 
-#define STR_MODE_R 0x1  /* Stream mode: read */
-#define STR_MODE_W 0x2  /* Stream mode: write */
-#define STR_MODE_RW 0x3 /* Stream mode: read/write */
+enum strfmt {
+  STRFMT_RTCM2 = 0,   /* Stream format: RTCM 2 */
+  STRFMT_RTCM3 = 1,   /* Stream format: RTCM 3 */
+  STRFMT_OEM4 = 2,    /* Stream format: NovAtel OEMV/4 */
+  STRFMT_CNAV = 3,    /* Stream format: ComNav */
+  STRFMT_UBX = 4,     /* Stream format: u-blox LEA-*T */
+  STRFMT_SBP = 5,     /* Stream format: Swift Navigation SBP */
+  STRFMT_CRES = 6,    /* Stream format: Hemisphere */
+  STRFMT_STQ = 7,     /* Stream format: SkyTraq S1315F */
+  STRFMT_JAVAD = 8,   /* Stream format: JAVAD GRIL/GREIS */
+  STRFMT_NVS = 9,     /* Stream format: NVS NVC08C */
+  STRFMT_BINEX = 10,  /* Stream format: BINEX */
+  STRFMT_RT17 = 11,   /* Stream format: Trimble RT17 */
+  STRFMT_SEPT = 12,   /* Stream format: Septentrio */
+  STRFMT_TERSUS = 13, /* Stream format: TERSUS */
+  STRFMT_RINEX = 14,  /* Stream format: RINEX */
+  STRFMT_SP3 = 15,    /* Stream format: SP3 */
+  STRFMT_RNXCLK = 16, /* Stream format: RINEX CLK */
+  STRFMT_SBAS = 17,   /* Stream format: SBAS messages */
+  STRFMT_NMEA = 18    /* Stream format: NMEA 0183 */
+};
+#define MAXRCVFMT 13 /* Max number of receiver format */
 
-#define GEOID_EMBEDDED 0    /* Geoid model: embedded geoid */
-#define GEOID_EGM96_M150 1  /* Geoid model: EGM96 15x15" */
-#define GEOID_EGM2008_M25 2 /* Geoid model: EGM2008 2.5x2.5" */
-#define GEOID_EGM2008_M10 3 /* Geoid model: EGM2008 1.0x1.0" */
-#define GEOID_GSI2000_M15 4 /* Geoid model: GSI geoid 2000 1.0x1.5" */
-#define GEOID_RAF09 5       /* Geoid model: IGN RAF09 for France 1.5"x2" */
+enum str_mode {
+  STR_MODE_R = 0x1, /* Stream mode: read */
+  STR_MODE_W = 0x2, /* Stream mode: write */
+  STR_MODE_RW = 0x3 /* Stream mode: read/write */
+};
+
+enum geoid {
+  GEOID_EMBEDDED = 0,    /* Geoid model: embedded geoid */
+  GEOID_EGM96_M150 = 1,  /* Geoid model: EGM96 15x15" */
+  GEOID_EGM2008_M25 = 2, /* Geoid model: EGM2008 2.5x2.5" */
+  GEOID_EGM2008_M10 = 3, /* Geoid model: EGM2008 1.0x1.0" */
+  GEOID_GSI2000_M15 = 4, /* Geoid model: GSI geoid 2000 1.0x1.5" */
+  GEOID_RAF09 = 5        /* Geoid model: IGN RAF09 for France 1.5"x2" */
+};
 
 #define COMMENTH "%"                   /* Comment line indicator for solution */
 #define MSG_DISCONN "$_DISCONNECT\r\n" /* Disconnect message */
@@ -549,15 +589,15 @@ typedef struct {   /* Time struct */
   long double sec; /* Fraction of second under 1 s */
 } gtime_t;
 
-typedef struct {                 /* Observation data record */
-  gtime_t time;                  /* Receiver sampling time (GPST) */
-  uint8_t sat, rcv;              /* Satellite/receiver number */
-  uint16_t SNR[NFREQ + NEXOBS];  /* Signal strength (0.001 dBHz) */
-  uint8_t LLI[NFREQ + NEXOBS];   /* Loss of lock indicator */
-  uint8_t code[NFREQ + NEXOBS];  /* Code indicator (CODE_???) */
-  long double L[NFREQ + NEXOBS]; /* Observation data carrier-phase (cycle) */
-  long double P[NFREQ + NEXOBS]; /* Observation data pseudorange (m) */
-  long double D[NFREQ + NEXOBS]; /* Observation data doppler frequency (Hz) */
+typedef struct {                  /* Observation data record */
+  gtime_t time;                   /* Receiver sampling time (GPST) */
+  uint8_t sat, rcv;               /* Satellite/receiver number */
+  uint16_t SNR[NFREQ + NEXOBS];   /* Signal strength (0.001 dBHz) */
+  uint8_t LLI[NFREQ + NEXOBS];    /* Loss of lock indicator */
+  enum code code[NFREQ + NEXOBS]; /* Code indicator (CODE_???) */
+  long double L[NFREQ + NEXOBS];  /* Observation data carrier-phase (cycle) */
+  long double P[NFREQ + NEXOBS];  /* Observation data pseudorange (m) */
+  long double D[NFREQ + NEXOBS];  /* Observation data doppler frequency (Hz) */
 
   int timevalid;                /* Time is valid (Valid GNSS fix) for time mark */
   gtime_t eventime;             /* Time of event (GPST) */
@@ -880,7 +920,7 @@ typedef struct {           /* Solution type */
   long double qv[6];       /* Velocity variance/covariance (m^2/s^2) */
   long double dtr[6];      /* Receiver clock bias to time systems (s) */
   uint8_t type;            /* Type (0:xyz-ecef,1:enu-baseline) */
-  uint8_t stat;            /* Solution status (SOLQ_???) */
+  enum solq stat;          /* Solution status (SOLQ_???) */
   uint8_t ns;              /* Number of valid satellites */
   long double age;         /* Age of differential (s) */
   long double ratio;       /* AR ratio factor for validation */
@@ -958,7 +998,7 @@ typedef struct {               /* RINEX control struct type */
   long double ver;             /* RINEX version */
   char type;                   /* RINEX file type ('O','N',...) */
   int sys;                     /* Navigation system */
-  int tsys;                    /* Time system */
+  enum tsys tsys;              /* Time system */
   char tobs[8][MAXOBSTYPE][4]; /* RINEX obs types */
   obs_t obs;                   /* Observation data */
   nav_t nav;                   /* Navigation data */
@@ -988,39 +1028,40 @@ typedef struct {              /* SNR mask type */
   long double mask[NFREQ][9]; /* Mask (dBHz) at 5,10,...85 deg */
 } snrmask_t;
 
-typedef struct {     /* Processing options type */
-  int mode;          /* Positioning mode (PMODE_???) */
-  int soltype;       /* Solution type (0:forward,1:backward,2:combined) */
-  int nf;            /* Number of frequencies (1:L1,2:L1+L2,3:L1+L2+L5) */
-  int navsys;        /* Navigation system */
-  long double elmin; /* Elevation mask angle (rad) */
-  snrmask_t snrmask; /* SNR mask */
-  int sateph;        /* Satellite ephemeris/clock (EPHOPT_???) */
-  int modear;        /* AR mode (0:off,1:continuous,2:instantaneous,3:fix and hold,4:ppp-ar) */
-  int glomodear;     /* GLONASS AR mode (0:off,1:on,2:auto cal,3:ext cal) */
-  int gpsmodear;     /* GPS AR mode, debug/learning only (0:off,1:on) */
-  int bdsmodear;     /* BeiDou AR mode (0:off,1:on) */
-  int arfilter;      /* AR filtering to reject bad sats (0:off,1:on) */
-  int maxout;        /* Obs outage count to reset bias */
-  int minlock;       /* Min lock count to fix ambiguity */
-  int minfixsats;    /* Min sats to fix integer ambiguities */
-  int minholdsats;   /* Min sats to hold integer ambiguities */
-  int mindropsats;   /* Min sats to drop sats in AR */
-  int minfix;        /* Min fix count to hold ambiguity */
-  int armaxiter;     /* Max iteration to resolve ambiguity */
-  int ionoopt;       /* Ionosphere option (IONOOPT_???) */
-  int tropopt;       /* Troposphere option (TROPOPT_???) */
-  int dynamics;      /* Dynamics model (0:none,1:velocity,2:accel) */
-  int tidecorr;      /* Earth tide correction (0:off,1:solid,2:solid+otl+pole) */
-  int niter;         /* Number of filter iteration */
-  int codesmooth;    /* Code smoothing window size (0:none) */
-  int intpref;       /* Interpolate reference obs (for post mission) */
-  int sbascorr;      /* SBAS correction options */
-  int sbassatsel;    /* SBAS satellite selection (0:all) */
-  int rovpos;        /* Rover position for fixed mode */
-  int refpos;        /* Base position for relative mode */
-                     /* (0:pos in prcopt,  1:average of single pos, */
-                     /*  2:read from file, 3:rinex header, 4:rtcm pos) */
+typedef struct {      /* Processing options type */
+  enum pmode mode;    /* Positioning mode (PMODE_???) */
+  int soltype;        /* Solution type (0:forward,1:backward,2:combined) */
+  int nf;             /* Number of frequencies (1:L1,2:L1+L2,3:L1+L2+L5) */
+  int navsys;         /* Navigation system */
+  long double elmin;  /* Elevation mask angle (rad) */
+  snrmask_t snrmask;  /* SNR mask */
+  enum ephopt sateph; /* Satellite ephemeris/clock (EPHOPT_???) */
+  enum armode modear; /* AR mode (0:off,1:continuous,2:instantaneous,3:fix and hold,4:ppp-ar) */
+  enum glo_armode glomodear; /* GLONASS AR mode (0:off,1:on,2:auto cal,3:ext cal) */
+  int gpsmodear;             /* GPS AR mode, debug/learning only (0:off,1:on) */
+  int bdsmodear;             /* BeiDou AR mode (0:off,1:on) */
+  int arfilter;              /* AR filtering to reject bad sats (0:off,1:on) */
+  int maxout;                /* Obs outage count to reset bias */
+  int minlock;               /* Min lock count to fix ambiguity */
+  int minfixsats;            /* Min sats to fix integer ambiguities */
+  int minholdsats;           /* Min sats to hold integer ambiguities */
+  int mindropsats;           /* Min sats to drop sats in AR */
+  int minfix;                /* Min fix count to hold ambiguity */
+  int armaxiter;             /* Max iteration to resolve ambiguity */
+  enum ionoopt ionoopt;      /* Ionosphere option (IONOOPT_???) */
+  enum tropopt tropopt;      /* Troposphere option (TROPOPT_???) */
+  int dynamics;              /* Dynamics model (0:none,1:velocity,2:accel) */
+  int tidecorr;              /* Earth tide correction (0:off,1:solid,2:solid+otl+pole) */
+  int niter;                 /* Number of filter iteration */
+  int codesmooth;            /* Code smoothing window size (0:none) */
+  int intpref;               /* Interpolate reference obs (for post mission) */
+  int sbascorr;              /* SBAS correction options */
+  int sbassatsel;            /* SBAS satellite selection (0:all) */
+  /* Note the rover and base positions are stored in ECEF XYZ format
+   * in ru and rb below for either POSOPT_POS_LLH, POSOPT_POS_XYZ.
+   * The distinction is for presentation in the options. */
+  enum posopt rovpos;        /* Rover position for fixed mode */
+  enum posopt refpos;        /* Base position for relative mode */
   long double eratio[NFREQ]; /* Code/phase error ratio */
   long double err[8];        /* Observation error terms */
   /* [reserved,constant,elevation,baseline,doppler,snr-max,snr, rcv_std] */
@@ -1055,8 +1096,8 @@ typedef struct {     /* Processing options type */
 } prcopt_t;
 
 typedef struct {           /* Solution options type */
-  int posf;                /* Solution format (SOLF_???) */
-  int times;               /* Time system (TIMES_???) */
+  enum solf posf;          /* Solution format (SOLF_???) */
+  enum times times;        /* Time system (TIMES_???) */
   int timef;               /* Time format (0:sssss.s,1:yyyy/mm/dd hh:mm:ss.s) */
   int timeu;               /* Time digits under decimal point */
   int degf;                /* Latitude/longitude format (0:ddd.ddd,1:ddd mm ss) */
@@ -1179,10 +1220,10 @@ typedef struct {        /* RTK control/result type */
   ambc_t ambc[MAXSAT]; /* Ambiguity control */
   ssat_t ssat[MAXSAT]; /* Satellite status */
   int neb;             /* Bytes in error message buffer */
-  char errbuf[MAXERRMSG]; /* Error message buffer */
-  prcopt_t opt;           /* Processing options */
-  int initial_mode;       /* Initial positioning mode */
-  int epoch;              /* Epoch number */
+  char errbuf[MAXERRMSG];  /* Error message buffer */
+  prcopt_t opt;            /* Processing options */
+  enum pmode initial_mode; /* Initial positioning mode */
+  int epoch;               /* Epoch number */
 } rtk_t;
 
 typedef struct {                             /* Receiver raw data control type */
@@ -1218,8 +1259,8 @@ typedef struct {                             /* Receiver raw data control type *
 } raw_t;
 
 typedef struct {         /* Stream type */
-  int type;              /* Type (STR_???) */
-  int mode;              /* Mode (STR_MODE_?) */
+  enum str type;         /* Type (STR_???) */
+  enum str_mode mode;    /* Mode (STR_MODE_?) */
   int state;             /* State (-1:error,0:close,1:open) */
   uint32_t inb, inr;     /* Input bytes/rate */
   uint32_t outb, outr;   /* Output bytes/rate */
@@ -1353,15 +1394,15 @@ EXPORT int satno(int sys, int prn);
 EXPORT int satsys(int sat, int *prn);
 EXPORT int satid2no(const char *id);
 EXPORT void satno2id(int sat, char id[8]);
-EXPORT uint8_t obs2code(const char *obs);
-EXPORT char *code2obs(uint8_t code);
-EXPORT long double code2freq(int sys, uint8_t code, int fcn);
-EXPORT long double sat2freq(int sat, uint8_t code, const nav_t *nav);
-EXPORT int code2idx(int sys, uint8_t code);
+EXPORT enum code obs2code(const char *obs);
+EXPORT char *code2obs(enum code code);
+EXPORT long double code2freq(int sys, enum code code, int fcn);
+EXPORT long double sat2freq(int sat, enum code code, const nav_t *nav);
+EXPORT int code2idx(int sys, enum code code);
 EXPORT bool satexclude(int sat, long double var, int svh, const prcopt_t *opt);
 EXPORT bool testsnr(int base, int freq, long double el, long double snr, const snrmask_t *mask);
 EXPORT void setcodepri(int sys, int idx, const char *pri);
-EXPORT int getcodepri(int sys, uint8_t code, const char *opt);
+EXPORT int getcodepri(int sys, enum code code, const char *opt);
 
 /* Satellite system to index number, or zero if no match. */
 static inline int sys2no(int sys) {
@@ -1666,9 +1707,11 @@ EXPORT bool iontec(gtime_t time, const nav_t *nav, const long double *pos, const
                    int opt, long double *delay, long double *var);
 EXPORT void readtec(const char *file, nav_t *nav, int opt);
 EXPORT bool ionocorr(gtime_t time, const nav_t *nav, int sat, const long double *pos,
-                     const long double *azel, int ionoopt, long double *ion, long double *var);
+                     const long double *azel, enum ionoopt ionoopt, long double *ion,
+                     long double *var);
 EXPORT bool tropcorr(gtime_t time, const nav_t *nav, const long double *pos,
-                     const long double *azel, int tropopt, long double *trp, long double *var);
+                     const long double *azel, enum tropopt tropopt, long double *trp,
+                     long double *var);
 EXPORT int seliflc(int optnf, int sys);
 
 /* Antenna models ------------------------------------------------------------*/
@@ -1685,7 +1728,7 @@ EXPORT void tidedisp(gtime_t tutc, const long double *rr, int opt, const erp_t *
                      const long double *odisp, long double *dr);
 
 /* Geoid models --------------------------------------------------------------*/
-EXPORT bool opengeoid(int model, const char *file);
+EXPORT bool opengeoid(enum geoid model, const char *file);
 EXPORT void closegeoid(void);
 EXPORT long double geoidh(const long double *pos);
 
@@ -1732,16 +1775,16 @@ EXPORT bool peph2pos(gtime_t time, int sat, const nav_t *nav, int opt, long doub
                      long double *dts, long double *var);
 EXPORT void satantoff(gtime_t time, const long double *rs, int sat, const nav_t *nav,
                       long double *dant);
-EXPORT bool satpos(gtime_t time, gtime_t teph, int sat, int ephopt, const nav_t *nav,
+EXPORT bool satpos(gtime_t time, gtime_t teph, int sat, enum ephopt ephopt, const nav_t *nav,
                    long double *rs, long double *dts, long double *var, int *svh);
-EXPORT void satposs(gtime_t time, const obsd_t *obs, int n, const nav_t *nav, int sateph,
+EXPORT void satposs(gtime_t time, const obsd_t *obs, int n, const nav_t *nav, enum ephopt sateph,
                     long double *rs, long double *dts, long double *var, int *svh);
 EXPORT void setseleph(int sys, int sel);
 EXPORT int getseleph(int sys);
 EXPORT void readsp3(const char *file, nav_t *nav, int opt);
 EXPORT bool readsap(const char *file, gtime_t time, nav_t *nav);
 EXPORT bool readdcb(const char *file, nav_t *nav, const sta_t *sta);
-EXPORT int code2bias_ix(const int sys, const int code);
+EXPORT int code2bias_ix(int sys, enum code code);
 /*EXPORT int readfcb(const char *file, nav_t *nav);*/
 EXPORT void alm2pos(gtime_t time, const alm_t *alm, long double *rs, long double *dts);
 
@@ -1831,11 +1874,11 @@ EXPORT sol_t *getsol(solbuf_t *solbuf, int index);
 EXPORT bool addsol(solbuf_t *solbuf, const sol_t *sol);
 EXPORT bool readsol(const char *files[], int nfile, solbuf_t *sol);
 EXPORT bool readsolt(const char *files[], int nfile, gtime_t ts, gtime_t te, long double tint,
-                     int qflag, solbuf_t *sol);
+                     enum solq qflag, solbuf_t *sol);
 EXPORT bool readsolstat(const char *files[], int nfile, solstatbuf_t *statbuf);
 EXPORT bool readsolstatt(const char *files[], int nfile, gtime_t ts, gtime_t te, long double tint,
                          solstatbuf_t *statbuf);
-EXPORT int inputsol(uint8_t data, gtime_t ts, gtime_t te, long double tint, int qflag,
+EXPORT int inputsol(uint8_t data, gtime_t ts, gtime_t te, long double tint, enum solq qflag,
                     const solopt_t *opt, solbuf_t *solbuf);
 
 EXPORT void outprcopts(char *buff, size_t size, const prcopt_t *opt);
@@ -1892,7 +1935,7 @@ EXPORT void strinitcom(void);
 EXPORT void strinit(stream_t *stream);
 EXPORT void strlock(stream_t *stream);
 EXPORT void strunlock(stream_t *stream);
-EXPORT bool stropen(stream_t *stream, int type, int mode, const char *path);
+EXPORT bool stropen(stream_t *stream, int type, enum str_mode mode, const char *path);
 EXPORT void strclose(stream_t *stream);
 EXPORT int strread(stream_t *stream, uint8_t *buff, int n);
 EXPORT int strwrite(stream_t *stream, uint8_t *buff, int n);

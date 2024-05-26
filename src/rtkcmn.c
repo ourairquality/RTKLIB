@@ -654,7 +654,7 @@ extern bool testsnr(int base, int idx, long double el, long double snr, const sn
  * Return : obs code (CODE_???)
  * Notes  : obs codes are based on RINEX 3.04
  *----------------------------------------------------------------------------*/
-extern uint8_t obs2code(const char *obs) {
+extern enum code obs2code(const char *obs) {
   for (int i = 1; *obscodes[i]; i++) {
     if (strcmp(obscodes[i], obs)) continue;
     return (uint8_t)i;
@@ -663,16 +663,16 @@ extern uint8_t obs2code(const char *obs) {
 }
 /* Obs code to obs code string -------------------------------------------------
  * Convert obs code to obs code string
- * Args   : uint8_t code     I   obs code (CODE_???)
+ * Args   : enum code code     I   obs code (CODE_???)
  * Return : obs code string ("1C","1P","1P",...)
  * Notes  : obs codes are based on RINEX 3.04
  *----------------------------------------------------------------------------*/
-extern char *code2obs(uint8_t code) {
+extern char *code2obs(enum code code) {
   if (code <= CODE_NONE || MAXCODE < code) return "";
   return obscodes[code];
 }
 /* GPS obs code to frequency -------------------------------------------------*/
-static int code2freq_GPS(uint8_t code, long double *freq) {
+static int code2freq_GPS(enum code code, long double *freq) {
   const char *obs = code2obs(code);
 
   switch (obs[0]) {
@@ -689,7 +689,7 @@ static int code2freq_GPS(uint8_t code, long double *freq) {
   return -1;
 }
 /* GLONASS obs code to frequency ---------------------------------------------*/
-static int code2freq_GLO(uint8_t code, int fcn, long double *freq) {
+static int code2freq_GLO(enum code code, int fcn, long double *freq) {
   const char *obs = code2obs(code);
 
   if (fcn < -7 || fcn > 6) return -1;
@@ -714,7 +714,7 @@ static int code2freq_GLO(uint8_t code, int fcn, long double *freq) {
   return -1;
 }
 /* Galileo obs code to frequency ---------------------------------------------*/
-static int code2freq_GAL(uint8_t code, long double *freq) {
+static int code2freq_GAL(enum code code, long double *freq) {
   const char *obs = code2obs(code);
 
   switch (obs[0]) {
@@ -737,7 +737,7 @@ static int code2freq_GAL(uint8_t code, long double *freq) {
   return -1;
 }
 /* QZSS obs code to frequency ------------------------------------------------*/
-static int code2freq_QZS(uint8_t code, long double *freq) {
+static int code2freq_QZS(enum code code, long double *freq) {
   const char *obs = code2obs(code);
 
   switch (obs[0]) {
@@ -757,7 +757,7 @@ static int code2freq_QZS(uint8_t code, long double *freq) {
   return -1;
 }
 /* SBAS obs code to frequency ------------------------------------------------*/
-static int code2freq_SBS(uint8_t code, long double *freq) {
+static int code2freq_SBS(enum code code, long double *freq) {
   const char *obs = code2obs(code);
 
   switch (obs[0]) {
@@ -771,7 +771,7 @@ static int code2freq_SBS(uint8_t code, long double *freq) {
   return -1;
 }
 /* BDS obs code to frequency -------------------------------------------------*/
-static int code2freq_BDS(uint8_t code, long double *freq) {
+static int code2freq_BDS(enum code code, long double *freq) {
   const char *obs = code2obs(code);
 
   switch (obs[0]) {
@@ -797,7 +797,7 @@ static int code2freq_BDS(uint8_t code, long double *freq) {
   return -1;
 }
 /* NavIC obs code to frequency -----------------------------------------------*/
-static int code2freq_IRN(uint8_t code, long double *freq) {
+static int code2freq_IRN(enum code code, long double *freq) {
   const char *obs = code2obs(code);
 
   switch (obs[0]) {
@@ -812,8 +812,8 @@ static int code2freq_IRN(uint8_t code, long double *freq) {
 }
 /* System and obs code to frequency index --------------------------------------
  * Convert system and obs code to frequency index
- * Args   : int    sys       I   satellite system (SYS_???)
- *          uint8_t code     I   obs code (CODE_???)
+ * Args   : int       sys       I   satellite system (SYS_???)
+ *          enum code code      I   obs code (CODE_???)
  * Return : frequency index (-1: error)
  *                       0     1     2     3     4
  *           --------------------------------------
@@ -825,7 +825,7 @@ static int code2freq_IRN(uint8_t code, long double *freq) {
  *            BDS       B1    B2    B3   B2a   B2ab (B1=B1I,B1C,B2=B2I,B2b)
  *            NavIC     L5     S     -     -     -
  *----------------------------------------------------------------------------*/
-extern int code2idx(int sys, uint8_t code) {
+extern int code2idx(int sys, enum code code) {
   long double freq;
 
   switch (sys) {
@@ -848,12 +848,12 @@ extern int code2idx(int sys, uint8_t code) {
 }
 /* System and obs code to frequency --------------------------------------------
  * Convert system and obs code to carrier frequency
- * Args   : int    sys       I   satellite system (SYS_???)
- *          uint8_t code     I   obs code (CODE_???)
- *          int    fcn       I   frequency channel number for GLONASS
+ * Args   : int       sys       I   satellite system (SYS_???)
+ *          enum code code      I   obs code (CODE_???)
+ *          int       fcn       I   frequency channel number for GLONASS
  * Return : carrier frequency (Hz) (0.0: error)
  *----------------------------------------------------------------------------*/
-extern long double code2freq(int sys, uint8_t code, int fcn) {
+extern long double code2freq(int sys, enum code code, int fcn) {
   long double freq = 0.0L;
 
   switch (sys) {
@@ -883,12 +883,12 @@ extern long double code2freq(int sys, uint8_t code, int fcn) {
 }
 /* Satellite and obs code to frequency -----------------------------------------
  * Convert satellite and obs code to carrier frequency
- * Args   : int    sat       I   satellite number
- *          uint8_t code     I   obs code (CODE_???)
- *          nav_t  *nav_t    I   navigation data for GLONASS (NULL: not used)
+ * Args   : int       sat       I   satellite number
+ *          enum code code      I   obs code (CODE_???)
+ *          nav_t     *nav_t    I   navigation data for GLONASS (NULL: not used)
  * Return : carrier frequency (Hz) (0.0: error)
  *----------------------------------------------------------------------------*/
-extern long double sat2freq(int sat, uint8_t code, const nav_t *nav) {
+extern long double sat2freq(int sat, enum code code, const nav_t *nav) {
   int prn;
   int sys = satsys(sat, &prn);
 
@@ -931,12 +931,12 @@ extern void setcodepri(int sys, int idx, const char *pri) {
 }
 /* Get code priority -----------------------------------------------------------
  * Get code priority for multiple codes in a frequency
- * Args   : int    sys       I   system (SYS_???)
- *          uint8_t code     I   obs code (CODE_???)
- *          char   *opt      I   code options (NULL:no option)
+ * Args   : int       sys       I   system (SYS_???)
+ *          enum code code      I   obs code (CODE_???)
+ *          char      *opt      I   code options (NULL:no option)
  * Return : priority (15:highest-1:lowest,0:error)
  *----------------------------------------------------------------------------*/
-extern int getcodepri(int sys, uint8_t code, const char *opt) {
+extern int getcodepri(int sys, enum code code, const char *opt) {
   int i;
   const char *optstr;
   switch (sys) {
@@ -973,7 +973,7 @@ extern int getcodepri(int sys, uint8_t code, const char *opt) {
   }
   int j = code2idx(sys, code);
   if (j < 0) return 0;
-  char *obs = code2obs(code);
+  const char *obs = code2obs(code);
 
   /* Parse code options */
   const char *p;
@@ -1010,7 +1010,7 @@ extern int32_t getbits(const uint8_t *buff, size_t size, unsigned pos, unsigned 
     return 0;
   }
   if (len >= 32) {
-    if (len > 32) trace(2, "getbits: len=%u out of range\n", len);
+    if (len > 32) trace(0, "getbits: len=%u out of range\n", len);
     return (int32_t)bits;
   }
   /* Check the sign bit */
@@ -1027,7 +1027,7 @@ extern int32_t getbits(const uint8_t *buff, size_t size, unsigned pos, unsigned 
  *----------------------------------------------------------------------------*/
 extern void setbitu(uint8_t *buff, size_t size, unsigned pos, unsigned len, uint32_t data) {
   if (len == 0 || 32 < len) {
-    trace(2, "Warning setbitu len %u out of range for data %x\n", len, data);
+    trace(0, "Warning setbitu len %u out of range for data %x\n", len, data);
     return;
   }
   RTKBOUNDSCHECK(buff, size, (pos + len - 1) / 8);
@@ -1041,7 +1041,7 @@ extern void setbitu(uint8_t *buff, size_t size, unsigned pos, unsigned len, uint
 }
 extern void setbits(uint8_t *buff, size_t size, unsigned pos, unsigned len, int32_t data) {
   if (len == 0 || 32 < len) {
-    trace(2, "Warning setbits len %u out of range for data %x\n", len, data);
+    trace(0, "Warning setbits len %u out of range for data %x\n", len, data);
     return;
   }
 
@@ -1050,16 +1050,16 @@ extern void setbits(uint8_t *buff, size_t size, unsigned pos, unsigned len, int3
     /* Clamp the data in the case it overflows the len */
     if (data >= 0) {
       if ((uint32_t)data >= limit) {
-        trace(2, "Warning setbits overflow for data %x len %u\n", data, len);
+        trace(0, "Warning setbits overflow for data %x len %u\n", data, len);
         /* Clamp */
         data = limit - 1;
-        trace(2, "  clamped to %x\n", data);
+        trace(0, "  clamped to %x\n", data);
       }
     } else if ((uint32_t)(-data) > limit) {
-      trace(2, "Warning setbits underflow for data %x len %u\n", data, len);
+      trace(0, "Warning setbits underflow for data %x len %u\n", data, len);
       /* Clamp */
       data = -limit;
-      trace(2, "  clamped to %x\n", data);
+      trace(0, "  clamped to %x\n", data);
     }
   }
 

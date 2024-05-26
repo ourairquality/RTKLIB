@@ -669,7 +669,7 @@ extern bool strsvrstart(strsvr_t *svr, const int *opts, const int *strs, const c
   if (!(svr->buff = (uint8_t *)malloc(svr->buffsize)) ||
       !(svr->pbuf = (uint8_t *)malloc(svr->buffsize))) {
     free(svr->buff);
-    free(svr->pbuf);
+    svr->buff = svr->pbuf = NULL;
     return false;
   }
   /* Open streams */
@@ -686,9 +686,12 @@ extern bool strsvrstart(strsvr_t *svr, const int *opts, const int *strs, const c
       rtksnprintf(svr->stream[i].msg, sizeof(svr->stream[0].msg), "output path error: %-512.512s",
                   file2);
       for (i--; i >= 0; i--) strclose(svr->stream + i);
+      free(svr->buff);
+      free(svr->pbuf);
+      svr->buff = svr->pbuf = NULL;
       return false;
     }
-    int rw;
+    enum str_mode rw;
     if (strs[i] == STR_FILE) {
       rw = i == 0 ? STR_MODE_R : STR_MODE_W;
     } else {
@@ -696,6 +699,9 @@ extern bool strsvrstart(strsvr_t *svr, const int *opts, const int *strs, const c
     }
     if (stropen(svr->stream + i, strs[i], rw, paths[i])) continue;
     for (i--; i >= 0; i--) strclose(svr->stream + i);
+    free(svr->buff);
+    free(svr->pbuf);
+    svr->buff = svr->pbuf = NULL;
     return false;
   }
   /* Open log streams */
@@ -720,6 +726,9 @@ extern bool strsvrstart(strsvr_t *svr, const int *opts, const int *strs, const c
 #endif
     for (int i = 0; i < svr->nstr; i++) strclose(svr->stream + i);
     svr->state = 0;
+    free(svr->buff);
+    free(svr->pbuf);
+    svr->buff = svr->pbuf = NULL;
     return false;
   }
   return true;

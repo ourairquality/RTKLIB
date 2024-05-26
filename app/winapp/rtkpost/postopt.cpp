@@ -651,8 +651,12 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file) {
 
   IntpRefObs->ItemIndex = prcopt.intpref;
   SbasSat->Text = s.sprintf("%d", prcopt.sbassatsel);
-  RovPosType->ItemIndex = prcopt.rovpos == 0 ? 0 : prcopt.rovpos + 2;
-  RefPosType->ItemIndex = prcopt.refpos == 0 ? 0 : prcopt.refpos + 2;
+  RovPosType->ItemIndex = prcopt.rovpos == POSOPT_POS_LLH   ? 0
+                          : prcopt.rovpos == POSOPT_POS_XYZ ? 2
+                                                            : prcopt.rovpos + 1;
+  RefPosType->ItemIndex = prcopt.refpos == POSOPT_POS_LLH   ? 0
+                          : prcopt.refpos == POSOPT_POS_XYZ ? 2
+                                                            : prcopt.refpos + 1;
   RovPosTypeP = RovPosType->ItemIndex;
   RefPosTypeP = RefPosType->ItemIndex;
   SetPos(RovPosType->ItemIndex, editu, prcopt.ru);
@@ -695,16 +699,16 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file) {
   solopt_t solopt = solopt_default;
   filopt_t filopt = {""};
 
-  prcopt.mode = PosMode->ItemIndex;
+  prcopt.mode = (enum pmode)PosMode->ItemIndex;
   prcopt.nf = Freq->ItemIndex + 1;
   prcopt.soltype = Solution->ItemIndex;
   prcopt.elmin = str2dbl(ElMask->Text) * D2R;
   prcopt.snrmask = SnrMask;
   prcopt.dynamics = DynamicModel->ItemIndex;
   prcopt.tidecorr = TideCorr->ItemIndex;
-  prcopt.ionoopt = IonoOpt->ItemIndex;
-  prcopt.tropopt = TropOpt->ItemIndex;
-  prcopt.sateph = SatEphem->ItemIndex;
+  prcopt.ionoopt = (enum ionoopt)IonoOpt->ItemIndex;
+  prcopt.tropopt = (enum tropopt)TropOpt->ItemIndex;
+  prcopt.sateph = (enum ephopt)SatEphem->ItemIndex;
   if (ExSats->Text != "") {
     strcpy(buff, ExSats_Text.c_str());
     for (p = strtok(buff, " "); p; p = strtok(NULL, " ")) {
@@ -729,8 +733,8 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file) {
   prcopt.posopt[5] = PosOpt6->Checked;
   //	prcopt.mapfunc	=MapFunc	->ItemIndex;
 
-  prcopt.modear = AmbRes->ItemIndex;
-  prcopt.glomodear = GloAmbRes->ItemIndex;
+  prcopt.modear = (enum armode)AmbRes->ItemIndex;
+  prcopt.glomodear = (enum glo_armode)GloAmbRes->ItemIndex;
   prcopt.bdsmodear = BdsAmbRes->ItemIndex;
   prcopt.thresar[0] = str2dbl(ValidThresAR->Text);
   prcopt.thresar[1] = str2dbl(MaxPosVarAR->Text);
@@ -759,9 +763,9 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file) {
     prcopt.baseline[0] = str2dbl(BaselineLen->Text);
     prcopt.baseline[1] = str2dbl(BaselineSig->Text);
   }
-  solopt.posf = SolFormat->ItemIndex;
+  solopt.posf = (enum solf)SolFormat->ItemIndex;
   solopt.timef = TimeFormat->ItemIndex == 0 ? 0 : 1;
-  solopt.times = TimeFormat->ItemIndex == 0 ? 0 : TimeFormat->ItemIndex - 1;
+  solopt.times = TimeFormat->ItemIndex == 0 ? TIMES_GPST : (enum times)(TimeFormat->ItemIndex - 1);
   solopt.timeu = str2dbl(TimeDecimal->Text);
   solopt.degf = LatLonFormat->ItemIndex;
   strcpy(solopt.sep, FieldSep_Text.c_str());
@@ -806,10 +810,16 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file) {
 
   prcopt.intpref = IntpRefObs->ItemIndex;
   prcopt.sbassatsel = SbasSat->Text.ToInt();
-  prcopt.rovpos = RovPosType->ItemIndex < 3 ? 0 : RovPosType->ItemIndex - 2;
-  prcopt.refpos = RefPosType->ItemIndex < 3 ? 0 : RefPosType->ItemIndex - 2;
-  if (prcopt.rovpos == 0) GetPos(RovPosType->ItemIndex, editu, prcopt.ru);
-  if (prcopt.refpos == 0) GetPos(RefPosType->ItemIndex, editr, prcopt.rb);
+  prcopt.rovpos = RovPosType->ItemIndex < 2    ? POSOPT_POS_LLH
+                  : RovPosType->ItemIndex == 2 ? POSOPT_POS_XYZ
+                                               : (enum posopt)(RovPosType->ItemIndex - 1);
+  prcopt.refpos = RefPosType->ItemIndex < 2    ? POSOPT_POS_LLH
+                  : RefPosType->ItemIndex == 2 ? POSOPT_POS_XYZ
+                                               : (enum posopt)(RefPosType->ItemIndex - 1);
+  if (prcopt.rovpos == POSOPT_POS_LLH || prcopt.rovpos == POSOPT_POS_XYZ)
+    GetPos(RovPosType->ItemIndex, editu, prcopt.ru);
+  if (prcopt.refpos == POSOPT_POS_LLH || prcopt.refpos == POSOPT_POS_XYZ)
+    GetPos(RefPosType->ItemIndex, editr, prcopt.rb);
 
   strcpy(prcopt.rnxopt[0], RnxOpts1_Text.c_str());
   strcpy(prcopt.rnxopt[1], RnxOpts2_Text.c_str());

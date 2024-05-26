@@ -152,7 +152,7 @@ typedef struct {                 /* Signal index type */
   int pos[MAXOBSTYPE];           /* Signal index in obs data (-1:no) */
   uint8_t pri[MAXOBSTYPE];       /* Signal priority (15-0) */
   uint8_t type[MAXOBSTYPE];      /* Type (0:C,1:L,2:D,3:S) */
-  uint8_t code[MAXOBSTYPE];      /* Obs-code (CODE_L??) */
+  enum code code[MAXOBSTYPE];    /* Obs-code (CODE_L??) */
   long double shift[MAXOBSTYPE]; /* Phase shift (cycle) */
 } sigind_t;
 
@@ -383,7 +383,7 @@ static void convcode(long double ver, int sys, const char *str, char type[4]) {
   trace(3, "convcode: ver=%.2Lf sys=%2d type= %s -> %s\n", ver, sys, str, type);
 }
 /* Decode RINEX observation data file header ---------------------------------*/
-static void decode_obsh(FILE *fp, char *buff, long double ver, int *tsys,
+static void decode_obsh(FILE *fp, char *buff, long double ver, enum tsys *tsys,
                         char tobs[][MAXOBSTYPE][4], nav_t *nav, sta_t *sta) {
   /* Default codes for unknown code */
   const char frqcodes[] = "1256789";
@@ -667,7 +667,7 @@ static void decode_hnavh(char *buff, nav_t *nav) {
   } /* Opt */
 }
 /* Read RINEX file header ----------------------------------------------------*/
-static bool readrnxh(FILE *fp, long double *ver, char *type, int *sys, int *tsys,
+static bool readrnxh(FILE *fp, long double *ver, char *type, int *sys, enum tsys *tsys,
                      char tobs[][MAXOBSTYPE][4], nav_t *nav, sta_t *sta, int flag) {
   trace(3, "readrnxh:\n");
 
@@ -1127,7 +1127,7 @@ static void set_index(long double ver, int sys, const char *opt, char tobs[MAXOB
 #endif
 }
 /* Read RINEX observation data body ------------------------------------------*/
-static int readrnxobsb(FILE *fp, const char *opt, long double ver, int *tsys,
+static int readrnxobsb(FILE *fp, const char *opt, long double ver, enum tsys *tsys,
                        char tobs[][MAXOBSTYPE][4], int *flag, obsd_t *data, sta_t *sta) {
   /* Set system mask */
   int mask = set_sysmask(opt);
@@ -1175,9 +1175,9 @@ static int readrnxobsb(FILE *fp, const char *opt, long double ver, int *tsys,
 }
 /* Read RINEX observation data -----------------------------------------------*/
 static int readrnxobs(FILE *fp, gtime_t ts, gtime_t te, long double tint, const char *opt, int rcv,
-                      long double ver, int *tsys, char tobs[][MAXOBSTYPE][4], obs_t *obs,
+                      long double ver, enum tsys *tsys, char tobs[][MAXOBSTYPE][4], obs_t *obs,
                       sta_t *sta) {
-  trace(4, "readrnxobs: rcv=%d ver=%.2Lf tsys=%d\n", rcv, ver, *tsys);
+  trace(4, "readrnxobs: rcv=%d ver=%.2Lf tsys=%d\n", rcv, ver, (int)*tsys);
 
   if (!obs || rcv > MAXRCV) return 0;
 
@@ -1679,7 +1679,8 @@ static int readrnxfp(FILE *fp, gtime_t ts, gtime_t te, long double tint, const c
 
   /* Read RINEX file header */
   long double ver;
-  int sys, tsys = TSYS_GPS;
+  int sys;
+  enum tsys tsys = TSYS_GPS;
   char tobs[NUMSYS][MAXOBSTYPE][4] = {{""}};
   if (!readrnxh(fp, &ver, type, &sys, &tsys, tobs, nav, sta, flag)) return 0;
 
@@ -1998,7 +1999,8 @@ extern int open_rnxctr(rnxctr_t *rnx, FILE *fp) {
   /* Read RINEX header from file */
   long double ver;
   char type, tobs[NUMSYS][MAXOBSTYPE][4] = {{""}};
-  int sys, tsys;
+  int sys;
+  enum tsys tsys;
   if (!readrnxh(fp, &ver, &type, &sys, &tsys, tobs, &rnx->nav, &rnx->sta, 0)) {
     trace(2, "open_rnxctr: rinex header read error\n");
     return 0;
@@ -2164,7 +2166,7 @@ static void outobstype_ver3(FILE *fp, const rnxopt_t *opt) {
 }
 /* Output RINEX phase shift --------------------------------------------------*/
 static void outrnx_phase_shift(FILE *fp, const rnxopt_t *opt, const nav_t *nav) {
-  static const uint8_t ref_code[][10] = {
+  static const enum code ref_code[][10] = {
       /* Reference signal [9] table A23 */
       {CODE_L1C, CODE_L2P, CODE_L5I, 0},                                         /* GPS */
       {CODE_L1C, CODE_L4A, CODE_L2C, CODE_L6A, CODE_L3I, 0},                     /* GLO */
@@ -2347,7 +2349,8 @@ static void outrnxobsf(FILE *fp, long double obs, int lli, int std) {
     fprintf(fp, "%1.1x", std);
 }
 /* Search observation data index ---------------------------------------------*/
-static int obsindex(int rnxver, int sys, const uint8_t *code, const char *tobs, const char *mask) {
+static int obsindex(int rnxver, int sys, const enum code *code, const char *tobs,
+                    const char *mask) {
   for (int i = 0; i < NFREQ + NEXOBS; i++) {
     /* Signal mask */
     if (mask[code[i] - 1] == '0') continue;

@@ -422,7 +422,7 @@ static int sys2ix(int sys) {
  *        0 = reference code (0 bias)
  *        1-3 = table index for code
  * ---------------------------------------------------------------------------*/
-extern int code2bias_ix(int sys, int code) {
+extern int code2bias_ix(int sys, enum code code) {
   int sys_ix = sys2ix(sys);
   if (sys_ix < MAX_BIAS_SYS)
     return code_bias_ix[sys_ix][code];
@@ -458,7 +458,7 @@ static bool readbiaf(const char *file, nav_t *nav) {
     else
       continue;
 
-    int code1 = obs2code(&obs1[1]);
+    enum code code1 = obs2code(&obs1[1]);
     if (!code1) continue; /* Skip if code not valid */
     int bias_ix1 = code2bias_ix(sys, code1);
 
@@ -473,7 +473,7 @@ static bool readbiaf(const char *file, nav_t *nav) {
     } else if (strcmp(bias, "DSB") == 0) {
       /* Differential signal bias */
       if (obs1[1] != obs2[1]) continue; /* Skip biases between freqs for now */
-      int code2 = obs2code(&obs2[1]);
+      enum code code2 = obs2code(&obs2[1]);
       if (!code2) continue; /* Skip if code not valid */
       int bias_ix2 = code2bias_ix(sys, code2);
       if (bias_ix1 == 0)                                                   /* This is ref code */

@@ -49,7 +49,7 @@ void Plot::ReadSol(const QStringList &files, int sel) {
   ShowMsg(tr("reading %1...").arg(paths[0]));
   ShowLegend(NULL);
 
-  if (!readsolt((const char **)paths, n, ts, te, tint, 0, &sol)) {
+  if (!readsolt((const char **)paths, n, ts, te, tint, SOLQ_NONE, &sol)) {
     ShowMsg(tr("no solution data : %1...").arg(paths[0]));
     ShowLegend(NULL);
     ReadWaitEnd();
@@ -1128,7 +1128,8 @@ void Plot::SaveElMask(const QString &file) {
 // connect to external sources ----------------------------------------------
 void Plot::Connect(void) {
   char cmd[1024], path[1024], buff[MAXSTRPATH], *name[2] = {0, 0}, *p;
-  int i, mode = STR_MODE_R;
+  int i;
+  enum str_mode mode = STR_MODE_R;
 
   trace(3, "Connect\n");
 
@@ -1150,7 +1151,7 @@ void Plot::Connect(void) {
       Clear();
       initsolbuf(SolData + i, 1, RtBuffSize + 1);
     }
-    if (RtStream[i] == STR_SERIAL) mode |= STR_MODE_W;
+    if (RtStream[i] == STR_SERIAL) mode = STR_MODE_RW;
 
     strcpy(buff, path);
     if ((p = strstr(buff, "::"))) *p = '\0';

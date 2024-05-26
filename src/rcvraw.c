@@ -73,7 +73,7 @@
 static uint32_t getbitu2(const uint8_t *buff, size_t size, unsigned p1, unsigned l1, unsigned p2,
                          unsigned l2) {
   if (l2 >= 32) return getbitu(buff, size, p2, l2);
-  if (l1 + l2 > 32) trace(2, "getbitu2: l1=%u + l2=%u out of range\n", l1, l2);
+  if (l1 + l2 > 32) trace(0, "getbitu2: l1=%u + l2=%u out of range\n", l1, l2);
   return (getbitu(buff, size, p1, l1) << l2) | getbitu(buff, size, p2, l2);
 }
 static int32_t getbits2(const uint8_t *buff, size_t size, unsigned p1, unsigned l1, unsigned p2,
@@ -82,11 +82,11 @@ static int32_t getbits2(const uint8_t *buff, size_t size, unsigned p1, unsigned 
   unsigned len = l1 + l2;
   if (len == 0) {
     /* Would need at least one bit for a sign, so emit a warning. */
-    trace(2, "getbits2: l1=%u + l2=%u out of range\n", l1, l2);
+    trace(0, "getbits2: l1=%u + l2=%u out of range\n", l1, l2);
     return 0;
   }
   if (len >= 32) {
-    if (len > 32) trace(2, "getbits2: len=%u out of range\n", len);
+    if (len > 32) trace(0, "getbits2: len=%u out of range\n", len);
     return (int32_t)bits;
   }
   /* Check the sign bit */
@@ -100,11 +100,11 @@ static uint32_t getbitu3(const uint8_t *buff, size_t size, int p1, unsigned l1, 
   if (l3 >= 32) return getbitu(buff, size, p3, l3);
 
   if (l2 + l3 >= 32) {
-    if (l2 + l3 > 32) trace(2, "getbitu3: l2=%u + l3=%u out of range\n", l2, l3);
+    if (l2 + l3 > 32) trace(0, "getbitu3: l2=%u + l3=%u out of range\n", l2, l3);
     return (getbitu(buff, size, p2, l2) << l3) | getbitu(buff, size, p3, l3);
   }
 
-  if (l1 + l2 + l3 > 32) trace(2, "getbitu3: l1=%u + l2=%u + l3=%u out of range\n", l1, l2, l3);
+  if (l1 + l2 + l3 > 32) trace(0, "getbitu3: l1=%u + l2=%u + l3=%u out of range\n", l1, l2, l3);
 
   return (getbitu(buff, size, p1, l1) << (l2 + l3)) | (getbitu(buff, size, p2, l2) << l3) |
          getbitu(buff, size, p3, l3);
@@ -116,11 +116,11 @@ static int32_t getbits3(const uint8_t *buff, size_t size, unsigned p1, unsigned 
   unsigned len = l1 + l2 + l3;
   if (len == 0) {
     /* Would need at least one bit for a sign, so emit a warning. */
-    trace(2, "getbits3: l1=%u + l2=%u + l3=%u out of range\n", l1, l2, l3);
+    trace(0, "getbits3: l1=%u + l2=%u + l3=%u out of range\n", l1, l2, l3);
     return 0;
   }
   if (len >= 32) {
-    if (len > 32) trace(2, "getbits3: len=%u out of range\n", len);
+    if (len > 32) trace(0, "getbits3: len=%u out of range\n", len);
     return (int32_t)bits;
   }
   /* Check the sign bit */
@@ -131,27 +131,27 @@ static int32_t getbits3(const uint8_t *buff, size_t size, unsigned p1, unsigned 
 /* Merge two components ------------------------------------------------------*/
 static uint32_t merge_two_u(uint32_t a, uint32_t b, unsigned n) {
   if (n >= 32) {
-    if (n > 32) trace(2, "merge_two_u: n=%u out of range\n", n);
+    if (n > 32) trace(0, "merge_two_u: n=%u out of range\n", n);
     return b;
   }
   if (((a << n) >> n) != a) {
-    trace(2, "merge_two_u: a=%x n=%u overflow\n", a, n);
+    trace(0, "merge_two_u: a=%x n=%u overflow\n", a, n);
   }
   if (((b >> n) << n) != 0) {
-    trace(2, "merge_two_u: b=%x n=%u overflow\n", b, n);
+    trace(0, "merge_two_u: b=%x n=%u overflow\n", b, n);
   }
   return (a << n) | b;
 }
 static int32_t merge_two_s(int32_t a, uint32_t b, unsigned n) {
   if (n >= 32) {
-    if (n > 32) trace(2, "merge_two_s: n=%u out of range\n", n);
+    if (n > 32) trace(0, "merge_two_s: n=%u out of range\n", n);
     return b;
   }
   if (((int32_t)((uint32_t)a << n) >> n) != a) {
-    trace(2, "merge_two_s: a=%x n=%u overflow\n", a, n);
+    trace(0, "merge_two_s: a=%x n=%u overflow\n", a, n);
   }
   if ((((uint32_t)b >> n) << n) != 0) {
-    trace(2, "merge_two_s: b=%x n=%u overflow\n", b, n);
+    trace(0, "merge_two_s: b=%x n=%u overflow\n", b, n);
   }
   return (int32_t)((uint32_t)a << n) | b;
 }

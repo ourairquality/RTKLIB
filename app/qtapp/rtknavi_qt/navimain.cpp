@@ -701,7 +701,7 @@ void MainWindow::BtnOutputStrClick() {
       StreamC[i] = 0;
       continue;
     }
-    SolOpt.posf = Format[i];
+    SolOpt.posf = (enum solf)Format[i];
     rtksvropenstr(&rtksvr, i, str, path, &SolOpt);
   }
 }
@@ -1036,7 +1036,7 @@ void MainWindow::SvrStart(void) {
   }
 
   if (RovPosTypeF <= 2) {  // LLH,XYZ
-    PrcOpt.rovpos = POSOPT_POS;
+    PrcOpt.rovpos = RovPosTypeF < 2 ? POSOPT_POS_LLH : POSOPT_POS_XYZ;
     PrcOpt.ru[0] = RovPos[0];
     PrcOpt.ru[1] = RovPos[1];
     PrcOpt.ru[2] = RovPos[2];
@@ -1045,7 +1045,7 @@ void MainWindow::SvrStart(void) {
     for (i = 0; i < 3; i++) PrcOpt.ru[i] = 0.0;
   }
   if (RefPosTypeF <= 2) {  // LLH,XYZ
-    PrcOpt.refpos = POSOPT_POS;
+    PrcOpt.refpos = RefPosTypeF < 2 ? POSOPT_POS_LLH : POSOPT_POS_XYZ;
     PrcOpt.rb[0] = RefPos[0];
     PrcOpt.rb[1] = RefPos[1];
     PrcOpt.rb[2] = RefPos[2];
@@ -1162,11 +1162,12 @@ void MainWindow::SvrStart(void) {
     if (strs[i] == STR_FILE && !ConfOverwrite(paths[i])) return;
 
   if (DebugStatusF > 0) rtkopenstat(STATFILE, DebugStatusF);
-  if (SolOpt.geoid > 0 && GeoidDataFileF != "") opengeoid(SolOpt.geoid, qPrintable(GeoidDataFileF));
+  if (SolOpt.geoid > 0 && GeoidDataFileF != "")
+    opengeoid((enum geoid)SolOpt.geoid, qPrintable(GeoidDataFileF));
   if (DCBFileF != "") readdcb(qPrintable(DCBFileF), &rtksvr.nav, NULL);
   for (i = 0; i < 2; i++) {
     solopt[i] = SolOpt;
-    solopt[i].posf = Format[i + 3];
+    solopt[i].posf = (enum solf)Format[i + 3];
   }
   stropt[0] = TimeoutTime;
   stropt[1] = ReconTime;
@@ -2259,7 +2260,7 @@ void MainWindow::SaveLog(void) {
   QTextStream str(&file);
 
   opt = SolOpt;
-  opt.posf = posf[SolType];
+  opt.posf = (enum solf)posf[SolType];
   if (SolOpt.outhead) {
     QString data;
 
@@ -2281,7 +2282,7 @@ void MainWindow::SaveLog(void) {
   for (i = PSolS; i != PSolE;) {
     sol.time = Time[i];
     matcpy(sol.rr, SolRov + i * 3, 3, 1);
-    sol.stat = SolStat[i];
+    sol.stat = (enum solq)SolStat[i];
     sol.ns = Nvsat[i];
     sol.ratio = Ratio[i];
     sol.age = Age[i];
@@ -2433,7 +2434,7 @@ void MainWindow::LoadOpt(void) {
       CmdEnaTcp[i][j] = settings.value(QString("tcpip/cmdena_%1_%2").arg(i).arg(j), 0).toInt();
       CmdsTcp[i][j].replace("@@", "\r\n");
     }
-  PrcOpt.mode = settings.value("prcopt/mode", 0).toInt();
+  PrcOpt.mode = (enum pmode)settings.value("prcopt/mode", 0).toInt();
   PrcOpt.nf = settings.value("prcopt/nf", 2).toInt();
   PrcOpt.elmin = settings.value("prcopt/elmin", 15.0 * D2R).toFloat();
   PrcOpt.snrmask.ena[0] = settings.value("prcopt/snrmask_ena1", 0).toInt();
@@ -2445,15 +2446,15 @@ void MainWindow::LoadOpt(void) {
 
   PrcOpt.dynamics = settings.value("prcopt/dynamics", 0).toInt();
   PrcOpt.tidecorr = settings.value("prcopt/tidecorr", 0).toInt();
-  PrcOpt.modear = settings.value("prcopt/modear", 1).toInt();
-  PrcOpt.glomodear = settings.value("prcopt/glomodear", 0).toInt();
+  PrcOpt.modear = (enum armode)settings.value("prcopt/modear", 1).toInt();
+  PrcOpt.glomodear = (enum glo_armode)settings.value("prcopt/glomodear", 0).toInt();
   PrcOpt.bdsmodear = settings.value("prcopt/bdsmodear", 0).toInt();
   PrcOpt.maxout = settings.value("prcopt/maxout", 5).toInt();
   PrcOpt.minlock = settings.value("prcopt/minlock", 0).toInt();
   PrcOpt.minfix = settings.value("prcopt/minfix", 10).toInt();
-  PrcOpt.ionoopt = settings.value("prcopt/ionoopt", IONOOPT_BRDC).toInt();
-  PrcOpt.tropopt = settings.value("prcopt/tropopt", TROPOPT_SAAS).toInt();
-  PrcOpt.sateph = settings.value("prcopt/ephopt", EPHOPT_BRDC).toInt();
+  PrcOpt.ionoopt = (enum ionoopt)settings.value("prcopt/ionoopt", IONOOPT_BRDC).toInt();
+  PrcOpt.tropopt = (enum tropopt)settings.value("prcopt/tropopt", TROPOPT_SAAS).toInt();
+  PrcOpt.sateph = (enum ephopt)settings.value("prcopt/ephopt", EPHOPT_BRDC).toInt();
   PrcOpt.niter = settings.value("prcopt/niter", 1).toInt();
   PrcOpt.eratio[0] = settings.value("prcopt/eratio0", 100.0).toDouble();
   PrcOpt.eratio[1] = settings.value("prcopt/eratio1", 100.0).toDouble();
@@ -2490,8 +2491,8 @@ void MainWindow::LoadOpt(void) {
   Baseline[0] = settings.value("prcopt/baseline1", 0.0).toDouble();
   Baseline[1] = settings.value("prcopt/baseline2", 0.0).toDouble();
 
-  SolOpt.posf = settings.value("solopt/posf", 0).toInt();
-  SolOpt.times = settings.value("solopt/times", 0).toInt();
+  SolOpt.posf = (enum solf)settings.value("solopt/posf", 0).toInt();
+  SolOpt.times = (enum times)settings.value("solopt/times", 0).toInt();
   SolOpt.timef = settings.value("solopt/timef", 1).toInt();
   SolOpt.timeu = settings.value("solopt/timeu", 3).toInt();
   SolOpt.degf = settings.value("solopt/degf", 0).toInt();
@@ -2847,7 +2848,7 @@ void MainWindow::BtnMarkClick() {
   markDialog->Comment = MarkerComment;
 
   if (markDialog->exec() != QDialog::Accepted) return;
-  rtksvr.rtk.opt.mode = markDialog->PosMode;
+  rtksvr.rtk.opt.mode = (enum pmode)markDialog->PosMode;
   MarkerName = markDialog->Marker;
   MarkerComment = markDialog->Comment;
 
