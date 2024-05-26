@@ -1340,7 +1340,8 @@ extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav) {
     for (int i = 0; i < nc; i++) Pc[i + j * nc] = P[ix[i] + ix[j] * nx];
 
   double *azel = zeros(2, n);
-  int exc[MAXOBS] = {0}, stat = SOLQ_SINGLE, i;
+  int exc[MAXOBS] = {0}, i;
+  enum solq stat = SOLQ_SINGLE;
   for (i = 0; i < MAX_ITER; i++) {
     /* Prefit residuals */
     nv = ppp_res(0, obs, n, rs, dts, var, svh, dr, exc, nav, xp, rtk, v, Hc, nc, xi, R, azel);

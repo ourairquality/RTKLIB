@@ -403,7 +403,7 @@ static bool startsvr(vt_t *vt) {
       if (strtype[i] == STR_FILE && !confwrite(vt, strpath[i])) return false;
     }
   }
-  if (prcopt.refpos == 4) { /* RTCM */
+  if (prcopt.refpos == POSOPT_RTCM) { /* RTCM */
     for (int i = 0; i < 3; i++) prcopt.rb[i] = 0.0;
   }
   double pos[3];

@@ -58,9 +58,9 @@ double Plot::TimePos(gtime_t time) {
 
   if (TimeLabel <= 1)  // www/ssss or gpst
     tow = time2gpst(time, &week);
-  else if (TimeLabel == 2)  // utc
+  else if (TimeLabel == 2)  // UTC
     tow = time2gpst(gpst2utc(time), &week);
-  else  // jst
+  else  // JST
     tow = time2gpst(timeadd(gpst2utc(time), 9 * 3600.0), &week);
   return tow + (week - Week) * 86400.0 * 7;
 }

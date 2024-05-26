@@ -361,7 +361,7 @@ void Plot::UpdateObsType(void) {
 
   for (unsigned char c = 1; c <= MAXCODE; c++) {
     if (!cmask[c]) continue;
-    if (!*(obs = code2obs((uint8_t)i))) continue;
+    if (!*(obs = code2obs((enum code)c))) continue;
     codes[n++] = obs;
   }
   qsort(codes, n, sizeof(char *), _strcmp);

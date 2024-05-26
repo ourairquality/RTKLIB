@@ -47,7 +47,7 @@ static char proxyaddr[MAXSTR] = ""; /* proxy address */
   "0:rtcm2,1:rtcm3,2:oem4,3:oem3,4:ubx,5:ss2,6:hemis,7:skytraq,8:gw10,9:javad,10:nvs,11:binex,12:" \
   "rt17,13:sbf,14:cmr,17:sp3"
 #define NMEOPT "0:off,1:latlon,2:single"
-#define SOLOPT "0:llh,1:xyz,2:enu,3:nmea"
+#define SOLOPT "0:llh,1:xyz,2:enu,3:nmea,4:stat"
 #define MSGOPT "0:all,1:rover,2:base,3:corr"
 
 static opt_t rcvopts[] = {{"inpstr1-type", 3, (void *)&strtype[0], 0, ISTOPT},
@@ -543,16 +543,16 @@ void OptDialog::SetOpt(void) {
   QLineEdit *editu[] = {RovPos1, RovPos2, RovPos3};
   QLineEdit *editr[] = {RefPos1, RefPos2, RefPos3};
 
-  PrcOpt.mode = PosMode->currentIndex();
+  PrcOpt.mode = (enum pmode)PosMode->currentIndex();
   PrcOpt.nf = Freq->currentIndex() + 1;
   PrcOpt.elmin = ElMask->currentText().toDouble() * D2R;
   PrcOpt.dynamics = DynamicModel->currentIndex();
   PrcOpt.tidecorr = TideCorr->currentIndex();
-  PrcOpt.ionoopt = IonoOpt->currentIndex();
-  PrcOpt.tropopt = TropOpt->currentIndex();
-  PrcOpt.sateph = SatEphem->currentIndex();
-  PrcOpt.modear = AmbRes->currentIndex();
-  PrcOpt.glomodear = GloAmbRes->currentIndex();
+  PrcOpt.ionoopt = (enum ionoopt)IonoOpt->currentIndex();
+  PrcOpt.tropopt = (enum tropopt)TropOpt->currentIndex();
+  PrcOpt.sateph = (enum ephopt)SatEphem->currentIndex();
+  PrcOpt.modear = (enum armode)AmbRes->currentIndex();
+  PrcOpt.glomodear = (enum glo_armode)GloAmbRes->currentIndex();
   PrcOpt.bdsmodear = BdsAmbRes->currentIndex();
   PrcOpt.thresar[0] = ValidThresAR->value();
   PrcOpt.maxout = OutCntResetAmb->value();
@@ -582,9 +582,10 @@ void OptDialog::SetOpt(void) {
   PrcOpt.posopt[3] = PosOpt4->isChecked();
   PrcOpt.posopt[4] = PosOpt5->isChecked();
 
-  SolOpt.posf = SolFormat->currentIndex();
+  SolOpt.posf = (enum solf)SolFormat->currentIndex();
   SolOpt.timef = TimeFormat->currentIndex() == 0 ? 0 : 1;
-  SolOpt.times = TimeFormat->currentIndex() == 0 ? 0 : TimeFormat->currentIndex() - 1;
+  SolOpt.times =
+      TimeFormat->currentIndex() == 0 ? TIMES_GPST : (enum times)(TimeFormat->currentIndex() - 1);
   SolOpt.timeu = static_cast<int>(TimeDecimal->value());
   SolOpt.degf = LatLonFormat->currentIndex();
   strcpy(SolOpt.sep, qPrintable(FieldSep_Text));
@@ -797,8 +798,17 @@ void OptDialog::LoadOpt(const QString &file) {
   MaxAveEp->setValue(prcopt.maxaveep);
 
   RovPosTypeP->setCurrentIndex(0);
+  if (prcopt.rovpos == POSOPT_POS_LLH)
+    RovPosTypeP->setCurrentIndex(0);
+  else if (prcopt.rovpos == POSOPT_POS_XYZ)
+    RovPosTypeP->setCurrentIndex(2);
+
   RefPosTypeP->setCurrentIndex(0);
-  if (prcopt.refpos == POSOPT_RTCM)
+  if (prcopt.refpos == POSOPT_POS_LLH)
+    RefPosTypeP->setCurrentIndex(0);
+  else if (prcopt.refpos == POSOPT_POS_XYZ)
+    RefPosTypeP->setCurrentIndex(2);
+  else if (prcopt.refpos == POSOPT_RTCM)
     RefPosTypeP->setCurrentIndex(3);
   else if (prcopt.refpos == POSOPT_SINGLE)
     RefPosTypeP->setCurrentIndex(4);
@@ -908,15 +918,15 @@ void OptDialog::SaveOpt(const QString &file) {
   fswapmargin = FileSwapMarginE->value();
   prcopt.sbassatsel = SbasSatE->value();
 
-  prcopt.mode = PosMode->currentIndex();
+  prcopt.mode = (enum pmode)PosMode->currentIndex();
   prcopt.nf = Freq->currentIndex() + 1;
   prcopt.soltype = Solution->currentIndex();
   prcopt.elmin = ElMask->currentText().toDouble() * D2R;
   prcopt.dynamics = DynamicModel->currentIndex();
   prcopt.tidecorr = TideCorr->currentIndex();
-  prcopt.ionoopt = IonoOpt->currentIndex();
-  prcopt.tropopt = TropOpt->currentIndex();
-  prcopt.sateph = SatEphem->currentIndex();
+  prcopt.ionoopt = (enum ionoopt)IonoOpt->currentIndex();
+  prcopt.tropopt = (enum tropopt)TropOpt->currentIndex();
+  prcopt.sateph = (enum ephopt)SatEphem->currentIndex();
   if (ExSatsE->text() != "") {
     strcpy(buff, qPrintable(ExSatsE_Text));
     for (p = strtok(buff, " "); p; p = strtok(NULL, " ")) {
@@ -940,8 +950,8 @@ void OptDialog::SaveOpt(const QString &file) {
   prcopt.posopt[3] = PosOpt4->isChecked();
   prcopt.posopt[4] = PosOpt5->isChecked();
 
-  prcopt.modear = AmbRes->currentIndex();
-  prcopt.glomodear = GloAmbRes->currentIndex();
+  prcopt.modear = (enum armode)AmbRes->currentIndex();
+  prcopt.glomodear = (enum glo_armode)GloAmbRes->currentIndex();
   prcopt.bdsmodear = BdsAmbRes->currentIndex();
   prcopt.thresar[0] = ValidThresAR->value();
   prcopt.maxout = OutCntResetAmb->value();
@@ -959,9 +969,10 @@ void OptDialog::SaveOpt(const QString &file) {
     prcopt.baseline[0] = BaselineLen->value();
     prcopt.baseline[1] = BaselineSig->value();
   }
-  solopt.posf = SolFormat->currentIndex();
+  solopt.posf = (enum solf)SolFormat->currentIndex();
   solopt.timef = TimeFormat->currentIndex() == 0 ? 0 : 1;
-  solopt.times = TimeFormat->currentIndex() == 0 ? 0 : TimeFormat->currentIndex() - 1;
+  solopt.times =
+      TimeFormat->currentIndex() == 0 ? TIMES_GPST : (enum times)(TimeFormat->currentIndex() - 1);
   solopt.timeu = TimeDecimal->value();
   solopt.degf = LatLonFormat->currentIndex();
   strcpy(solopt.sep, qPrintable(FieldSep_Text));
@@ -1002,15 +1013,26 @@ void OptDialog::SaveOpt(const QString &file) {
   prcopt.maxaveep = MaxAveEp->value();
   prcopt.initrst = ChkInitRestart->isChecked();
 
-  prcopt.rovpos = 4;
-  prcopt.refpos = 4;
-  if (RefPosTypeP->currentIndex() == 3)
+  prcopt.rovpos = POSOPT_POS_LLH;
+  if (RovPosTypeP->currentIndex() < 2)
+    prcopt.rovpos = POSOPT_POS_LLH;
+  else if (RovPosTypeP->currentIndex() == 2)
+    prcopt.rovpos = POSOPT_POS_XYZ;
+
+  prcopt.refpos = POSOPT_POS_LLH;
+  if (RefPosTypeP->currentIndex() < 2)
+    prcopt.refpos = POSOPT_POS_LLH;
+  else if (RefPosTypeP->currentIndex() == 2)
+    prcopt.refpos = POSOPT_POS_XYZ;
+  else if (RefPosTypeP->currentIndex() == 3)
     prcopt.refpos = POSOPT_RTCM;
   else if (RefPosTypeP->currentIndex() == 4)
     prcopt.refpos = POSOPT_SINGLE;
 
-  if (prcopt.rovpos == POSOPT_POS) GetPos(RovPosTypeP->currentIndex(), editu, prcopt.ru);
-  if (prcopt.refpos == POSOPT_POS) GetPos(RefPosTypeP->currentIndex(), editr, prcopt.rb);
+  if (prcopt.rovpos == POSOPT_POS_LLH || prcopt.rovpos == POSOPT_POS_XYZ)
+    GetPos(RovPosTypeP->currentIndex(), editu, prcopt.ru);
+  if (prcopt.refpos == POSOPT_POS_LLH || prcopt.refpos == POSOPT_POS_XYZ)
+    GetPos(RefPosTypeP->currentIndex(), editr, prcopt.rb);
 
   strcpy(filopt.satantp, qPrintable(SatPcvFile_Text));
   strcpy(filopt.rcvantp, qPrintable(AntPcvFile_Text));

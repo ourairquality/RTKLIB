@@ -463,16 +463,16 @@ void __fastcall TOptDialog::SetOpt(void) {
   TEdit *editu[] = {RovPos1, RovPos2, RovPos3};
   TEdit *editr[] = {RefPos1, RefPos2, RefPos3};
 
-  PrcOpt.mode = PosMode->ItemIndex;
+  PrcOpt.mode = (enum pmode)PosMode->ItemIndex;
   PrcOpt.nf = Freq->ItemIndex + 1;
   PrcOpt.elmin = str2dbl(ElMask->Text) * D2R;
   PrcOpt.dynamics = DynamicModel->ItemIndex;
   PrcOpt.tidecorr = TideCorr->ItemIndex;
-  PrcOpt.ionoopt = IonoOpt->ItemIndex;
-  PrcOpt.tropopt = TropOpt->ItemIndex;
-  PrcOpt.sateph = SatEphem->ItemIndex;
-  PrcOpt.modear = AmbRes->ItemIndex;
-  PrcOpt.glomodear = GloAmbRes->ItemIndex;
+  PrcOpt.ionoopt = (enum ionoopt)IonoOpt->ItemIndex;
+  PrcOpt.tropopt = (enum tropopt)TropOpt->ItemIndex;
+  PrcOpt.sateph = (enum ephopt)SatEphem->ItemIndex;
+  PrcOpt.modear = (enum armode)AmbRes->ItemIndex;
+  PrcOpt.glomodear = (enum glo_armode)GloAmbRes->ItemIndex;
   PrcOpt.bdsmodear = BdsAmbRes->ItemIndex;
   PrcOpt.thresar[0] = str2dbl(ValidThresAR->Text);
   PrcOpt.thresar[1] = str2dbl(MaxPosVarAR->Text);
@@ -514,9 +514,9 @@ void __fastcall TOptDialog::SetOpt(void) {
   PrcOpt.posopt[4] = PosOpt5->Checked;
   PrcOpt.posopt[5] = PosOpt6->Checked;
 
-  SolOpt.posf = SolFormat->ItemIndex;
+  SolOpt.posf = (enum solf)SolFormat->ItemIndex;
   SolOpt.timef = TimeFormat->ItemIndex == 0 ? 0 : 1;
-  SolOpt.times = TimeFormat->ItemIndex == 0 ? 0 : TimeFormat->ItemIndex - 1;
+  SolOpt.times = TimeFormat->ItemIndex == 0 ? TIMES_GPST : (enum times)(TimeFormat->ItemIndex - 1);
   SolOpt.timeu = (int)str2dbl(TimeDecimal->Text);
   SolOpt.degf = LatLonFormat->ItemIndex;
   strcpy(SolOpt.sep, FieldSep_Text.c_str());
@@ -752,8 +752,17 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file) {
   ChkInitRestart->Checked = prcopt.initrst;
 
   RovPosTypeP->ItemIndex = 0;
+  if (prcopt.rovpos == POSOPT_POS_LLH)
+    RovPosTypeP->ItemIndex = 0;
+  else if (prcopt.rovpos == POSOPT_POS_XYZ)
+    RovPosTypeP->ItemIndex = 2;
+
   RefPosTypeP->ItemIndex = 0;
-  if (prcopt.refpos == POSOPT_RTCM)
+  if (prcopt.refpos == POSOPT_POS_LLH)
+    RefPosTypeP->ItemIndex = 0;
+  else if (prcopt.refpos == POSOPT_POS_XYZ)
+    RefPosTypeP->ItemIndex = 2;
+  else if (prcopt.refpos == POSOPT_RTCM)
     RefPosTypeP->ItemIndex = 3;
   else if (prcopt.refpos == POSOPT_SINGLE)
     RefPosTypeP->ItemIndex = 4;
@@ -861,16 +870,16 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file) {
   fswapmargin = FileSwapMarginE->Text.ToInt();
   prcopt.sbassatsel = SbasSatE->Text.ToInt();
 
-  prcopt.mode = PosMode->ItemIndex;
+  prcopt.mode = (enum pmode)PosMode->ItemIndex;
   prcopt.nf = Freq->ItemIndex + 1;
   prcopt.soltype = Solution->ItemIndex;
   prcopt.elmin = str2dbl(ElMask->Text) * D2R;
   prcopt.snrmask = PrcOpt.snrmask;
   prcopt.dynamics = DynamicModel->ItemIndex;
   prcopt.tidecorr = TideCorr->ItemIndex;
-  prcopt.ionoopt = IonoOpt->ItemIndex;
-  prcopt.tropopt = TropOpt->ItemIndex;
-  prcopt.sateph = SatEphem->ItemIndex;
+  prcopt.ionoopt = (enum ionoopt)IonoOpt->ItemIndex;
+  prcopt.tropopt = (enum tropopt)TropOpt->ItemIndex;
+  prcopt.sateph = (enum ephopt)SatEphem->ItemIndex;
   if (ExSatsE->Text != "") {
     strcpy(buff, ExSatsE_Text.c_str());
     for (p = strtok(buff, " "); p; p = strtok(NULL, " ")) {
@@ -894,8 +903,8 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file) {
   prcopt.posopt[4] = PosOpt5->Checked;
   prcopt.posopt[5] = PosOpt6->Checked;
 
-  prcopt.modear = AmbRes->ItemIndex;
-  prcopt.glomodear = GloAmbRes->ItemIndex;
+  prcopt.modear = (enum armode)AmbRes->ItemIndex;
+  prcopt.glomodear = (enum glo_armode)GloAmbRes->ItemIndex;
   prcopt.bdsmodear = BdsAmbRes->ItemIndex;
   prcopt.thresar[0] = str2dbl(ValidThresAR->Text);
   prcopt.thresar[1] = str2dbl(MaxPosVarAR->Text);
@@ -925,9 +934,9 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file) {
     prcopt.baseline[0] = str2dbl(BaselineLen->Text);
     prcopt.baseline[1] = str2dbl(BaselineSig->Text);
   }
-  solopt.posf = SolFormat->ItemIndex;
+  solopt.posf = (enum solf)SolFormat->ItemIndex;
   solopt.timef = TimeFormat->ItemIndex == 0 ? 0 : 1;
-  solopt.times = TimeFormat->ItemIndex == 0 ? 0 : TimeFormat->ItemIndex - 1;
+  solopt.times = TimeFormat->ItemIndex == 0 ? TIMES_GPST : (enum times)(TimeFormat->ItemIndex - 1);
   solopt.timeu = str2dbl(TimeDecimal->Text);
   solopt.degf = LatLonFormat->ItemIndex;
   strcpy(solopt.sep, FieldSep_Text.c_str());
@@ -972,15 +981,26 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file) {
   prcopt.maxaveep = MaxAveEp->Text.ToInt();
   prcopt.initrst = ChkInitRestart->Checked;
 
-  prcopt.rovpos = POSOPT_POS;
-  prcopt.refpos = POSOPT_POS;
-  if (RefPosTypeP->ItemIndex == 3)
+  prcopt.rovpos = POSOPT_POS_LLH;
+  if (RovPosTypeP->ItemIndex < 2)
+    prcopt.rovpos = POSOPT_POS_LLH;
+  else if (RovPosTypeP->ItemIndex == 2)
+    prcopt.rovpos = POSOPT_POS_XYZ;
+
+  prcopt.refpos = POSOPT_POS_LLH;
+  if (RefPosTypeP->ItemIndex < 2)
+    prcopt.refpos = POSOPT_POS_LLH;
+  else if (RefPosTypeP->ItemIndex == 2)
+    prcopt.refpos = POSOPT_POS_XYZ;
+  else if (RefPosTypeP->ItemIndex == 3)
     prcopt.refpos = POSOPT_RTCM;
   else if (RefPosTypeP->ItemIndex == 4)
     prcopt.refpos = POSOPT_SINGLE;
 
-  if (prcopt.rovpos == POSOPT_POS) GetPos(RovPosTypeP->ItemIndex, editu, prcopt.ru);
-  if (prcopt.refpos == POSOPT_POS) GetPos(RefPosTypeP->ItemIndex, editr, prcopt.rb);
+  if (prcopt.rovpos == POSOPT_POS_LLH || prcopt.rovpos == POSOPT_POS_XYZ)
+    GetPos(RovPosTypeP->ItemIndex, editu, prcopt.ru);
+  if (prcopt.refpos == POSOPT_POS_LLH || prcopt.refpos == POSOPT_POS_XYZ)
+    GetPos(RefPosTypeP->ItemIndex, editr, prcopt.rb);
 
   strcpy(filopt.satantp, SatPcvFile_Text.c_str());
   strcpy(filopt.rcvantp, AntPcvFile_Text.c_str());

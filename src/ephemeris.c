@@ -743,22 +743,22 @@ static bool satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav, in
 }
 /* Satellite position and clock ------------------------------------------------
  * Compute satellite position, velocity and clock
- * Args   : gtime_t time     I   time (GPST)
- *          gtime_t teph     I   time to select ephemeris (GPST)
- *          int    sat       I   satellite number
- *          int    ephopt    I   ephemeris option (EPHOPT_???)
- *          nav_t  *nav      I   navigation data
- *          double *rs       O   sat position and velocity (ECEF)
- *                               {x,y,z,vx,vy,vz} (m|m/s)
- *          double *dts      O   sat clock {bias,drift} (s|s/s)
- *          double *var      O   sat position and clock error variance (m^2)
- *          int    *svh      O   sat health flag (-1:correction not available)
+ * Args   : gtime_t time        I   time (GPST)
+ *          gtime_t teph        I   time to select ephemeris (GPST)
+ *          int    sat          I   satellite number
+ *          enum ephopt ephopt  I   ephemeris option (EPHOPT_???)
+ *          nav_t  *nav         I   navigation data
+ *          double *rs     O   sat position and velocity (ECEF)
+ *                                  {x,y,z,vx,vy,vz} (m|m/s)
+ *          double *dts    O   sat clock {bias,drift} (s|s/s)
+ *          double *var    O   sat position and clock error variance (m^2)
+ *          int    *svh         O   sat health flag (-1:correction not available)
  * Return : status (true:ok,false:error)
  * Notes  : satellite position is referenced to antenna phase center
  *          satellite clock does not include code bias correction (tgd or bgd)
  *----------------------------------------------------------------------------*/
-extern bool satpos(gtime_t time, gtime_t teph, int sat, int ephopt, const nav_t *nav, double *rs,
-                   double *dts, double *var, int *svh) {
+extern bool satpos(gtime_t time, gtime_t teph, int sat, enum ephopt ephopt, const nav_t *nav,
+                   double *rs, double *dts, double *var, int *svh) {
   char tstr[40];
   trace(4, "satpos  : time=%s sat=%2d ephopt=%d\n", time2str(time, tstr, 3), sat, ephopt);
 
@@ -788,11 +788,11 @@ extern bool satpos(gtime_t time, gtime_t teph, int sat, int ephopt, const nav_t 
  *          obsd_t *obs      I   observation data
  *          int    n         I   number of observation data
  *          nav_t  *nav      I   navigation data
- *          int    ephopt    I   ephemeris option (EPHOPT_???)
- *          double *rs       O   satellite positions and velocities (ECEF)
- *          double *dts      O   satellite clocks
- *          double *var      O   sat position and clock error variances (m^2)
- *          int    *svh      O   sat health flag (-1:correction not available)
+ *          enum ephopt ephopt  I   ephemeris option (EPHOPT_???)
+ *          double *rs     O   satellite positions and velocities (ECEF)
+ *          double *dts    O   satellite clocks
+ *          double *var    O   sat position and clock error variances (m^2)
+ *          int    *svh         O   sat health flag (-1:correction not available)
  * Return : none
  * Notes  : rs [(0:2)+i*6]= obs[i] sat position {x,y,z} (m)
  *          rs [(3:5)+i*6]= obs[i] sat velocity {vx,vy,vz} (m/s)
@@ -806,7 +806,7 @@ extern bool satpos(gtime_t time, gtime_t teph, int sat, int ephopt, const nav_t 
  *          any pseudorange and broadcast ephemeris are always needed to get
  *          signal transmission time
  *----------------------------------------------------------------------------*/
-extern void satposs(gtime_t teph, const obsd_t *obs, int n, const nav_t *nav, int ephopt,
+extern void satposs(gtime_t teph, const obsd_t *obs, int n, const nav_t *nav, enum ephopt ephopt,
                     double *rs, double *dts, double *var, int *svh) {
   gtime_t time[2 * MAXOBS] = {{0}};
 

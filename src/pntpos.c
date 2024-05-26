@@ -274,13 +274,13 @@ static double prange(const obsd_t *obs, const nav_t *nav, const prcopt_t *opt, d
  *          int    sat       I   satellite number
  *          double *pos      I   receiver position {lat,lon,h} (rad|m)
  *          double *azel     I   azimuth/elevation angle {az,el} (rad)
- *          int    ionoopt   I   ionospheric correction option (IONOOPT_???)
+ *          enum ionoopt ionoopt I   ionospheric correction option (IONOOPT_???)
  *          double *ion      O   ionospheric delay (L1) (m)
  *          double *var      O   ionospheric delay (L1) variance (m^2)
  * Return : status(true:ok,false:error)
  *----------------------------------------------------------------------------*/
 extern bool ionocorr(gtime_t time, const nav_t *nav, int sat, const double *pos, const double *azel,
-                     int ionoopt, double *ion, double *var) {
+                     enum ionoopt ionoopt, double *ion, double *var) {
   int err = 0;
 
   char tstr[40];
@@ -320,13 +320,13 @@ extern bool ionocorr(gtime_t time, const nav_t *nav, int sat, const double *pos,
  *          nav_t  *nav      I   navigation data
  *          double *pos      I   receiver position {lat,lon,h} (rad|m)
  *          double *azel     I   azimuth/elevation angle {az,el} (rad)
- *          int    tropopt   I   tropospheric correction option (TROPOPT_???)
+ *          enum tropopt tropopt  I   tropospheric correction option (TROPOPT_???)
  *          double *trp      O   tropospheric delay (m)
  *          double *var      O   tropospheric delay variance (m^2)
  * Return : status(true:ok,false:error)
  *----------------------------------------------------------------------------*/
 extern bool tropcorr(gtime_t time, const nav_t *nav, const double *pos, const double *azel,
-                     int tropopt, double *trp, double *var) {
+                     enum tropopt tropopt, double *trp, double *var) {
   char tstr[40];
   trace(4, "tropcorr: time=%s opt=%d pos=%.3f %.3f azel=%.3f %.3f\n", time2str(time, tstr, 3),
         tropopt, pos[0] * R2D, pos[1] * R2D, azel[0] * R2D, azel[1] * R2D);

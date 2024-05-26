@@ -2080,7 +2080,7 @@ static bool valpos(rtk_t *rtk, const double *v, const double *R, const int *vflg
  */
 static bool relpos(rtk_t *rtk, const obsd_t *obs, int nu, int nr, const nav_t *nav) {
   prcopt_t *opt = &rtk->opt;
-  int stat = opt->mode <= PMODE_DGPS ? SOLQ_DGPS : SOLQ_FLOAT;
+  enum solq stat = opt->mode <= PMODE_DGPS ? SOLQ_DGPS : SOLQ_FLOAT;
   int nf = opt->ionoopt == IONOOPT_IFLC ? 1 : opt->nf;
 
   /* Time diff between base and rover observations */

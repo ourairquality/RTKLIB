@@ -91,13 +91,13 @@ static void printhelp(void) {
   for (unsigned i = 0; i < sizeof(help) / sizeof(*help); i++) fprintf(stderr, "%s\n", help[i]);
   exit(0);
 }
-/* Rnx2rtkp main -------------------------------------------------------------*/
+/* rnx2rtkp main -------------------------------------------------------------*/
 int main(int argc, char **argv) {
   prcopt_t prcopt = prcopt_default;
   prcopt.mode = PMODE_KINEMA;
   prcopt.navsys = 0;
-  prcopt.refpos = 1;
-  prcopt.glomodear = 1;
+  prcopt.refpos = POSOPT_SINGLE;
+  prcopt.glomodear = GLO_ARMODE_ON;
   solopt_t solopt = solopt_default;
   solopt.timef = 0;
   rtksnprintf(solopt.prog, sizeof(solopt.prog), "%s ver.%s %s", PROGNAME, VER_RTKLIB, PATCH_LEVEL);
@@ -195,11 +195,11 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[i], "-bl") && i + 2 < argc) {
       for (int j = 0; j < 2; j++) prcopt.baseline[j] = atof(argv[++i]);
     } else if (!strcmp(argv[i], "-r") && i + 3 < argc) {
-      prcopt.refpos = prcopt.rovpos = 0;
+      prcopt.refpos = prcopt.rovpos = POSOPT_POS_XYZ;
       for (int j = 0; j < 3; j++) prcopt.rb[j] = atof(argv[++i]);
       matcpy(prcopt.ru, prcopt.rb, 3, 1);
     } else if (!strcmp(argv[i], "-l") && i + 3 < argc) {
-      prcopt.refpos = prcopt.rovpos = 0;
+      prcopt.refpos = prcopt.rovpos = POSOPT_POS_LLH;
       double pos[3];
       for (int j = 0; j < 3; j++) pos[j] = atof(argv[++i]);
       for (int j = 0; j < 2; j++) pos[j] *= D2R;

@@ -1781,8 +1781,8 @@ void __fastcall TPlot::TimerTimer(TObject *Sender) {
   }
   if (ConnectState) {  // real-time input mode
     for (i = 0; i < 2; i++) {
-      opt.posf = RtFormat[i];
-      opt.times = RtTimeForm == 0 ? 0 : RtTimeForm - 1;
+      opt.posf = (enum solf)RtFormat[i];
+      opt.times = RtTimeForm == 0 ? TIMES_GPST : (enum times)(RtTimeForm - 1);
       opt.timef = RtTimeForm >= 1;
       opt.degf = RtDegForm;
       strcpy(opt.sep, RtFieldSep.c_str());
@@ -1795,7 +1795,7 @@ void __fastcall TPlot::TimerTimer(TObject *Sender) {
       }
       while ((n = strread(Stream + i, buff, sizeof(buff))) > 0) {
         for (j = 0; j < n; j++) {
-          istat = inputsol(buff[j], ts, ts, tint, 0, &opt, SolData + i);
+          istat = inputsol(buff[j], ts, ts, tint, SOLQ_NONE, &opt, SolData + i);
           if (istat == 0) continue;
           if (istat < 0) {  // disconnect received
             Disconnect();

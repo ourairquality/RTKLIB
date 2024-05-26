@@ -888,7 +888,7 @@ extern bool rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, const int *strs,
 
   /* Open input streams */
   for (int i = 0; i < 8; i++) {
-    int rw = i < 3 ? STR_MODE_R : STR_MODE_W;
+    enum str_mode rw = i < 3 ? STR_MODE_R : STR_MODE_W;
     if (strs[i] != STR_FILE) rw |= STR_MODE_W;
     if (!stropen(svr->stream + i, strs[i], rw, paths[i])) {
       rtksnprintf(errmsg, msize, "str%d open error path=%s", i + 1, paths[i]);

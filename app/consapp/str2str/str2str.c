@@ -227,7 +227,7 @@ static void readcmd(const char *file, char *cmd, size_t size, int type) {
   }
   fclose(fp);
 }
-/* Str2str -------------------------------------------------------------------*/
+/* str2str -------------------------------------------------------------------*/
 int main(int argc, char **argv) {
   char s1[MAXSTR][MAXSTRPATH], s2[MAXSTR][MAXSTRPATH];
   char cmd_strs[MAXSTR][MAXRCVCMD];

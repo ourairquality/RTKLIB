@@ -16,10 +16,10 @@
  *----------------------------------------------------------------------------*/
 #include "rtklib.h"
 
-static const double range[4];            /* Embedded geoid area range {W,E,S,N} (deg) */
-static const float geoid[361][181];      /* Embedded geoid heights (m) (lon x lat) */
-static FILE *fp_geoid = NULL;            /* Geoid file pointer */
-static int model_geoid = GEOID_EMBEDDED; /* Geoid model */
+static const double range[4];                   /* Embedded geoid area range {W,E,S,N} (deg) */
+static const float geoid[361][181];             /* Embedded geoid heights (m) (lon x lat) */
+static FILE *fp_geoid = NULL;                   /* Geoid file pointer */
+static enum geoid model_geoid = GEOID_EMBEDDED; /* Geoid model */
 
 /* Bilinear interpolation ----------------------------------------------------*/
 static double interpb(const double *y, double a, double b) {
@@ -87,7 +87,7 @@ static float fget4f(FILE *fp, int off) {
   return v; /* Small-endian */
 }
 /* Egm2008 model -------------------------------------------------------------*/
-static double geoidh_egm08(const double *pos, int model) {
+static double geoidh_egm08(const double *pos, enum geoid model) {
   const double lon0 = 0.0, lat0 = 90.0;
 
   if (!fp_geoid) return 0.0;
@@ -198,7 +198,7 @@ static double geoidh_gsi(const double *pos) {
  *          gsigeome_ver4 : GSI geoid 2000 1.0x1.5" (japanese area)
  *          (byte-order of binary files must be compatible to cpu)
  *----------------------------------------------------------------------------*/
-extern bool opengeoid(int model, const char *file) {
+extern bool opengeoid(enum geoid model, const char *file) {
   trace(3, "opengeoid: model=%d file=%s\n", model, file);
 
   closegeoid();

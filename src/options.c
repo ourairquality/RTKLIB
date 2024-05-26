@@ -35,7 +35,6 @@
 static prcopt_t prcopt_;
 static solopt_t solopt_;
 static filopt_t filopt_;
-static int antpostype_[2];
 static double elmask_, elmaskar_, elmaskhold_;
 static double antpos_[2][3];
 static char exsats_[1024];
@@ -161,7 +160,7 @@ EXPORT opt_t sysopts[] = {
     {"stats-prnpos", 1, (void *)&prcopt_.prn[5], 0, "m"},
     {"stats-clkstab", 1, (void *)&prcopt_.sclkstab, 0, "s/s"},
 
-    {"ant1-postype", 3, (void *)&antpostype_[0], 0, POSOPT},
+    {"ant1-postype", 3, (void *)&prcopt_.rovpos, 0, POSOPT},
     {"ant1-pos1", 1, (void *)&antpos_[0][0], 0, "deg|m"},
     {"ant1-pos2", 1, (void *)&antpos_[0][1], 0, "deg|m"},
     {"ant1-pos3", 1, (void *)&antpos_[0][2], 0, "m|m"},
@@ -170,7 +169,7 @@ EXPORT opt_t sysopts[] = {
     {"ant1-antdeln", 1, (void *)&prcopt_.antdel[0][1], 0, "m"},
     {"ant1-antdelu", 1, (void *)&prcopt_.antdel[0][2], 0, "m"},
 
-    {"ant2-postype", 3, (void *)&antpostype_[1], 0, POSOPT},
+    {"ant2-postype", 3, (void *)&prcopt_.refpos, 0, POSOPT},
     {"ant2-pos1", 1, (void *)&antpos_[1][0], 0, "deg|m"},
     {"ant2-pos2", 1, (void *)&antpos_[1][1], 0, "deg|m"},
     {"ant2-pos3", 1, (void *)&antpos_[1][2], 0, "m|m"},
@@ -419,23 +418,20 @@ static void buff2sysopts(void) {
   prcopt_.elmaskhold = elmaskhold_ * D2R;
 
   for (int i = 0; i < 2; i++) {
-    int *ps = i == 0 ? &prcopt_.rovpos : &prcopt_.refpos;
+    enum posopt ps = i == 0 ? prcopt_.rovpos : prcopt_.refpos;
     double *rr = i == 0 ? prcopt_.ru : prcopt_.rb;
 
-    if (antpostype_[i] == 0) { /* Lat/lon/hgt */
-      *ps = 0;
+    if (ps == POSOPT_POS_LLH) { /* lat/lon/hgt */
       double pos[3];
       pos[0] = antpos_[i][0] * D2R;
       pos[1] = antpos_[i][1] * D2R;
       pos[2] = antpos_[i][2];
       pos2ecef(pos, rr);
-    } else if (antpostype_[i] == 1) { /* xyz-ecef */
-      *ps = 0;
+    } else if (ps == POSOPT_POS_XYZ) { /* xyz-ecef */
       rr[0] = antpos_[i][0];
       rr[1] = antpos_[i][1];
       rr[2] = antpos_[i][2];
-    } else
-      *ps = antpostype_[i] - 1;
+    }
   }
   /* Excluded satellites */
   for (int i = 0; i < MAXSAT; i++) prcopt_.exsats[i] = 0;
@@ -484,18 +480,20 @@ static void sysopts2buff(void) {
   elmaskhold_ = prcopt_.elmaskhold * R2D;
 
   for (int i = 0; i < 2; i++) {
-    const int *ps = i == 0 ? &prcopt_.rovpos : &prcopt_.refpos;
+    const enum posopt ps = i == 0 ? prcopt_.rovpos : prcopt_.refpos;
     const double *rr = i == 0 ? prcopt_.ru : prcopt_.rb;
 
-    if (*ps == 0) {
-      antpostype_[i] = 0;
+    if (ps == POSOPT_POS_LLH) {
       double pos[3];
       ecef2pos(rr, pos);
       antpos_[i][0] = pos[0] * R2D;
       antpos_[i][1] = pos[1] * R2D;
       antpos_[i][2] = pos[2];
-    } else
-      antpostype_[i] = *ps + 1;
+    } else if (ps == POSOPT_POS_XYZ) {
+      antpos_[i][0] = rr[0];
+      antpos_[i][1] = rr[1];
+      antpos_[i][2] = rr[2];
+    }
   }
   /* Excluded satellites */
   exsats_[0] = '\0';
@@ -539,7 +537,6 @@ extern void resetsysopts(void) {
   filopt_.blq[0] = '\0';
   filopt_.solstat[0] = '\0';
   filopt_.trace[0] = '\0';
-  for (int i = 0; i < 2; i++) antpostype_[i] = 0;
   elmask_ = 15.0;
   elmaskar_ = 0.0;
   elmaskhold_ = 0.0;

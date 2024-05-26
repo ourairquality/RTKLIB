@@ -93,7 +93,7 @@ static const char *nmea_tid[] = {/* NMEA talker IDs [2] */
                                  "GP", "GL", "GA", "GB", "GQ", "GI", ""};
 static const int nmea_sid[] = {/* NMEA system IDs [1] table 21 */
                                1, 2, 3, 4, 5, 6, 0};
-static const int nmea_solq[] =
+static const enum solq nmea_solq[] =
     {/* NMEA GPS quality indicator [1] */
      /* 0=Fix not available or invalid */
      /* 1=GPS SPS Mode, fix valid */
@@ -852,12 +852,12 @@ static void readsolopt(FILE *fp, solopt_t *opt) {
  * Args   : uint8_t data     I stream data
  *          gtime_t ts       I  start time (ts.time==0: from start)
  *          gtime_t te       I  end time   (te.time==0: to end)
- *          double tint      I  time interval (0: all)
- *          int    qflag     I  quality flag  (0: all)
+ *          double tint I  time interval (0: all)
+ *          enum solq qflag  I  quality flag  (0: all)
  *          solbuf_t *solbuf IO solution buffer
  * Return : status (1:solution received,0:no solution,-1:disconnect received)
  *----------------------------------------------------------------------------*/
-extern int inputsol(uint8_t data, gtime_t ts, gtime_t te, double tint, int qflag,
+extern int inputsol(uint8_t data, gtime_t ts, gtime_t te, double tint, enum solq qflag,
                     const solopt_t *opt, solbuf_t *solbuf) {
   trace(4, "inputsol: data=0x%02x\n", data);
 
@@ -892,7 +892,7 @@ extern int inputsol(uint8_t data, gtime_t ts, gtime_t te, double tint, int qflag
   return addsol(solbuf, &sol);
 }
 /* Read solution data --------------------------------------------------------*/
-static bool readsoldata(FILE *fp, gtime_t ts, gtime_t te, double tint, int qflag,
+static bool readsoldata(FILE *fp, gtime_t ts, gtime_t te, double tint, enum solq qflag,
                         const solopt_t *opt, solbuf_t *solbuf) {
   trace(3, "readsoldata:\n");
 
@@ -932,17 +932,17 @@ static bool sort_solbuf(solbuf_t *solbuf) {
 }
 /* Read solutions data from solution files -------------------------------------
  * Read solution data from solution files
- * Args   : char   *files[]  I  solution files
- *          int    nfile     I  number of files
- *         (gtime_t ts)      I  start time (ts.time==0: from start)
- *         (gtime_t te)      I  end time   (te.time==0: to end)
- *         (double tint)     I  time interval (0: all)
- *         (int    qflag)    I  quality flag  (0: all)
- *          solbuf_t *solbuf O  solution buffer
+ * Args   : char   *files[]    I  solution files
+ *          int    nfile       I  number of files
+ *         (gtime_t ts)        I  start time (ts.time==0: from start)
+ *         (gtime_t te)        I  end time   (te.time==0: to end)
+ *         (double tint)  I  time interval (0: all)
+ *         (enum solq  qflag)  I  quality flag  (0: all)
+ *          solbuf_t *solbuf   O  solution buffer
  * Return : status (true:ok,false:no data or error)
  *----------------------------------------------------------------------------*/
-extern bool readsolt(const char *files[], int nfile, gtime_t ts, gtime_t te, double tint, int qflag,
-                     solbuf_t *solbuf) {
+extern bool readsolt(const char *files[], int nfile, gtime_t ts, gtime_t te, double tint,
+                     enum solq qflag, solbuf_t *solbuf) {
   trace(3, "readsolt: nfile=%d\n", nfile);
 
   initsolbuf(solbuf, 0, 0);
@@ -1377,7 +1377,7 @@ extern void outnmea_gga(char *buff, size_t size, const sol_t *sol) {
     rtkcatprintf(buff, size, "*%02X%c%c", sum, 0x0D, 0x0A);
     return;
   }
-  int solq;
+  enum solq solq;
   for (solq = 0; solq < 8; solq++)
     if (nmea_solq[solq] == sol->stat) break;
   if (solq >= 8) solq = 0;

@@ -820,21 +820,21 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt, filopt_t
   int ppp = PosMode >= PMODE_PPP_KINEMA;
 
   // processing options
-  prcopt.mode = PosMode;
+  prcopt.mode = (enum pmode)PosMode;
   prcopt.soltype = Solution;
   prcopt.nf = Freq + 1;
   prcopt.navsys = NavSys;
   prcopt.elmin = ElMask * D2R;
   prcopt.snrmask = SnrMask;
-  prcopt.sateph = SatEphem;
-  prcopt.modear = AmbRes;
-  prcopt.glomodear = GloAmbRes;
+  prcopt.sateph = (enum ephopt)SatEphem;
+  prcopt.modear = (enum armode)AmbRes;
+  prcopt.glomodear = (enum glo_armode)GloAmbRes;
   prcopt.bdsmodear = BdsAmbRes;
   prcopt.maxout = OutCntResetAmb;
   prcopt.minfix = FixCntHoldAmb;
   prcopt.minlock = LockCntFixAmb;
-  prcopt.ionoopt = IonoOpt;
-  prcopt.tropopt = TropOpt;
+  prcopt.ionoopt = (enum ionoopt)IonoOpt;
+  prcopt.tropopt = (enum tropopt)TropOpt;
   prcopt.posopt[0] = PosOpt[0];
   prcopt.posopt[1] = PosOpt[1];
   prcopt.posopt[2] = PosOpt[2];
@@ -891,19 +891,17 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt, filopt_t
     prcopt.baseline[0] = 0.0;
     prcopt.baseline[1] = 0.0;
   }
-  if (PosMode != PMODE_FIXED && PosMode != PMODE_PPP_FIXED) {
-    for (int i = 0; i < 3; i++) prcopt.ru[i] = 0.0;
-  } else if (RovPosType <= 2) {
-    for (int i = 0; i < 3; i++) prcopt.ru[i] = RovPos[i];
+  for (int i = 0; i < 3; i++) prcopt.ru[i] = RovPos[i];
+  if (RovPosType <= 2) {
+    prcopt.rovpos = RovPosType < 2 ? POSOPT_POS_LLH : POSOPT_POS_XYZ;
   } else
-    prcopt.rovpos = RovPosType - 2; /* 1:single,2:posfile,3:rinex */
+    prcopt.rovpos = (posopt)(RovPosType - 1); /* 1:single,2:posfile,3:rinex */
 
-  if (PosMode == PMODE_SINGLE || PosMode == PMODE_MOVEB) {
-    for (int i = 0; i < 3; i++) prcopt.rb[i] = 0.0;
-  } else if (RefPosType <= 2) {
-    for (int i = 0; i < 3; i++) prcopt.rb[i] = RefPos[i];
+  for (int i = 0; i < 3; i++) prcopt.rb[i] = RefPos[i];
+  if (RefPosType <= 2) {
+    prcopt.refpos = RefPosType < 2 ? POSOPT_POS_LLH : POSOPT_POS_XYZ;
   } else
-    prcopt.refpos = RefPosType - 2;
+    prcopt.refpos = (posopt)(RefPosType - 1);
 
   if (RovAntPcv) {
     strcpy(prcopt.anttype[0], RovAnt.c_str());
@@ -934,8 +932,8 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt, filopt_t
   strcpy(prcopt.pppopt, PPPOpts.c_str());
 
   // solution options
-  solopt.posf = SolFormat;
-  solopt.times = TimeFormat == 0 ? 0 : TimeFormat - 1;
+  solopt.posf = (enum solf)SolFormat;
+  solopt.times = TimeFormat == 0 ? TIMES_GPST : (enum times)(TimeFormat - 1);
   solopt.timef = TimeFormat == 0 ? 0 : 1;
   solopt.timeu = TimeDecimal <= 0 ? 0 : TimeDecimal;
   solopt.degf = LatLonFormat;

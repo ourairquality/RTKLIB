@@ -3245,7 +3245,7 @@ static bool encode_type4076(rtcm_t *rtcm, int subtype, int sync) {
 }
 /* Encode RTCM ver.3 message -------------------------------------------------*/
 extern bool encode_rtcm3(rtcm_t *rtcm, int type, int subtype, int sync) {
-  trace(2, "encode_rtcm3: type=%d subtype=%d sync=%d\n", type, subtype, sync);
+  trace(0, "encode_rtcm3: type=%d subtype=%d sync=%d\n", type, subtype, sync);
 
   bool ret = false;
   switch (type) {

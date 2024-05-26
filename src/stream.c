@@ -340,7 +340,7 @@ static DWORD WINAPI serialthread(void *arg) {
 #endif /* WIN32 */
 
 /* Open serial ---------------------------------------------------------------*/
-static serial_t *openserial(const char *path, int mode, char *msg, size_t msize) {
+static serial_t *openserial(const char *path, enum str_mode mode, char *msg, size_t msize) {
   const int br[] = {300,   600,   1200,   2400,   4800,   9600,  19200,
                     38400, 57600, 115200, 230400, 460800, 921600};
 #ifdef WIN32
@@ -670,7 +670,7 @@ static void closefile_(file_t *file) {
   timereset();
 }
 /* Open file (path=filepath[::T[::+<off>][::x<speed>]][::S=swapintv][::P={4|8}] */
-static file_t *openfile(const char *path, int mode, char *msg, size_t msize) {
+static file_t *openfile(const char *path, enum str_mode mode, char *msg, size_t msize) {
   tracet(3, "openfile: path=%s mode=%d\n", path, mode);
 
   if (!(mode & (STR_MODE_R | STR_MODE_W))) return NULL;
@@ -2510,7 +2510,7 @@ extern void strinit(stream_t *stream) {
  *                                 STR_MEMBUF   = memory buffer (FIFO)
  *                                 STR_FTP      = download by FTP (raed only)
  *                                 STR_HTTP     = download by HTTP (raed only)
- *          int mode         I   stream mode (STR_MODE_???)
+ *          enum str_mode mode  I   stream mode (STR_MODE_???)
  *                                 STR_MODE_R   = read only
  *                                 STR_MODE_W   = write only
  *                                 STR_MODE_RW  = read and write
@@ -2602,7 +2602,7 @@ extern void strinit(stream_t *stream) {
  *                    tret  = download retry interval (s) (0:no retry)
  *
  *----------------------------------------------------------------------------*/
-extern bool stropen(stream_t *stream, int type, int mode, const char *path) {
+extern bool stropen(stream_t *stream, int type, enum str_mode mode, const char *path) {
   tracet(3, "stropen: type=%d mode=%d path=%s\n", type, mode, path);
 
   stream->type = type;

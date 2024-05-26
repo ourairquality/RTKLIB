@@ -351,7 +351,7 @@ void __fastcall TPlot::UpdateObsType(void) {
     }
   for (i = 1; i <= MAXCODE; i++) {
     if (!cmask[i]) continue;
-    if (!*(obs = code2obs((uint8_t)i))) continue;
+    if (!*(obs = code2obs((enum code)i))) continue;
     codes[n++] = obs;
   }
   qsort(codes, n, sizeof(char *), _strcmp);
