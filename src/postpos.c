@@ -1150,7 +1150,7 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
         if (fp) {
             FILE *fptm=openfile(outfiletm);
             if (fptm) {
-                rtkinit(rtk_ptr,popt);
+                rtkinit(rtk_ptr,&popt_);
                 procpos(fp,fptm,&popt_,sopt,rtk_ptr,SOLMODE_SINGLE_DIR);
                 rtkfree(rtk_ptr);
                 fclose(fptm);
@@ -1164,7 +1164,7 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
             FILE *fptm=openfile(outfiletm);
             if (fptm) {
                 reverse=1; iobsu=iobsr=obss.n-1; isbs=sbss.n-1;
-                rtkinit(rtk_ptr,popt);
+                rtkinit(rtk_ptr,&popt_);
                 procpos(fp,fptm,&popt_,sopt,rtk_ptr,SOLMODE_SINGLE_DIR);
                 rtkfree(rtk_ptr);
                 fclose(fptm);
@@ -1180,13 +1180,13 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
 
         if (solf&&solb) {
             isolf=isolb=0;
-            rtkinit(rtk_ptr,popt);
+            rtkinit(rtk_ptr,&popt_);
             procpos(NULL,NULL,&popt_,sopt,rtk_ptr,SOLMODE_COMBINED); /* forward */
             reverse=1; iobsu=iobsr=obss.n-1; isbs=sbss.n-1;
             if (popt_.soltype!=SOLTYPE_COMBINED_NORESET) {
                 /* Reset */
                 rtkfree(rtk_ptr);
-                rtkinit(rtk_ptr,popt);
+                rtkinit(rtk_ptr,&popt_);
             }
             procpos(NULL,NULL,&popt_,sopt,rtk_ptr,SOLMODE_COMBINED); /* backward */
             rtkfree(rtk_ptr);
