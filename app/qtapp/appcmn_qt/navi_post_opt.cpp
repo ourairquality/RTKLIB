@@ -331,8 +331,8 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     if (options == PostOptions) {
         refPosModel->item(6)->setFlags(refPosModel->item(6)->flags() & ~Qt::ItemIsEnabled); // disable "RTCM/Raw Antenna Position"
     } else if (options == NaviOptions) {
-        refPosModel->item(5)->setFlags(refPosModel->item(4)->flags() & ~Qt::ItemIsEnabled); // disable "Get from Position File"
-        refPosModel->item(6)->setFlags(refPosModel->item(5)->flags() & ~Qt::ItemIsEnabled); // disable "RINEX Header Position"
+        refPosModel->item(4)->setFlags(refPosModel->item(4)->flags() & ~Qt::ItemIsEnabled); // disable "Get from Position File"
+        refPosModel->item(5)->setFlags(refPosModel->item(5)->flags() & ~Qt::ItemIsEnabled); // disable "RINEX Header Position"
 
         rovPosModel->item(3)->setFlags(rovPosModel->item(3)->flags() & ~Qt::ItemIsEnabled); // disable "Average of Single Pos"
         rovPosModel->item(4)->setFlags(rovPosModel->item(4)->flags() & ~Qt::ItemIsEnabled); // disable "Get from Position File"
