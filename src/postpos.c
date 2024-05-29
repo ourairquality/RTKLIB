@@ -1035,7 +1035,6 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
 {
     rtk_t *rtk_ptr = (rtk_t *)malloc(sizeof(rtk_t)); /* moved from stack to heap to avoid stack overflow warning */
     prcopt_t popt_=*popt;
-    solopt_t tmsopt = *sopt;
     char tracefile[1024],statfile[1024],path[1024],*ext,outfiletm[1024]={0};
     int i,j,k,dcb_ok;
 
@@ -1141,7 +1140,7 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     /* name time events file */
     namefiletm(outfiletm,outfile);
     /* write header to file with time marks */
-    outhead(outfiletm,infile,n,&popt_,&tmsopt);
+    outhead(outfiletm,infile,n,&popt_,sopt);
 
     iobsu=iobsr=isbs=reverse=aborts=0;
 
