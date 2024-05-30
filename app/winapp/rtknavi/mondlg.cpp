@@ -1457,7 +1457,8 @@ void __fastcall TMonitorDialog::ShowStr(void)
 		"UDP Client",""
 	};
 	AnsiString outformat[]={
-		"Lat/Lon/Height","X/Y/Z-ECEF","E/N/U-Baseline","NMEA-0183"
+		"Lat/Lon/Height","X/Y/Z-ECEF","E/N/U-Baseline","NMEA-0183",
+		"Solution stats","GSI F1/F2"
 	};
 	AnsiString state[]={"Error","-","OK"};
 	AnsiString s,mode,form;
