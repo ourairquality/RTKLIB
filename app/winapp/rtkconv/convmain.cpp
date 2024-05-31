@@ -954,6 +954,11 @@ void __fastcall TMainWindow::ConvertFile(void)
 	rnxopt.freqtype=FreqType;
 	for (i=0;i<2;i++) sprintf(rnxopt.comment[i],"%.63s",Comment[i].c_str());
 	for (i=0;i<7;i++) strcpy(rnxopt.mask[i],CodeMask[i].c_str());
+        for (i=0;i<7;i++) {
+            /* strncpy is appropriate here, the elements are accessed randomly */
+            strncpy(rnxopt.mask[i],CodeMask[i].c_str(),sizeof(rnxopt.mask[i]);
+            rnxopt.mask[i][MAXCODE]='\0';
+        }
 	rnxopt.autopos=AutoPos;
 	rnxopt.phshift=PhaseShift;
 	rnxopt.halfcyc=HalfCyc;

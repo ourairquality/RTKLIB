@@ -47,7 +47,6 @@
 #include "rtklib.h"
 
 #define NOUTFILE        9       /* number of output files */
-#define NSATSYS         7       /* number of satellite systems */
 #define TSTARTMARGIN    60.0    /* time margin for file name replacement */
 
 #define EVENT_STARTMOVE 2       /* rinex event start moving antenna */
@@ -89,8 +88,8 @@ typedef struct {                /* stream file type */
 } strfile_t;
 
 /* global variables ----------------------------------------------------------*/
-static const int navsys[]={     /* system codes */
-    SYS_GPS,SYS_GLO,SYS_GAL,SYS_QZS,SYS_SBS,SYS_CMP,SYS_IRN,0
+static const int navsys[RNX_NUMSYS]={     /* system codes */
+    SYS_GPS,SYS_GLO,SYS_GAL,SYS_QZS,SYS_SBS,SYS_CMP,SYS_IRN
 };
 static const char vercode[][MAXCODE]={ /* supported obs-type by RINEX version */
   /* 0........1.........2.........3.........4.........5.........6........          */
@@ -441,7 +440,7 @@ static void setopt_phshift(rnxopt_t *opt)
     uint8_t code;
     int i,j;
     
-    for (i=0;i<NSATSYS;i++) for (j=0;j<opt->nobs[i];j++) {
+    for (i=0;i<RNX_NUMSYS;i++) for (j=0;j<opt->nobs[i];j++) {
         if (opt->tobs[i][j][0]!='L') continue;
         code=obs2code(opt->tobs[i][j]+1);
 
@@ -738,10 +737,10 @@ static int scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str,
     eph_t  eph0 ={0,-1,-1};
     geph_t geph0={0,-1};
     seph_t seph0={0};
-    uint8_t codes[NSATSYS][33]={{0}};
-    uint8_t types[NSATSYS][33]={{0}};
+    uint8_t codes[RNX_NUMSYS][33]={{0}};
+    uint8_t types[RNX_NUMSYS][33]={{0}};
     char msg[128];
-    int i,j,k,l,m,c=0,type,sys,prn,abort=0,n[NSATSYS]={0};
+    int i,j,k,l,m,c=0,type,sys,prn,abort=0,n[RNX_NUMSYS]={0};
     
     trace(3,"scan_file: nf=%d\n",nf);
     
@@ -759,18 +758,20 @@ static int scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str,
                 for (i=0;i<str->obs->n;i++) {
                     sys=satsys(str->obs->data[i].sat,NULL);
                     if (!(sys&opt->navsys)) continue;
-                    for (l=0;navsys[l];l++) if (navsys[l]==sys) break;
-                    if (!navsys[l]) continue;
+                    /* Mapping from SYS_ to RNX_SYS_ */
+                    for (l=0;l<RNX_NUMSYS;l++) if (navsys[l]==sys) break;
+                    if (l>=RNX_NUMSYS) continue;
                     
                     /* update obs-types */
                     for (j=0;j<NFREQ+NEXOBS;j++) {
-                        if (!str->obs->data[i].code[j]) continue;
+                        int c=str->obs->data[i].code[j];
+                        if (c==CODE_NONE) continue;
                         
                         for (k=0;k<n[l];k++) {
-                            if (codes[l][k]==str->obs->data[i].code[j]) break;
+                            if (codes[l][k]==c) break;
                         }
                         if (k>=n[l]&&n[l]<32) {
-                            codes[l][n[l]++]=str->obs->data[i].code[j];
+                            codes[l][n[l]++]=c;
                         }
                         if (k<n[l]) {
                             if (str->obs->data[i].P[j]!=0.0) types[l][k]|=1;
@@ -806,12 +807,12 @@ static int scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str,
         trace(2,"aborted in scan\n");
         return 0;
     }
-    for (i=0;i<NSATSYS;i++) for (j=0;j<n[i];j++) {
+    for (i=0;i<RNX_NUMSYS;i++) for (j=0;j<n[i];j++) {
         trace(2,"scan_file: sys=%d code=%s type=%d\n",i,code2obs(codes[i][j]),
               types[i][j]);
     }
     /* sort and set obs-types in RINEX options */
-    for (i=0;i<NSATSYS;i++) {
+    for (i=0;i<RNX_NUMSYS;i++) {
         sort_obstype(codes[i],types[i],n[i],i);
         setopt_obstype(codes[i],types[i],i,opt);
         

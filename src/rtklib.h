@@ -118,6 +118,16 @@ extern "C" {
 #define SYS_LEO     0x80                /* navigation system: LEO */
 #define SYS_ALL     0xFF                /* navigation system: all */
 
+/* System codes used in rnxopt_t mask, tobs, shift, and nobs. */
+#define RNX_SYS_GPS 0                   /* Navigation system: GPS */
+#define RNX_SYS_GLO 1                   /* Navigation system: GLONASS */
+#define RNX_SYS_GAL 2                   /* Navigation system: Galileo */
+#define RNX_SYS_QZS 3                   /* Navigation system: QZSS */
+#define RNX_SYS_SBS 4                   /* Navigation system: SBAS */
+#define RNX_SYS_CMP 5                   /* Navigation system: BeiDou */
+#define RNX_SYS_IRN 6                   /* Navigation system: IRNS */
+#define RNX_NUMSYS  7
+
 #define TSYS_GPS    0                   /* time system: GPS time */
 #define TSYS_UTC    1                   /* time system: UTC */
 #define TSYS_GLO    2                   /* time system: GLONASS time */
@@ -954,7 +964,7 @@ typedef struct {        /* RINEX control struct type */
     char   type;        /* RINEX file type ('O','N',...) */
     int    sys;         /* navigation system */
     int    tsys;        /* time system */
-    char   tobs[8][MAXOBSTYPE][4]; /* rinex obs types */
+    char   tobs[RNX_NUMSYS][MAXOBSTYPE][4]; /* rinex obs types */
     obs_t  obs;         /* observation data */
     nav_t  nav;         /* navigation data */
     sta_t  sta;         /* station info */
@@ -1091,10 +1101,13 @@ typedef struct {        /* RINEX options type */
     double ttol;        /* time tolerance (s) */
     double tunit;       /* time unit for multiple-session (s) */
     int rnxver;         /* RINEX version (x100) */
-    int navsys;         /* navigation system */
+    int navsys;         /* navigation system, SYS_ mask */
     int obstype;        /* observation type */
     int freqtype;       /* frequency type */
-    char mask[7][MAXCODE]; /* code mask {GPS,GLO,GAL,QZS,SBS,CMP,IRN} */
+    /* The mask allocates room for a nul terminator in the last element to
+     * support access as a string, but it is accessed randomly and must be full
+     * length. */
+    char mask[RNX_NUMSYS][MAXCODE+1]; /* code mask {GPS,GLO,GAL,QZS,SBS,CMP,IRN} */
     char staid [32];    /* station id for rinex file name */
     char prog  [32];    /* program */
     char runby [32];    /* run-by */
@@ -1121,9 +1134,9 @@ typedef struct {        /* RINEX options type */
     gtime_t tstart;     /* first obs time */
     gtime_t tend;       /* last obs time */
     gtime_t trtcm;      /* approx log start time for rtcm */
-    char tobs[7][MAXOBSTYPE][4]; /* obs types {GPS,GLO,GAL,QZS,SBS,CMP,IRN} */
-    double shift[7][MAXOBSTYPE]; /* phase shift (cyc) {GPS,GLO,GAL,QZS,SBS,CMP,IRN} */
-    int nobs[7];        /* number of obs types {GPS,GLO,GAL,QZS,SBS,CMP,IRN} */
+    char tobs[RNX_NUMSYS][MAXOBSTYPE][4]; /* obs types {GPS,GLO,GAL,QZS,SBS,CMP,IRN} */
+    double shift[RNX_NUMSYS][MAXOBSTYPE]; /* phase shift (cyc) {GPS,GLO,GAL,QZS,SBS,CMP,IRN} */
+    int nobs[RNX_NUMSYS]; /* number of obs types {GPS,GLO,GAL,QZS,SBS,CMP,IRN} */
 } rnxopt_t;
 
 typedef struct {        /* satellite status type */

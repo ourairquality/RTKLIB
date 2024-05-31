@@ -321,15 +321,16 @@ static void setmask(const char *argv, rnxopt_t *opt, int mask)
     strcpy(buff,argv);
     for (p=strtok(buff,",");p;p=strtok(NULL,",")) {
         if (strlen(p)<4||p[1]!='L') continue;
-        if      (p[0]=='G') i=0;
-        else if (p[0]=='R') i=1;
-        else if (p[0]=='E') i=2;
-        else if (p[0]=='J') i=3;
-        else if (p[0]=='S') i=4;
-        else if (p[0]=='C') i=5;
-        else if (p[0]=='I') i=6;
+        if      (p[0]=='G') i=RNX_SYS_GPS;
+        else if (p[0]=='R') i=RNX_SYS_GLO;
+        else if (p[0]=='E') i=RNX_SYS_GAL;
+        else if (p[0]=='J') i=RNX_SYS_QZS;
+        else if (p[0]=='S') i=RNX_SYS_SBS;
+        else if (p[0]=='C') i=RNX_SYS_CMP;
+        else if (p[0]=='I') i=RNX_SYS_IRN;
         else continue;
-        if ((code=obs2code(p+2))) {
+        int code=obs2code(p+2);
+        if (code != CODE_NONE) {
             opt->mask[i][code-1]=mask?'1':'0';
         }
     }
@@ -388,7 +389,10 @@ static int cmdopts(int argc, char **argv, rnxopt_t *opt, char **ifile,
     opt->navsys=SYS_GPS|SYS_GLO|SYS_GAL|SYS_QZS|SYS_SBS|SYS_CMP|SYS_IRN;
     opt->ttol = 0.005;
     
-    for (i=0;i<6;i++) for (j=0;j<64;j++) opt->mask[i][j]='1';
+    for (i=0;i<RNX_NUMSYS;i++) {
+        for (j=0;j<MAXCODE;j++) opt->mask[i][j]='1';
+        opt->mask[i][MAXCODE]='\0';
+    }
     
     for (i=1;i<argc;i++) {
         if (!strcmp(argv[i],"-ts")&&i+2<argc) {
@@ -491,7 +495,10 @@ static int cmdopts(int argc, char **argv, rnxopt_t *opt, char **ifile,
             opt->halfcyc=1;
         }
         else if (!strcmp(argv[i],"-mask")&&i+1<argc) {
-            for (j=0;j<6;j++) for (k=0;k<64;k++) opt->mask[j][k]='0';
+            for (j=0;j<RNX_NUMSYS;j++) {
+              for (k=0;k<MAXCODE;k++) opt->mask[j][k]='0';
+              opt->mask[j][MAXCODE]='\0';
+            }
             setmask(argv[++i],opt,1);
         }
         else if (!strcmp(argv[i],"-nomask")&&i+1<argc) {
