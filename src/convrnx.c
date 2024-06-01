@@ -617,7 +617,7 @@ static void dump_stas(const strfile_t *str)
 
     trace(2,"# STATION LIST\n");
     trace(2,"# %17s %19s %5s %6s %16s %16s %12s %13s %9s %2s %6s %6s %6s\n",
-          "TIME","STAID","MARKER","ANTENNA","RECEIVER","LATITUDE","LONGITUDE",
+          "START","END","STAID","MARKER","ANTENNA","RECEIVER","LATITUDE","LONGITUDE",
           "HIGHT","DT","DEL1","DEL2","DEL3");
     
     for (p=str->stas;p;p=p->next) {

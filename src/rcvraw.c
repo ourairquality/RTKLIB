@@ -947,8 +947,7 @@ static int decode_glostr_eph(const uint8_t *buff, geph_t *geph)
     M           =getbitu(buff,i, 2);
     
     if (frn1!=1||frn2!=2||frn3!=3||frn4!=4) {
-        trace(3,"decode_glostr error: frn=%d %d %d %d %d\n",frn1,frn2,frn3,
-              frn4);
+        trace(3,"decode_glostr error: frn=%d %d %d %d\n",frn1,frn2,frn3,frn4);
         return 0;
     }
     if (!(geph_glo.sat=satno(SYS_GLO,slot))) {
