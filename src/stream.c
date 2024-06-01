@@ -1582,7 +1582,7 @@ static int rspntrip_s(ntrip_t *ntrip, char *msg)
     char *p,*q;
     
     tracet(3,"rspntrip_s: state=%d nb=%d\n",ntrip->state,ntrip->nb);
-    ntrip->buff[ntrip->nb]='0';
+    ntrip->buff[ntrip->nb]='\0';
     tracet(5,"rspntrip_s: n=%d buff=\n%s\n",ntrip->nb,ntrip->buff);
     
     if ((p=strstr((char *)ntrip->buff,NTRIP_RSP_OK_SVR))) { /* ok */
@@ -1623,7 +1623,7 @@ static int rspntrip_c(ntrip_t *ntrip, char *msg)
     char *p,*q;
     
     tracet(3,"rspntrip_c: state=%d nb=%d\n",ntrip->state,ntrip->nb);
-    ntrip->buff[ntrip->nb]='0';
+    ntrip->buff[ntrip->nb]='\0';
     tracet(5,"rspntrip_c: n=%d buff=\n%s\n",ntrip->nb,ntrip->buff);
     
     if ((p=strstr((char *)ntrip->buff,NTRIP_RSP_OK_CLI))) { /* ok */
