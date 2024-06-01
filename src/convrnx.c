@@ -1026,8 +1026,8 @@ static void convobs(FILE **ofp, rnxopt_t *opt, strfile_t *str, int *n,
     
     time=str->obs->data[0].time;
     
-    /* avoid duplicated data by multiple files handover */
-    if (tend->time&&timediff(time,*tend)<opt->ttol) return;
+    /* Avoid duplicated data by multiple files handover */
+    if (tend->time&&timediff(time,*tend)<-opt->ttol) return;
     *tend=time;
 
     /* save cycle slips */
@@ -1176,8 +1176,8 @@ static void convsbs(FILE **ofp, rnxopt_t *opt, strfile_t *str, int *n,
 
     if (!screent(time,opt->ts,opt->te,0.0)) return;
     
-    /* avoid duplicated data by multiple files handover */
-    if (tend->time&&timediff(time,*tend)<opt->ttol) return;
+    /* Avoid duplicated data by multiple files handover */
+    if (tend->time&&timediff(time,*tend)<-opt->ttol) return;
     *tend=time;
 
     prn=str->raw.sbsmsg.prn;
