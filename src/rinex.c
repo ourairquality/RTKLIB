@@ -2217,55 +2217,57 @@ static int obsindex(int rnxver, int sys, const uint8_t *code, const char *tobs,
     int i;
 
     for (i=0;i<NFREQ+NEXOBS;i++) {
+        int c=code[i];
+        if (c==CODE_NONE) continue;
 
         /* signal mask */
-        if (mask[code[i]-1]=='0') continue;
+        if (mask[c-1]=='0') continue;
 
         if (rnxver<=299) { /* ver.2 */
             if (!strcmp(tobs,"C1")&&(sys==SYS_GPS||sys==SYS_GLO||sys==SYS_QZS||
                 sys==SYS_SBS||sys==SYS_CMP)) {
-                if (code[i]==CODE_L1C) return i;
+                if (c==CODE_L1C) return i;
             }
             else if (!strcmp(tobs,"P1")) {
-                if (code[i]==CODE_L1P||code[i]==CODE_L1W||code[i]==CODE_L1Y||
-                    code[i]==CODE_L1N) return i;
+                if (c==CODE_L1P||c==CODE_L1W||c==CODE_L1Y||
+                    c==CODE_L1N) return i;
             }
             else if (!strcmp(tobs,"C2")&&(sys==SYS_GPS||sys==SYS_QZS)) {
-                if (code[i]==CODE_L2S||code[i]==CODE_L2L||code[i]==CODE_L2X)
+                if (c==CODE_L2S||c==CODE_L2L||c==CODE_L2X)
                     return i;
             }
             else if (!strcmp(tobs,"C2")&&sys==SYS_GLO) {
-                if (code[i]==CODE_L2C) return i;
+                if (c==CODE_L2C) return i;
             }
             else if (!strcmp(tobs,"P2")) {
-                if (code[i]==CODE_L2P||code[i]==CODE_L2W||code[i]==CODE_L2Y||
-                    code[i]==CODE_L2N||code[i]==CODE_L2D) return i;
+                if (c==CODE_L2P||c==CODE_L2W||c==CODE_L2Y||
+                    c==CODE_L2N||c==CODE_L2D) return i;
             }
             else if (rnxver>=212&&tobs[1]=='A') { /* L1C/A */
-                if (code[i]==CODE_L1C) return i;
+                if (c==CODE_L1C) return i;
             }
             else if (rnxver>=212&&tobs[1]=='B') { /* L1C */
-                if (code[i]==CODE_L1S||code[i]==CODE_L1L||code[i]==CODE_L1X)
+                if (c==CODE_L1S||c==CODE_L1L||c==CODE_L1X)
                     return i;
             }
             else if (rnxver>=212&&tobs[1]=='C') { /* L2C */
-                if (code[i]==CODE_L2S||code[i]==CODE_L2L||code[i]==CODE_L2X)
+                if (c==CODE_L2S||c==CODE_L2L||c==CODE_L2X)
                     return i;
             }
             else if (rnxver>=212&&tobs[1]=='D'&&sys==SYS_GLO) { /* GLO L2C/A */
-                if (code[i]==CODE_L2C) return i;
+                if (c==CODE_L2C) return i;
             }
             else if (tobs[1]=='2'&&sys==SYS_CMP) { /* BDS B1 */
-                if (code[i]==CODE_L2I||code[i]==CODE_L2Q||code[i]==CODE_L2X)
+                if (c==CODE_L2I||c==CODE_L2Q||c==CODE_L2X)
                     return i;
             }
             else {
-                id=code2obs(code[i]);
+                id=code2obs(c);
                 if (id[0]==tobs[1]) return i;
             }
         }
         else { /* ver.3 */
-            id=code2obs(code[i]);
+            id=code2obs(c);
             if (!strcmp(id,tobs+1)) return i;
         }
     }
