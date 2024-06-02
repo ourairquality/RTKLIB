@@ -97,14 +97,22 @@ static int checkbrk(const char *format, ...)
     else if (*proc_base) sprintf(p," (%s)",proc_base);
     return showmsg(buff);
 }
+/* Solution option to field separator ----------------------------------------*/
+/* Repeated from solution.c */
+static const char *opt2sep(const solopt_t *opt)
+{
+    if (!*opt->sep) return " ";
+    else if (!strcmp(opt->sep,"\\t")) return "\t";
+    return opt->sep;
+}
 /* output reference position -------------------------------------------------*/
 static void outrpos(FILE *fp, const double *r, const solopt_t *opt)
 {
     double pos[3],dms1[3],dms2[3];
-    const char *sep=opt->sep;
 
     trace(3,"outrpos :\n");
 
+    const char *sep = opt2sep(opt);
     if (opt->posf==SOLF_LLH||opt->posf==SOLF_ENU) {
         ecef2pos(r,pos);
         if (opt->degf) {

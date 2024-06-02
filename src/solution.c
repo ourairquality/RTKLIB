@@ -376,8 +376,8 @@ static int decode_nmea(char *buff, sol_t *sol)
 static char *decode_soltime(char *buff, const solopt_t *opt, gtime_t *time)
 {
     double v[MAXFIELD];
-    char *p,*q,sep[64]=" ";
-    int n,sep_len;
+    char *p,*q;
+    int n;
 
     trace(4,"decode_soltime:\n");
 
@@ -385,9 +385,8 @@ static char *decode_soltime(char *buff, const solopt_t *opt, gtime_t *time)
         return buff;
     }
 
-    if (!strcmp(opt->sep,"\\t")) strcpy(sep,"\t");
-    else if (*opt->sep) strcpy(sep,opt->sep);
-    sep_len=(int)strlen(sep);
+    const char *sep = opt2sep(opt);
+    size_t sep_len = strlen(sep);
 
     if (opt->posf==SOLF_GSIF) {
         if (sscanf(buff,"%lf %lf %lf %lf:%lf:%lf",v,v+1,v+2,v+3,v+4,v+5)<6) {
