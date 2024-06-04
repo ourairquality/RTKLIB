@@ -665,7 +665,7 @@ void MonitorDialog::setSat()
         tr("SAT"),	tr("PRN"), tr("PRN"), tr("Status"), tr("Azimuth (deg)"), tr("Elevation (deg)"), tr("LG (m)"), tr("PHW (cyc)"),
         tr("P1-P2 (m)"), tr("P1-C1 (m)"), tr("P2-C2(m)")
 	};
-    int width[] = {25, 25, 30, 130, 130, 60, 60, 80, 80, 80}, nfreq;
+    int width[] = {25, 25, 30, 130, 130, 60, 60, 80, 80, 80, 80}, nfreq;
 
     rtksvrlock(rtksvr);
     nfreq = rtksvr->rtk.opt.nf > NFREQ ? NFREQ : rtksvr->rtk.opt.nf;
@@ -1045,7 +1045,7 @@ void MonitorDialog::setNavigation()
         << tr("Cuc (rad)") << tr("Cus (rad)") << tr("Crc (m)") << tr("Crs (m)") << tr("Cic (rad)") << tr("Cis (rad)") << tr("Code") << tr("Flag");
     int i, width[] = {
         25, 25, 30, 30, 30, 25, 25, 115, 115, 115, 80, 80, 90, 140, 130, 90, 140, 140, 120, 100,
-        100, 100, 90, 120, 120, 90, 90, 90, 90, 90, 80, 50
+        100, 100, 90, 120, 120, 90, 90, 90, 90, 90, 80, 50, 50
 	};
     ui->tWConsole->setColumnCount(33);
     ui->tWConsole->setRowCount(1);
@@ -1077,13 +1077,17 @@ void MonitorDialog::showNavigations()
     }
     setNavigation();
 
+    eph_t eph0;
+    memset(&eph0, 0, sizeof(eph_t));
+
     rtksvrlock(rtksvr);
-    if (!rtksvr->nav.eph) {
-        rtksvrunlock(rtksvr);
-        return;
-    }
     time = rtksvr->rtk.sol.time;
-    for (i = 0; i < MAXSAT; i++) eph[i] = rtksvr->nav.eph[i][off];
+    for (i = 0; i < MAXSAT; i++) {
+        if (off < rtksvr->nav.n[i])
+            eph[i] = rtksvr->nav.eph[i][off];
+        else
+            eph[i] = eph0;
+    }
     rtksvrunlock(rtksvr);
 
     if (sys == SYS_GAL) {
@@ -1180,13 +1184,17 @@ void MonitorDialog::showGlonassNavigations()
     char tstr[40], id[8];
     int i, n, valid, prn, off = ui->cBSelectEphemeris->currentIndex();
 
+    geph_t geph0;
+    memset(&geph0, 0, sizeof(geph_t));
+
     rtksvrlock(rtksvr);
-    if (!rtksvr->nav.geph) {
-        rtksvrunlock(rtksvr);
-        return;
-    }
     time = rtksvr->rtk.sol.time;
-    for (i = 0; i < NSATGLO; i++) geph[i] = rtksvr->nav.geph[i][off];
+    for (i = 0; i < NSATGLO; i++) {
+        if (off < rtksvr->nav.ng[i])
+            geph[i] = rtksvr->nav.geph[i][off];
+        else
+            geph[i] = geph0;
+    }
     rtksvrunlock(rtksvr);
 
     ui->lblInformation->setText("");
@@ -1265,13 +1273,17 @@ void MonitorDialog::showSbsNavigations()
     int i, n, valid, prn, off = ui->cBSelectEphemeris->currentIndex();
     char tstr[40], id[8];
 
+    seph_t seph0;
+    memset(&seph0, 0, sizeof(seph_t));
+
     rtksvrlock(rtksvr); // lock
-    if (!rtksvr->nav.seph) {
-        rtksvrunlock(rtksvr);
-        return;
-    }
     time = rtksvr->rtk.sol.time;
-    for (int i = 0; i < NSATSBS; i++) seph[i] = rtksvr->nav.seph[i][off];
+    for (int i = 0; i < NSATSBS; i++) {
+        if (off < rtksvr->nav.ns[i])
+            seph[i] = rtksvr->nav.seph[i][off];
+        else
+            seph[i] = seph0;
+    }
     rtksvrunlock(rtksvr); // unlock
 
     ui->lblInformation->setText("");
@@ -1943,17 +1955,17 @@ void MonitorDialog::showRtcmSsr()
         ui->tWConsole->setItem(i, j++, new QTableWidgetItem(QString::number(ssr[i].hrclk, 'f', 3)));
 
         s = "";
-        for (k = 0; k < MAXCODE; k++) {
-            if (ssr[i].cbias[k] == 0.0) continue;
-            s += QString("%1: %2 ").arg(code2obs(k+1)).arg(ssr[i].cbias[k], 0, 'f', 3);
+        for (k = 1; k < MAXCODE; k++) {
+            if (ssr[i].cbias[k - 1] == 0.0) continue;
+            s += QString("%1: %2 ").arg(code2obs(k)).arg(ssr[i].cbias[k - 1], 0, 'f', 3);
         }
         if (s.isEmpty()) s = QStringLiteral("---");
         ui->tWConsole->setItem(i, j++, new QTableWidgetItem(s));
 
         s = "";
-        for (k = 0; k < MAXCODE; k++) {
-            if (ssr[i].pbias[k] == 0.0) continue;
-            s += QString("%1: %2 ").arg(code2obs(k+1)).arg(ssr[i].pbias[k], 0, 'f', 3);
+        for (k = 1; k < MAXCODE; k++) {
+            if (ssr[i].pbias[k - 1] == 0.0) continue;
+            s += QString("%1: %2 ").arg(code2obs(k)).arg(ssr[i].pbias[k - 1], 0, 'f', 3);
         }
         if (s.isEmpty()) s = QStringLiteral("---");
         ui->tWConsole->setItem(i, j++, new QTableWidgetItem(s));
