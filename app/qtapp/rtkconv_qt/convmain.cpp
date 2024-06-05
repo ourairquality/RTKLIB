@@ -361,7 +361,7 @@ void MainWindow::callRtkPlot()
         ui->cBOutputFileEnable1, ui->cBOutputFileEnable2, ui->cBOutputFileEnable3, ui->cBOutputFileEnable4,
         ui->cBOutputFileEnable5, ui->cBOutputFileEnable6, ui->cBOutputFileEnable7, ui->cBOutputFileEnable8
     };
-    QStringList cmds = {"rtkplot_qt", "../../../bin/rtkplot_qt", "../rtkplot_qt/rtkplot_qt"};
+    QStringList cmds = {"rtkplot_qt", "../rtkplot_qt/rtkplot_qt", "../../../bin/rtkplot_qt"};
     QStringList opts;
     QDir appDir = QDir(QCoreApplication::applicationDirPath());
 

@@ -467,7 +467,7 @@ void MainWindow::stopServer()
 void MainWindow::showRtkPlot()
 {
     QDir appDir = QDir(QCoreApplication::applicationDirPath());
-    QStringList cmds = {"rtkplot_qt", "../../../bin/rtkplot_qt", "../rtkplot_qt/rtkplot_qt"};
+    QStringList cmds = {"rtkplot_qt", "../rtkplot_qt/rtkplot_qt", "../../../bin/rtkplot_qt"};
     QStringList opts;
 
     trace(3, "showRtkPlot\n");
