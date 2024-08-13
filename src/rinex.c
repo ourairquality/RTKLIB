@@ -2542,10 +2542,14 @@ extern int outrnxobsb(FILE *fp, const rnxopt_t *opt, const obsd_t *obs, int n,
 /* output data field in RINEX navigation data --------------------------------*/
 static void outnavf_n(FILE *fp, double value, int n)
 {
-    double e=(fabs(value)<1E-99)?0.0:floor(log10(fabs(value))+1.0);
-
-    fprintf(fp," %s.%0*.0f%s%+03.0f",value<0.0?"-":" ",n,
-            fabs(value)/pow(10.0,e-n),NAVEXP,e);
+    double e = (fabs(value) < 1E-99) ? 0.0 : floor(log10(fabs(value)));
+    int d = n + 2; // Leading digit, decimal point, n decimal places
+    double v = round(fabs(value) * pow(10.0, (n + 1) - e)) * pow(10.0, -(n + 1));
+    if (v >= 10.0) {
+        v *= 0.1;
+        e += 1.0;
+    }
+    fprintf(fp, "%s%0*.*lf%s%+03.0lf", value < 0.0 ? "-" : " ", d, n, v, NAVEXP, e);
 }
 static void outnavf(FILE *fp, double value)
 {
