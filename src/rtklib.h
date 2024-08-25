@@ -1509,6 +1509,10 @@ static inline gtime_t timeadd(gtime_t t, double sec)
     t.sec+=sec; tt=floor(t.sec); t.time+=(int)tt; t.sec-=tt;
     return t;
 }
+
+#define RTKBOUNDSCHECK(buff, size, index) rtkboundscheck(__func__, __LINE__, buff, size, index);
+EXPORT void rtkboundscheck(const char *func, int line, const void *buff, size_t size, size_t index);
+
 /* time difference -------------------------------------------------------------
 * difference between gtime_t structs
 * args   : gtime_t t1,t2    I   gtime_t structs
