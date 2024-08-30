@@ -3106,7 +3106,7 @@ static int decode_qzssnav(raw_t *raw){
     eph.code = U1(raw->buff + 18);
     eph.sva = U1(raw->buff + 19);
     eph.svh = U1(raw->buff + 20);
-    /* byte 21 L2 P data flag */
+    eph.flag = U1(raw->buff + 21);
     eph.iodc = U2(raw->buff + 22);
     eph.iode = U1(raw->buff + 24);
     /* byte 25: IODE from frame 3 */
