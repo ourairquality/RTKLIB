@@ -1521,6 +1521,9 @@ EXPORT double  time2gst(gtime_t t, int *week);
 EXPORT gtime_t bdt2time(int week, double sec);
 EXPORT double  time2bdt(gtime_t t, int *week);
 
+#define RTKBOUNDSCHECK(buff, size, index) rtkboundscheck(__func__, __LINE__, buff, size, index);
+EXPORT void rtkboundscheck(const char *func, int line, const void *buff, size_t size, size_t index);
+
 /* add time --------------------------------------------------------------------
 * add time to gtime_t struct
 * args   : gtime_t t        I   gtime_t struct
