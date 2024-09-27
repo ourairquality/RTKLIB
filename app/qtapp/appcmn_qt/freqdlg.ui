@@ -370,7 +370,7 @@
      </item>
      <item row="6" column="2">
       <property name="text">
-       <string>B2a</string>
+       <string>B3</string>
       </property>
       <property name="textAlignment">
        <set>AlignCenter</set>
@@ -378,7 +378,7 @@
      </item>
      <item row="6" column="3">
       <property name="text">
-       <string>B3</string>
+       <string>B2a</string>
       </property>
       <property name="textAlignment">
        <set>AlignCenter</set>
