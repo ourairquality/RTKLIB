@@ -160,7 +160,6 @@ extern "C" {
 #ifndef NFREQ
 #define NFREQ       3                   /* number of carrier frequencies */
 #endif
-#define NFREQGLO    2                   /* number of carrier frequencies of GLONASS */
 
 #ifndef NEXOBS
 #define NEXOBS      0                   /* number of extended obs codes */
@@ -1432,6 +1431,7 @@ EXPORT int  testsnr(int base, int freq, double el, double snr,
                     const snrmask_t *mask);
 EXPORT void setcodepri(int sys, int idx, const char *pri);
 EXPORT int  getcodepri(int sys, uint8_t code, const char *opt);
+EXPORT int sigindex(obsd_t *data, int sys, int code, const char *opt);
 
 /* Satellite system to index number, or zero if no match. */
 static inline int sys2no(int sys)

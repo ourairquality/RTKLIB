@@ -403,8 +403,8 @@ static int decode_rawsatdata(raw_t *raw) {
       uint8_t trks = U1(raw, offset + 1);
       uint8_t code = anpp2code(sys_id, freq_id);
       if (code == CODE_NONE) continue;
-      int idx = code2idx(sys, code);
-      if (idx < 0 || idx >= NFREQ + NEXOBS) continue;
+      int idx = sigindex(raw->obuf.data + n, sys, code, raw->opt);
+      if (idx < 0) continue;
 
       if (trks & TRKS_CARRIER) {
         raw->obuf.data[n].L[idx] = R8(raw, offset + 2);

@@ -75,6 +75,12 @@
 #define TTOL_MOVEB  (1.0+2*DTTOL)
                              /* time sync tolerance for moving-baseline (s) */
 
+#if NFREQ == 1
+#define NFREQGLO    1        // Number of carrier frequencies of GLONASS, L1 and L2 only.
+#else
+#define NFREQGLO    2        // Number of carrier frequencies of GLONASS, L1 and L2 only.
+#endif
+
 /* number of parameters (pos,ionos,tropos,hw-bias,phase-bias,real,estimated) */
 #define NF(opt)     ((opt)->ionoopt==IONOOPT_IFLC?1:(opt)->nf)
 #define NP(opt)     ((opt)->dynamics==0?3:9)
@@ -88,7 +94,7 @@
 /* state variable index */
 #define II(s,opt)   (NP(opt)+(s)-1)                 /* ionos (s:satellite no) */
 #define IT(r,opt)   (NP(opt)+NI(opt)+NT(opt)/2*(r)) /* tropos (r:0=rov,1:ref) */
-#define IL(f,opt)   (NP(opt)+NI(opt)+NT(opt)+(f))   /* receiver h/w bias */
+#define IL(f,opt)   (NP(opt)+NI(opt)+NT(opt)+(f))   // GLONASS receiver h/w bias for L1 and L2 only.
 #define IB(s,f,opt) (NR(opt)+MAXSAT*(f)+(s)-1) /* phase bias (s:satno,f:freq) */
 
 /* poly coeffs used to adjust AR ratio by # of sats, derived by fitting to  example from:
@@ -293,7 +299,7 @@ extern int rtkoutstat(rtk_t *rtk, int level, char *buff)
         }
         /* Receiver h/w bias */
         if (est&&rtk->opt.glomodear==GLO_ARMODE_AUTOCAL) {
-            for (int i=0;i<nfreq;i++) {
+            for (int i=0;i<NFREQGLO;i++) {
                 int j=IL(i,&rtk->opt);
                 xa[0]=j<rtk->na?rtk->xa[j]:0.0;
                 p+=sprintf(p,"$HWBIAS,%d,%.3f,%d,%d,%.4f,%.4f\n",week,tow,
@@ -871,8 +877,12 @@ static void udbias(rtk_t *rtk, double tt, const obsd_t *obs, const int *sat,
             rtk->x[j]=0.0;
             rtk->ssat[sat[i]-1].rejc[k]=0;
             rtk->ssat[sat[i]-1].lock[k]=-rtk->opt.minlock;
-            /* retain icbiases for GLONASS sats */
-            if (rtk->ssat[sat[i]-1].sys!=SYS_GLO) rtk->ssat[sat[i]-1].icbias[k]=0;
+            // Retain icbiases for GLONASS sats L1 and L2.
+            if (rtk->ssat[sat[i] - 1].sys == SYS_GLO) {
+              const char *cobs = code2obs(obs[iu[i]].code[k]);
+              if (cobs[0] == '1' || cobs[0] == '2') continue;
+            }
+            rtk->ssat[sat[i] - 1].icbias[k] = 0;
         }
         bias=zeros(ns,1);
 
@@ -1364,16 +1374,26 @@ static int ddres(rtk_t *rtk, const obsd_t *obs, double dt, const double *x,
 
                 /* Adjust double-difference for glonass sats */
                 if (sysi==SYS_GLO&&sysj==SYS_GLO) {
-                    if (rtk->opt.glomodear==GLO_ARMODE_AUTOCAL && frq<NFREQGLO) {
-                        /* Auto-cal method */
-                        double df=(freqi-freqj)/(f==0?DFRQ1_GLO:DFRQ2_GLO);
-                        v[nv]-=df*x[IL(frq,opt)];
-                        if (Hc) cvwrite(Hi,nc,xi,IL(frq,opt),df);
+                    if (rtk->opt.glomodear==GLO_ARMODE_AUTOCAL) {
+                        // Auto-cal method for L1 and L2 only.
+                        const char *cobs = code2obs(obs[iu[i]].code[frq]);
+                        if (cobs[0] == '1' && NFREQGLO >= 1) {
+                          double df = (freqi - freqj) / DFRQ1_GLO;
+                          v[nv] -= df * x[IL(0, opt)];
+                          if (Hc) cvwrite(Hi, nc, xi, IL(0, opt), df);
+                        } else if (cobs[0] == '2' && NFREQGLO >= 2) {
+                          double df = (freqi - freqj) / DFRQ2_GLO;
+                          v[nv] -= df * x[IL(1, opt)];
+                          if (Hc) cvwrite(Hi, nc, xi, IL(1, opt), df);
+                        }
                     }
                     else if (rtk->opt.glomodear==GLO_ARMODE_FIXHOLD && frq<NFREQGLO) {
-                        /* Fix-and-hold method */
-                        double icb=rtk->ssat[sat[i]-1].icbias[frq]*CLIGHT/freqi - rtk->ssat[sat[j]-1].icbias[frq]*CLIGHT/freqj;
-                        v[nv]-=icb;
+                        // Fix-and-hold method for L1 and L2 only.
+                        const char *cobs = code2obs(obs[iu[i]].code[frq]);
+                        if (cobs[0] == '1' || cobs[0] == '2') {
+                          double icb=rtk->ssat[sat[i]-1].icbias[frq]*CLIGHT/freqi - rtk->ssat[sat[j]-1].icbias[frq]*CLIGHT/freqj;
+                          v[nv]-=icb;
+                        }
                     }
                 }
 
@@ -1381,6 +1401,7 @@ static int ddres(rtk_t *rtk, const obsd_t *obs, double dt, const double *x,
                 if (sysj==SYS_SBS&&sysi==SYS_GPS) {
                     if (rtk->opt.glomodear==GLO_ARMODE_FIXHOLD && frq<NFREQ) {
                         /* Fix-and-hold method */
+                        // This assumes that SBS and GPS have the same frequency index allocation.
                         double icb=rtk->ssat[sat[i]-1].icbias[frq]*CLIGHT/freqi - rtk->ssat[sat[j]-1].icbias[frq]*CLIGHT/freqj;
                         v[nv]-=icb;
                     }
@@ -1432,12 +1453,16 @@ static int ddres(rtk_t *rtk, const obsd_t *obs, double dt, const double *x,
                 }
 
 #ifdef TRACE
-                double icb;
-                if (rtk->opt.glomodear==GLO_ARMODE_AUTOCAL)
-                    icb=x[IL(frq,opt)];
-                else
+                double icb = 0.0;
+                if (rtk->opt.glomodear==GLO_ARMODE_AUTOCAL) {
+                    const char *cobs = code2obs(obs[iu[i]].code[frq]);
+                    if (cobs[0] == '1' && NFREQGLO >= 1) icb = x[IL(0, opt)];
+                    else if (cobs[0] == '2' && NFREQGLO >= 2) icb = x[IL(1, opt)];
+                }
+                else {
                     icb=rtk->ssat[sat[i]-1].icbias[frq]*CLIGHT/freqi -
                         rtk->ssat[sat[j]-1].icbias[frq]*CLIGHT/freqj;
+                }
                 double xjj = 0.0, Pjj = 0.0;
                 if (opt->mode>PMODE_DGPS) {
                     int jj = IB(sat[j], frq, &rtk->opt);
@@ -1723,6 +1748,7 @@ static void holdamb(rtk_t *rtk, const double *xa)
     if (rtk->opt.glomodear!=GLO_ARMODE_FIXHOLD) return;
 
     /* Move fractional part of bias from phase-bias into ic bias for GLONASS sats (both in cycles) */
+    // TODO this should only apply for GLONASS L1 and L2.
     for (int f=0;f<nf;f++) {
         int i=-1;
         for (int j=nv=0;j<MAXSAT;j++) {
