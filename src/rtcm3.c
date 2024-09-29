@@ -555,20 +555,22 @@ static int decode_type1002(rtcm_t *rtcm)
         if (fabs(tt)>1E-9) rtcm->obs.n=rtcm->obsflag=0;
         if ((index=obsindex(&rtcm->obs,rtcm->time,sat))<0) continue;
         pr1=pr1*0.02+amb*PRUNIT_GPS;
-        rtcm->obs.data[index].P[0]=pr1;
-        
+
         int l1code = code ? CODE_L1P : CODE_L1C;
+        int freqidx1 = sigindex(rtcm->obs.data + index, SYS_GPS, l1code, rtcm->opt);
+        if (freqidx1 < 0) continue;
+        rtcm->obs.data[index].P[freqidx1]=pr1;
+
         if (ppr1!=(int)0xFFF80000) {
-            double freq=FREQL1;
-            double cp1 = ppr1 * 0.0005 * freq / CLIGHT;
+            double freq1 = code2freq(SYS_GPS, l1code, 0);
+            double cp1 = ppr1 * 0.0005 * freq1 / CLIGHT;
 #ifdef RTK_DISABLED
             cp1 = adjcp(rtcm, sat, l1code, cp1);
 #endif
-            rtcm->obs.data[index].L[0]=pr1*freq/CLIGHT+cp1;
+            rtcm->obs.data[index].L[freqidx1] = pr1 * freq1 / CLIGHT + cp1;
         }
-        rtcm->obs.data[index].LLI[0]=lossoflock(rtcm, sat, l1code, 0, lti1, 7, 0, rtcm->obs.data[index].L[0]);
-        rtcm->obs.data[index].SNR[0]=(float)snratio(cnr1*0.25);
-        rtcm->obs.data[index].code[0]=l1code;
+        rtcm->obs.data[index].LLI[freqidx1]=lossoflock(rtcm, sat, l1code, freqidx1, lti1, 7, 0, rtcm->obs.data[index].L[freqidx1]);
+        rtcm->obs.data[index].SNR[freqidx1]=(float)snratio(cnr1*0.25);
     }
     return sync?0:1;
 }
@@ -621,36 +623,42 @@ static int decode_type1004(rtcm_t *rtcm)
         if (fabs(tt)>1E-9) rtcm->obs.n=rtcm->obsflag=0;
         if ((index=obsindex(&rtcm->obs,rtcm->time,sat))<0) continue;
         pr1=pr1*0.02+amb*PRUNIT_GPS;
-        rtcm->obs.data[index].P[0]=pr1;
-        
-        const double freq[2]={FREQL1,FREQL2};
+
         int l1code = code1?CODE_L1P:CODE_L1C;
-        if (ppr1!=(int)0xFFF80000) {
-            double cp1 = ppr1 * 0.0005 * freq[0] / CLIGHT;
+        int freqidx1 = sigindex(rtcm->obs.data + index, SYS_GPS, l1code, rtcm->opt);
+        if (freqidx1 >= 0) {
+          rtcm->obs.data[index].P[freqidx1]=pr1;
+
+          if (ppr1!=(int)0xFFF80000) {
+            double freq1 = code2freq(SYS_GPS, l1code, 0);
+            double cp1 = ppr1 * 0.0005 * freq1 / CLIGHT;
 #ifdef RTK_DISABLED
             cp1 = adjcp(rtcm, sat, l1code, cp1);
 #endif
-            rtcm->obs.data[index].L[0]=pr1*freq[0]/CLIGHT+cp1;
+            rtcm->obs.data[index].L[freqidx1] = pr1 * freq1 / CLIGHT + cp1;
+          }
+          rtcm->obs.data[index].LLI[freqidx1]=lossoflock(rtcm, sat, l1code, freqidx1, lti1, 7, 0, rtcm->obs.data[index].L[freqidx1]);
+          rtcm->obs.data[index].SNR[freqidx1]=(float)snratio(cnr1*0.25);
         }
-        rtcm->obs.data[index].LLI[0]=lossoflock(rtcm, sat, l1code, 0, lti1, 7, 0, rtcm->obs.data[index].L[0]);
-        rtcm->obs.data[index].SNR[0]=(float)snratio(cnr1*0.25);
-        rtcm->obs.data[index].code[0]=l1code;
-        
-        if (pr21!=(int)0xFFFFE000) {
-            rtcm->obs.data[index].P[1]=pr1+pr21*0.02;
-        }
-        const int L2codes[]={CODE_L2X,CODE_L2P,CODE_L2D,CODE_L2W};
-        int l2code=L2codes[code2];
-        if (ppr2!=(int)0xFFF80000) {
-            double cp2 = ppr2 * 0.0005 * freq[1] / CLIGHT;
+
+        const int L2codes[] = {CODE_L2X, CODE_L2P, CODE_L2D, CODE_L2W};
+        int l2code = L2codes[code2];
+        int freqidx2 = sigindex(rtcm->obs.data + index, SYS_GPS, l2code, rtcm->opt);
+        if (freqidx2 >= 0) {
+          if (pr21!=(int)0xFFFFE000) {
+            rtcm->obs.data[index].P[freqidx2]=pr1+pr21*0.02;
+          }
+          if (ppr2!=(int)0xFFF80000) {
+            double freq2 = code2freq(SYS_GPS, l2code, 0);
+            double cp2 = ppr2 * 0.0005 * freq2 / CLIGHT;
 #ifdef RTK_DISABLED
             cp2 = adjcp(rtcm, sat, l2code, cp2);
 #endif
-            rtcm->obs.data[index].L[1]=pr1*freq[1]/CLIGHT+cp2;
+            rtcm->obs.data[index].L[freqidx2] = pr1*freq2 / CLIGHT + cp2;
+          }
+          rtcm->obs.data[index].LLI[freqidx2]=lossoflock(rtcm, sat, l2code, freqidx2, lti2, 7, 0, rtcm->obs.data[index].L[1]);
+          rtcm->obs.data[index].SNR[freqidx2]=(float)snratio(cnr2*0.25);
         }
-        rtcm->obs.data[index].LLI[1]=lossoflock(rtcm, sat, l2code, 1, lti2, 7, 0, rtcm->obs.data[index].L[1]);
-        rtcm->obs.data[index].SNR[1]=(float)snratio(cnr2*0.25);
-        rtcm->obs.data[index].code[1]=l2code;
     }
     rtcm->obsflag=!sync;
     return sync?0:1;
@@ -883,20 +891,21 @@ static int decode_type1010(rtcm_t *rtcm)
         if (fabs(tt)>1E-9) rtcm->obs.n=rtcm->obsflag=0;
         if ((index=obsindex(&rtcm->obs,rtcm->time,sat))<0) continue;
         pr1=pr1*0.02+amb*PRUNIT_GLO;
-        rtcm->obs.data[index].P[0]=pr1;
+        int l1code = code ? CODE_L1P : CODE_L1C;
+        int freqidx1 = sigindex(rtcm->obs.data + index, SYS_GLO, l1code, rtcm->opt);
+        if (freqidx1 < 0) continue;
+        rtcm->obs.data[index].P[freqidx1] = pr1;
         
-        int l1code=code?CODE_L1P:CODE_L1C;
         if (ppr1!=(int)0xFFF80000) {
-            double freq1=code2freq(SYS_GLO,l1code,fcn-7);
+            double freq1 = code2freq(SYS_GLO, l1code, fcn - 7);
             double cp1 = ppr1 * 0.0005 * freq1 / CLIGHT;
 #ifdef RTK_DISABLED
             cp1 = adjcp(rtcm, sat, l1code, cp1);
 #endif
-            rtcm->obs.data[index].L[0]=pr1*freq1/CLIGHT+cp1;
+            rtcm->obs.data[index].L[freqidx1] = pr1 * freq1 / CLIGHT + cp1;
         }
-        rtcm->obs.data[index].LLI[0]=lossoflock(rtcm, sat, l1code, 0, lti1, 7, 0, rtcm->obs.data[index].L[0]);
-        rtcm->obs.data[index].SNR[0]=(float)snratio(cnr1*0.25);
-        rtcm->obs.data[index].code[0]=l1code;
+        rtcm->obs.data[index].LLI[freqidx1]=lossoflock(rtcm, sat, l1code, freqidx1, lti1, 7, 0, rtcm->obs.data[index].L[freqidx1]);
+        rtcm->obs.data[index].SNR[freqidx1]=(float)snratio(cnr1*0.25);
     }
     return sync?0:1;
 }
@@ -911,7 +920,7 @@ static int decode_type1011(rtcm_t *rtcm)
 /* decode type 1012: extended L1&L2 GLONASS RTK observables ------------------*/
 static int decode_type1012(rtcm_t *rtcm)
 {
-    double pr1,cnr1,cnr2,tt,freq1,freq2;
+    double cnr1,cnr2,tt;
     int i=24+61,j,index,nsat,sync,prn,sat,fcn,code1,code2,pr21,ppr1,ppr2;
     int lti1,lti2,amb,sys=SYS_GLO;
     
@@ -926,7 +935,7 @@ static int decode_type1012(rtcm_t *rtcm)
         prn  =getbitu(rtcm->buff,i, 6); i+= 6;
         code1=getbitu(rtcm->buff,i, 1); i+= 1;
         fcn  =getbitu(rtcm->buff,i, 5); i+= 5; /* fcn+7 */
-        pr1  =getbitu(rtcm->buff,i,25); i+=25;
+        double pr1  =getbitu(rtcm->buff,i,25); i+=25;
         ppr1 =getbits(rtcm->buff,i,20); i+=20;
         lti1=getbitu(rtcm->buff,i, 7); i+= 7;
         amb  =getbitu(rtcm->buff,i, 7); i+= 7;
@@ -946,37 +955,41 @@ static int decode_type1012(rtcm_t *rtcm)
         tt=timediff(rtcm->obs.data[0].time,rtcm->time);
         if (fabs(tt)>1E-9) rtcm->obs.n=rtcm->obsflag=0;
         if ((index=obsindex(&rtcm->obs,rtcm->time,sat))<0) continue;
-        pr1=pr1*0.02+amb*PRUNIT_GLO;
-        rtcm->obs.data[index].P[0]=pr1;
+        pr1 = pr1 * 0.02 + amb * PRUNIT_GLO;
+        int l1code = code1?CODE_L1P:CODE_L1C;
+        int freqidx1 = sigindex(rtcm->obs.data + index, SYS_GLO, l1code, rtcm->opt);
+        if (freqidx1 >= 0) {
+          rtcm->obs.data[index].P[freqidx1] = pr1;
         
-        int l1code=code1?CODE_L1P:CODE_L1C;
-        if (ppr1!=(int)0xFFF80000) {
-            freq1=code2freq(SYS_GLO,l1code,fcn-7);
+          if (ppr1 != (int)0xFFF80000) {
+            double freq1 = code2freq(SYS_GLO, l1code, fcn - 7);
             double cp1 = ppr1 * 0.0005 * freq1 / CLIGHT;
 #ifdef RTK_DISABLED
             cp1 = adjcp(rtcm, sat, l1code, cp1);
 #endif
-            rtcm->obs.data[index].L[0]=pr1*freq1/CLIGHT+cp1;
+            rtcm->obs.data[index].L[freqidx1] = pr1 * freq1 / CLIGHT + cp1;
+          }
+          rtcm->obs.data[index].LLI[freqidx1]=lossoflock(rtcm, sat, l1code, freqidx1, lti1, 7, 0, rtcm->obs.data[index].L[freqidx1]);
+          rtcm->obs.data[index].SNR[freqidx1]=(float)snratio(cnr1*0.25);
         }
-        rtcm->obs.data[index].LLI[0]=lossoflock(rtcm, sat, l1code, 0, lti1, 7, 0, rtcm->obs.data[index].L[0]);
-        rtcm->obs.data[index].SNR[0]=(float)snratio(cnr1*0.25);
-        rtcm->obs.data[index].code[0]=l1code;
         
-        if (pr21!=(int)0xFFFFE000) {
-            rtcm->obs.data[index].P[1]=pr1+pr21*0.02;
-        }
-        int l2code=code2?CODE_L2P:CODE_L2C;
-        if (ppr2!=(int)0xFFF80000) {
-            freq2=code2freq(SYS_GLO,l2code,fcn-7);
+        int l2code = code2 ? CODE_L2P : CODE_L2C;
+        int freqidx2 = sigindex(rtcm->obs.data + index, SYS_GLO, l2code, rtcm->opt);
+        if (freqidx2 >= 0) {
+          if (pr21 != (int)0xFFFFE000) {
+            rtcm->obs.data[index].P[freqidx2] = pr1 + pr21 * 0.02;
+          }
+          if (ppr2 != (int)0xFFF80000) {
+            double freq2 = code2freq(SYS_GLO, l2code, fcn - 7);
             double cp2 = ppr2 * 0.0005 * freq2 / CLIGHT;
 #ifdef RTK_DISABLED
             cp2 = adjcp(rtcm, sat, l2code, cp2);
 #endif
-            rtcm->obs.data[index].L[1]=pr1*freq2/CLIGHT+cp2;
+            rtcm->obs.data[index].L[freqidx2] = pr1 * freq2 / CLIGHT + cp2;
+          }
+          rtcm->obs.data[index].LLI[freqidx2] = lossoflock(rtcm, sat, l2code, freqidx2, lti2, 7, 0, rtcm->obs.data[index].L[1]);
+          rtcm->obs.data[index].SNR[freqidx2] = (float)snratio(cnr2 * 0.25);
         }
-        rtcm->obs.data[index].LLI[1]=lossoflock(rtcm, sat, l2code, 1, lti2, 7, 0, rtcm->obs.data[index].L[1]);
-        rtcm->obs.data[index].SNR[1]=(float)snratio(cnr2*0.25);
-        rtcm->obs.data[index].code[1]=l2code;
     }
     rtcm->obsflag=!sync;
     return sync?0:1;
@@ -2348,55 +2361,15 @@ static int decode_ssr8(rtcm_t *rtcm, int subtype)
     trace(3,"ssr8 vtec: nlay=%d\n",nlay);
     return 10;
 }
-/* get signal index ----------------------------------------------------------*/
-static void sigindex(int sys, const uint8_t *code, int n, const char *opt,
-                     int *idx)
-{
-    int i,nex,pri,pri_h[8]={0},index[8]={0},ex[32]={0};
-    
-    /* test code priority */
-    for (i=0;i<n;i++) {
-        if (!code[i]) continue;
-        
-        if (idx[i]>=NFREQ) { /* save as extended signal if idx >= NFREQ */
-            ex[i]=1;
-            continue;
-        }
-        /* code priority */
-        pri=getcodepri(sys,code[i],opt);
-        
-        /* select highest priority signal */
-        if (pri>pri_h[idx[i]]) {
-            if (index[idx[i]]) ex[index[idx[i]]-1]=1;
-            pri_h[idx[i]]=pri;
-            index[idx[i]]=i+1;
-        }
-        else ex[i]=1;
-    }
-    /* signal index in obs data */
-    for (i=nex=0;i<n;i++) {
-        if (ex[i]==0) ;
-        else if (nex<NEXOBS) idx[i]=NFREQ+nex++;
-        else { /* no space in obs data */
-            trace(2,"rtcm msm: no space in obs data sys=%d code=%d\n",sys,code[i]);
-            idx[i]=-1;
-        }
-#ifdef RTK_DISABLED /* for debug */
-        trace(2,"sig pos: sys=%d code=%d ex=%d idx=%d\n",sys,code[i],ex[i],idx[i]);
-#endif
-    }
-}
 /* save obs data in MSM message ----------------------------------------------*/
 static void save_msm_obs(rtcm_t *rtcm, int sys, msm_h_t *h, const double *r,
                          const double *pr, const double *cp, const double *rr,
                          const double *rrf, const double *cnr, const int *lti, int locktype,
                          const int *ex, const int *half)
 {
-    const char *sig[32];
     double tt,freq;
-    uint8_t code[32];
     char *msm_type="",*q=NULL;
-    int i,j,k,type,prn,sat,fcn,index=0,idx[32];
+    int i,j,k,type,prn,sat,fcn,index=0;
     
     type=getbitu(rtcm->buff,24,12);
     
@@ -2410,6 +2383,8 @@ static void save_msm_obs(rtcm_t *rtcm, int sys, msm_h_t *h, const double *r,
         case SYS_IRN: msm_type=q=rtcm->msmtype[6]; break;
     }
     /* id to signal */
+    const char *sig[32];
+    int code[32];
     for (i=0;i<h->nsig;i++) {
         switch (sys) {
             case SYS_GPS: sig[i]=msm_sig_gps[h->sigs[i]-1]; break;
@@ -2423,8 +2398,6 @@ static void save_msm_obs(rtcm_t *rtcm, int sys, msm_h_t *h, const double *r,
         }
         /* signal to rinex obs type */
         code[i]=obs2code(sig[i]);
-        idx[i]=code2idx(sys,code[i]);
-        
         if (code[i]!=CODE_NONE) {
             if (q) q+=sprintf(q,"L%s%s",sig[i],i<h->nsig-1?",":"");
         }
@@ -2435,9 +2408,6 @@ static void save_msm_obs(rtcm_t *rtcm, int sys, msm_h_t *h, const double *r,
         }
     }
     trace(3,"rtcm3 %d: signals=%s\n",type,msm_type);
-    
-    /* get signal index */
-    sigindex(sys,code,h->nsig,rtcm->opt,idx);
     
     for (i=j=0;i<h->nsat;i++) {
         
@@ -2469,29 +2439,30 @@ static void save_msm_obs(rtcm_t *rtcm, int sys, msm_h_t *h, const double *r,
                 fcn=rtcm->nav.glo_fcn[prn-1]-8;
             }
         }
+
         for (k=0;k<h->nsig;k++) {
             if (!h->cellmask[k+i*h->nsig]) continue;
-            
-            if (sat&&index>=0&&idx[k]>=0) {
+            if (code[k] == CODE_NONE) continue;
+            int freqidx = sigindex(rtcm->obs.data + index, sys, code[k], rtcm->opt);
+            if (sat && index >= 0 && freqidx >= 0) {
                 freq=fcn<-7?0.0:code2freq(sys,code[k],fcn);
                 
                 /* pseudorange (m) */
                 if (r[i]!=0.0&&pr[j]>-1E12) {
-                    rtcm->obs.data[index].P[idx[k]]=r[i]+pr[j];
+                    rtcm->obs.data[index].P[freqidx]=r[i]+pr[j];
                 }
                 /* carrier-phase (cycle) */
                 if (r[i]!=0.0&&cp[j]>-1E12) {
-                    rtcm->obs.data[index].L[idx[k]]=(r[i]+cp[j])*freq/CLIGHT;
+                    rtcm->obs.data[index].L[freqidx]=(r[i]+cp[j])*freq/CLIGHT;
                 }
                 /* doppler (hz) */
                 if (rr&&rrf&&rrf[j]>-1E12) {
-                    rtcm->obs.data[index].D[idx[k]]=(float)(-(rr[i]+rrf[j])*freq/CLIGHT);
+                    rtcm->obs.data[index].D[freqidx]=(float)(-(rr[i]+rrf[j])*freq/CLIGHT);
                 }
-                int LLI = lossoflock(rtcm, sat, code[k], idx[k], lti[j], locktype, half[j], rtcm->obs.data[index].L[idx[k]]);
+                int LLI = lossoflock(rtcm, sat, code[k], freqidx, lti[j], locktype, half[j], rtcm->obs.data[index].L[freqidx]);
                 if (r[i] != 0.0 && cp[j] > -1E12 && half[j]) LLI |= LLI_HALFC;
-                rtcm->obs.data[index].LLI[idx[k]]=LLI;
-                rtcm->obs.data[index].SNR[idx[k]]=(float)cnr[j];
-                rtcm->obs.data[index].code[idx[k]]=code[k];
+                rtcm->obs.data[index].LLI[freqidx]=LLI;
+                rtcm->obs.data[index].SNR[freqidx]=(float)cnr[j];
             }
             j++;
         }

@@ -99,8 +99,8 @@ static int is_meas(char sig)
 {
     return sig=='c'||sig=='C'||sig=='1'||sig=='2'||sig=='3'||sig=='5'||sig=='l';
 }
-/* convert signal to freq-index ----------------------------------------------*/
-static int sig2idx(int sys, char sig, int *code)
+/* convert signal to code ----------------------------------------------------*/
+static int sig2code(int sys, char sig)
 {
     const uint8_t codes[7][6]={ /* ref [7] table 3-8 */
         /*  c/C       1        2        3        5        l  */
@@ -113,7 +113,7 @@ static int sig2idx(int sys, char sig, int *code)
         {CODE_L2I,0       ,CODE_L7I,CODE_L6I,CODE_L5X,CODE_L1X}, /* BDS */
         {0       ,0       ,0       ,0       ,CODE_L5X,0       }  /* IRN */
     };
-    int i,j,idx;
+    int i,j;
     
     switch (sig) {
         case 'c':
@@ -135,36 +135,7 @@ static int sig2idx(int sys, char sig, int *code)
         case SYS_IRN: j=6; break;
         default: return -1;
     }
-    if (!(*code=codes[j][i])) return -1;
-    idx=code2idx(sys,(uint8_t)*code);
-    return idx<NFREQ?idx:-1;
-}
-/* check code priority and return freq-index ---------------------------------*/
-static int checkpri(int sys, int code, const char *opt, int idx)
-{
-    int nex=NEXOBS; /* number of extended obs data */
-    
-    if (sys==SYS_GPS) {
-        if (strstr(opt,"-GL1W")&&idx==0) return code==CODE_L1W?0:-1;
-        if (strstr(opt,"-GL1X")&&idx==0) return code==CODE_L1X?0:-1;
-        if (strstr(opt,"-GL2X")&&idx==1) return code==CODE_L2X?1:-1;
-        if (code==CODE_L1W) return nex<1?-1:NFREQ;
-        if (code==CODE_L2X) return nex<2?-1:NFREQ+1;
-        if (code==CODE_L1X) return nex<3?-1:NFREQ+2;
-    }
-    else if (sys==SYS_GLO) {
-        if (strstr(opt,"-RL1P")&&idx==0) return code==CODE_L1P?0:-1;
-        if (strstr(opt,"-RL2C")&&idx==1) return code==CODE_L2C?1:-1;
-        if (code==CODE_L1P) return nex<1?-1:NFREQ;
-        if (code==CODE_L2C) return nex<2?-1:NFREQ+1;
-    }
-    else if (sys==SYS_QZS) {
-        if (strstr(opt,"-JL1Z")&&idx==0) return code==CODE_L1Z?0:-1;
-        if (strstr(opt,"-JL1X")&&idx==0) return code==CODE_L1X?0:-1;
-        if (code==CODE_L1Z) return nex<1?-1:NFREQ;
-        if (code==CODE_L1X) return nex<2?-1:NFREQ+1;
-    }
-    return idx;
+    return codes[j][i];
 }
 /* checksum ------------------------------------------------------------------*/
 static int checksum(uint8_t *buff, int len)
@@ -352,7 +323,7 @@ static int decode_SI(raw_t *raw)
         
         if      (usi<=  0) sat=0;                      /* ref [5] table 3-6 */
         else if (usi<= 37) sat=satno(SYS_GPS,usi);     /*   1- 37: GPS */
-        else if (usi<= 70) sat=255;                    /*  38- 70: GLONASS */
+        else if (usi<= 70) sat=MAXSAT + 1;             /*  38- 70: GLONASS */
         else if (usi<=119) sat=satno(SYS_GAL,usi-70);  /*  71-119: GALILEO */
         else if (usi<=142) sat=satno(SYS_SBS,usi);     /* 120-142: SBAS */
         else if (usi<=192) sat=0;
@@ -366,7 +337,7 @@ static int decode_SI(raw_t *raw)
         raw->obuf.data[i].sat=sat;
         
         /* glonass fcn (frequency channel number) */
-        if (sat==255) raw->freqn[i]=usi-45;
+        if (sat==MAXSAT + 1) raw->freqn[i]=usi-45;
     }
     trace(4,"decode_SI: nsat=raw->obuf.n\n");
     
@@ -388,7 +359,7 @@ static int decode_NN(raw_t *raw)
         return -1;
     }
     for (i=n=0;i<raw->obuf.n&&i<MAXOBS;i++) {
-        if (raw->obuf.data[i].sat==255) index[n++]=i;
+        if (raw->obuf.data[i].sat==MAXSAT + 1) index[n++]=i;
     }
     ns=raw->len-6;
     
@@ -1197,7 +1168,7 @@ static int decode_Rx(raw_t *raw, char sig)
 {
     uint8_t *p=raw->buff+5;
     double pr,prm;
-    int i,idx,code,sat,sys;
+    int i,sat,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1218,14 +1189,13 @@ static int decode_Rx(raw_t *raw, char sig)
         prm=pr*CLIGHT;
         
         if (sig=='C') raw->prCA[sat-1]=prm;
-        
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
-            raw->obuf.data[i].P[idx]=prm;
-            raw->obuf.data[i].code[idx]=code;
-        }
+
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, raw->opt);
+        if (idx < 0) continue;
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
+        raw->obuf.data[i].P[idx]=prm;
     }
     return 0;
 }
@@ -1234,7 +1204,7 @@ static int decode_rx(raw_t *raw, char sig)
 {
     uint8_t *p=raw->buff+5;
     double prm;
-    int i,idx,code,pr,sat,sys;
+    int i,pr,sat,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1265,13 +1235,12 @@ static int decode_rx(raw_t *raw, char sig)
         
         if (sig=='c') raw->prCA[sat-1]=prm;
         
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
-            raw->obuf.data[i].P[idx]=prm;
-            raw->obuf.data[i].code[idx]=(uint8_t)code;
-        }
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, raw->opt);
+        if (idx < 0) continue;
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
+        raw->obuf.data[i].P[idx]=prm;
     }
     return 0;
 }
@@ -1280,7 +1249,7 @@ static int decode_xR(raw_t *raw, char sig)
 {
     uint8_t *p=raw->buff+5;
     float pr;
-    int i,idx,code,sat,sys;
+    int i,sat,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1298,13 +1267,12 @@ static int decode_xR(raw_t *raw, char sig)
         sat=raw->obuf.data[i].sat;
         if (!(sys=satsys(sat,NULL))||raw->prCA[sat-1]==0.0) continue;
         
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
-            raw->obuf.data[i].P[idx]=pr*CLIGHT+raw->prCA[sat-1];
-            raw->obuf.data[i].code[idx]=(uint8_t)code;
-        }
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, raw->opt);
+        if (idx < 0) continue;
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
+        raw->obuf.data[i].P[idx]=pr*CLIGHT+raw->prCA[sat-1];
     }
     return 0;
 }
@@ -1314,7 +1282,7 @@ static int decode_xr(raw_t *raw, char sig)
     uint8_t *p=raw->buff+5;
     double prm;
     int16_t pr;
-    int i,idx,code,sat,sys;
+    int i,sat,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1334,13 +1302,12 @@ static int decode_xr(raw_t *raw, char sig)
         
         prm=(pr*1E-11+2E-7)*CLIGHT+raw->prCA[sat-1];
         
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
-            raw->obuf.data[i].P[idx]=prm;
-            raw->obuf.data[i].code[idx]=(uint8_t)code;
-        }
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, raw->opt);
+        if (idx < 0) continue;
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
+        raw->obuf.data[i].P[idx]=prm;
     }
     return 0;
 }
@@ -1349,7 +1316,7 @@ static int decode_Px(raw_t *raw, char sig)
 {
     uint8_t *p=raw->buff+5;
     double cp;
-    int i,idx,code,sys;
+    int i,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1366,13 +1333,12 @@ static int decode_Px(raw_t *raw, char sig)
         
         if (!(sys=satsys(raw->obuf.data[i].sat,NULL))) continue;
         
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
-            raw->obuf.data[i].L[idx]=cp;
-            raw->obuf.data[i].code[idx]=(uint8_t)code;
-        }
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, raw->opt);
+        if (idx < 0) continue;
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
+        raw->obuf.data[i].L[idx]=cp;
     }
     return 0;
 }
@@ -1381,7 +1347,7 @@ static int decode_px(raw_t *raw, char sig)
 {
     uint8_t *p=raw->buff+5;
     uint32_t cp;
-    int i,idx,code,sys;
+    int i,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1398,13 +1364,12 @@ static int decode_px(raw_t *raw, char sig)
         
         if (!(sys=satsys(raw->obuf.data[i].sat,NULL))) continue;
         
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
-            raw->obuf.data[i].L[idx]=cp/1024.0;
-            raw->obuf.data[i].code[idx]=(uint8_t)code;
-        }
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, raw->opt);
+        if (idx < 0) continue;
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
+        raw->obuf.data[i].L[idx]=cp/1024.0;
     }
     return 0;
 }
@@ -1413,7 +1378,7 @@ static int decode_xP(raw_t *raw, char sig)
 {
     uint8_t *p=raw->buff+5;
     double cp,rcp,freq;
-    int i,idx,code,sat,sys;
+    int i,sat,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1431,17 +1396,16 @@ static int decode_xP(raw_t *raw, char sig)
         sat=raw->obuf.data[i].sat;
         if (!(sys=satsys(sat,NULL))||raw->prCA[sat-1]==0.0) continue;
         
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
-            
-            freq=code2freq(sys,code,raw->freqn[i]);
-            cp=(rcp+raw->prCA[sat-1]/CLIGHT)*freq;
-            
-            raw->obuf.data[i].L[idx]=cp;
-            raw->obuf.data[i].code[idx]=(uint8_t)code;
-        }
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, raw->opt);
+        if (idx < 0) continue;
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
+
+        freq=code2freq(sys,code,raw->freqn[i]);
+        cp=(rcp+raw->prCA[sat-1]/CLIGHT)*freq;
+
+        raw->obuf.data[i].L[idx]=cp;
     }
     return 0;
 }
@@ -1450,7 +1414,7 @@ static int decode_xp(raw_t *raw, char sig)
 {
     uint8_t *p=raw->buff+5;
     double cp,freq;
-    int i,idx,code,rcp,sat,sys;
+    int i,rcp,sat,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1468,17 +1432,16 @@ static int decode_xp(raw_t *raw, char sig)
         sat=raw->obuf.data[i].sat;
         if (!(sys=satsys(sat,NULL))||raw->prCA[sat-1]==0.0) continue;
         
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, raw->opt);
+        if (idx < 0) continue;
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
             
-            freq=code2freq(sys,(uint8_t)code,raw->freqn[i]);
-            cp=(rcp*P2_40+raw->prCA[sat-1]/CLIGHT)*freq;
+        freq=code2freq(sys,(uint8_t)code,raw->freqn[i]);
+        cp=(rcp*P2_40+raw->prCA[sat-1]/CLIGHT)*freq;
             
-            raw->obuf.data[i].L[idx]=cp;
-            raw->obuf.data[i].code[idx]=(uint8_t)code;
-        }
+        raw->obuf.data[i].L[idx]=cp;
     }
     return 0;
 }
@@ -1487,7 +1450,7 @@ static int decode_Dx(raw_t *raw, char sig)
 {
     uint8_t *p=raw->buff+5;
     double dop;
-    int i,idx,code,dp,sat,sys;
+    int i,dp,sat,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1509,12 +1472,12 @@ static int decode_Dx(raw_t *raw, char sig)
         
         if (sig=='C') raw->dpCA[sat-1]=dop;
         
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
-            raw->obuf.data[i].D[idx]=(float)dop;
-        }
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, NULL);
+        if (idx < 0) continue;
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
+        raw->obuf.data[i].D[idx]=(float)dop;
     }
     return 0;
 }
@@ -1524,7 +1487,7 @@ static int decode_xd(raw_t *raw, char sig)
     uint8_t *p=raw->buff+5;
     double dop,f1,fn;
     int16_t rdp;
-    int i,idx,code,sat,sys;
+    int i,sat,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1542,16 +1505,16 @@ static int decode_xd(raw_t *raw, char sig)
         sat=raw->obuf.data[i].sat;
         if (!(sys=satsys(sat,NULL))||raw->dpCA[sat-1]==0.0) continue;
         
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
-            f1=code2freq(sys,CODE_L1X,raw->freqn[i]);
-            fn=code2freq(sys,code    ,raw->freqn[i]);
-            dop=(-rdp+raw->dpCA[sat-1]*1E4)*fn/f1*1E-4;
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, NULL);
+        if (idx < 0) continue;
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
+        f1=code2freq(sys,CODE_L1X,raw->freqn[i]);
+        fn=code2freq(sys,code    ,raw->freqn[i]);
+        dop=(-rdp+raw->dpCA[sat-1]*1E4)*fn/f1*1E-4;
             
-            raw->obuf.data[i].D[idx]=(float)dop;
-        }
+        raw->obuf.data[i].D[idx]=(float)dop;
     }
     return 0;
 }
@@ -1560,7 +1523,7 @@ static int decode_Ex(raw_t *raw, char sig)
 {
     uint8_t *p=raw->buff+5;
     uint8_t cnr;
-    int i,idx,code,sys;
+    int i,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1577,12 +1540,12 @@ static int decode_Ex(raw_t *raw, char sig)
         
         if (!(sys=satsys(raw->obuf.data[i].sat,NULL))) continue;
         
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
-            raw->obuf.data[i].SNR[idx]=(float)cnr;
-        }
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, NULL);
+        if (idx < 0) continue;
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
+        raw->obuf.data[i].SNR[idx]=(float)cnr;
     }
     return 0;
 }
@@ -1591,7 +1554,7 @@ static int decode_xE(raw_t *raw, char sig)
 {
     uint8_t *p=raw->buff+5;
     uint8_t cnr;
-    int i,idx,code,sys;
+    int i,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1608,12 +1571,12 @@ static int decode_xE(raw_t *raw, char sig)
         
         if (!(sys=satsys(raw->obuf.data[i].sat,NULL))) continue;
         
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
-            raw->obuf.data[i].SNR[idx]=(float)(cnr*0.25);
-        }
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, NULL);
+        if (idx < 0) continue;
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
+        raw->obuf.data[i].SNR[idx]=(float)(cnr*0.25);
     }
     return 0;
 }
@@ -1622,7 +1585,7 @@ static int decode_Fx(raw_t *raw, char sig)
 {
     uint8_t *p=raw->buff+5;
     uint16_t flags;
-    int i,idx,code,sat,sys;
+    int i,sat,sys;
     
     if (!is_meas(sig)||raw->tod<0||raw->obuf.n==0) return 0;
     
@@ -1640,19 +1603,20 @@ static int decode_Fx(raw_t *raw, char sig)
         sat=raw->obuf.data[i].sat;
         if (!(sys=satsys(sat,NULL))) continue;
         
-        if ((idx=sig2idx(sys,sig,&code))<0) continue;
-        
-        if ((idx=checkpri(sys,code,raw->opt,idx))>=0) {
-            if (!settag(raw->obuf.data+i,raw->time)) continue;
+        int code = sig2code(sys, sig);
+        if (code == CODE_NONE) continue;
+        int idx = sigindex(raw->obuf.data + i, sys, code, NULL);
+        if (idx < 0) continue;
+
+        if (!settag(raw->obuf.data+i,raw->time)) continue;
 #ifdef RTK_DISABLED /* disable to suppress overdetection of cycle-slips */
-            if (flags&0x20) { /* loss-of-lock potential */
-                raw->obuf.data[i].LLI[idx]|=1;
-            }
-            if (!(flags&0x40)||!(flags&0x100)) { /* integral indicator */
-                raw->obuf.data[i].LLI[idx]|=2;
-            }
-#endif
+        if (flags&0x20) { /* loss-of-lock potential */
+          raw->obuf.data[i].LLI[idx]|=1;
         }
+        if (!(flags&0x40)||!(flags&0x100)) { /* integral indicator */
+          raw->obuf.data[i].LLI[idx]|=2;
+        }
+#endif
     }
     return 0;
 }

@@ -124,7 +124,8 @@ static int decode_cresraw(raw_t *raw)
         word1=U4(p  );
         word2=I4(p+4);
         if ((prn=word1&0xFF)==0) continue; /* if 0, no data */
-        if (!(sat=satno(prn<=MAXPRNGPS?SYS_GPS:SYS_SBS,prn))) {
+        int sys = prn <= MAXPRNGPS ? SYS_GPS : SYS_SBS;
+        if (!(sat=satno(sys,prn))) {
             trace(2,"creasent bin 96 satellite number error: prn=%d\n",prn);
             continue;
         }
@@ -139,22 +140,24 @@ static int decode_cresraw(raw_t *raw)
         }
         raw->lockt[sat-1][0]=(uint8_t)sc;
         dop=word2/16/4096.0;
-        
-        raw->obs.data[n].time=time;
-        raw->obs.data[n].sat =sat;
-        raw->obs.data[n].P[0]=pr;
-        raw->obs.data[n].L[0]=cp*freq/CLIGHT;
-        raw->obs.data[n].D[0]=-(float)(dop*freq/CLIGHT);
-        raw->obs.data[n].SNR[0]=(float)snr;
-        raw->obs.data[n].LLI[0]=(uint8_t)lli;
-        raw->obs.data[n].code[0]=CODE_L1C;
-        
-        for (j=1;j<NFREQ;j++) {
+
+        for (j=0;j<NFREQ;j++) {
             raw->obs.data[n].L[j]=raw->obs.data[n].P[j]=0.0;
             raw->obs.data[n].D[j]=raw->obs.data[n].SNR[j]=0.0;
             raw->obs.data[n].LLI[j]=0;
             raw->obs.data[n].code[j]=CODE_NONE;
         }
+        raw->obs.data[n].time=time;
+        raw->obs.data[n].sat =sat;
+        int code = CODE_L1C;
+        int idx = sigindex(raw->obs.data + n, sys, code, raw->opt);
+        if (idx < 0) continue;
+        raw->obs.data[n].P[idx]=pr;
+        raw->obs.data[n].L[idx]=cp*freq/CLIGHT;
+        raw->obs.data[n].D[idx]=-(float)(dop*freq/CLIGHT);
+        raw->obs.data[n].SNR[idx]=(float)snr;
+        raw->obs.data[n].LLI[idx]=(uint8_t)lli;
+
         n++;
     }
     raw->time=time;
@@ -192,7 +195,8 @@ static int decode_cresraw2(raw_t *raw)
     for (i=0,p+=16;i<15&&n<MAXOBS;i++) {
         word1=U4(p+324+4*i); /* L1CACodeMSBsPRN */
         if ((prn=word1&0xFF)==0) continue; /* if 0, no data */
-        if (!(sat=satno(prn<=MAXPRNGPS?SYS_GPS:SYS_SBS,prn))) {
+        int sys = prn <= MAXPRNGPS ? SYS_GPS : SYS_SBS;
+        if (!(sat=satno(sys,prn))) {
             trace(2,"creasent bin 76 satellite number error: prn=%d\n",prn);
             continue;
         }
@@ -249,24 +253,36 @@ static int decode_cresraw2(raw_t *raw)
             }
             else cp[1]=0.0;
         }
+
+        for (j=0;j<NFREQ;j++) {
+            raw->obs.data[n].L[j]=raw->obs.data[n].P[j]=0.0;
+            raw->obs.data[n].D[j]=raw->obs.data[n].SNR[j]=0.0f;
+            raw->obs.data[n].LLI[j]=0;
+            raw->obs.data[n].code[j]=CODE_NONE;
+        }
         raw->obs.data[n].time=time;
         raw->obs.data[n].sat =sat;
-        for (j=0;j<NFREQ;j++) {
-            if (j==0||(j==1&&i<12)) {
-                raw->obs.data[n].P[j]=pr[j]==0.0?0.0:pr[j]-toff;
-                raw->obs.data[n].L[j]=cp[j]==0.0?0.0:cp[j]-toff*freq[j]/CLIGHT;
-                raw->obs.data[n].D[j]=-(float)dop[j];
-                raw->obs.data[n].SNR[j]=(float)snr[j];
-                raw->obs.data[n].LLI[j]=(uint8_t)lli[j];
-                raw->obs.data[n].code[j]=j==0?CODE_L1C:CODE_L2P;
-            }
-            else {
-                raw->obs.data[n].L[j]=raw->obs.data[n].P[j]=0.0;
-                raw->obs.data[n].D[j]=raw->obs.data[n].SNR[j]=0.0f;
-                raw->obs.data[n].LLI[j]=0;
-                raw->obs.data[n].code[j]=CODE_NONE;
-            }
+        int code1 = CODE_L1C;
+        int idx1 = sigindex(raw->obs.data + n, sys, code1, raw->opt);
+        if (idx1 >= 0) {
+          raw->obs.data[n].P[idx1]=pr[0]==0.0?0.0:pr[0]-toff;
+          raw->obs.data[n].L[idx1]=cp[0]==0.0?0.0:cp[0]-toff*freq[0]/CLIGHT;
+          raw->obs.data[n].D[idx1]=-(float)dop[0];
+          raw->obs.data[n].SNR[idx1]=(float)snr[0];
+          raw->obs.data[n].LLI[idx1]=(uint8_t)lli[0];
         }
+        if (i < 12) {
+          int code2 = CODE_L2P;
+          int idx2 = sigindex(raw->obs.data + n, sys, code2, raw->opt);
+          if (idx2 >= 0) {
+            raw->obs.data[n].P[idx2]=pr[1]==0.0?0.0:pr[1]-toff;
+            raw->obs.data[n].L[idx2]=cp[1]==0.0?0.0:cp[1]-toff*freq[1]/CLIGHT;
+            raw->obs.data[n].D[idx2]=-(float)dop[1];
+            raw->obs.data[n].SNR[idx2]=(float)snr[1];
+            raw->obs.data[n].LLI[idx2]=(uint8_t)lli[1];
+          }
+        }
+
         n++;
     }
     raw->time=time;
@@ -395,7 +411,8 @@ static int decode_cresgloraw(raw_t *raw)
     for (i=0,p+=16;i<12&&n<MAXOBS;i++) {
         word1=U4(p+288+4*i); /* L1CACodeMSBsSlot */
         if ((prn=word1&0xFF)==0) continue; /* if 0, no data */
-        if (!(sat=satno(SYS_GLO,prn))) {
+        int sys = SYS_GLO;
+        if (!(sat=satno(sys,prn))) {
             trace(2,"creasent bin 66 satellite number error: prn=%d\n",prn);
             continue;
         }
@@ -454,23 +471,34 @@ static int decode_cresgloraw(raw_t *raw)
             if      (cp[1]-pr[1]*freq[1]/CLIGHT<-4096.0) cp[1]+=8192.0;
             else if (cp[1]-pr[1]*freq[1]/CLIGHT> 4096.0) cp[1]-=8192.0;
         }
+
+        for (j=0;j<NFREQ;j++) {
+            raw->obs.data[n].L[j]=raw->obs.data[n].P[j]=0.0;
+            raw->obs.data[n].D[j]=raw->obs.data[n].SNR[j]=0.0f;
+            raw->obs.data[n].LLI[j]=0;
+            raw->obs.data[n].code[j]=CODE_NONE;
+        }
         raw->obs.data[n].time=time;
         raw->obs.data[n].sat =sat;
-        for (j=0;j<NFREQ;j++) {
-            if (j==0||(j==1&&i<12)) {
-                raw->obs.data[n].P[j]=pr[j]==0.0?0.0:pr[j]-toff;
-                raw->obs.data[n].L[j]=cp[j]==0.0?0.0:cp[j]-toff*freq[j]/CLIGHT;
-                raw->obs.data[n].D[j]=-(float)dop[j];
-                raw->obs.data[n].SNR[j]=(float)snr[j];
-                raw->obs.data[n].LLI[j]=(uint8_t)lli[j];
-                raw->obs.data[n].code[j]=j==0?CODE_L1C:CODE_L2P;
-            }
-            else {
-                raw->obs.data[n].L[j]=raw->obs.data[n].P[j]=0.0;
-                raw->obs.data[n].D[j]=raw->obs.data[n].SNR[j]=0.0f;
-                raw->obs.data[n].LLI[j]=0;
-                raw->obs.data[n].code[j]=CODE_NONE;
-            }
+        int code1 = CODE_L1C;
+        int idx1 = sigindex(raw->obs.data + n, sys, code1, raw->opt);
+        if (idx1 >= 0) {
+          raw->obs.data[n].P[idx1]=pr[0]==0.0?0.0:pr[0]-toff;
+          raw->obs.data[n].L[idx1]=cp[0]==0.0?0.0:cp[0]-toff*freq[0]/CLIGHT;
+          raw->obs.data[n].D[idx1]=-(float)dop[0];
+          raw->obs.data[n].SNR[idx1]=(float)snr[0];
+          raw->obs.data[n].LLI[idx1]=(uint8_t)lli[0];
+        }
+        if (i < 12) {
+          int code2 = CODE_L2P;
+          int idx2 = sigindex(raw->obs.data + n, sys, code2, raw->opt);
+          if (idx2 >= 0) {
+            raw->obs.data[n].P[idx2]=pr[1]==0.0?0.0:pr[1]-toff;
+            raw->obs.data[n].L[idx2]=cp[1]==0.0?0.0:cp[1]-toff*freq[1]/CLIGHT;
+            raw->obs.data[n].D[idx2]=-(float)dop[1];
+            raw->obs.data[n].SNR[idx2]=(float)snr[1];
+            raw->obs.data[n].LLI[idx2]=(uint8_t)lli[1];
+          }
         }
         n++;
     }

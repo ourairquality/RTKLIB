@@ -267,31 +267,35 @@ static int decode_stqraw(raw_t *raw)
         cp1=!(ind&4)?0.0:R8(p+10);
         cp1-=floor((cp1+1E9)/2E9)*2E9; /* -10^9 < cp1 < 10^9 */
         
-        raw->obs.data[n].P[0]=pr1;
-        raw->obs.data[n].L[0]=cp1;
-        raw->obs.data[n].D[0]=!(ind&2)?0.0f:(float)R4(p+18);
-        raw->obs.data[n].SNR[0]=U1(p+1);
-        raw->obs.data[n].LLI[0]=0;
-        raw->obs.data[n].code[0]=sys==SYS_CMP?CODE_L2I:CODE_L1C;
-        
-        raw->lockt[sat-1][0]=ind&8?1:0; /* cycle slip */
-        
-        if (raw->obs.data[n].L[0]!=0.0) {
-            raw->obs.data[n].LLI[0]=(uint8_t)raw->lockt[sat-1][0];
-            raw->lockt[sat-1][0]=0;
-        }
-        /* receiver dependent options */
-        if (strstr(raw->opt,"-INVCP")) {
-            raw->obs.data[n].L[0]*=-1.0;
-        }
-        raw->obs.data[n].time=raw->time;
-        raw->obs.data[n].sat =sat;
-        
-        for (j=1;j<NFREQ+NEXOBS;j++) {
+        int code = (sys & SYS_CMP) ? CODE_L2I : CODE_L1C;
+        for (j=0;j<NFREQ+NEXOBS;j++) {
             raw->obs.data[n].L[j]=raw->obs.data[n].P[j]=0.0;
             raw->obs.data[n].D[j]=raw->obs.data[n].SNR[j]=0.0f;
             raw->obs.data[n].LLI[j]=0;
             raw->obs.data[n].code[j]=CODE_NONE;
+        }
+        raw->obs.data[n].time = raw->time;
+        raw->obs.data[n].sat = sat;
+        int idx = sigindex(raw->obs.data + n, sys, code, raw->opt);
+        if (idx < 0) {
+            trace(2,"stq raw signal error: sat=%2d code=%d\n", sat, code);
+            continue;
+        }
+        raw->obs.data[n].P[idx]=pr1;
+        raw->obs.data[n].L[idx]=cp1;
+        raw->obs.data[n].D[idx]=!(ind&2)?0.0f:(float)R4(p+18);
+        raw->obs.data[n].SNR[idx]=U1(p+1);
+        raw->obs.data[n].LLI[idx]=0;
+        
+        raw->lockt[sat-1][idx]=ind&8?1:0; /* cycle slip */
+        
+        if (raw->obs.data[n].L[idx]!=0.0) {
+            raw->obs.data[n].LLI[idx]=(uint8_t)raw->lockt[sat-1][idx];
+            raw->lockt[sat-1][idx]=0;
+        }
+        /* receiver dependent options */
+        if (strstr(raw->opt,"-INVCP")) {
+            raw->obs.data[n].L[idx]*=-1.0;
         }
         n++;
     }
@@ -303,7 +307,7 @@ static int decode_stqrawx(raw_t *raw)
 {
     uint8_t *p=raw->buff+4;
     double tow,peri,pr1,cp1;
-    int i,j,k,ver,week,nsat,sys,sig,prn,sat,n=0,idx;
+    int i,j,k,ver,week,nsat,sys,prn,sat,n=0;
 
     trace(4,"decode_stqraw: len=%d\n",raw->len);
     
@@ -324,8 +328,7 @@ static int decode_stqrawx(raw_t *raw)
     }
     for (i=0,p+=14;i<nsat&&i<MAXOBS;i++,p+=31) {
         sys = sky_sys(U1(p)&0xF);
-        sig = sky_sig(sys,(U1(p)>>4)&0xF);
-        idx=code2idx(sys,sig);
+        int code = sky_sig(sys,(U1(p)>>4)&0xF);
         prn=U1(p+1);
         if (!(sat=satno(sys,prn))) {
             trace(2,"stq raw satellite number error: sys=%d prn=%d\n",sys,prn);
@@ -355,12 +358,16 @@ static int decode_stqrawx(raw_t *raw)
             }
             n++;
         }
+        int idx = sigindex(raw->obs.data + j, sys, code, raw->opt);
+        if (idx < 0) {
+            trace(2, "stq raw signal error: sat=%2d code=%d\n", sat, code);
+            continue;
+        }
         raw->obs.data[j].P[idx]=pr1;
         raw->obs.data[j].L[idx]=cp1;
         raw->obs.data[j].D[idx]=!(ind&2)?0.0f:(float)R4(p+20);
         raw->obs.data[j].SNR[idx]=U1(p+3);
         raw->obs.data[j].LLI[idx]=0;
-        raw->obs.data[j].code[idx]=sig;
 
         raw->lockt[sat-1][idx]=ind&8?1:0; /* cycle slip */
 
