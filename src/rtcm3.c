@@ -488,7 +488,12 @@ static int decode_type1002(rtcm_t *rtcm)
     int i=24+64,j,index,nsat,sync,prn,code,sat,ppr1,lti1,amb,sys;
     
     if ((nsat=decode_head1001(rtcm,&sync))<0) return -1;
-    
+
+    if (strstr(rtcm->opt, "-MSM")) {
+      rtcm->obsflag = !sync;
+      return sync ? 0 : 1;
+    }
+
     for (j=0;j<nsat&&i+74<=rtcm->len*8;j++) {
         prn  =getbitu(rtcm->buff,i, 6); i+= 6;
         code =getbitu(rtcm->buff,i, 1); i+= 1;
@@ -541,7 +546,12 @@ static int decode_type1004(rtcm_t *rtcm)
     int lti1,lti2,amb,sys;
     
     if ((nsat=decode_head1001(rtcm,&sync))<0) return -1;
-    
+
+    if (strstr(rtcm->opt, "-MSM")) {
+      rtcm->obsflag = !sync;
+      return sync ? 0 : 1;
+    }
+
     for (j=0;j<nsat&&i+125<=rtcm->len*8;j++) {
         prn  =getbitu(rtcm->buff,i, 6); i+= 6;
         code1=getbitu(rtcm->buff,i, 1); i+= 1;
@@ -799,7 +809,12 @@ static int decode_type1010(rtcm_t *rtcm)
     int i=24+61,j,index,nsat,sync,prn,sat,code,fcn,ppr1,lti1,amb,sys=SYS_GLO;
     
     if ((nsat=decode_head1009(rtcm,&sync))<0) return -1;
-    
+
+    if (strstr(rtcm->opt, "-MSM")) {
+      rtcm->obsflag = !sync;
+      return sync ? 0 : 1;
+    }
+
     for (j=0;j<nsat&&i+79<=rtcm->len*8;j++) {
         prn  =getbitu(rtcm->buff,i, 6); i+= 6;
         code =getbitu(rtcm->buff,i, 1); i+= 1;
@@ -850,7 +865,12 @@ static int decode_type1012(rtcm_t *rtcm)
     int lti1,lti2,amb,sys=SYS_GLO;
     
     if ((nsat=decode_head1009(rtcm,&sync))<0) return -1;
-    
+
+    if (strstr(rtcm->opt, "-MSM")) {
+      rtcm->obsflag = !sync;
+      return sync ? 0 : 1;
+    }
+
     for (j=0;j<nsat&&i+130<=rtcm->len*8;j++) {
         prn  =getbitu(rtcm->buff,i, 6); i+= 6;
         code1=getbitu(rtcm->buff,i, 1); i+= 1;
@@ -2451,6 +2471,11 @@ static int decode_msm4(rtcm_t *rtcm, int sys)
         rtcm->obsflag=!sync;  /* header ok, so return sync bit */
         return sync?0:1;
     }
+    if (strstr(rtcm->opt, "-NOMSM4")) {
+      rtcm->obsflag = !sync;
+      return sync ? 0 : 1;
+    }
+
     for (j=0;j<h.nsat;j++) r[j]=0.0;
     for (j=0;j<ncell;j++) pr[j]=cp[j]=-1E16;
     
@@ -2505,6 +2530,10 @@ static int decode_msm5(rtcm_t *rtcm, int sys)
               ncell,rtcm->len);
         rtcm->obsflag=!sync;  /* header ok, so return sync bit */
         return sync?0:1;
+    }
+    if (strstr(rtcm->opt, "-NOMSM5")) {
+      rtcm->obsflag = !sync;
+      return sync ? 0 : 1;
     }
     for (j=0;j<h.nsat;j++) {
         r[j]=rr[j]=0.0; ex[j]=15;
@@ -2573,6 +2602,10 @@ static int decode_msm6(rtcm_t *rtcm, int sys)
         rtcm->obsflag=!sync;  /* header ok, so return sync bit */
         return sync?0:1;
     }
+    if (strstr(rtcm->opt, "-NOMSM6")) {
+      rtcm->obsflag = !sync;
+      return sync ? 0 : 1;
+    }
     for (j=0;j<h.nsat;j++) r[j]=0.0;
     for (j=0;j<ncell;j++) pr[j]=cp[j]=-1E16;
     
@@ -2627,6 +2660,10 @@ static int decode_msm7(rtcm_t *rtcm, int sys)
               ncell,rtcm->len);
         rtcm->obsflag=!sync;  /* header ok, so return sync bit */
         return sync?0:1;
+    }
+    if (strstr(rtcm->opt, "-NOMSM7")) {
+      rtcm->obsflag = !sync;
+      return sync ? 0 : 1;
     }
     for (j=0;j<h.nsat;j++) {
         r[j]=rr[j]=0.0; ex[j]=15;
