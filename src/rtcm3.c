@@ -199,14 +199,20 @@ static void adjday_glot(rtcm_t *rtcm, double tod)
     rtcm->time=utc2gpst(timeadd(time,-10800.0));
 }
 /* adjust carrier-phase rollover ---------------------------------------------*/
-static double adjcp(rtcm_t *rtcm, int sat, int code, double cp)
-{
-    if (rtcm->cp[sat-1][code]==0.0) ;
-    else if (cp<rtcm->cp[sat-1][code]-750.0) cp+=1500.0;
-    else if (cp>rtcm->cp[sat-1][code]+750.0) cp-=1500.0;
-    rtcm->cp[sat-1][code]=cp;
+#ifdef RTK_DISABLED
+// See the comments in rtcm3e.cpp for cp_pr(), the offset of 1500 leaves it
+// out of range of the encoding.
+static double adjcp(rtcm_t *rtcm, int sat, int code, double cp) {
+    if (rtcm->cp[sat - 1][code] == 0.0)
+      ;
+    else if (cp < rtcm->cp[sat - 1][code] - 750.0)
+      cp += 1500.0;
+    else if (cp > rtcm->cp[sat - 1][code] + 750.0)
+      cp -= 1500.0;
+    rtcm->cp[sat - 1][code] = cp;
     return cp;
 }
+#endif
 
 // Convert a RTCM 7 bit lock time indicator into the time in seconds.
 // Optionally return the range scale per index increment which can also give
@@ -521,7 +527,10 @@ static int decode_type1002(rtcm_t *rtcm)
         int l1code = code ? CODE_L1P : CODE_L1C;
         if (ppr1!=(int)0xFFF80000) {
             double freq=FREQL1;
-            double cp1=adjcp(rtcm,sat,l1code,ppr1*0.0005*freq/CLIGHT);
+            double cp1 = ppr1 * 0.0005 * freq / CLIGHT;
+#ifdef RTK_DISABLED
+            cp1 = adjcp(rtcm, sat, l1code, cp1);
+#endif
             rtcm->obs.data[index].L[0]=pr1*freq/CLIGHT+cp1;
         }
         rtcm->obs.data[index].LLI[0]=lossoflock(rtcm, sat, l1code, 0, lti1, 7, 0, rtcm->obs.data[index].L[0]);
@@ -584,7 +593,10 @@ static int decode_type1004(rtcm_t *rtcm)
         const double freq[2]={FREQL1,FREQL2};
         int l1code = code1?CODE_L1P:CODE_L1C;
         if (ppr1!=(int)0xFFF80000) {
-            double cp1=adjcp(rtcm,sat,l1code,ppr1*0.0005*freq[0]/CLIGHT);
+            double cp1 = ppr1 * 0.0005 * freq[0] / CLIGHT;
+#ifdef RTK_DISABLED
+            cp1 = adjcp(rtcm, sat, l1code, cp1);
+#endif
             rtcm->obs.data[index].L[0]=pr1*freq[0]/CLIGHT+cp1;
         }
         rtcm->obs.data[index].LLI[0]=lossoflock(rtcm, sat, l1code, 0, lti1, 7, 0, rtcm->obs.data[index].L[0]);
@@ -597,7 +609,10 @@ static int decode_type1004(rtcm_t *rtcm)
         const int L2codes[]={CODE_L2X,CODE_L2P,CODE_L2D,CODE_L2W};
         int l2code=L2codes[code2];
         if (ppr2!=(int)0xFFF80000) {
-            double cp2=adjcp(rtcm,sat,l2code,ppr2*0.0005*freq[1]/CLIGHT);
+            double cp2 = ppr2 * 0.0005 * freq[1] / CLIGHT;
+#ifdef RTK_DISABLED
+            cp2 = adjcp(rtcm, sat, l2code, cp2);
+#endif
             rtcm->obs.data[index].L[1]=pr1*freq[1]/CLIGHT+cp2;
         }
         rtcm->obs.data[index].LLI[1]=lossoflock(rtcm, sat, l2code, 1, lti2, 7, 0, rtcm->obs.data[index].L[1]);
@@ -840,7 +855,10 @@ static int decode_type1010(rtcm_t *rtcm)
         int l1code=code?CODE_L1P:CODE_L1C;
         if (ppr1!=(int)0xFFF80000) {
             double freq1=code2freq(SYS_GLO,l1code,fcn-7);
-            double cp1=adjcp(rtcm,sat,l1code,ppr1*0.0005*freq1/CLIGHT);
+            double cp1 = ppr1 * 0.0005 * freq1 / CLIGHT;
+#ifdef RTK_DISABLED
+            cp1 = adjcp(rtcm, sat, l1code, cp1);
+#endif
             rtcm->obs.data[index].L[0]=pr1*freq1/CLIGHT+cp1;
         }
         rtcm->obs.data[index].LLI[0]=lossoflock(rtcm, sat, l1code, 0, lti1, 7, 0, rtcm->obs.data[index].L[0]);
@@ -860,7 +878,7 @@ static int decode_type1011(rtcm_t *rtcm)
 /* decode type 1012: extended L1&L2 GLONASS RTK observables ------------------*/
 static int decode_type1012(rtcm_t *rtcm)
 {
-    double pr1,cnr1,cnr2,tt,cp1,cp2,freq1,freq2;
+    double pr1,cnr1,cnr2,tt,freq1,freq2;
     int i=24+61,j,index,nsat,sync,prn,sat,fcn,code1,code2,pr21,ppr1,ppr2;
     int lti1,lti2,amb,sys=SYS_GLO;
     
@@ -901,7 +919,10 @@ static int decode_type1012(rtcm_t *rtcm)
         int l1code=code1?CODE_L1P:CODE_L1C;
         if (ppr1!=(int)0xFFF80000) {
             freq1=code2freq(SYS_GLO,l1code,fcn-7);
-            cp1=adjcp(rtcm,sat,l1code,ppr1*0.0005*freq1/CLIGHT);
+            double cp1 = ppr1 * 0.0005 * freq1 / CLIGHT;
+#ifdef RTK_DISABLED
+            cp1 = adjcp(rtcm, sat, l1code, cp1);
+#endif
             rtcm->obs.data[index].L[0]=pr1*freq1/CLIGHT+cp1;
         }
         rtcm->obs.data[index].LLI[0]=lossoflock(rtcm, sat, l1code, 0, lti1, 7, 0, rtcm->obs.data[index].L[0]);
@@ -914,7 +935,10 @@ static int decode_type1012(rtcm_t *rtcm)
         int l2code=code2?CODE_L2P:CODE_L2C;
         if (ppr2!=(int)0xFFF80000) {
             freq2=code2freq(SYS_GLO,l2code,fcn-7);
-            cp2=adjcp(rtcm,sat,l2code,ppr2*0.0005*freq2/CLIGHT);
+            double cp2 = ppr2 * 0.0005 * freq2 / CLIGHT;
+#ifdef RTK_DISABLED
+            cp2 = adjcp(rtcm, sat, l2code, cp2);
+#endif
             rtcm->obs.data[index].L[1]=pr1*freq2/CLIGHT+cp2;
         }
         rtcm->obs.data[index].LLI[1]=lossoflock(rtcm, sat, l2code, 1, lti2, 7, 0, rtcm->obs.data[index].L[1]);

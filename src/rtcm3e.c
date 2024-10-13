@@ -267,107 +267,158 @@ static int to_code2_glo(uint8_t code)
     }
     return 0;
 }
-/* carrier-phase - pseudorange in cycle --------------------------------------*/
-static double cp_pr(double cp, double pr_cyc)
-{
-    return fmod(cp-pr_cyc+750.0,1500.0)-750.0;
+// Carrier-phase - pseudorange in cycle --------------------------------------
+//
+#ifdef RTK_DISABLED
+// The intention here appears to be to roll over the value in steps of 1500
+// cycles, to keep the value within range. However for the L1 frequency 1500
+// cycles is 285.44m and for L2 is 366.32m, whereas the range is +-262.1435m
+// (524287 * 0.0005m), so this step can still leave it out of bounds. At L1
+// the limit would be around 1377.6 cycles and at L2 around 1073.4 cycles. The
+// consumer would appear to expect jumps of 1500 cycles so using a smaller
+// sized jump would not work for a smooth rollover. Perhaps this design has
+// been misunderstood here. Just give up if out of bounds and send the invalid
+// value. Have only noted this as an issue on distant SBAS satellites. Might
+// another alternative be to use a smaller step and flag a slip?  In contrast
+// the MSM range is around 1171m.
+//
+static double cp_pr(double cp, double pr_cyc) {
+  return fmod(cp - pr_cyc + 750.0, 1500.0) - 750.0;
 }
-/* generate obs field data GPS -----------------------------------------------*/
-static void gen_obs_gps(rtcm_t *rtcm, const obsd_t *data, int *gcode1, int *pr1,
-                        int *ppr1, int *lock1, int *amb, int *cnr1, int *gcode2,
-                        int *pr21, int *ppr2, int *lock2, int *cnr2)
-{
-    double lam1,lam2,pr1c=0.0,ppr;
-    
-    lam1=CLIGHT/FREQL1;
-    lam2=CLIGHT/FREQL2;
-    *pr1=*amb=0;
-    if (ppr1) *ppr1=0xFFF80000; /* invalid values */
-    if (pr21) *pr21=0xFFFFE000;
-    if (ppr2) *ppr2=0xFFF80000;
-    
-    /* L1 peudorange */
-    int code0 = data->code[0];
-    if (data->P[0]!=0.0&&code0) {
-        *amb=(int)floor(data->P[0]/PRUNIT_GPS);
-        *pr1=ROUND((data->P[0]-*amb*PRUNIT_GPS)/0.02);
-        pr1c=*pr1*0.02+*amb*PRUNIT_GPS;
-    }
-    /* L1 phaserange - L1 pseudorange */
-    if (data->P[0]!=0.0&&data->L[0]!=0.0&&code0) {
-        ppr=cp_pr(data->L[0],pr1c/lam1);
-        if (ppr1) *ppr1=ROUND(ppr*lam1/0.0005);
-    }
-    /* L2 -L1 pseudorange */
-    int code1 = data->code[1];
-    if (data->P[0]!=0.0&&data->P[1]!=0.0&&code0&&code1&&
-        fabs(data->P[1]-pr1c)<=163.82) {
-        if (pr21) *pr21=ROUND((data->P[1]-pr1c)/0.02);
-    }
-    /* L2 phaserange - L1 pseudorange */
-    if (data->P[0]!=0.0&&data->L[1]!=0.0&&data->code[0]&&data->code[1]) {
-        ppr=cp_pr(data->L[1],pr1c/lam2);
-        if (ppr2) *ppr2=ROUND(ppr*lam2/0.0005);
-    }
-    int lt1 = locktime(rtcm, data, code0, data->LLI[0]);
-    int lt2 = locktime(rtcm, data, code1, data->LLI[1]);
-    
-    if (lock1) *lock1=to_lock(lt1);
-    if (lock2) *lock2=to_lock(lt2);
-    if (cnr1 ) *cnr1=ROUND(data->SNR[0]/0.25);
-    if (cnr2 ) *cnr2=ROUND(data->SNR[1]/0.25);
-    if (gcode1) *gcode1=to_code1_gps(code0);
-    if (gcode2) *gcode2=to_code2_gps(code1);
+#endif
+/* Generate obs field data GPS -----------------------------------------------*/
+static void gen_obs_gps(rtcm_t *rtcm, const obsd_t *data, int *gcode1, int *pr1, int *ppr1,
+                        int *lock1, int *amb, int *cnr1, int *gcode2, int *pr21, int *ppr2,
+                        int *lock2, int *cnr2) {
+  *pr1 = *amb = 0;
+  if (ppr1) *ppr1 = 0xFFF80000; /* Invalid values */
+  if (pr21) *pr21 = 0xFFFFE000;
+  if (ppr2) *ppr2 = 0xFFF80000;
+
+  /* L1 peudorange */
+  double pr1c = 0.0;
+  int code0 = data->code[0];
+  if (data->P[0] != 0.0 && code0) {
+    *amb = (int)floor(data->P[0] / PRUNIT_GPS);
+    *pr1 = ROUND((data->P[0] - *amb * PRUNIT_GPS) / 0.02);
+    pr1c = *pr1 * 0.02 + *amb * PRUNIT_GPS;
+  }
+  // L1 phaserange - L1 pseudorange
+  //
+  // A half cycle ambiguity can not be represented in this message, so
+  // consider it a carrier phase outage, and report an invalid value.  The
+  // lock time is still reported to avoid a possible loss of lock due to the
+  // outage if it recovers.
+  if (data->P[0] != 0.0 && data->L[0] != 0.0 && code0 && (data->LLI[0] & LLI_HALFC) == 0 &&
+      ppr1) {
+    double lam1 = CLIGHT / FREQL1;
+#ifdef RTK_DISABLED
+    double ppr = cp_pr(data->L[0], pr1c / lam1);
+    fprintf(stderr, "L=%lf pr1c=%lfm %lfc %lf ppr=%lf %lfm %d", data->L[0], pr1c, pr1c / lam1,
+            data->L[0] - pr1c / lam1, ppr, ppr * lam1, ROUND(ppr * lam1 / 0.0005));
+    *ppr1 = ROUND(ppr * lam1 / 0.0005);
+#else
+    int ppr = ROUND((data->L[0] * lam1 - pr1c) / 0.0005);
+#if 0
+    fprintf(stderr, "L=%lfc %lfm pr1c=%lfm d=%lfc %lf ppr=%d  L=%lf\n", data->L[0],data->L[0]*lam1,
+            pr1c, data->L[0]*lam1 - pr1c, (data->L[0]*lam1 - pr1c) / 0.0005, ppr,
+            pr1c / lam1 + ppr * 0.0005 / lam1);
+#endif
+    if (-524287 <= ppr && ppr <= 524287) *ppr1 = ppr;
+#endif
+  }
+  /* L2 -L1 pseudorange */
+  int code1 = data->code[1];
+  if (data->P[0] != 0.0 && data->P[1] != 0.0 && code0 && code1 &&
+      fabs(data->P[1] - pr1c) <= 163.82) {
+    if (pr21) *pr21 = ROUND((data->P[1] - pr1c) / 0.02);
+  }
+  /* L2 phaserange - L1 pseudorange */
+  if (data->P[0] != 0.0 && data->L[1] != 0.0 && code0 && code1 &&
+      (data->LLI[1] & LLI_HALFC) == 0 && ppr2) {
+    double lam2 = CLIGHT / FREQL2;
+#ifdef RTK_DISABLED
+    double ppr = cp_pr(data->L[1], pr1c / lam2);
+    *ppr2 = ROUND(ppr * lam2 / 0.0005);
+#else
+    int ppr = ROUND((data->L[1] * lam2 - pr1c) / 0.0005);
+    if (-524287 <= ppr && ppr <= 524287) *ppr2 = ppr;
+#endif
+  }
+  int lt1 = locktime(rtcm, data, code0, data->LLI[0]);
+  int lt2 = locktime(rtcm, data, code1, data->LLI[1]);
+
+  if (lock1) *lock1 = to_lock(lt1);
+  if (lock2) *lock2 = to_lock(lt2);
+  if (cnr1) *cnr1 = ROUND(data->SNR[0] / 0.25);
+  if (cnr2) *cnr2 = ROUND(data->SNR[1] / 0.25);
+  if (gcode1) *gcode1 = to_code1_gps(code0);
+  if (gcode2) *gcode2 = to_code2_gps(code1);
 }
-/* generate obs field data GLONASS -------------------------------------------*/
-static void gen_obs_glo(rtcm_t *rtcm, const obsd_t *data, int fcn, int *gcode1,
-                        int *pr1, int *ppr1, int *lock1, int *amb, int *cnr1,
-                        int *gcode2, int *pr21, int *ppr2, int *lock2, int *cnr2)
-{
-    double lam1=0.0,lam2=0.0,pr1c=0.0,ppr;
-    
-    if (fcn>=0) { /* fcn+7 */
-        lam1=CLIGHT/(FREQ1_GLO+DFRQ1_GLO*(fcn-7));
-        lam2=CLIGHT/(FREQ2_GLO+DFRQ2_GLO*(fcn-7));
+/* Generate obs field data GLONASS -------------------------------------------*/
+static void gen_obs_glo(rtcm_t *rtcm, const obsd_t *data, int fcn, int *gcode1, int *pr1, int *ppr1,
+                        int *lock1, int *amb, int *cnr1, int *gcode2, int *pr21, int *ppr2,
+                        int *lock2, int *cnr2) {
+  *pr1 = *amb = 0;
+  if (ppr1) *ppr1 = 0xFFF80000; /* Invalid values */
+  if (pr21) *pr21 = 0xFFFFE000;
+  if (ppr2) *ppr2 = 0xFFF80000;
+
+  /* L1 pseudorange */
+  double pr1c = 0.0;
+  if (data->P[0] != 0.0) {
+    *amb = (int)floor(data->P[0] / PRUNIT_GLO);
+    *pr1 = ROUND((data->P[0] - *amb * PRUNIT_GLO) / 0.02);
+    pr1c = *pr1 * 0.02 + *amb * PRUNIT_GLO;
+  }
+  /* L1 phaserange - L1 pseudorange */
+  int code0 = data->code[0];
+  if (data->P[0] != 0.0 && data->L[0] != 0.0 && code0 && (data->LLI[0] & LLI_HALFC) == 0 &&
+      ppr1) {
+    double lam1 = 0.0;
+    if (fcn >= 0) /* fcn+7 */
+      lam1 = CLIGHT / (FREQ1_GLO + DFRQ1_GLO * (fcn - 7));
+    if (lam1 > 0.0) {
+#ifdef RTK_DISABLED
+      double ppr = cp_pr(data->L[0], pr1c / lam1);
+      *ppr1 = ROUND(ppr * lam1 / 0.0005);
+#else
+      int ppr = ROUND((data->L[0] * lam1 - pr1c) / 0.0005);
+      if (-524287 <= ppr && ppr <= 524287) *ppr1 = ppr;
+#endif
     }
-    *pr1=*amb=0;
-    if (ppr1) *ppr1=0xFFF80000; /* invalid values */
-    if (pr21) *pr21=0xFFFFE000;
-    if (ppr2) *ppr2=0xFFF80000;
-    
-    /* L1 pseudorange */
-    if (data->P[0]!=0.0) {
-        *amb=(int)floor(data->P[0]/PRUNIT_GLO);
-        *pr1=ROUND((data->P[0]-*amb*PRUNIT_GLO)/0.02);
-        pr1c=*pr1*0.02+*amb*PRUNIT_GLO;
+  }
+  /* L2 - L1 pseudorange */
+  int code1 = data->code[1];
+  if (data->P[0] != 0.0 && data->P[1] != 0.0 && code0 && code1 &&
+      fabs(data->P[1] - pr1c) <= 163.82) {
+    if (pr21) *pr21 = ROUND((data->P[1] - pr1c) / 0.02);
+  }
+  /* L2 phaserange - L1 pseudorange */
+  if (data->P[0] != 0.0 && data->L[1] != 0.0 && code0 && code1 &&
+      (data->LLI[1] & LLI_HALFC) == 0 && ppr2) {
+    double lam2 = 0.0;
+    if (fcn >= 0) /* fcn+7 */
+      lam2 = CLIGHT / (FREQ2_GLO + DFRQ2_GLO * (fcn - 7));
+    if (lam2 > 0.0) {
+#ifdef RTK_DISABLED
+      double ppr = cp_pr(data->L[1], pr1c / lam2);
+      *ppr2 = ROUND(ppr * lam2 / 0.0005);
+#else
+      int ppr = ROUND((data->L[1] * lam2 - pr1c) / 0.0005);
+      if (-524287 <= ppr && ppr <= 524287) *ppr2 = ppr;
+#endif
     }
-    /* L1 phaserange - L1 pseudorange */
-    int code0 = data->code[0];
-    if (data->P[0]!=0.0&&data->L[0]!=0.0&&code0&&lam1>0.0) {
-        ppr=cp_pr(data->L[0],pr1c/lam1);
-        if (ppr1) *ppr1=ROUND(ppr*lam1/0.0005);
-    }
-    /* L2 -L1 pseudorange */
-    int code1 = data->code[1];
-    if (data->P[0]!=0.0&&data->P[1]!=0.0&&code0&&code1&&
-        fabs(data->P[1]-pr1c)<=163.82) {
-        if (pr21) *pr21=ROUND((data->P[1]-pr1c)/0.02);
-    }
-    /* L2 phaserange - L1 pseudorange */
-    if (data->P[0]!=0.0&&data->L[1]!=0.0&&code0&&code1&&
-        lam2>0.0) {
-        ppr=cp_pr(data->L[1],pr1c/lam2);
-        if (ppr2) *ppr2=ROUND(ppr*lam2/0.0005);
-    }
-    int lt1 = locktime(rtcm, data, code0, data->LLI[0]);
-    int lt2 = locktime(rtcm, data, code1, data->LLI[1]);
-    
-    if (lock1) *lock1=to_lock(lt1);
-    if (lock2) *lock2=to_lock(lt2);
-    if (cnr1 ) *cnr1=ROUND(data->SNR[0]/0.25);
-    if (cnr2 ) *cnr2=ROUND(data->SNR[1]/0.25);
-    if (gcode1) *gcode1=to_code1_glo(code0);
-    if (gcode2) *gcode2=to_code2_glo(code1);
+  }
+  int lt1 = locktime(rtcm, data, code0, data->LLI[0]);
+  int lt2 = locktime(rtcm, data, code1, data->LLI[1]);
+
+  if (lock1) *lock1 = to_lock(lt1);
+  if (lock2) *lock2 = to_lock(lt2);
+  if (cnr1) *cnr1 = ROUND(data->SNR[0] / 0.25);
+  if (cnr2) *cnr2 = ROUND(data->SNR[1] / 0.25);
+  if (gcode1) *gcode1 = to_code1_glo(code0);
+  if (gcode2) *gcode2 = to_code2_glo(code1);
 }
 /* encode RTCM header --------------------------------------------------------*/
 static int encode_head(int type, rtcm_t *rtcm, int sys, int sync, int nsat)
