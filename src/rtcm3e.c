@@ -100,17 +100,49 @@ static void set38bits(uint8_t *buff, int pos, double value)
     setbits(buff,pos  ,32,word_h);
     setbitu(buff,pos+32,6,word_l);
 }
-/* lock time -----------------------------------------------------------------*/
-static int locktime(gtime_t time, gtime_t *lltime, uint8_t LLI)
-{
-    if (!lltime->time||(LLI&1)) *lltime=time;
-    return (int)timediff(time,*lltime);
-}
-/* lock time in double -------------------------------------------------------*/
-static double locktime_d(gtime_t time, gtime_t *lltime, uint8_t LLI)
-{
-    if (!lltime->time||(LLI&1)) *lltime=time;
-    return timediff(time,*lltime);
+/* Lock time -----------------------------------------------------------------*/
+static double locktime(rtcm_t *rtcm, const obsd_t *data, int code, uint8_t LLI) {
+  gtime_t time = data->time;
+  gtime_t lltime = rtcm->lltime[data->sat - 1][code];
+  double dt = timediff(time, lltime);
+  int sat = data->sat;
+  if (dt <= 0 || (LLI & LLI_SLIP)) {
+    // Must ensure that the lock time indicator (which is determined by the
+    // lock time) is less than the last lock time indicator, or zero, and also
+    // set the last lock time to later than the previous lock time.
+    //
+    // The LLI slip flag indicates that there was a loss of lock since the
+    // last signal observation, not that there is a current a loss of lock. If
+    // the lock time is set to the current time then there will be an
+    // unnecessary possible loss of lock indication at the next observeration.
+    // So the above might be acheived by setting the last lock time to just
+    // before the current time.
+    //
+    // But should also attempt to avoid a false loss of lock on the next
+    // measurement, for the time between observations to be less than the
+    // minimum lock time (as represented by the lock time indicator). For this
+    // it would be best to have the lock time to be as larger as possible.
+    //
+    // Further the lock time represents only the minimum lock time and has
+    // discrete steps that vary between the RTCM3 messages.
+    gtime_t tobs = rtcm->tobs[sat - 1][code];
+    if (tobs.time != 0) {
+      lltime = timeadd(tobs, 0.001);
+      rtcm->lltime[sat - 1][code] = lltime;
+      dt = timediff(time, lltime);
+    } else {
+      // 8ms is the minimum time here to avoid a possible loss of lock at the
+      // next 1 sec epoch for the extended lock times with a resolution of
+      // 16ms under 1.024 seconds. This will need to be more for non-extended
+      // lock times, or larger times between measurements which is an unknown
+      // here. This is only an initialization issue, so err on the side of
+      // issuing an unnecessary loss of lock.
+      dt = 0.008;
+      rtcm->lltime[sat - 1][code] = timeadd(time, -dt);
+    }
+  }
+  rtcm->tobs[sat - 1][code] = time;
+  return dt;
 }
 /* GLONASS frequency channel number in RTCM (FCN+7,-1:error) -----------------*/
 static int fcn_glo(int sat, rtcm_t *rtcm)
@@ -241,12 +273,11 @@ static double cp_pr(double cp, double pr_cyc)
     return fmod(cp-pr_cyc+750.0,1500.0)-750.0;
 }
 /* generate obs field data GPS -----------------------------------------------*/
-static void gen_obs_gps(rtcm_t *rtcm, const obsd_t *data, int *code1, int *pr1,
-                        int *ppr1, int *lock1, int *amb, int *cnr1, int *code2,
+static void gen_obs_gps(rtcm_t *rtcm, const obsd_t *data, int *gcode1, int *pr1,
+                        int *ppr1, int *lock1, int *amb, int *cnr1, int *gcode2,
                         int *pr21, int *ppr2, int *lock2, int *cnr2)
 {
     double lam1,lam2,pr1c=0.0,ppr;
-    int lt1,lt2;
     
     lam1=CLIGHT/FREQL1;
     lam2=CLIGHT/FREQL2;
@@ -256,18 +287,20 @@ static void gen_obs_gps(rtcm_t *rtcm, const obsd_t *data, int *code1, int *pr1,
     if (ppr2) *ppr2=0xFFF80000;
     
     /* L1 peudorange */
-    if (data->P[0]!=0.0&&data->code[0]) {
+    int code0 = data->code[0];
+    if (data->P[0]!=0.0&&code0) {
         *amb=(int)floor(data->P[0]/PRUNIT_GPS);
         *pr1=ROUND((data->P[0]-*amb*PRUNIT_GPS)/0.02);
         pr1c=*pr1*0.02+*amb*PRUNIT_GPS;
     }
     /* L1 phaserange - L1 pseudorange */
-    if (data->P[0]!=0.0&&data->L[0]!=0.0&&data->code[0]) {
+    if (data->P[0]!=0.0&&data->L[0]!=0.0&&code0) {
         ppr=cp_pr(data->L[0],pr1c/lam1);
         if (ppr1) *ppr1=ROUND(ppr*lam1/0.0005);
     }
     /* L2 -L1 pseudorange */
-    if (data->P[0]!=0.0&&data->P[1]!=0.0&&data->code[0]&&data->code[1]&&
+    int code1 = data->code[1];
+    if (data->P[0]!=0.0&&data->P[1]!=0.0&&code0&&code1&&
         fabs(data->P[1]-pr1c)<=163.82) {
         if (pr21) *pr21=ROUND((data->P[1]-pr1c)/0.02);
     }
@@ -276,23 +309,22 @@ static void gen_obs_gps(rtcm_t *rtcm, const obsd_t *data, int *code1, int *pr1,
         ppr=cp_pr(data->L[1],pr1c/lam2);
         if (ppr2) *ppr2=ROUND(ppr*lam2/0.0005);
     }
-    lt1=locktime(data->time,rtcm->lltime[data->sat-1]  ,data->LLI[0]);
-    lt2=locktime(data->time,rtcm->lltime[data->sat-1]+1,data->LLI[1]);
+    int lt1 = locktime(rtcm, data, code0, data->LLI[0]);
+    int lt2 = locktime(rtcm, data, code1, data->LLI[1]);
     
     if (lock1) *lock1=to_lock(lt1);
     if (lock2) *lock2=to_lock(lt2);
     if (cnr1 ) *cnr1=ROUND(data->SNR[0]/0.25);
     if (cnr2 ) *cnr2=ROUND(data->SNR[1]/0.25);
-    if (code1) *code1=to_code1_gps(data->code[0]);
-    if (code2) *code2=to_code2_gps(data->code[1]);
+    if (gcode1) *gcode1=to_code1_gps(code0);
+    if (gcode2) *gcode2=to_code2_gps(code1);
 }
 /* generate obs field data GLONASS -------------------------------------------*/
-static void gen_obs_glo(rtcm_t *rtcm, const obsd_t *data, int fcn, int *code1,
+static void gen_obs_glo(rtcm_t *rtcm, const obsd_t *data, int fcn, int *gcode1,
                         int *pr1, int *ppr1, int *lock1, int *amb, int *cnr1,
-                        int *code2, int *pr21, int *ppr2, int *lock2, int *cnr2)
+                        int *gcode2, int *pr21, int *ppr2, int *lock2, int *cnr2)
 {
     double lam1=0.0,lam2=0.0,pr1c=0.0,ppr;
-    int lt1,lt2;
     
     if (fcn>=0) { /* fcn+7 */
         lam1=CLIGHT/(FREQ1_GLO+DFRQ1_GLO*(fcn-7));
@@ -310,30 +342,32 @@ static void gen_obs_glo(rtcm_t *rtcm, const obsd_t *data, int fcn, int *code1,
         pr1c=*pr1*0.02+*amb*PRUNIT_GLO;
     }
     /* L1 phaserange - L1 pseudorange */
-    if (data->P[0]!=0.0&&data->L[0]!=0.0&&data->code[0]&&lam1>0.0) {
+    int code0 = data->code[0];
+    if (data->P[0]!=0.0&&data->L[0]!=0.0&&code0&&lam1>0.0) {
         ppr=cp_pr(data->L[0],pr1c/lam1);
         if (ppr1) *ppr1=ROUND(ppr*lam1/0.0005);
     }
     /* L2 -L1 pseudorange */
-    if (data->P[0]!=0.0&&data->P[1]!=0.0&&data->code[0]&&data->code[1]&&
+    int code1 = data->code[1];
+    if (data->P[0]!=0.0&&data->P[1]!=0.0&&code0&&code1&&
         fabs(data->P[1]-pr1c)<=163.82) {
         if (pr21) *pr21=ROUND((data->P[1]-pr1c)/0.02);
     }
     /* L2 phaserange - L1 pseudorange */
-    if (data->P[0]!=0.0&&data->L[1]!=0.0&&data->code[0]&&data->code[1]&&
+    if (data->P[0]!=0.0&&data->L[1]!=0.0&&code0&&code1&&
         lam2>0.0) {
         ppr=cp_pr(data->L[1],pr1c/lam2);
         if (ppr2) *ppr2=ROUND(ppr*lam2/0.0005);
     }
-    lt1=locktime(data->time,rtcm->lltime[data->sat-1]  ,data->LLI[0]);
-    lt2=locktime(data->time,rtcm->lltime[data->sat-1]+1,data->LLI[1]);
+    int lt1 = locktime(rtcm, data, code0, data->LLI[0]);
+    int lt2 = locktime(rtcm, data, code1, data->LLI[1]);
     
     if (lock1) *lock1=to_lock(lt1);
     if (lock2) *lock2=to_lock(lt2);
     if (cnr1 ) *cnr1=ROUND(data->SNR[0]/0.25);
     if (cnr2 ) *cnr2=ROUND(data->SNR[1]/0.25);
-    if (code1) *code1=to_code1_glo(data->code[0]);
-    if (code2) *code2=to_code2_glo(data->code[1]);
+    if (gcode1) *gcode1=to_code1_glo(code0);
+    if (gcode2) *gcode2=to_code2_glo(code1);
 }
 /* encode RTCM header --------------------------------------------------------*/
 static int encode_head(int type, rtcm_t *rtcm, int sys, int sync, int nsat)
@@ -365,8 +399,6 @@ static int encode_head(int type, rtcm_t *rtcm, int sys, int sync, int nsat)
 /* encode type 1001: basic L1-only GPS RTK observables -----------------------*/
 static int encode_type1001(rtcm_t *rtcm, int sync)
 {
-    int code1,pr1,ppr1,lock1,amb;
-    
     trace(3,"encode_type1001: sync=%d\n",sync);
     
     int nsat = 0;
@@ -387,11 +419,12 @@ static int encode_type1001(rtcm_t *rtcm, int sync)
         if (sys==SYS_SBS) prn-=80; /* 40-58: sbas 120-138 */
         
         /* generate obs field data gps */
-        gen_obs_gps(rtcm,rtcm->obs.data+j,&code1,&pr1,&ppr1,&lock1,&amb,NULL,
+        int gcode1,pr1,ppr1,lock1,amb;
+        gen_obs_gps(rtcm,rtcm->obs.data+j,&gcode1,&pr1,&ppr1,&lock1,&amb,NULL,
                     NULL,NULL,NULL,NULL,NULL);
         
         setbitu(rtcm->buff,i, 6,prn  ); i+= 6;
-        setbitu(rtcm->buff,i, 1,code1); i+= 1;
+        setbitu(rtcm->buff,i, 1,gcode1); i+= 1;
         setbitu(rtcm->buff,i,24,pr1  ); i+=24;
         setbits(rtcm->buff,i,20,ppr1 ); i+=20;
         setbitu(rtcm->buff,i, 7,lock1); i+= 7;
@@ -402,8 +435,6 @@ static int encode_type1001(rtcm_t *rtcm, int sync)
 /* encode type 1002: extended L1-only GPS RTK observables --------------------*/
 static int encode_type1002(rtcm_t *rtcm, int sync)
 {
-    int code1,pr1,ppr1,lock1,amb,cnr1;
-    
     trace(3,"encode_type1002: sync=%d\n",sync);
     
     int nsat = 0;
@@ -424,11 +455,12 @@ static int encode_type1002(rtcm_t *rtcm, int sync)
         if (sys==SYS_SBS) prn-=80; /* 40-58: sbas 120-138 */
         
         /* generate obs field data gps */
-        gen_obs_gps(rtcm,rtcm->obs.data+j,&code1,&pr1,&ppr1,&lock1,&amb,&cnr1,
+        int gcode1,pr1,ppr1,lock1,amb,cnr1;
+        gen_obs_gps(rtcm,rtcm->obs.data+j,&gcode1,&pr1,&ppr1,&lock1,&amb,&cnr1,
                     NULL,NULL,NULL,NULL,NULL);
         
         setbitu(rtcm->buff,i, 6,prn  ); i+= 6;
-        setbitu(rtcm->buff,i, 1,code1); i+= 1;
+        setbitu(rtcm->buff,i, 1,gcode1); i+= 1;
         setbitu(rtcm->buff,i,24,pr1  ); i+=24;
         setbits(rtcm->buff,i,20,ppr1 ); i+=20;
         setbitu(rtcm->buff,i, 7,lock1); i+= 7;
@@ -441,8 +473,6 @@ static int encode_type1002(rtcm_t *rtcm, int sync)
 /* encode type 1003: basic L1&L2 GPS RTK observables -------------------------*/
 static int encode_type1003(rtcm_t *rtcm, int sync)
 {
-    int code1,pr1,ppr1,lock1,amb,code2,pr21,ppr2,lock2;
-    
     trace(3,"encode_type1003: sync=%d\n",sync);
     
     int nsat = 0;
@@ -463,15 +493,16 @@ static int encode_type1003(rtcm_t *rtcm, int sync)
         if (sys==SYS_SBS) prn-=80; /* 40-58: sbas 120-138 */
         
         /* generate obs field data gps */
-        gen_obs_gps(rtcm,rtcm->obs.data+j,&code1,&pr1,&ppr1,&lock1,&amb,
-                    NULL,&code2,&pr21,&ppr2,&lock2,NULL);
+        int gcode1,pr1,ppr1,lock1,amb,gcode2,pr21,ppr2,lock2;
+        gen_obs_gps(rtcm,rtcm->obs.data+j,&gcode1,&pr1,&ppr1,&lock1,&amb,
+                    NULL,&gcode2,&pr21,&ppr2,&lock2,NULL);
         
         setbitu(rtcm->buff,i, 6,prn  ); i+= 6;
-        setbitu(rtcm->buff,i, 1,code1); i+= 1;
+        setbitu(rtcm->buff,i, 1,gcode1); i+= 1;
         setbitu(rtcm->buff,i,24,pr1  ); i+=24;
         setbits(rtcm->buff,i,20,ppr1 ); i+=20;
         setbitu(rtcm->buff,i, 7,lock1); i+= 7;
-        setbitu(rtcm->buff,i, 2,code2); i+= 2;
+        setbitu(rtcm->buff,i, 2,gcode2); i+= 2;
         setbits(rtcm->buff,i,14,pr21 ); i+=14;
         setbits(rtcm->buff,i,20,ppr2 ); i+=20;
         setbitu(rtcm->buff,i, 7,lock2); i+= 7;
@@ -482,8 +513,6 @@ static int encode_type1003(rtcm_t *rtcm, int sync)
 /* encode type 1004: extended L1&L2 GPS RTK observables ----------------------*/
 static int encode_type1004(rtcm_t *rtcm, int sync)
 {
-    int code1,pr1,ppr1,lock1,amb,cnr1,code2,pr21,ppr2,lock2,cnr2;
-    
     trace(3,"encode_type1004: sync=%d\n",sync);
     
     int nsat = 0;
@@ -504,17 +533,18 @@ static int encode_type1004(rtcm_t *rtcm, int sync)
         if (sys==SYS_SBS) prn-=80; /* 40-58: sbas 120-138 */
         
         /* generate obs field data gps */
-        gen_obs_gps(rtcm,rtcm->obs.data+j,&code1,&pr1,&ppr1,&lock1,&amb,
-                    &cnr1,&code2,&pr21,&ppr2,&lock2,&cnr2);
+        int gcode1,pr1,ppr1,lock1,amb,cnr1,gcode2,pr21,ppr2,lock2,cnr2;
+        gen_obs_gps(rtcm,rtcm->obs.data+j,&gcode1,&pr1,&ppr1,&lock1,&amb,
+                    &cnr1,&gcode2,&pr21,&ppr2,&lock2,&cnr2);
         
         setbitu(rtcm->buff,i, 6,prn  ); i+= 6;
-        setbitu(rtcm->buff,i, 1,code1); i+= 1;
+        setbitu(rtcm->buff,i, 1,gcode1); i+= 1;
         setbitu(rtcm->buff,i,24,pr1  ); i+=24;
         setbits(rtcm->buff,i,20,ppr1 ); i+=20;
         setbitu(rtcm->buff,i, 7,lock1); i+= 7;
         setbitu(rtcm->buff,i, 8,amb  ); i+= 8;
         setbitu(rtcm->buff,i, 8,cnr1 ); i+= 8;
-        setbitu(rtcm->buff,i, 2,code2); i+= 2;
+        setbitu(rtcm->buff,i, 2,gcode2); i+= 2;
         setbits(rtcm->buff,i,14,pr21 ); i+=14;
         setbits(rtcm->buff,i,20,ppr2 ); i+=20;
         setbitu(rtcm->buff,i, 7,lock2); i+= 7;
@@ -647,12 +677,12 @@ static int encode_type1009(rtcm_t *rtcm, int sync)
         nsat++;
         
         /* generate obs field data glonass */
-        int code1,pr1,ppr1,lock1,amb;
-        gen_obs_glo(rtcm,rtcm->obs.data+j,fcn,&code1,&pr1,&ppr1,&lock1,&amb,
+        int gcode1,pr1,ppr1,lock1,amb;
+        gen_obs_glo(rtcm,rtcm->obs.data+j,fcn,&gcode1,&pr1,&ppr1,&lock1,&amb,
                     NULL,NULL,NULL,NULL,NULL,NULL);
         
         setbitu(rtcm->buff,i, 6,prn  ); i+= 6;
-        setbitu(rtcm->buff,i, 1,code1); i+= 1;
+        setbitu(rtcm->buff,i, 1,gcode1); i+= 1;
         setbitu(rtcm->buff,i, 5,fcn  ); i+= 5; /* fcn+7 */
         setbitu(rtcm->buff,i,25,pr1  ); i+=25;
         setbits(rtcm->buff,i,20,ppr1 ); i+=20;
@@ -685,12 +715,12 @@ static int encode_type1010(rtcm_t *rtcm, int sync)
         nsat++;
         
         /* generate obs field data glonass */
-        int code1,pr1,ppr1,lock1,amb,cnr1;
-        gen_obs_glo(rtcm,rtcm->obs.data+j,fcn,&code1,&pr1,&ppr1,&lock1,&amb,
+        int gcode1,pr1,ppr1,lock1,amb,cnr1;
+        gen_obs_glo(rtcm,rtcm->obs.data+j,fcn,&gcode1,&pr1,&ppr1,&lock1,&amb,
                     &cnr1,NULL,NULL,NULL,NULL,NULL);
         
         setbitu(rtcm->buff,i, 6,prn  ); i+= 6;
-        setbitu(rtcm->buff,i, 1,code1); i+= 1;
+        setbitu(rtcm->buff,i, 1,gcode1); i+= 1;
         setbitu(rtcm->buff,i, 5,fcn  ); i+= 5; /* fcn+7 */
         setbitu(rtcm->buff,i,25,pr1  ); i+=25;
         setbits(rtcm->buff,i,20,ppr1 ); i+=20;
@@ -725,17 +755,17 @@ static int encode_type1011(rtcm_t *rtcm, int sync)
         nsat++;
         
         /* generate obs field data glonass */
-        int code1,pr1,ppr1,lock1,amb,code2,pr21,ppr2,lock2;
-        gen_obs_glo(rtcm,rtcm->obs.data+j,fcn,&code1,&pr1,&ppr1,&lock1,&amb,
-                    NULL,&code2,&pr21,&ppr2,&lock2,NULL);
+        int gcode1,pr1,ppr1,lock1,amb,gcode2,pr21,ppr2,lock2;
+        gen_obs_glo(rtcm,rtcm->obs.data+j,fcn,&gcode1,&pr1,&ppr1,&lock1,&amb,
+                    NULL,&gcode2,&pr21,&ppr2,&lock2,NULL);
         
         setbitu(rtcm->buff,i, 6,prn  ); i+= 6;
-        setbitu(rtcm->buff,i, 1,code1); i+= 1;
+        setbitu(rtcm->buff,i, 1,gcode1); i+= 1;
         setbitu(rtcm->buff,i, 5,fcn  ); i+= 5; /* fcn+7 */
         setbitu(rtcm->buff,i,25,pr1  ); i+=25;
         setbits(rtcm->buff,i,20,ppr1 ); i+=20;
         setbitu(rtcm->buff,i, 7,lock1); i+= 7;
-        setbitu(rtcm->buff,i, 2,code2); i+= 2;
+        setbitu(rtcm->buff,i, 2,gcode2); i+= 2;
         setbits(rtcm->buff,i,14,pr21 ); i+=14;
         setbits(rtcm->buff,i,20,ppr2 ); i+=20;
         setbitu(rtcm->buff,i, 7,lock2); i+= 7;
@@ -767,19 +797,19 @@ static int encode_type1012(rtcm_t *rtcm, int sync)
         nsat++;
         
         /* generate obs field data glonass */
-        int code1,pr1,ppr1,lock1,amb,cnr1,code2,pr21,ppr2,lock2,cnr2;
-        gen_obs_glo(rtcm,rtcm->obs.data+j,fcn,&code1,&pr1,&ppr1,&lock1,&amb,
-                    &cnr1,&code2,&pr21,&ppr2,&lock2,&cnr2);
+        int gcode1,pr1,ppr1,lock1,amb,cnr1,gcode2,pr21,ppr2,lock2,cnr2;
+        gen_obs_glo(rtcm,rtcm->obs.data+j,fcn,&gcode1,&pr1,&ppr1,&lock1,&amb,
+                    &cnr1,&gcode2,&pr21,&ppr2,&lock2,&cnr2);
         
         setbitu(rtcm->buff,i, 6,prn  ); i+= 6;
-        setbitu(rtcm->buff,i, 1,code1); i+= 1;
+        setbitu(rtcm->buff,i, 1,gcode1); i+= 1;
         setbitu(rtcm->buff,i, 5,fcn  ); i+= 5; /* fcn+7 */
         setbitu(rtcm->buff,i,25,pr1  ); i+=25;
         setbits(rtcm->buff,i,20,ppr1 ); i+=20;
         setbitu(rtcm->buff,i, 7,lock1); i+= 7;
         setbitu(rtcm->buff,i, 7,amb  ); i+= 7;
         setbitu(rtcm->buff,i, 8,cnr1 ); i+= 8;
-        setbitu(rtcm->buff,i, 2,code2); i+= 2;
+        setbitu(rtcm->buff,i, 2,gcode2); i+= 2;
         setbits(rtcm->buff,i,14,pr21 ); i+=14;
         setbits(rtcm->buff,i,20,ppr2 ); i+=20;
         setbitu(rtcm->buff,i, 7,lock2); i+= 7;
@@ -2038,7 +2068,7 @@ static void gen_msm_sig(rtcm_t *rtcm, int sys, int nsat, int nsig, int ncell,
 {
     (void)nsat;
     obsd_t *data;
-    double freq,lambda,psrng_s,phrng_s,rate_s,lt;
+    double freq,lambda,psrng_s,phrng_s,rate_s;
     int i,j,k,sat,sig,fcn,cell,LLI;
     
     for (i=0;i<ncell;i++) {
@@ -2073,7 +2103,7 @@ static void gen_msm_sig(rtcm_t *rtcm, int sys, int nsat, int nsig, int ncell,
             }
             phrng_s-=rtcm->cp[data->sat-1][code];
             
-            lt=locktime_d(data->time,rtcm->lltime[data->sat-1]+code,LLI);
+            double lt=locktime(rtcm, data, code, LLI);
             
             if (psrng&&psrng_s!=0.0) psrng[cell-1]=psrng_s;
             if (phrng&&phrng_s!=0.0) phrng[cell-1]=phrng_s;
