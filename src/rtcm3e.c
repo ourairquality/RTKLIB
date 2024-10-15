@@ -52,6 +52,7 @@
 #define PRUNIT_GLO  599584.916          /* rtcm 3 unit of glo pseudorange (m) */
 #define RANGE_MS    (CLIGHT*0.001)      /* range in 1 ms */
 #define P2_10       0.0009765625          /* 2^-10 */
+#define P2_14       6.103515625E-5        /* 2^-14 */
 #define P2_28       3.725290298461914E-09 /* 2^-28 */
 #define P2_34       5.820766091346740E-11 /* 2^-34 */
 #define P2_41       4.547473508864641E-13 /* 2^-41 */
@@ -2076,97 +2077,256 @@ static void gen_msm_index(const rtcm_t *rtcm, int sys, int *nsat, int *nsig,
         if (cell_ind[i]&&*ncell<64) cell_ind[i]=++(*ncell);
     }
 }
-/* generate MSM satellite data fields ----------------------------------------*/
-static void gen_msm_sat(rtcm_t *rtcm, int sys, int nsat, const uint8_t *sat_ind,
-                        double *rrng, double *rrate, uint8_t *info)
-{
-    (void)nsat;
-    obsd_t *data;
-    double freq;
-    int i,j,k,sat,sig,fcn;
-    
-    for (i=0;i<64;i++) rrng[i]=rrate[i]=0.0;
-    
-    for (i=0;i<rtcm->obs.n;i++) {
-        data=rtcm->obs.data+i;
-        fcn=fcn_glo(data->sat,rtcm); /* fcn+7 */
-        
-        if (!(sat=to_satid(sys,data->sat))) continue;
-        
-        for (j=0;j<NFREQ+NEXOBS;j++) {
-            if (!(sig=to_sigid(sys,data->code[j]))) continue;
-            k=sat_ind[sat-1]-1;
-            freq=code2freq(sys,data->code[j],fcn-7);
-            
-            /* rough range (ms) and rough phase-range-rate (m/s) */
-            if (rrng[k]==0.0&&data->P[j]!=0.0) {
-                rrng[k]=ROUND( data->P[j]/RANGE_MS/P2_10)*RANGE_MS*P2_10;
+/* Generate MSM satellite data fields ----------------------------------------*/
+static void gen_msm_sat(rtcm_t *rtcm, int sys, int rtype, int nsat, const uint8_t *sat_ind,
+                        double *rrng, double *rrate, uint8_t *info) {
+  (void)nsat;
+  int phrng = rtype != 1;             // MSM1 does not include the phrng
+  int psrng = rtype != 2;             // MSM2 does not include the psrng
+  int ex = rtype == 6 || rtype == 7;  // MSM6 and MSM7 have extended precision
+
+  for (int i = 0; i < 64; i++) rrng[i] = rrate[i] = 0.0;
+
+  for (int i = 0; i < rtcm->obs.n; i++) {
+    obsd_t *data = rtcm->obs.data + i;
+    int fcn = fcn_glo(data->sat, rtcm); /* fcn+7 */
+
+    int sat = to_satid(sys, data->sat);
+    if (!sat) continue;
+    int k = sat_ind[sat - 1] - 1;
+
+    // Rough range (ms) and rough phase-range-rate (m/s)
+    //
+    // Some heuristics are used here to determine the rough values. Signals
+    // with both a pseudo range and a carrier phase are given priority and a
+    // rought value within range is chosen for them in the order that they
+    // appear here. Then if possible, a rought value is chosen to also be
+    // within range for signals without a pseudo range or carrier phase. So
+    // later signals or signals without pseudo range or a carrier phase might
+    // be left out of range.
+    double rrng_min = -1e12, rrng_max = 1e12;
+    double rrng_all_min = -1e12, rrng_all_max = 1e12;
+    double rrate_min = -1e6, rrate_max = 1e6;
+    double rrate_all_min = -1e6, rrate_all_max = 1e6;
+
+    for (int j = 0; j < NFREQ + NEXOBS; j++) {
+      int sig = to_sigid(sys, data->code[j]);
+      if (!sig) continue;
+      double freq = code2freq(sys, data->code[j], fcn - 7);
+
+      if (psrng && data->P[j] != 0.0) {
+        double rng = data->P[j] / RANGE_MS / P2_10;
+        double lim = ex ? 524287 * P2_19 : 16383 * P2_14;
+        double rmin = ceil(rng - lim);
+        double rmax = floor(rng + lim);
+        if (phrng && data->L[j] != 0) {
+          if (rmin > rrng_min) {
+            if (rmin < rrng_max)
+              rrng_min = rmin;
+            else
+              rrng_min = rrng_max;
+          }
+          if (rmax < rrng_max) {
+            if (rmax > rrng_min)
+              rrng_max = rmax;
+            else
+              rrng_max = rrng_min;
+          }
+          // Consider the rough range for the encoding of the carrier phase
+          if (freq > 0.0) {
+            double Lm = data->L[j] * CLIGHT / freq;
+            double Lrng = Lm / RANGE_MS / P2_10;
+            double lim = ex ? 8388607 * P2_21 : 2097151 * P2_19;
+            double Lrmin = ceil(Lrng - lim);
+            double Lrmax = floor(Lrng + lim);
+            if (Lrmin > rrng_min) {
+              if (Lrmin < rrng_max)
+                rrng_min = Lrmin;
+              else
+                rrng_min = rrng_max;
             }
-            if (rrate[k]==0.0&&data->D[j]!=0.0&&freq>0.0) {
-                rrate[k]=ROUND(-data->D[j]*CLIGHT/freq)*1.0;
+            if (Lrmax < rrng_max) {
+              if (Lrmax > rrng_min)
+                rrng_max = Lrmax;
+              else
+                rrng_max = rrng_min;
             }
-            /* extended satellite info */
-            if (info) info[k]=sys!=SYS_GLO?0:(fcn<0?15:fcn);
+          }
         }
+        // Separate constraints that include the carrier phase being zero.
+        if (rmin > rrng_all_min) {
+          if (rmin < rrng_all_max)
+            rrng_all_min = rmin;
+          else
+            rrng_all_min = rrng_all_max;
+        }
+        if (rmax < rrng_all_max) {
+          if (rmax > rrng_all_min)
+            rrng_all_max = rmax;
+          else
+            rrng_all_max = rrng_all_min;
+        }
+      } else if (phrng && data->L[j] != 0 && freq > 0.0) {
+        // No pseudo range, but a carrier phase.
+        double Lm = data->L[j] * CLIGHT / freq;
+        double Lrng = Lm / RANGE_MS / P2_10;
+        double lim = ex ? 8388607 * P2_21 : 2097151 * P2_19;
+        double Lrmin = ceil(Lrng - lim);
+        double Lrmax = floor(Lrng + lim);
+        if (Lrmin > rrng_all_min) {
+          if (Lrmin < rrng_all_max)
+            rrng_all_min = Lrmin;
+          else
+            rrng_all_min = rrng_all_max;
+        }
+        if (Lrmax < rrng_all_max) {
+          if (Lrmax > rrng_all_min)
+            rrng_all_max = Lrmax;
+          else
+            rrng_all_max = rrng_all_min;
+        }
+      }
+      // A similar heuristic is applied for the phase range rate
+      if (data->D[j] != 0.0 && freq > 0.0) {
+        double r = -data->D[j] * CLIGHT / freq;
+        double rmin = ceil(r - 1.6383);
+        double rmax = floor(r + 1.6383);
+        if (data->L[j] != 0) {
+          if (rmin > rrate_min) {
+            if (rmin < rrate_max)
+              rrate_min = rmin;
+            else
+              rrate_min = rrate_max;
+          }
+          if (rmax < rrate_max) {
+            if (rmax > rrate_min)
+              rrate_max = rmax;
+            else
+              rrate_max = rrate_min;
+          }
+        }
+        if (rmin > rrate_all_min) {
+          if (rmin < rrate_all_max)
+            rrate_all_min = rmin;
+          else
+            rrate_all_min = rrate_all_max;
+        }
+        if (rmax < rrate_all_max) {
+          if (rmax > rrate_all_min)
+            rrate_all_max = rmax;
+          else
+            rrate_all_max = rrate_all_min;
+        }
+      }
     }
+    // Narrow the range to fit all if possible.
+    if (rrng_all_min > rrng_min) {
+      if (rrng_all_min < rrng_max)
+        rrng_min = rrng_all_min;
+      else
+        rrng_min = rrng_max;
+    }
+    if (rrng_all_max < rrng_max) {
+      if (rrng_all_max > rrng_min)
+        rrng_max = rrng_all_max;
+      else
+        rrng_max = rrng_min;
+    }
+    //
+    if (rrate_all_min > rrate_min) {
+      if (rrate_all_min < rrate_max)
+        rrate_min = rrate_all_min;
+      else
+        rrate_min = rrate_max;
+    }
+    if (rrate_all_max < rrate_max) {
+      if (rrate_all_max > rrate_min)
+        rrate_max = rrate_all_max;
+      else
+        rrate_max = rrate_min;
+    }
+    rrng[k] = ROUND((rrng_min + rrng_max) / 2) * RANGE_MS * P2_10;
+    rrate[k] = ROUND((rrate_min + rrate_max) / 2) * 1.0;
+    /* Extended satellite info */
+    if (info) info[k] = sys != SYS_GLO ? 0 : (fcn < 0 ? 15 : fcn);
+  }
 }
-/* generate MSM signal data fields -------------------------------------------*/
+// Use values well out of range to represent an invalid value, so that
+// an invalid value can be distinguished from an out of range value.
+#define INVALID_PSRNG -1e12
+#define INVALID_PHRNG -1e12
+#define INVALID_RATE -1e12
+/* Generate MSM signal data fields -------------------------------------------*/
 static void gen_msm_sig(rtcm_t *rtcm, int sys, int nsat, int nsig, int ncell,
-                        const uint8_t *sat_ind, const uint8_t *sig_ind,
-                        const uint8_t *cell_ind, const double *rrng,
-                        const double *rrate, double *psrng, double *phrng,
-                        double *rate, double *lock, uint8_t *half, float *cnr)
-{
-    (void)nsat;
-    obsd_t *data;
-    double freq,lambda,psrng_s,phrng_s,rate_s;
-    int i,j,k,sat,sig,fcn,cell,LLI;
-    
-    for (i=0;i<ncell;i++) {
-        if (psrng) psrng[i]=0.0;
-        if (phrng) phrng[i]=0.0;
-        if (rate ) rate [i]=0.0;
-    }
-    for (i=0;i<rtcm->obs.n;i++) {
-        data=rtcm->obs.data+i;
-        fcn=fcn_glo(data->sat,rtcm); /* fcn+7 */
-        
-        if (!(sat=to_satid(sys,data->sat))) continue;
-        
-        for (j=0;j<NFREQ+NEXOBS;j++) {
-            int code = data->code[j];
-            if (!(sig=to_sigid(sys,code))) continue;
-            
-            k=sat_ind[sat-1]-1;
-            if ((cell=cell_ind[sig_ind[sig-1]-1+k*nsig])>=64) continue;
-            
-            freq=code2freq(sys,code,fcn-7);
-            lambda=freq==0.0?0.0:CLIGHT/freq;
-            psrng_s=data->P[j]==0.0?0.0:data->P[j]-rrng[k];
-            phrng_s=data->L[j]==0.0||lambda<=0.0?0.0: data->L[j]*lambda-rrng [k];
-            rate_s =data->D[j]==0.0||lambda<=0.0?0.0:-data->D[j]*lambda-rrate[k];
-            
-            /* subtract phase - psudorange integer cycle offset */
-            LLI=data->LLI[j];
-            if ((LLI&1)||fabs(phrng_s-rtcm->cp[data->sat-1][code])>1171.0) {
-                rtcm->cp[data->sat-1][code]=ROUND(phrng_s/lambda)*lambda;
-                LLI|=1;
-            }
-            phrng_s-=rtcm->cp[data->sat-1][code];
-            
-            double lt=locktime(rtcm, data, code, LLI);
-            
-            if (psrng&&psrng_s!=0.0) psrng[cell-1]=psrng_s;
-            if (phrng&&phrng_s!=0.0) phrng[cell-1]=phrng_s;
-            if (rate &&rate_s !=0.0) rate [cell-1]=rate_s;
-            if (lock) lock[cell-1]=lt;
-            if (half) half[cell-1]=(data->LLI[j]&2)?1:0;
-            if (cnr ) cnr [cell-1]=data->SNR[j];
+                        const uint8_t *sat_ind, const uint8_t *sig_ind, const uint8_t *cell_ind,
+                        const double *rrng, const double *rrate, double *psrng, double *phrng,
+                        double *rate, double *lock, uint8_t *half, float *cnr) {
+  (void)nsat;
+  for (int i = 0; i < ncell; i++) {
+    if (psrng) psrng[i] = INVALID_PSRNG;
+    if (phrng) phrng[i] = INVALID_PHRNG;
+    if (rate) rate[i] = INVALID_RATE;
+  }
+
+  int zero_phrng = strstr(rtcm->opt, "-ZPHRNG") != NULL;
+
+  for (int i = 0; i < rtcm->obs.n; i++) {
+    obsd_t *data = rtcm->obs.data + i;
+    int fcn = fcn_glo(data->sat, rtcm); /* fcn+7 */
+
+    int sat = to_satid(sys, data->sat);
+    if (!sat) continue;
+
+    for (int j = 0; j < NFREQ + NEXOBS; j++) {
+      int code = data->code[j];
+      int sig = to_sigid(sys, code);
+      if (!sig) continue;
+
+      int k = sat_ind[sat - 1] - 1;
+      int cell = cell_ind[sig_ind[sig - 1] - 1 + k * nsig];
+      if (cell >= 64) continue;
+
+      double freq = code2freq(sys, code, fcn - 7);
+      double lambda = freq == 0.0 ? 0.0 : CLIGHT / freq;
+      double psrng_s = data->P[j] == 0.0 ? INVALID_PSRNG : data->P[j] - rrng[k];
+      double phrng_s =
+          (data->L[j] == 0.0 || lambda <= 0.0) ? INVALID_PHRNG : data->L[j] * lambda - rrng[k];
+      double rate_s =
+          data->D[j] == 0.0 || lambda <= 0.0 ? INVALID_RATE : -data->D[j] * lambda - rrate[k];
+
+      /* Subtract phase - psudorange integer cycle offset */
+      int LLI = data->LLI[j];
+
+      if (zero_phrng) {
+        // This applies an offset to phrng to keep it within range of its
+        // encoding, resetting phrng to zero on a slip or when it goes out of
+        // range, and flagging a slip when it is reset. But it means that the
+        // receivers data is not being passed on as-is. gen_msm_sat() attempts
+        // to choose a rrng that keeps the phrng within range of its encoding
+        // and in appears that this is adequate for most receivers and
+        // signals, so by default the receivers data is passed on as-is and in
+        // the case of phrng being out of range it is emitted as invalid.
+        if ((LLI & LLI_SLIP) || fabs(phrng_s - rtcm->cp[data->sat - 1][code]) > 4.0 * RANGE_MS * P2_10) {
+          rtcm->cp[data->sat - 1][code] = ROUND(phrng_s / lambda) * lambda;
+          LLI |= LLI_SLIP;
         }
+        fprintf(stderr, " lli=%d %d cp=%lf phrng_s=%lf", data->LLI[j], LLI, rtcm->cp[data->sat - 1][code], phrng_s);
+        phrng_s -= rtcm->cp[data->sat - 1][code];
+      }
+
+      double lt = locktime(rtcm, data, code, LLI);
+
+      if (psrng) psrng[cell - 1] = psrng_s;
+      if (phrng) phrng[cell - 1] = phrng_s;
+      if (rate) rate[cell - 1] = rate_s;
+      if (lock) lock[cell - 1] = lt;
+      if (half) half[cell - 1] = (data->LLI[j] & LLI_HALFC) ? 1 : 0;
+      if (cnr) cnr[cell - 1] = data->SNR[j];
     }
+  }
 }
 /* encode MSM header ---------------------------------------------------------*/
-static int encode_msm_head(int type, rtcm_t *rtcm, int sys, int sync, int *nsat,
+static int encode_msm_head(int rtype, rtcm_t *rtcm, int sys, int sync, int *nsat,
                            int *ncell, double *rrng, double *rrate,
                            uint8_t *info, double *psrng, double *phrng,
                            double *rate, double *lock, uint8_t *half,
@@ -2177,14 +2337,15 @@ static int encode_msm_head(int type, rtcm_t *rtcm, int sys, int sync, int *nsat,
     uint32_t dow,epoch;
     int i=24,j,nsig=0;
     
+    int type;
     switch (sys) {
-        case SYS_GPS: type+=1070; break;
-        case SYS_GLO: type+=1080; break;
-        case SYS_GAL: type+=1090; break;
-        case SYS_QZS: type+=1110; break;
-        case SYS_SBS: type+=1100; break;
-        case SYS_CMP: type+=1120; break;
-        case SYS_IRN: type+=1130; break;
+        case SYS_GPS: type=rtype+1070; break;
+        case SYS_GLO: type=rtype+1080; break;
+        case SYS_GAL: type=rtype+1090; break;
+        case SYS_QZS: type=rtype+1110; break;
+        case SYS_SBS: type=rtype+1100; break;
+        case SYS_CMP: type=rtype+1120; break;
+        case SYS_IRN: type=rtype+1130; break;
         default: return 0;
     }
     /* generate msm satellite, signal and cell index */
@@ -2229,7 +2390,7 @@ static int encode_msm_head(int type, rtcm_t *rtcm, int sys, int sync, int *nsat,
         setbitu(rtcm->buff,i,1,cell_ind[j]?1:0); i+=1;
     }
     /* generate msm satellite data fields */
-    gen_msm_sat(rtcm,sys,*nsat,sat_ind,rrng,rrate,info);
+    gen_msm_sat(rtcm,sys,rtype,*nsat,sat_ind,rrng,rrate,info);
     
     /* generate msm signal data fields */
     gen_msm_sig(rtcm,sys,*nsat,nsig,*ncell,sat_ind,sig_ind,cell_ind,rrng,rrate,
@@ -2237,166 +2398,150 @@ static int encode_msm_head(int type, rtcm_t *rtcm, int sys, int sync, int *nsat,
     
     return i;
 }
-/* encode rough range integer ms ---------------------------------------------*/
-static int encode_msm_int_rrng(rtcm_t *rtcm, int i, const double *rrng,
-                               int nsat)
-{
+/* Encode rough range integer ms ---------------------------------------------*/
+static int encode_msm_int_rrng(rtcm_t *rtcm, int i, const double *rrng, int nsat) {
+  for (int j = 0; j < nsat; j++) {
     uint32_t int_ms;
-    int j;
-    
-    for (j=0;j<nsat;j++) {
-        if (rrng[j]==0.0) {
-            int_ms=255;
-        }
-        else if (rrng[j]<0.0||rrng[j]>RANGE_MS*255.0) {
-            char tstr[40];
-            trace(2,"msm rough range overflow %s rrng=%.3f\n",
-                  time2str(rtcm->time,tstr,0),rrng[j]);
-            int_ms=255;
-        }
-        else {
-            int_ms=ROUND_U(rrng[j]/RANGE_MS/P2_10)>>10;
-        }
-        setbitu(rtcm->buff,i,8,int_ms); i+=8;
+    if (rrng[j] == 0.0) {
+      int_ms = 255;
+    } else if (rrng[j] < 0.0 || rrng[j] > RANGE_MS * 255.0) {
+      char tstr[40];
+      trace(2, "msm rough range overflow %s rrng=%.3f\n", time2str(rtcm->time, tstr, 0), rrng[j]);
+      int_ms = 255;
+    } else {
+      int_ms = ROUND_U(rrng[j] / RANGE_MS / P2_10) >> 10;
     }
-    return i;
+    setbitu(rtcm->buff, i, 8, int_ms);
+    i += 8;
+  }
+  return i;
 }
-/* encode rough range modulo 1 ms --------------------------------------------*/
-static int encode_msm_mod_rrng(rtcm_t *rtcm, int i, const double *rrng,
-                               int nsat)
-{
+/* Encode rough range modulo 1 ms --------------------------------------------*/
+static int encode_msm_mod_rrng(rtcm_t *rtcm, int i, const double *rrng, int nsat) {
+  for (int j = 0; j < nsat; j++) {
     uint32_t mod_ms;
-    int j;
-    
-    for (j=0;j<nsat;j++) {
-        if (rrng[j]<=0.0||rrng[j]>RANGE_MS*255.0) {
-            mod_ms=0;
-        }
-        else {
-            mod_ms=ROUND_U(rrng[j]/RANGE_MS/P2_10)&0x3FFu;
-        }
-        setbitu(rtcm->buff,i,10,mod_ms); i+=10;
+    if (rrng[j] <= 0.0 || rrng[j] > RANGE_MS * 255.0) {
+      mod_ms = 0;
+    } else {
+      mod_ms = ROUND_U(rrng[j] / RANGE_MS / P2_10) & 0x3FFu;
     }
-    return i;
+    setbitu(rtcm->buff, i, 10, mod_ms);
+    i += 10;
+  }
+  return i;
 }
-/* encode extended satellite info --------------------------------------------*/
-static int encode_msm_info(rtcm_t *rtcm, int i, const uint8_t *info, int nsat)
-{
-    int j;
-    
-    for (j=0;j<nsat;j++) {
-        setbitu(rtcm->buff,i,4,info[j]); i+=4;
-    }
-    return i;
+/* Encode extended satellite info --------------------------------------------*/
+static int encode_msm_info(rtcm_t *rtcm, int i, const uint8_t *info, int nsat) {
+  for (int j = 0; j < nsat; j++) {
+    setbitu(rtcm->buff, i, 4, info[j]);
+    i += 4;
+  }
+  return i;
 }
-/* encode rough phase-range-rate ---------------------------------------------*/
-static int encode_msm_rrate(rtcm_t *rtcm, int i, const double *rrate, int nsat)
-{
-    int j,rrate_val;
-    
-    for (j=0;j<nsat;j++) {
-        if (fabs(rrate[j])>8191.0) {
-            char tstr[40];
-            trace(2,"msm rough phase-range-rate overflow %s rrate=%.4f\n",
-                 time2str(rtcm->time,tstr,0),rrate[j]);
-            rrate_val=-8192;
-        }
-        else {
-            rrate_val=ROUND(rrate[j]/1.0);
-        }
-        setbits(rtcm->buff,i,14,rrate_val); i+=14;
+/* Encode rough phase-range-rate ---------------------------------------------*/
+static int encode_msm_rrate(rtcm_t *rtcm, int i, const double *rrate, int nsat) {
+  for (int j = 0; j < nsat; j++) {
+    int rrate_val;
+    if (fabs(rrate[j]) >= 8192.0) {
+      char tstr[40];
+      trace(2, "msm rough phase-range-rate overflow %s rrate=%.4f\n", time2str(rtcm->time, tstr, 0),
+            rrate[j]);
+      rrate_val = -8192;
+    } else {
+      rrate_val = ROUND(rrate[j] / 1.0);
     }
-    return i;
+    setbits(rtcm->buff, i, 14, rrate_val);
+    i += 14;
+  }
+  return i;
 }
-/* encode fine pseudorange ---------------------------------------------------*/
-static int encode_msm_psrng(rtcm_t *rtcm, int i, const double *psrng, int ncell)
-{
-    int j,psrng_val;
-    
-    for (j=0;j<ncell;j++) {
-        if (psrng[j]==0.0) {
-            psrng_val=-16384;
-        }
-        else if (fabs(psrng[j])>292.7) {
-            char tstr[40];
-            trace(2,"msm fine pseudorange overflow %s psrng=%.3f\n",
-                 time2str(rtcm->time,tstr,0),psrng[j]);
-            psrng_val=-16384;
-        }
-        else {
-            psrng_val=ROUND(psrng[j]/RANGE_MS/P2_24);
-        }
-        setbits(rtcm->buff,i,15,psrng_val); i+=15;
+/* Encode fine pseudorange ---------------------------------------------------*/
+static int encode_msm_psrng(rtcm_t *rtcm, int i, const double *psrng, int ncell) {
+  for (int j = 0; j < ncell; j++) {
+    int psrng_val;
+    if (psrng[j] <= INVALID_PSRNG) {
+      psrng_val = -16384;
+    } else {
+      double v = floor(psrng[j] / RANGE_MS / P2_24 + 0.5);
+      if (fabs(v) >= 16384) {
+        char tstr[40];
+        trace(2, "msm fine pseudorange overflow %s psrng=%.3f\n", time2str(rtcm->time, tstr, 0),
+              psrng[j]);
+        psrng_val = -16384;
+      } else {
+        psrng_val = v;
+      }
     }
-    return i;
+    setbits(rtcm->buff, i, 15, psrng_val);
+    i += 15;
+  }
+  return i;
 }
-/* encode fine pseudorange with extended resolution --------------------------*/
-static int encode_msm_psrng_ex(rtcm_t *rtcm, int i, const double *psrng,
-                               int ncell)
-{
-    int j,psrng_val;
-    
-    for (j=0;j<ncell;j++) {
-        if (psrng[j]==0.0) {
-            psrng_val=-524288;
-        }
-        else if (fabs(psrng[j])>292.7) {
-            char tstr[40];
-            trace(2,"msm fine pseudorange ext overflow %s psrng=%.3f\n",
-                 time2str(rtcm->time,tstr,0),psrng[j]);
-            psrng_val=-524288;
-        }
-        else {
-            psrng_val=ROUND(psrng[j]/RANGE_MS/P2_29);
-        }
-        setbits(rtcm->buff,i,20,psrng_val); i+=20;
+/* Encode fine pseudorange with extended resolution --------------------------*/
+static int encode_msm_psrng_ex(rtcm_t *rtcm, int i, const double *psrng, int ncell) {
+  for (int j = 0; j < ncell; j++) {
+    int psrng_val;
+    if (psrng[j] <= INVALID_PSRNG) {
+      psrng_val = -524288;
+    } else {
+      double v = floor(psrng[j] / RANGE_MS / P2_29 + 0.5);
+      if (fabs(v) >= 524288) {
+        char tstr[40];
+        trace(2, "msm fine pseudorange ext overflow %s psrng=%.3f\n", time2str(rtcm->time, tstr, 0),
+              psrng[j]);
+        psrng_val = -524288;
+      } else {
+        psrng_val = v;
+      }
     }
-    return i;
+    setbits(rtcm->buff, i, 20, psrng_val);
+    i += 20;
+  }
+  return i;
 }
-/* encode fine phase-range ---------------------------------------------------*/
-static int encode_msm_phrng(rtcm_t *rtcm, int i, const double *phrng, int ncell)
-{
-    int j,phrng_val;
-    
-    for (j=0;j<ncell;j++) {
-        if (phrng[j]==0.0) {
-            phrng_val=-2097152;
-        }
-        else if (fabs(phrng[j])>1171.0) {
-            char tstr[40];
-            trace(2,"msm fine phase-range overflow %s phrng=%.3f\n",
-                 time2str(rtcm->time,tstr,0),phrng[j]);
-            phrng_val=-2097152;
-        }
-        else {
-            phrng_val=ROUND(phrng[j]/RANGE_MS/P2_29);
-        }
-        setbits(rtcm->buff,i,22,phrng_val); i+=22;
+/* Encode fine phase-range ---------------------------------------------------*/
+static int encode_msm_phrng(rtcm_t *rtcm, int i, const double *phrng, int ncell) {
+  for (int j = 0; j < ncell; j++) {
+    int phrng_val;
+    if (phrng[j] <= INVALID_PHRNG) {
+      phrng_val = -2097152;
+    } else {
+      double v = floor(phrng[j] / RANGE_MS / P2_29 + 0.5);
+      if (fabs(v) >= 2097152) {
+        char tstr[40];
+        trace(2, "msm fine phase-range overflow %s phrng=%.3f\n", time2str(rtcm->time, tstr, 0),
+              phrng[j]);
+        phrng_val = -2097152;
+      } else {
+        phrng_val = v;
+      }
     }
-    return i;
+    setbits(rtcm->buff, i, 22, phrng_val);
+    i += 22;
+  }
+  return i;
 }
-/* encode fine phase-range with extended resolution --------------------------*/
-static int encode_msm_phrng_ex(rtcm_t *rtcm, int i, const double *phrng,
-                               int ncell)
-{
-    int j,phrng_val;
-    
-    for (j=0;j<ncell;j++) {
-        if (phrng[j]==0.0) {
-            phrng_val=-8388608;
-        }
-        else if (fabs(phrng[j])>1171.0) {
-            char tstr[40];
-            trace(2,"msm fine phase-range ext overflow %s phrng=%.3f\n",
-                 time2str(rtcm->time,tstr,0),phrng[j]);
-            phrng_val=-8388608;
-        }
-        else {
-            phrng_val=ROUND(phrng[j]/RANGE_MS/P2_31);
-        }
-        setbits(rtcm->buff,i,24,phrng_val); i+=24;
+/* Encode fine phase-range with extended resolution --------------------------*/
+static int encode_msm_phrng_ex(rtcm_t *rtcm, int i, const double *phrng, int ncell) {
+  for (int j = 0; j < ncell; j++) {
+    int phrng_val;
+    if (phrng[j] <= INVALID_PHRNG) {
+      phrng_val = -8388608;
+    } else {
+      double v = floor(phrng[j] / RANGE_MS / P2_31 + 0.5);
+      if (fabs(v) >= 8388608) {
+        char tstr[40];
+        trace(2, "msm fine phase-range ext overflow %s phrng=%.3f\n", time2str(rtcm->time, tstr, 0),
+              phrng[j]);
+        phrng_val = -8388608;
+      } else {
+        phrng_val = v;
+      }
     }
-    return i;
+    setbits(rtcm->buff, i, 24, phrng_val);
+    i += 24;
+  }
+  return i;
 }
 /* encode lock-time indicator ------------------------------------------------*/
 static int encode_msm_lock(rtcm_t *rtcm, int i, const double *lock, int ncell)
@@ -2454,27 +2599,27 @@ static int encode_msm_cnr_ex(rtcm_t *rtcm, int i, const float *cnr, int ncell)
     }
     return i;
 }
-/* encode fine phase-range-rate ----------------------------------------------*/
-static int encode_msm_rate(rtcm_t *rtcm, int i, const double *rate, int ncell)
-{
-    int j,rate_val;
-    
-    for (j=0;j<ncell;j++) {
-        if (rate[j]==0.0) {
-            rate_val=-16384;
-        }
-        else if (fabs(rate[j])>1.6384) {
-            char tstr[40];
-            trace(2,"msm fine phase-range-rate overflow %s rate=%.3f\n",
-                 time2str(rtcm->time,tstr,0),rate[j]);
-            rate_val=-16384;
-        }
-        else {
-            rate_val=ROUND(rate[j]/0.0001);
-        }
-        setbitu(rtcm->buff,i,15,rate_val); i+=15;
+/* Encode fine phase-range-rate ----------------------------------------------*/
+static int encode_msm_rate(rtcm_t *rtcm, int i, const double *rate, int ncell) {
+  for (int j = 0; j < ncell; j++) {
+    int rate_val;
+    if (rate[j] <= INVALID_RATE) {
+      rate_val = -16384;
+    } else {
+      double v = floor(rate[j] / 0.0001 + 0.5);
+      if (fabs(v) >= 16384) {
+        char tstr[40];
+        trace(2, "msm fine phase-range-rate overflow %s rate=%.3f\n", time2str(rtcm->time, tstr, 0),
+              rate[j]);
+        rate_val = -16384;
+      } else {
+        rate_val = v;
+      }
     }
-    return i;
+    setbitu(rtcm->buff, i, 15, rate_val);
+    i += 15;
+  }
+  return i;
 }
 /* encode MSM 1: compact pseudorange -----------------------------------------*/
 static int encode_msm1(rtcm_t *rtcm, int sys, int sync)
