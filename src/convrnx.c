@@ -69,6 +69,11 @@ typedef struct halfc_tag {      /* half-cycle ambiguity list type */
     struct halfc_tag *next;     /* next list */
 } halfc_t;
 
+typedef struct ltspan_tag { /* Lock time span list type */
+  gtime_t ts, te;           /* First and last observation time */
+  struct ltspan_tag *next;  /* Next list */
+} ltspan_t;
+
 typedef struct {                /* stream file type */
     int format;                 /* stream format (STRFMT_???) */
     int staid;                  /* station ID */
@@ -84,6 +89,8 @@ typedef struct {                /* stream file type */
     stas_t *stas;               /* station list */
     uint8_t slips [MAXSAT][MAXCODE]; /* cycle slip flag cache */
     halfc_t *halfc[MAXSAT][MAXCODE]; /* half-cycle ambiguity list */
+    ltspan_t *ltspan[MAXSAT][MAXCODE]; /* Lock time span list */
+    gtime_t tobs[MAXSAT][MAXCODE];     /* Time of previous measurement */
     FILE   *fp;                 /* output file pointer */
 } strfile_t;
 
@@ -222,6 +229,9 @@ static strfile_t *gen_strfile(int format, const char *opt)
       for (int code=0;code<MAXCODE;code++) {
         str->slips[i][code]=0;
         str->halfc[i][code]=NULL;
+        str->ltspan[i][code] = NULL;
+        gtime_t time0 = {0};
+        str->tobs[i][code] = time0;
     }
     str->fp=NULL;
     return str;
@@ -755,6 +765,161 @@ static void resolve_halfc(const strfile_t *str, obsd_t *data, int n)
         }
     }
 }
+
+// Lock indicator correction using lock time spans ---------------------------
+//
+// Some observation input formats include a lock continuity time, such as
+// RTCM3 and many raw input formats, and here this lock time is used to
+// recalculate the RINEX loss of lock indicator. The loss of lock indicator
+// will have been determined when decoding these input formats, using the lock
+// times and perhaps other inputs, but these are generally forward passes
+// suitable for real time processing and use only the previous inputs. This
+// post processing pass can also check consistency with future lock times and
+// this can be both a developer check for the real time decoders and is also a
+// useful addition in some limited circumstances.
+//
+// For example, some of the input formats have a compressed representation for
+// the minimum lock time and the lock time indicator might step from 0 to 1
+// second and all measurements for the first second will report a minimum lock
+// time of 0. For this first second the loss of continuity can not be
+// determined in real time from this alone. Whereas a post processing pass can
+// determine the continuity for this first second. When the lock time steps
+// from 0 to 1 it can determined that there was no loss of continuity for the
+// measurements over the past second.
+//
+// Add lock time span list ---------------------------------------------------
+static int add_ltspan(strfile_t *str, int sat, int code, gtime_t time) {
+  ltspan_t *p = (ltspan_t *)calloc(1,sizeof(ltspan_t));
+  if (!p) return 0;
+  p->ts = p->te = time;
+  p->next = str->ltspan[sat - 1][code];
+  str->ltspan[sat - 1][code] = p;
+  return 1;
+}
+//
+// This is an attempt to identify measurements that are within the same lock
+// time span, and does not guarantee that measurements outside a lock time
+// span are not within the same lock time span.
+//
+// These lock time spans are based on only the minimum lock time reported at
+// each measurement and the actual lock time may be longer. Thus a measurement
+// being before a span start time does not mean that it is certainly outside
+// the span.
+//
+static void update_ltspan(strfile_t *str, const obsd_t *obs) {
+  int sat = obs->sat;
+
+  for (int i = 0; i < NFREQ + NEXOBS; i++) {
+    // if (obs->L[i] == 0.0) continue;
+    int code = obs->code[i];
+    if (code == CODE_NONE) continue;
+
+    // For the half cycle ambiguous invalid measurements (that some receivers
+    // appear to emit), with a lock time indicator of zero and half cycle
+    // ambiguous flag set or the pseudo range value being zero, lockt should
+    // be -1 here.
+    double lockt = -1;
+    if (str->format == STRFMT_RTCM3) {
+      lockt = str->rtcm.lockt[sat - 1][code];
+    } else if (str->format <= MAXRCVFMT) {
+      lockt = str->raw.lockt[sat - 1][code];
+    }
+
+    if (lockt < 0) continue;
+    gtime_t mintime = timeadd(obs->time, -lockt);
+
+    // If no list, start the list.
+    if (!str->ltspan[sat - 1][code]) {
+      if (!add_ltspan(str, sat, code, obs->time)) continue;
+      str->ltspan[sat - 1][code]->ts = mintime;
+      str->ltspan[sat - 1][code]->te = obs->time;
+      continue;
+    }
+
+    // Try to extend, where there is an overlap of the lock times. Searching
+    // backwards as the span of the lock time can vary due to the
+    // representation limitations.
+    int d = 0, m = 0;
+    for (ltspan_t *p = str->ltspan[sat - 1][code]; p; p = p->next, d++) {
+      if (timediff(p->te, mintime) > 0) {
+        // Assuming obs->time > te
+        p->te = obs->time;
+        if (timediff(p->ts, mintime) > 0) p->ts = mintime;
+        m++;
+      }
+    }
+    if (m > 0) {
+      continue;
+    }
+
+    // New span, create new list entry
+    if (!add_ltspan(str, sat, code, obs->time)) continue;
+    str->ltspan[sat - 1][code]->ts = mintime;
+    str->ltspan[sat - 1][code]->te = obs->time;
+  }
+}
+// Dump lock time span list ------------------------------------------------
+static void dump_ltspan(const strfile_t *str) {
+  (void)str;
+#ifdef RTK_DISABLED // For debug
+  trace(2, "# Lock time spans\n");
+  trace(2, "# %20s %22s %4s %3s\n", "START", "END", "SAT", "FRQ");
+
+  for (int i = 1; i < MAXSAT; i++)
+    for (int code = 0; code < MAXCODE; code++) {
+      const char *obs = code2obs(code);
+      for (ltspan_t *p = str->ltspan[i - 1][code]; p; p = p->next) {
+        char id[8], tstr1[40], tstr2[40];
+        satno2id(i, id);
+        time2str(p->ts, tstr1, 2);
+        time2str(p->te, tstr2, 2);
+        trace(2, "%22s %22s %4s %3s\n", tstr1, tstr2, id, obs);
+      }
+    }
+#endif
+}
+// Resolve lock time span --------------------------------------------------------
+static void resolve_ltspan(strfile_t *str, gtime_t tstart, obsd_t *data, int n) {
+  for (int i = 0; i < n; i++) {
+    int sat = data[i].sat;
+    for (int j = 0; j < NFREQ + NEXOBS; j++) {
+      int code = data[i].code[j];
+      if (code == CODE_NONE) continue;
+      int lli = data[i].LLI[j];
+      // Some receivers can maintain lock time continuity but resolve a half
+      // cycle ambiguity with a half cycle addition or subtraction and if this
+      // has not been resolved then retain the slip.
+      if ((lli & LLI_SLIP) && (lli & (LLI_HALFA | LLI_HALFS))) {
+        // Still update the observation time.
+        str->tobs[sat - 1][code] = data[i].time;
+        continue;
+      }
+      data[i].LLI[j] = lli & ~LLI_SLIP;
+      gtime_t tobs = str->tobs[sat - 1][code];
+      // Search for a lock time span for the data time.
+      int loc = 1;
+      for (ltspan_t *p = str->ltspan[sat - 1][code]; p; p = p->next) {
+        if (timediff(data[i].time, p->te) > 0) continue;
+        if (timediff(data[i].time, p->ts) < 0) continue;
+        // Found a lock time span, check if the previous measurement is in the
+        // same time span.
+        if (timediff(tobs, p->te) <= 0 && timediff(tobs, p->ts) >= 0) {
+          // Same lock time span, so no loss of continuity between these.
+          loc = 0;
+          break;
+        }
+      }
+      if (loc) {
+        if (data[i].L[j] != 0)
+          data[i].LLI[j] = lli | LLI_SLIP;
+        else
+          str->slips[sat - 1][code] = 1;
+      }
+      str->tobs[sat - 1][code] = data[i].time;
+    }
+  }
+}
+
 /* scan input files ----------------------------------------------------------*/
 static int scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str,
                      int *mask)
@@ -775,6 +940,18 @@ static int scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str,
             continue;
         }
         while ((type=input_strfile(str))>=-1) {
+            // Update the lock time spans and even if the observation time is
+            // somewhat outside the output start and end times because these spans
+            // may still be helpful.
+            if (opt->ltspan && type==1 &&
+                (opt->ts.time == 0 || timediff(str->time, opt->ts) > -600) &&
+                (opt->te.time == 0 || timediff(str->time, opt->te) < 600)) {
+              for (int i = 0; i < str->obs->n; i++) {
+                int sys = satsys(str->obs->data[i].sat, NULL);
+                if (!(sys & opt->navsys)) continue;
+                update_ltspan(str, str->obs->data + i);
+              }
+            }
             if (opt->ts.time&&timediff(str->time,opt->ts)<-opt->ttol) continue;
             if (opt->te.time&&timediff(str->time,opt->te)>-opt->ttol) break;
             mask[m]=1; /* update file mask */
@@ -868,6 +1045,7 @@ static int scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str,
     }
     dump_stas(str);
     dump_halfc(str);
+    dump_ltspan(str);
     return 1;
 }
 /* write RINEX header --------------------------------------------------------*/
@@ -1047,22 +1225,34 @@ static int cmpobs(const void *p1, const void *p2)
 static void convobs(FILE **ofp, rnxopt_t *opt, strfile_t *str, int *n,
                     gtime_t *tend, int *staid)
 {
-    gtime_t time;
-    int i,j;
-    
     trace(3,"convobs :\n");
     
     if (!ofp[0]||str->obs->n<=0) return;
     
-    time=str->obs->data[0].time;
+    gtime_t time = str->obs->data[0].time;
     
     /* Avoid duplicated data by multiple files handover */
     if (tend->time&&timediff(time,*tend)<-opt->ttol) return;
     *tend=time;
 
+    if (opt->ltspan) {
+      // Resolve cycle slips
+      gtime_t tstart = opt->tstart;
+      if (tstart.time == 0) tstart = timeadd(time, -1);
+      resolve_ltspan(str, tstart, str->obs->data, str->obs->n);
+    }
+
     /* save cycle slips */
     save_slips(str,str->obs->data,str->obs->n);
     
+    // Restore cycle slips.
+    //
+    // The cycle slips were previously restored after the time
+    // screening test which lead to saved slips accumulating and then
+    // being emitted at the start time.
+    // TODO could combine save_slips and rest_slips
+    rest_slips(str,str->obs->data,str->obs->n);
+
     if (!screent_ttol(time,opt->ts,opt->te,opt->tint,opt->ttol)) {
       if (str->staid!=*staid) { /* Station ID changed */
         *staid=str->staid;
@@ -1071,19 +1261,19 @@ static void convobs(FILE **ofp, rnxopt_t *opt, strfile_t *str, int *n,
       return;
     }
     
-    /* Restore cycle slips */
-    rest_slips(str,str->obs->data,str->obs->n);
-    
     if (str->staid!=*staid) { /* Station ID changed */
         if (*staid>=0) { /* Output RINEX event */
             outrnxevent(ofp[0],opt,str->time,EVENT_NEWSITE,str->stas,str->staid);
             /* Set cycle slips */
-            for (i=0;i<str->obs->n;i++) {
-                for (j=0;j<NFREQ+NEXOBS;j++) {
-                    if (str->obs->data[i].L[j]!=0.0) {
-                        str->obs->data[i].LLI[j]|=LLI_SLIP;
-                    }
+            for (int i = 0; i < str->obs->n; i++) {
+              for (int j = 0; j < NFREQ + NEXOBS; j++) {
+                if (str->obs->data[i].L[j] != 0.0) {
+                  str->obs->data[i].LLI[j] |= LLI_SLIP;
+                } else {
+                  int code = str->obs->data[i].code[j];
+                  str->slips[str->obs->data[i].sat - 1][code] = 1;
                 }
+              }
             }
         }
         *staid=str->staid;
@@ -1405,6 +1595,8 @@ static int convrnx_s(int sess, int format, rnxopt_t *opt, const char *file,
     for (int i = 0; i < MAXSAT; i++) {
        for (int code = 0; code < MAXCODE; code++) {
            str->slips[i][code] = 0;
+           gtime_t time0 = {0};
+           str->tobs[i][code] = time0;
        }
     }
 

@@ -98,6 +98,7 @@ extern int init_rtcm(rtcm_t *rtcm)
         rtcm->lti[i][code]=rtcm->loss[i][code]=0;
         rtcm->tobs[i][code] = time0;
         rtcm->lltime[i][code]=time0;
+        rtcm->lockt[i][code] = -1;
     }
     rtcm->nbyte=rtcm->nbit=rtcm->len=0;
     rtcm->word=0;

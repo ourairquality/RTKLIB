@@ -364,6 +364,7 @@ static int lossoflock(rtcm_t *rtcm, int sat, int code, int idx, int lti, int typ
     // Internal error
     return 0;
   }
+  rtcm->lockt[sat - 1][code] = nmin;
 
   if (lti == 0 && (halfc || L == 0)) {
     // Septentrio reports a lock time indicator of zero during a half
@@ -377,6 +378,7 @@ static int lossoflock(rtcm_t *rtcm, int sat, int code, int idx, int lti, int typ
     //
     // For the non-MSM paths, the halfc flag is not available, it
     // just sends lti of zero and the carrier phase as invalid.
+    rtcm->lockt[sat - 1][code] = -1;
     return 0;
   }
 

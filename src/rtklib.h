@@ -978,6 +978,7 @@ typedef struct {        /* RTCM control struct type */
     gtime_t tobs[MAXSAT][MAXCODE];  /* Observation data time */
     gtime_t stime;      /* Time of first epoch, for slip detection */
     gtime_t lltime[MAXSAT][MAXCODE]; /* last lock time */
+    double lockt[MAXSAT][MAXCODE];  /* Min lock time (s) */
     int nbyte;          /* number of bytes in message buffer */
     int nbyte_invalid;  /* number of bytes in invalid message, used to rewind buffer */
     int nbit;           /* number of bits in word buffer */
@@ -1164,6 +1165,7 @@ typedef struct {        /* RINEX options type */
     int autopos;        /* auto approx position */
     int phshift;        /* phase shift correction */
     int halfcyc;        /* half cycle correction */
+    int ltspan;         /* Lock time span correction */
     int sortsats;       /* Sort by satellite index */
     int sep_nav;        /* separated nav files */
     gtime_t tstart;     /* first obs time */
