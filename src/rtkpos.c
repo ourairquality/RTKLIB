@@ -1373,7 +1373,8 @@ static int ddres(rtk_t *rtk, const obsd_t *obs, double dt, const double *x,
            usually insignificant for short baselines (<10km)*/
     for (int i=0;i<ns;i++) {
         if (opt->ionoopt==IONOOPT_EST) {
-            im[i]=(ionmapf(posu,azel+iu[i]*2)+ionmapf(posr,azel+ir[i]*2))/2.0;
+            im[i]=(ionmapf(posu,azel+iu[i]*2,ME_WGS84,HION,1)+
+                   ionmapf(posr,azel+ir[i]*2,ME_WGS84,HION,1))/2.0;
         }
         if (opt->tropopt>=TROPOPT_EST) {
             tropu[i]=prectrop(rtk->sol.time,posu,0,azel+iu[i]*2,opt,x,dtdxu+i*3);

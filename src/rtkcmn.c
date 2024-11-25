@@ -4329,7 +4329,7 @@ extern void dops(int ns, const double *azel, double elmin, double *dop)
     }
 }
 /* ionosphere model ------------------------------------------------------------
-* compute ionospheric delay by broadcast ionosphere model (klobuchar model)
+* compute ionospheric delay by broadcast ionosphere model (Klobuchar model)
 * args   : gtime_t t        I   time (gpst)
 *          double *ion      I   iono model parameters {a0,a1,a2,a3,b0,b1,b2,b3}
 *          double *pos      I   receiver position {lat,lon,h} (rad,m)
@@ -4377,16 +4377,40 @@ extern double ionmodel(gtime_t t, const double *ion, const double *pos,
 
     return CLIGHT*f*(fabs(x)<1.57?5E-9+amp*(1.0+x*x*(-0.5+x*x/24.0)):5E-9);
 }
-/* ionosphere mapping function -------------------------------------------------
-* compute ionospheric delay mapping function by single layer model
-* args   : double *pos      I   receiver position {lat,lon,h} (rad,m)
-*          double *azel     I   azimuth/elevation angle {az,el} (rad)
-* return : ionospheric mapping function
-*-----------------------------------------------------------------------------*/
-extern double ionmapf(const double *pos, const double *azel)
-{
-    if (pos[2]>=HION) return 1.0;
-    return 1.0/cos(asin((RE_WGS84+pos[2])/(RE_WGS84+HION)*sin(PI/2.0-azel[1])));
+/* Ionosphere mapping function -------------------------------------------------
+ * Compute ionospheric delay mapping function by single layer model
+ * Args   : double *pos      I   receiver position {lat,lon,h} (rad,m)
+ *          double *azel     I   azimuth/elevation angle {az,el} (rad)
+ *          double re        I   earth radius (km)
+ *          double hion      I   altitude of ionosphere (km)
+ *          int opt          I   mapping function option
+ * Return : ionospheric mapping function
+ *----------------------------------------------------------------------------*/
+extern double ionmapf(const double *pos, const double *azel, double re, double hion, int opt) {
+  if (opt == 1) {
+    // Single layer mapping function. The same as returned by ionppp().
+    if (pos[2] / 1000.0 >= hion) return 1.0;
+    double rp = (re + pos[2] / 1000.0) / (re + hion) * cos(azel[1]);
+    // Equivalent to 1/cos(asin(rp))
+    return 1.0 / sqrt(1.0 - SQR(rp));
+  }
+
+  if (opt == 2) {
+    // Modified single-layer model mapping (MSLM) function approximating the
+    // JPL extended slab model mapping function. The height and alpha are
+    // fixed for this particular mapping function, and the re and hion
+    // arguments are ignored. Other MSLM functions are possible with different
+    // constant.
+    double rp = ME_WGS84 / (ME_WGS84 + 506.7 * 1000.0) * sin(0.9782 * (PI / 2 - azel[1]));
+    return 1.0 / sqrt(1.0 - SQR(rp));
+  }
+
+  if (opt == 3) {
+    // Klobuchar, as used for GPS.
+    return 1 + 16 * pow(0.53 - azel[1] / PI, 3);
+  }
+
+  return 1.0;
 }
 /* ionospheric pierce point position -------------------------------------------
 * compute ionospheric pierce point (ipp) position and slant factor
@@ -4398,6 +4422,7 @@ extern double ionmapf(const double *pos, const double *azel)
 * return : slant factor, the single-layer mapping function.
 * notes  : see ref [2], only valid on the earth surface
 *          fixing bug on ref [2] A.4.4.10.1 A-22,23
+*          For other mapping functions, see ionmapf().
 *-----------------------------------------------------------------------------*/
 extern double ionppp(const double *pos, const double *azel, double re,
                      double hion, double *posp)
@@ -4405,7 +4430,7 @@ extern double ionppp(const double *pos, const double *azel, double re,
     double cosaz,r,rp,ap,sinap,tanap;
 
     /* The radius at the receiver station. */
-    r=re+pos[2]/1000.0;
+    r=re+pos[2]/1000.0;  // km
     /* asin(rp) is the zenith angle at the IPP. */
     rp=r/(re+hion)*cos(azel[1]);
     /* The angle at the center of the earth. */
@@ -4422,6 +4447,7 @@ extern double ionppp(const double *pos, const double *azel, double re,
     else {
         posp[1]=pos[1]+asin(sinap*sin(azel[0])/cos(posp[0]));
     }
+    posp[2] = (re + hion) * 1000;
     /* Equivalent to 1/cos(asin(rp)) */
     return 1.0/sqrt(1.0-rp*rp);
 }

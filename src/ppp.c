@@ -772,7 +772,7 @@ static void udiono_ppp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
             ecef2pos(rtk->sol.rr,pos);
             azel=rtk->ssat[sat-1].azel;
             /* adjust delay estimate by path length */
-            ion/=ionmapf(pos,azel);
+            ion/=ionmapf(pos,azel,ME_WGS84,HION,1);
             initx(rtk,ion,VAR_IONO,j);
             trace(4,"ion init: sat=%d ion=%.4f\n",sat,ion);
         }
@@ -997,7 +997,7 @@ static int model_iono(gtime_t time, const double *pos, const double *azel,
     }
     if (opt->ionoopt==IONOOPT_EST) {
         /* Estimated delay is a vertical delay, apply the mapping function. */
-        *dion=x[II(sat,opt)]*ionmapf(pos,azel);
+        *dion=x[II(sat,opt)]*ionmapf(pos,azel,ME_WGS84,HION,1);
         *var=0.0;
         return 1;
     }
@@ -1116,7 +1116,7 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
                 /* The vertical iono delay is estimated, but the residual is
                  * in the direction of the slant, so apply the slat factor
                  * mapping function. */
-                if (Hc && xi) cvwrite(Hi,nc,xi,II(sat,opt),C*ionmapf(pos,azel+i*2));
+                if (Hc && xi) cvwrite(Hi,nc,xi,II(sat,opt),C*ionmapf(pos,azel+i*2,ME_WGS84,HION,1));
             }
             if (frq==2&&code==1) { /* L5-receiver-dcb */
                 dcb+=rtk->x[ID(opt)];

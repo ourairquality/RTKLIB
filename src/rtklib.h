@@ -90,8 +90,10 @@ extern "C" {
 
 #define RE_WGS84    6378137.0           /* earth semimajor axis (WGS84) (m) */
 #define FE_WGS84    (1.0/298.257223563) /* earth flattening (WGS84) */
+#define ME_WGS84    6371008.7714        // Earth mean radius (WGS84)
 
 #define HION        350000.0            /* ionosphere height (m) */
+#define TECK        40.308193E16        // TEC scaling factor (m^3/s^2 or m*m^2*Hz^2)
 
 #define MAXFREQ     6                   /* max NFREQ */
 
@@ -1699,7 +1701,7 @@ EXPORT void dops(int ns, const double *azel, double elmin, double *dop);
 /* atmosphere models ---------------------------------------------------------*/
 EXPORT double ionmodel(gtime_t t, const double *ion, const double *pos,
                        const double *azel);
-EXPORT double ionmapf(const double *pos, const double *azel);
+EXPORT double ionmapf(const double *pos, const double *azel, double re, double hion, int opt);
 EXPORT double ionppp(const double *pos, const double *azel, double re,
                      double hion, double *pppos);
 EXPORT double tropmodel(gtime_t time, const double *pos, const double *azel,
