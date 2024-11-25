@@ -376,45 +376,42 @@ static int interptec(const tec_t *tec, int k, const double *posp, double *value,
     }
     return 1;
 }
-/* ionosphere delay by tec grid data -----------------------------------------*/
-static int iondelay(gtime_t time, const tec_t *tec, const double *pos,
-                    const double *azel, int opt, double *delay, double *var)
-{
-    const double fact=40.30E16/FREQL1/FREQL1; /* tecu->L1 iono (m) */
-    double fs,posp[3]={0},vtec,rms,hion,rp;
-    int i;
-    
-    char tstr[40];
-    trace(3,"iondelay: time=%s pos=%.1f %.1f azel=%.1f %.1f\n",time2str(time,tstr,0),
-          pos[0]*R2D,pos[1]*R2D,azel[0]*R2D,azel[1]*R2D);
-    
-    *delay=*var=0.0;
-    
-    for (i=0;i<tec->ndata[2];i++) { /* for a layer */
-        
-        hion=tec->hgts[0]+tec->hgts[2]*i;
-        
-        /* ionospheric pierce point position */
-        fs=ionppp(pos,azel,tec->rb,hion,posp);
-        
-        if (opt&2) {
-            /* modified single layer mapping function (M-SLM) ref [2] */
-            rp=tec->rb/(tec->rb+hion)*sin(0.9782*(PI/2.0-azel[1]));
-            fs=1.0/sqrt(1.0-rp*rp);
-        }
-        if (opt&1) {
-            /* earth rotation correction (sun-fixed coordinate) */
-            posp[1]+=2.0*PI*timediff(time,tec->time)/86400.0;
-        }
-        /* interpolate tec grid data */
-        if (!interptec(tec,i,posp,&vtec,&rms)) return 0;
-        
-        *delay+=fact*fs*vtec;
-        *var+=fact*fact*fs*fs*rms*rms;
+/* Ionosphere delay by TEC grid data -----------------------------------------*/
+static int iondelay(gtime_t time, const tec_t *tec, const double *pos, const double *azel, int opt,
+                    double *delay, double *var) {
+  char tstr[40];
+  trace(3, "iondelay: time=%s pos=%.1f %.1f azel=%.1f %.1f\n", time2str(time, tstr, 0),
+        pos[0] * R2D, pos[1] * R2D, azel[0] * R2D, azel[1] * R2D);
+
+  *delay = *var = 0.0;
+
+  for (int i = 0; i < tec->ndata[2]; i++) { // For a layer.
+
+    double hion = tec->hgts[0] + tec->hgts[2] * i;
+
+    // Ionospheric pierce point position.
+    double posp[3] = {0};
+    double fs = ionppp(pos, azel, tec->rb, hion, posp);
+
+    if (opt & 2) {
+      // Modified single layer mapping function (M-SLM) ref [2]
+      fs = ionmapf(pos, azel, tec->rb, hion, 2);
     }
-    trace(4,"iondelay: delay=%7.2f std=%6.2f\n",*delay,sqrt(*var));
-    
-    return 1;
+    if (opt & 1) {
+      // Earth rotation correction (sun-fixed coordinate)
+      posp[1] += 2.0 * PI * timediff(time, tec->time) / 86400.0;
+    }
+    /* Interpolate TEC grid data */
+    double vtec, rms;
+    if (!interptec(tec, i, posp, &vtec, &rms)) return 0;
+
+    const double fact = TECK / FREQL1 / FREQL1; // tecu->L1 iono (m)
+    *delay += fact * fs * vtec;
+    *var += fact * fact * fs * fs * rms * rms;
+  }
+  trace(4, "iondelay: delay=%7.2f std=%6.2f\n", *delay, sqrt(*var));
+
+  return 1;
 }
 /* ionosphere model by tec grid data -------------------------------------------
 * compute ionospheric delay by tec grid data
