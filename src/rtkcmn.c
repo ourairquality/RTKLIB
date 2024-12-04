@@ -4691,6 +4691,121 @@ static int antpcoidx(const pcv_t *pcv, double freq, double *freq1, double *freq2
   return idxl;
 }
 
+/* Receiver antenna phase center variation --------------------------------------
+ * Compute antenna offset by antenna phase center parameters
+ * Args   : pcv_t *pcv       I   antenna phase center parameters
+ *          double *azel     I   azimuth/elevation for receiver {az,el} (rad)
+ *          double freq      I   frequency
+ * Return : range offsets for the respective frequency (m)
+ *
+ * Note: this applies the PCV when available, and for the PCO only see antpco().
+ *-----------------------------------------------------------------------------*/
+extern double antpcv(const pcv_t *pcv, const double *azel, double freq) {
+  trace(4, "antpcv: azel=%6.1f %4.1f\n", azel[0] * R2D, azel[1] * R2D);
+
+  double freq1, freq2;
+  int idx2, idx = antpcoidx(pcv, freq, &freq1, &freq2, &idx2);
+  if (idx < 0 || !(pcv->init[idx] & (PCV_PHV | PCV_NOAZI)) || pcv->dzen[idx] < 0.01) {
+    trace(3, "antpcv: no pcv freq=%.0lf\n", freq);
+    return 0.0;
+  }
+
+  if (pcv->zen_len[idx] != (pcv->zen2[idx] - pcv->zen1[idx]) / pcv->dzen[idx] + 1)
+    trace(2, "antpcv: unexpected zen_len\n");
+
+  double dant = 0.0;
+
+  if ((pcv->init[idx] & PCV_PHV) && pcv->dazi[idx] > 0.01) {
+    double pcv1 = 0.0;
+    {
+      double a = azel[0] * R2D / pcv->dazi[idx];
+      int i = trunc(a);
+      double r = a - i;
+      if (i + 1 >= pcv->azi_len[idx] - 1)
+        trace(2, "antpcv azi %d >= len %d\n", i + 1, pcv->azi_len[idx] - 1);
+      if (i < 0) {
+        i = 0;
+        r = 0;
+        trace(2, "antpcv azi < 0 clipped\n");
+      } else if (i >= pcv->azi_len[idx] - 1) {
+        i = pcv->azi_len[idx] - 2;
+        r = 0;
+        trace(2, "antpcv azi >= len clipped\n");
+      }
+      // Interpolate for the zenith at each azimuth step.
+      double dant1 = interpvar(90.0 - azel[1] * R2D, pcv->zen1[idx], pcv->zen2[idx], pcv->dzen[idx],
+                               pcv->var[idx] + (1 + i) * pcv->zen_len[idx], pcv->zen_len[idx]);
+      pcv1 += dant1;
+      if (i + 1 < pcv->azi_len[idx] - 1) {
+        // Interpolate for the zenith at each azimuth step.
+        double dant2 = interpvar(90.0 - azel[1] * R2D, pcv->zen1[idx], pcv->zen2[idx], pcv->dzen[idx],
+                                 pcv->var[idx] + (1 + i + 1) * pcv->zen_len[idx], pcv->zen_len[idx]);
+        // Interpolate for the azimuth.
+        pcv1 += -r * dant1 + r * dant2;
+      }
+    }
+    dant += pcv1;
+
+    if (idx2 >= 0 && freq2 > 0 && pcv->init[idx2] & (PCV_PHV | PCV_NOAZI) && pcv->dzen[idx2] > 0.01 && pcv->dazi[idx2] > 0.01) {
+      // PCV with interpolation between frequencies.
+      if (pcv->zen_len[idx2] != (pcv->zen2[idx2] - pcv->zen1[idx2]) / pcv->dzen[idx2] + 1)
+        trace(2, "antpcv: unexpected zen_len\n");
+      double pcv2 = 0.0;
+      double a = azel[0] * R2D / pcv->dazi[idx2];
+      int i = trunc(a);
+      double r = a - i;
+      if (i + 1 >= pcv->azi_len[idx2] - 1)
+        trace(2, "antpcv azi %d >= len %d\n", i + 1, pcv->azi_len[idx2] - 1);
+      if (i < 0) {
+        i = 0;
+        r = 0;
+        trace(2, "antpcv azi < 0 clipped\n");
+      } else if (i >= pcv->azi_len[idx2] - 1) {
+        i = pcv->azi_len[idx2] - 2;
+        r = 0;
+        trace(2, "antpcv azi >= len clipped\n");
+      }
+      // Interpolate for the zenith at each azimuth step.
+      double dant1 = interpvar(90.0 - azel[1] * R2D, pcv->zen1[idx2], pcv->zen2[idx2], pcv->dzen[idx2],
+                               pcv->var[idx2] + (1 + i) * pcv->zen_len[idx2], pcv->zen_len[idx2]);
+      pcv2 += dant1;
+      if (i + 1 < pcv->azi_len[idx2] - 1) {
+        // Interpolate for the zenith at each azimuth step.
+        double dant2 = interpvar(90.0 - azel[1] * R2D, pcv->zen1[idx2], pcv->zen2[idx2], pcv->dzen[idx2],
+                                 pcv->var[idx2] + (1 + i + 1) * pcv->zen_len[idx2], pcv->zen_len[idx2]);
+        // Interpolate for the azimuth.
+        pcv2 += -r * dant1 + r * dant2;
+      }
+
+      // Interpolate between frequencies.
+      double lam = CLIGHT / freq, lam1 = CLIGHT / freq1, lam2 = CLIGHT / freq2, dlam = lam2 - lam1;
+      double b = (lam - lam1) / dlam;
+      dant += -b * pcv1 + b * pcv2;
+    }
+    trace(4, "antpcv: dant=%6.3f\n", dant);
+    return dant;
+  }
+
+  // NOAZI
+  if (pcv->init[idx] & PCV_NOAZI) {
+    double pcv1 = interpvar(90.0 - azel[1] * R2D, pcv->zen1[idx], pcv->zen2[idx], pcv->dzen[idx],
+                            pcv->var[idx], pcv->zen_len[idx]);
+    dant += pcv1;
+    if (idx2 >= 0 && freq2 > 0 && pcv->init[idx2] & (PCV_PHV | PCV_NOAZI) &&
+        pcv->dzen[idx2] > 0.01) {
+      // PCV with interpolation between frequencies.
+      double pcv2 = interpvar(90.0 - azel[1] * R2D, pcv->zen1[idx2], pcv->zen2[idx2],
+                              pcv->dzen[idx2], pcv->var[idx2], pcv->zen_len[idx2]);
+      double lam = CLIGHT / freq, lam1 = CLIGHT / freq1, lam2 = CLIGHT / freq2, dlam = lam2 - lam1;
+      double a = (lam - lam1) / dlam;
+      dant += -a * pcv1 + a * pcv2;
+    }
+  }
+
+  trace(4, "antpcv: dant=%6.4f\n", dant);
+  return dant;
+}
+
 /* Receiver antenna model ------------------------------------------------------
  * Compute antenna offset by antenna phase center parameters
  * Args   : pcv_t *pcv       I   antenna phase center parameters
@@ -4698,135 +4813,32 @@ static int antpcoidx(const pcv_t *pcv, double freq, double *freq1, double *freq2
  *          double *azel     I   azimuth/elevation for receiver {az,el} (rad)
  *          int     opt      I   option (0:only offset,1:offset+pcv)
  *          double freq      I   frequency
- * Return : range offsets for the respective frequency (m)
+ * Return : range offset for the respective frequency (m)
  *
- * Note: this applies the PCO and PCV when available, and for the PCO only see
- * antpco().
- *
+ * Note: this applies the PCO and PCV when available. For the PCO only see
+ * antpco(). The receiver PCO does not depend on the azimuth and elevation to
+ * the satellite (less the PCV) and might affect these angles so the caller
+ * may wish to apply the PCO first and then call antpcv(), particularly if the
+ * antenna delta can be large.
  *-----------------------------------------------------------------------------*/
 extern double antmodel(const pcv_t *pcv, const double *del, const double *azel, int opt, double freq) {
   trace(4, "antmodel: azel=%6.1f %4.1f opt=%d\n", azel[0] * R2D, azel[1] * R2D, opt);
+
+  double pco[3];
+  antpco(pcv, freq, pco);
+
+  double off[3];
+  for (int i = 0; i < 3; i++) off[i] = pco[i] + del[i];
 
   double e[3], cosel = cos(azel[1]);
   e[0] = sin(azel[0]) * cosel;
   e[1] = cos(azel[0]) * cosel;
   e[2] = sin(azel[1]);
 
-  double freq1, freq2;
-  int idx2, idx = antpcoidx(pcv, freq, &freq1, &freq2, &idx2);
-  if (idx < 0) {
-    double dant = -dot3(del, e);
-    trace(3, "antmodel: no pco freq=%.0lf, dant=%6.3f\n", freq, dant);
-    return dant;
-  }
-
-  if (!(pcv->init[idx] & PCV_PCO))
-    trace(2, "antmodel: error pcv %d not init\n", idx);
-
-  // Apply the PCO.
-  double off[3];
-  for (int i = 0; i < 3; i++) off[i] = del[i] + pcv->off[idx][i];
-
-  if (idx2 >= 0 && freq2 > 0) {
-    // PCO with interpolation between frequencies.
-    double lam = CLIGHT / freq, lam1 = CLIGHT / freq1, lam2 = CLIGHT / freq2, dlam = lam2 - lam1;
-    double a = (lam - lam1) / dlam;
-    for (int j = 0; j < 3; j++)
-      off[j] += -a * pcv->off[idx][j] + a * pcv->off[idx2][j];
-  }
-
   double dant = -dot3(off, e);
-  if (opt && pcv->init[idx] & (PCV_PHV | PCV_NOAZI) && pcv->dzen[idx] > 0.01) {
-    if (pcv->zen_len[idx] != (pcv->zen2[idx] - pcv->zen1[idx]) / pcv->dzen[idx] + 1)
-      trace(2, "antmodel: unexpected zen_len\n");
-    if (pcv->init[idx] & PCV_PHV && pcv->dazi[idx] > 0.01) {
-      double pcv1 = 0.0;
-      {
-        double a = azel[0] * R2D / pcv->dazi[idx];
-        int i = trunc(a);
-        double r = a - i;
-        if (i + 1 >= pcv->azi_len[idx] - 1)
-          trace(2, "antmodel azi %d >= len %d\n", i + 1, pcv->azi_len[idx] - 1);
-        if (i < 0) {
-          i = 0;
-          r = 0;
-          trace(2, "antmodel azi < 0 clipped\n");
-        } else if (i >= pcv->azi_len[idx] - 1) {
-          i = pcv->azi_len[idx] - 2;
-          r = 0;
-          trace(2, "antmodel azi >= len clipped\n");
-        }
-        // Interpolate for the zenith at each azimuth step.
-        double dant1 = interpvar(90.0 - azel[1] * R2D, pcv->zen1[idx], pcv->zen2[idx], pcv->dzen[idx],
-                                 pcv->var[idx] + (1 + i) * pcv->zen_len[idx], pcv->zen_len[idx]);
-        pcv1 += dant1;
-        if (i + 1 < pcv->azi_len[idx] - 1) {
-          // Interpolate for the zenith at each azimuth step.
-          double dant2 = interpvar(90.0 - azel[1] * R2D, pcv->zen1[idx], pcv->zen2[idx], pcv->dzen[idx],
-                                   pcv->var[idx] + (1 + i + 1) * pcv->zen_len[idx], pcv->zen_len[idx]);
-          // Interpolate for the azimuth.
-          pcv1 += -r * dant1 + r * dant2;
-        }
-      }
-      dant += pcv1;
+  if (opt) dant += antpcv(pcv, azel, freq);
 
-      if (idx2 >= 0 && freq2 > 0 && pcv->init[idx2] & (PCV_PHV | PCV_NOAZI) && pcv->dzen[idx2] > 0.01 && pcv->dazi[idx2] > 0.01) {
-        // PCV with interpolation between frequencies.
-        if (pcv->zen_len[idx2] != (pcv->zen2[idx2] - pcv->zen1[idx2]) / pcv->dzen[idx2] + 1)
-          trace(2, "antmodel: unexpected zen_len\n");
-        double pcv2 = 0.0;
-        double a = azel[0] * R2D / pcv->dazi[idx2];
-        int i = trunc(a);
-        double r = a - i;
-        if (i + 1 >= pcv->azi_len[idx2] - 1)
-          trace(2, "antmodel azi %d >= len %d\n", i + 1, pcv->azi_len[idx2] - 1);
-        if (i < 0) {
-          i = 0;
-          r = 0;
-          trace(2, "antmodel azi < 0 clipped\n");
-        } else if (i >= pcv->azi_len[idx2] - 1) {
-          i = pcv->azi_len[idx2] - 2;
-          r = 0;
-          trace(2, "antmodel azi >= len clipped\n");
-        }
-        // Interpolate for the zenith at each azimuth step.
-        double dant1 = interpvar(90.0 - azel[1] * R2D, pcv->zen1[idx2], pcv->zen2[idx2], pcv->dzen[idx2],
-                                 pcv->var[idx2] + (1 + i) * pcv->zen_len[idx2], pcv->zen_len[idx2]);
-        pcv2 += dant1;
-        if (i + 1 < pcv->azi_len[idx2] - 1) {
-          // Interpolate for the zenith at each azimuth step.
-          double dant2 = interpvar(90.0 - azel[1] * R2D, pcv->zen1[idx2], pcv->zen2[idx2], pcv->dzen[idx2],
-                                   pcv->var[idx2] + (1 + i + 1) * pcv->zen_len[idx2], pcv->zen_len[idx2]);
-          // Interpolate for the azimuth.
-          pcv2 += -r * dant1 + r * dant2;
-        }
-
-        // Interpolate between frequencies.
-        double lam = CLIGHT / freq, lam1 = CLIGHT / freq1, lam2 = CLIGHT / freq2, dlam = lam2 - lam1;
-        double b = (lam - lam1) / dlam;
-        dant += -b * pcv1 + b * pcv2;
-      }
-      trace(4, "antmodel: dant=%6.3f\n", dant);
-      return dant;
-    }
-
-    // NOAZI
-    if (pcv->init[idx] & PCV_NOAZI) {
-      double pcv1 = interpvar(90.0 - azel[1] * R2D, pcv->zen1[idx], pcv->zen2[idx], pcv->dzen[idx],
-                              pcv->var[idx], pcv->zen_len[idx]);
-      dant += pcv1;
-      if (idx2 >= 0 && freq2 > 0 && pcv->init[idx2] & (PCV_PHV | PCV_NOAZI) && pcv->dzen[idx2] > 0.01) {
-        // PCV with interpolation between frequencies.
-        double pcv2 = interpvar(90.0 - azel[1] * R2D, pcv->zen1[idx2], pcv->zen2[idx2],
-                                pcv->dzen[idx2], pcv->var[idx2], pcv->zen_len[idx2]);
-        double lam = CLIGHT / freq, lam1 = CLIGHT / freq1, lam2 = CLIGHT / freq2, dlam = lam2 - lam1;
-        double a = (lam - lam1) / dlam;
-        dant += -a * pcv1 + a * pcv2;
-      }
-    }
-  }
-
-  trace(4, "antmodel: dant=%6.3f\n", dant);
+  trace(4, "antmodel: dant=%6.4f\n", dant);
   return dant;
 }
 
@@ -4875,6 +4887,9 @@ extern void antpco(const pcv_t *pcv, double freq, double pco[3]) {
     return;
   }
 
+  if (!(pcv->init[idx] & PCV_PCO))
+    trace(2, "antpco: error no pco for sys=%d svn=%d freq=%.0lf idx=%d\n", pcv->satsys, pcv->svn, freq, idx);
+
   for (int i = 0; i < 3; i++) pco[i] = pcv->off[idx][i];
 
   if (idx2 >= 0 && freq1 > 0 && freq2 > 0) {
@@ -4885,7 +4900,7 @@ extern void antpco(const pcv_t *pcv, double freq, double pco[3]) {
       pco[j] += -a * pcv->off[idx][j] + a * pcv->off[idx2][j];
   }
 
-  trace(4, "antpco: PCO sys=%d svn=%d type=%s %6.4f %6.4f %6.4f\n", pcv->satsys, pcv->svn, pcv->type, pco[0], pco[1], pco[2]);
+  trace(4, "antpco: sys=%d svn=%d type=%s pco=%6.4f %6.4f %6.4f\n", pcv->satsys, pcv->svn, pcv->type, pco[0], pco[1], pco[2]);
   return;
 }
 
