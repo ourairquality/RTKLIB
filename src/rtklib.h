@@ -1727,6 +1727,7 @@ EXPORT void free_pcvs(pcvs_t *pcvs);
 EXPORT double antmodel(const pcv_t *pcv, const double *del, const double *azel, int opt, double freq);
 EXPORT double antmodel_s(const pcv_t *pcv, double nadir, double freq);
 EXPORT void antpco(const pcv_t *pcv, double freq, double pco[3]);
+EXPORT double antpcv(const pcv_t *pcv, const double *azel, double freq);
 EXPORT double antcode2freq(int code);
 EXPORT const char *antcode2id(int code);
 
