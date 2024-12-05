@@ -1808,18 +1808,13 @@ void OptDialog::updateEnable()
     ui->lEReferencePosition2->setEnabled(ui->cBReferencePositionType->isEnabled() && ui->cBReferencePositionType->currentIndex() <= 2);
     ui->lEReferencePosition3->setEnabled(ui->cBReferencePositionType->isEnabled() && ui->cBReferencePositionType->currentIndex() <= 2);
     ui->btnReferencePosition->setEnabled(ui->cBReferencePositionType->isEnabled() && ui->cBReferencePositionType->currentIndex() <= 2);
-    ui->cBRoverAntennaPcv->setEnabled(rel || ppp);
-    ui->cBRoverAntenna->setEnabled((rel || ppp) && ui->cBRoverAntennaPcv->isChecked());
+    ui->cBRoverAntenna->setEnabled(ui->cBRoverAntennaPcv->isChecked());
     ui->cBReferenceAntennaPcv->setEnabled(rel);
     ui->cBReferenceAntenna->setEnabled(rel && ui->cBReferenceAntennaPcv->isChecked());
     if (options == NaviOptions) {
       // For rtknavi the delta can be supplied even when antenna selection is
       // automated, in which case the delta fills in until overwritten when
       // the antenna and it's delta are known.
-      ui->sBRoverAntennaE->setEnabled(rel || ppp);
-      ui->sBRoverAntennaN->setEnabled(rel || ppp);
-      ui->sBRoverAntennaU->setEnabled(rel || ppp);
-      ui->lblRoverAntennaD->setEnabled(rel || ppp);
       ui->sBReferenceAntennaE->setEnabled(rel);
       ui->sBReferenceAntennaN->setEnabled(rel);
       ui->sBReferenceAntennaU->setEnabled(rel);
@@ -1832,10 +1827,10 @@ void OptDialog::updateEnable()
       // this should occur before processing, so disable the delta setting
       // here in that case.
       int rovp = !ui->cBRoverAntennaPcv->isChecked() || ui->cBRoverAntenna->currentText() != "*";
-      ui->sBRoverAntennaE->setEnabled((rel || ppp) && rovp);
-      ui->sBRoverAntennaN->setEnabled((rel || ppp) && rovp);
-      ui->sBRoverAntennaU->setEnabled((rel || ppp) && rovp);
-      ui->lblRoverAntennaD->setEnabled((rel || ppp) && rovp);
+      ui->sBRoverAntennaE->setEnabled(rovp);
+      ui->sBRoverAntennaN->setEnabled(rovp);
+      ui->sBRoverAntennaU->setEnabled(rovp);
+      ui->lblRoverAntennaD->setEnabled(rovp);
       int refp = !ui->cBReferenceAntennaPcv->isChecked() || ui->cBReferenceAntenna->currentText() != "*";
       ui->sBReferenceAntennaE->setEnabled(rel && refp);
       ui->sBReferenceAntennaN->setEnabled(rel && refp);

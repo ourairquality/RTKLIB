@@ -1025,13 +1025,12 @@ void __fastcall TOptDialog::UpdateEnable(void)
         // For rtkpost, and when setting the antenna and delta automatically,
         // this should occur before processing, so disable the delta setting
         // here in that case.
-	RovAntPcv      ->Enabled=rel||ppp;
-	RovAnt         ->Enabled=(rel||ppp)&&RovAntPcv->Checked;
+	RovAnt         ->Enabled=RovAntPcv->Checked;
         int rovp = !RovAntPcv->Checked || RovAnt->Text != "*";
-	RovAntE        ->Enabled=(rel||ppp)&&rovp;
-	RovAntN        ->Enabled=(rel||ppp)&&rovp;
-	RovAntU        ->Enabled=(rel||ppp)&&rovp;
-	LabelRovAntD   ->Enabled=(rel||ppp)&&rovp;
+	RovAntE        ->Enabled=rovp;
+	RovAntN        ->Enabled=rovp;
+	RovAntU        ->Enabled=rovp;
+	LabelRovAntD   ->Enabled=rovp;
 	RefAntPcv      ->Enabled=rel;
 	RefAnt         ->Enabled=rel&&RefAntPcv->Checked;
         int refp = !RefAntPcv->Checked || RefAnt->Text != "*";
