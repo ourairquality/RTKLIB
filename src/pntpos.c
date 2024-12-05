@@ -801,7 +801,8 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
     }
     
     if (opt_.mode!=PMODE_SINGLE) { /* for precise positioning */
-        opt_.ionoopt=IONOOPT_BRDC;
+        if (opt_.ionoopt != IONOOPT_SBAS && opt_.ionoopt != IONOOPT_TEC)
+          opt_.ionoopt=IONOOPT_BRDC;
         opt_.tropopt=TROPOPT_SAAS;
     }
     /* satellite positions, velocities and clocks */
