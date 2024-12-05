@@ -1226,8 +1226,7 @@ void __fastcall TOptDialog::UpdateEnable(void)
         // For rtknavi the delta can be supplied even when antenna selection
         // is automated, in which case the delta fills in until overwritten
         // when the antenna and it's delta are known.
-	RovAntPcv      ->Enabled=rel||ppp;
-	RovAnt         ->Enabled=(rel||ppp)&&RovAntPcv->Checked;
+	RovAnt         ->Enabled=RovAntPcv->Checked;
 	RefAntPcv      ->Enabled=rel;
 	RefAnt         ->Enabled=rel&&RefAntPcv->Checked;
 	RefAntE        ->Enabled=rel;
