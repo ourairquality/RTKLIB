@@ -1613,11 +1613,13 @@ extern int outprcopts(uint8_t *buff, const prcopt_t *opt)
         p+=sprintf(p,"%s baseline  : %.4f %.4f m\r\n",COMMENTH,
                    opt->baseline[0],opt->baseline[1]);
     }
-    for (i=0;i<2;i++) {
-        if (opt->mode==PMODE_SINGLE||(i>=1&&opt->mode>PMODE_FIXED)) continue;
-        p+=sprintf(p,"%s antenna%d  : %-21s (%7.4f %7.4f %7.4f)\r\n",COMMENTH,
-                   i+1,opt->anttype[i],opt->antdel[i][0],opt->antdel[i][1],
-                   opt->antdel[i][2]);
+    p+=sprintf(p,"%s antenna1  : %-21s (%7.4f %7.4f %7.4f)\r\n",COMMENTH,
+               opt->anttype[0],opt->antdel[0][0],opt->antdel[0][1],
+               opt->antdel[0][2]);
+    if (opt->mode >= PMODE_DGPS && opt->mode <= PMODE_FIXED) {
+      p+=sprintf(p,"%s antenna2  : %-21s (%7.4f %7.4f %7.4f)\r\n",COMMENTH,
+                 opt->anttype[1],opt->antdel[1][0],opt->antdel[1][1],
+                 opt->antdel[1][2]);
     }
     return (int)(p-(char *)buff);
 }
