@@ -50,6 +50,8 @@
 #include <stdarg.h>
 #include "rtklib.h"
 
+#define MU          3.986004418E14      /* Earth gravitational constant. MU_GAL */
+
 /* algorithm configuration -------------------------------------------------- */
 #define STD_PREC_VAR_THRESH 0  /* pos variance threshold to skip standard precision */
                               /* solution: 0   = run every epoch, */
@@ -1281,6 +1283,13 @@ static int zdres(int base, const obsd_t *obs, int n, const double *rs, const dou
         // Adjust range for satellite clock-bias
         r += -CLIGHT * dts[i * 2];
 
+        // Relativistic path range effect. Shapiro signal propagation delay.
+        double rrs[3];
+        for (int j = 0; j < 3; j++) rrs[j] = rs[j + i * 6] - rpc[j];
+        double ln = log((norm(rs + i * 6, 3) + norm(rpc, 3) + norm(rrs, 3)) /
+                        (norm(rs + i * 6, 3) + norm(rpc, 3) - norm(rrs, 3)));
+        double dtrel = 2 * MU / CLIGHT / CLIGHT / CLIGHT * ln;
+
         // Adjust range for troposphere delay model.
         double dtrp = 0.0;
         if (opt->tropopt <= TROPOPT_SAAS) {
@@ -1306,10 +1315,10 @@ static int zdres(int base, const obsd_t *obs, int n, const double *rs, const dou
         // Calc undifferenced phase/code residual for satellite
         // Residuals = observable - estimated range
         if (obs[i].L[f] != 0.0)
-          y[f + i * nf * 2] = obs[i].L[f] * CLIGHT / frq - (r + dant + dtrp - C * dion);
+          y[f + i * nf * 2] = obs[i].L[f] * CLIGHT / frq - (r + CLIGHT * dtrel + dant + dtrp - C * dion);
         if (obs[i].P[f] != 0.0)
-          y[f + nf + i * nf * 2] = obs[i].P[f] - (r + dant + dtrp + C * dion);
-        trace(4, "zdres: sat=%d f=%d frq=%.0f L=%.6f P=%.6f r=%.6f c*dts=%.6f dtrp=%.6f dion=%.6f dant=%.6lf\n", sat, f, frq, obs[i].L[f], obs[i].P[f], r, CLIGHT * dts[i * 2], dtrp, C * dion, dant);
+          y[f + nf + i * nf * 2] = obs[i].P[f] - (r + CLIGHT * dtrel + dant + dtrp + C * dion);
+        trace(4, "zdres: sat=%d f=%d frq=%.0f L=%.6f P=%.6f r=%.6f c*dts=%.6f c*dtrel=%.6f dtrp=%.6f dion=%.6f dant=%.6lf\n", sat, f, frq, obs[i].L[f], obs[i].P[f], r, CLIGHT * dts[i * 2], CLIGHT * dtrel, dtrp, C * dion, dant);
       }
     }
   }
