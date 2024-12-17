@@ -1225,8 +1225,52 @@ void MainWindow::serverStart()
         rtkopenstat(STATFILE, optDialog->solutionOptions.sstat);
     if (optDialog->solutionOptions.geoid > 0 && strlen(optDialog->fileOptions.geoid) > 0)
         opengeoid(optDialog->solutionOptions.geoid, qPrintable(optDialog->fileOptions.geoid));
-    if (strlen(optDialog->fileOptions.dcb) > 0)
-        readdcb(optDialog->fileOptions.dcb, &rtksvr->nav, NULL);
+
+    snprintf(rtksvr->name[0], sizeof(rtksvr->name[0]), "%s", optDialog->processingOptions.name[0]);
+    snprintf(rtksvr->name[1], sizeof(rtksvr->name[1]), "%s", optDialog->processingOptions.name[1]);
+
+    // Default the names.
+    for (int i = 0; i < 2; i++) {
+      if (strcmp(rtksvr->name[i], "*") == 0) {
+        rtksvr->name[i][0] = '\0';
+        if (strtype[i] == STR_NTRIPCLI) {
+          // Use the ntrip mount point.
+          char buff[MAXSTR];
+          snprintf(buff, sizeof(buff), "%s", strpath[i]);
+          char *p = strrchr(buff, '@');
+          if (!p) p = buff;
+          p = strchr(p, '/');
+          if (p && p[1] != '\0') {
+            char *q = strchr(p + 1, ':');
+            if (q) *q='\0';
+            snprintf(rtksvr->name[i], sizeof(rtksvr->name[0]), "%s", p + 1);
+          } else {
+            trace(2, "unable to default station %d name from ntrip mount point\n", i);
+          }
+        } else {
+          trace(2, "unable to default station %d name\n", i);
+        }
+      }
+    }
+    trace(3, "rovname='%s' '%s' refname='%s' '%s'\n", optDialog->processingOptions.name[0],
+          rtksvr->name[0], optDialog->processingOptions.name[1], rtksvr->name[1]);
+
+    if (strlen(optDialog->fileOptions.dcb) > 0) {
+        sta_t stas[MAXRCV] = {{""}};
+        snprintf(stas[0].name, sizeof(stas[0].name), "%s", rtksvr->name[0]);
+        snprintf(stas[1].name, sizeof(stas[1].name), "%s", rtksvr->name[1]);
+        readdcb(optDialog->fileOptions.dcb, &rtksvr->nav, stas);
+    }
+
+    // Read the elevation mask patterns.
+    if (strlen(optDialog->fileOptions.elmask) > 0) {
+      if (optDialog->processingOptions.name[0][0])
+        readelmask(qPrintable(optDialog->fileOptions.elmask), optDialog->processingOptions.name[0], &rtksvr->rtk.opt.elmask[0]);
+      if (PMODE_DGPS <= rtksvr->rtk.opt.mode && rtksvr->rtk.opt.mode <= PMODE_FIXED) {
+        if (optDialog->processingOptions.name[1][0])
+          readelmask(qPrintable(optDialog->fileOptions.elmask), optDialog->processingOptions.name[1], &rtksvr->rtk.opt.elmask[1]);
+      }
+    }
 
     for (i = 0; i < RTKSVRNSOL; i++) {
         solopt[i] = optDialog->solutionOptions;
@@ -1240,6 +1284,26 @@ void MainWindow::serverStart()
     strsetopt(stropt);
     strncpy(rtksvr->cmd_reset, qPrintable(resetCommand), 4095);
     rtksvr->bl_reset = maxBaseLine;
+
+    if (optDialog->processingOptions.refpos == POSOPT_FILE &&
+        optDialog->fileOptions.stapos[0] && rtksvr->name[1][0]) {
+      double r[3];
+      if (getstapos(optDialog->fileOptions.stapos, rtksvr->name[1], r)) {
+        for (int i = 0; i < 3; i++) optDialog->processingOptions.rb[i] = r[i];
+      } else {
+        trace(2, "Reference \"%s\" position not found \"%s\"\n", rtksvr->name[1], optDialog->fileOptions.stapos);
+      }
+    }
+
+    if (optDialog->processingOptions.rovpos == POSOPT_FILE &&
+        optDialog->fileOptions.stapos[0] && rtksvr->name[1][0]) {
+      double r[3];
+      if (getstapos(optDialog->fileOptions.stapos, rtksvr->name[0], r)) {
+        for (int i = 0; i < 3; i++) optDialog->processingOptions.ru[i] = r[i];
+      } else {
+        trace(2, "Rover \"%s\" position not found in \"%s\"\n", rtksvr->name[0], optDialog->fileOptions.stapos);
+      }
+    }
 
     // start rtk server
     if (!rtksvrstart(rtksvr, optDialog->serverCycle, optDialog->serverBufferSize, streamTypes, (const char **)serverPaths, inputFormat, optDialog->navSelect,
@@ -1256,6 +1320,7 @@ void MainWindow::serverStart()
             if (cmds[i]) delete[] cmds[i];
         for (i = 0; i < 3; i++)
             if (cmds_periodic[i]) delete[] cmds_periodic[i];
+        ui->lblMessage->setText(errmsg);
         return;
     }
 

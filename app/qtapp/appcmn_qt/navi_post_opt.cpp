@@ -142,6 +142,7 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     processingOptions = prcopt_default;
     solutionOptions = solopt_default;
     fileOptions.blq[0] = '\0';
+    fileOptions.elmask[0] = '\0';
     fileOptions.dcb[0] = '\0';
     fileOptions.eop[0] = '\0';
     fileOptions.geexe[0] = '\0';
@@ -179,7 +180,7 @@ OptDialog::OptDialog(QWidget *parent, int opts)
         { "misc-navmsgsel",   3, (void *)&navSelect,        MSGOPT  },
         { "misc-proxyaddr",   2, (void *)proxyaddr,         ""      },
         { "misc-fswapmargin", 0, (void *)&fileSwapMargin,   "s"     },
-        { "",		          0, NULL,		                ""      }
+        { "",		      0, NULL,		            ""      }
     };
     this->naviopts = _naviopt;
 
@@ -208,6 +209,7 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     ui->lEGeoidDataFile->setCompleter(new QCompleter(fileModel, this));
     ui->lEEOPFile->setCompleter(new QCompleter(fileModel, this));
     ui->lEBLQFile->setCompleter(new QCompleter(fileModel, this));
+    ui->lEElmaskFile->setCompleter(new QCompleter(fileModel, this));
 
     QCompleter *dirCompleter = new QCompleter(this);
     QFileSystemModel *dirModel = new QFileSystemModel(dirCompleter);
@@ -260,6 +262,13 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     acBLQFileView->setToolTip(tr("View File"));
     acBLQFileView->setEnabled(false);
 
+    // Elmask file line edit actions
+    QAction *acElmaskFileSelect = ui->lEElmaskFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acBLQFileSelect->setToolTip(tr("Select File"));
+    QAction *acElmaskFileView = ui->lEElmaskFile->addAction(QIcon(":/buttons/doc"), QLineEdit::TrailingPosition);
+    acElmaskFileView->setToolTip(tr("View File"));
+    acElmaskFileView->setEnabled(false);
+
     // EOP file line edit actions
     QAction *acEOPFileSelect = ui->lEEOPFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
     acEOPFileSelect->setToolTip(tr("Select File"));
@@ -308,6 +317,10 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     connect(acBLQFileView, &QAction::triggered, this, &OptDialog::viewBLQFile);
     connect(ui->lEBLQFile, &QLineEdit::textChanged, this, [acBLQFileView, this]()
             {acBLQFileView->setEnabled(QFile::exists(ui->lEBLQFile->text()));});
+    connect(acElmaskFileSelect, &QAction::triggered, this, &OptDialog::selectElmaskFile);
+    connect(acElmaskFileView, &QAction::triggered, this, &OptDialog::viewElmaskFile);
+    connect(ui->lEElmaskFile, &QLineEdit::textChanged, this, [acElmaskFileView, this]()
+            {acElmaskFileView->setEnabled(QFile::exists(ui->lEElmaskFile->text()));});
     connect(acStationPositionFileSelect, &QAction::triggered, this, &OptDialog::selectStationPositionFile);
     connect(acStationPositionFileView, &QAction::triggered, this, &OptDialog::viewStationPositionFile);
     connect(ui->lEStationPositionFile, &QLineEdit::textChanged, this, [acStationPositionFileView, this]()
@@ -356,13 +369,11 @@ OptDialog::OptDialog(QWidget *parent, int opts)
 
     if (options == PostOptions) {
         refPosModel->item(6)->setFlags(refPosModel->item(6)->flags() & ~Qt::ItemIsEnabled); // disable "RTCM/Raw Antenna Position"
+        rovPosModel->item(3)->setFlags(refPosModel->item(6)->flags() & ~Qt::ItemIsEnabled); // disable "Average of Single Position"
         rovPosModel->item(6)->setFlags(refPosModel->item(6)->flags() & ~Qt::ItemIsEnabled); // disable "RTCM/Raw Antenna Position"
     } else if (options == NaviOptions) {
-        refPosModel->item(4)->setFlags(refPosModel->item(4)->flags() & ~Qt::ItemIsEnabled); // disable "Get from Position File"
-        refPosModel->item(5)->setFlags(refPosModel->item(5)->flags() & ~Qt::ItemIsEnabled); // disable "RINEX Header Position"
-
+        refPosModel->item(6)->setFlags(refPosModel->item(6)->flags() & ~Qt::ItemIsEnabled); // disable "RINEX Header Position"
         rovPosModel->item(3)->setFlags(rovPosModel->item(3)->flags() & ~Qt::ItemIsEnabled); // disable "Average of Single Pos"
-        rovPosModel->item(4)->setFlags(rovPosModel->item(4)->flags() & ~Qt::ItemIsEnabled); // disable "Get from Position File"
         rovPosModel->item(5)->setFlags(rovPosModel->item(5)->flags() & ~Qt::ItemIsEnabled); // disable "RINEX Header Position"
     }
 
@@ -494,6 +505,9 @@ void OptDialog::selectRoverPosition()
 
     pos2ecef(posi, p);
     setPosition(ui->cBRoverPositionType->currentIndex(), edit, p);
+
+    QString id = refDialog.getStationId();
+    if (!id.isEmpty()) ui->lERovName->setText(id);
 }
 //---------------------------------------------------------------------------
 void OptDialog::selectReferencePosition()
@@ -518,6 +532,9 @@ void OptDialog::selectReferencePosition()
 
     pos2ecef(posi, p);
     setPosition(ui->cBReferencePositionType->currentIndex(), edit, p);
+
+    QString id = refDialog.getStationId();
+    if (!id.isEmpty()) ui->lERefName->setText(id);
 }
 //---------------------------------------------------------------------------
 void OptDialog::viewSatelliteMetaFile()
@@ -635,6 +652,24 @@ void OptDialog::viewBLQFile()
     textViewer->show();
 }
 //---------------------------------------------------------------------------
+void OptDialog::selectElmaskFile()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Elevation mask pattern File"), ui->lEElmaskFile->text(), tr("Elevation Mask File (*.txt);;All (*.*)"));
+
+    if (!filename.isEmpty())
+        ui->lEElmaskFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void OptDialog::viewElmaskFile()
+{
+    QString elmaskFilename = ui->lEElmaskFile->text();
+
+    if (elmaskFilename.isEmpty()) return;
+
+    textViewer->read(elmaskFilename);
+    textViewer->show();
+}
+//---------------------------------------------------------------------------
 void OptDialog::selectLocalDirectory()
 {
     QString dir = ui->lELocalDirectory->text();
@@ -700,6 +735,7 @@ void OptDialog::updateOptions()
     strncpy(fileOptions.dcb, qPrintable(ui->lEDCBFile->text()), MAXSTRPATH-1);
     strncpy(fileOptions.eop, qPrintable(ui->lEEOPFile->text()), MAXSTRPATH-1);
     strncpy(fileOptions.blq, qPrintable(ui->lEBLQFile->text()), MAXSTRPATH-1);
+    strncpy(fileOptions.elmask, qPrintable(ui->lEElmaskFile->text()), MAXSTRPATH-1);
     if (options == NaviOptions)
         strncpy(fileOptions.tempdir, qPrintable(ui->lELocalDirectory->text()), MAXSTRPATH-1);
     // fileOptions.geexe
@@ -791,12 +827,16 @@ void OptDialog::updateOptions()
     getPosition(ui->cBRoverPositionType->currentIndex(), editu, rovPos);
     getPosition(ui->cBReferencePositionType->currentIndex(), editr, refPos);
 
+    snprintf(processingOptions.name[0], sizeof(processingOptions.name[0]), "%s", qPrintable(ui->lERovName->text()));
+    snprintf(processingOptions.name[1], sizeof(processingOptions.name[1]), "%s", qPrintable(ui->lERefName->text()));
+
     for (int i = 0; i < 3; i++) processingOptions.rb[i] = refPos[i];
     processingOptions.refpos = POSOPT_POS_LLH;  /* Fallback */
     if (ui->cBReferencePositionType->currentIndex() < 2) processingOptions.refpos = POSOPT_POS_LLH;
     else if (ui->cBReferencePositionType->currentIndex() == 2) processingOptions.refpos = POSOPT_POS_XYZ;
     else if (options == NaviOptions) {
         if (ui->cBReferencePositionType->currentIndex() == 3) processingOptions.refpos = POSOPT_SINGLE;
+        else if (ui->cBReferencePositionType->currentIndex() == 4) processingOptions.refpos = POSOPT_FILE;
         else if (ui->cBReferencePositionType->currentIndex() == 6) processingOptions.refpos = POSOPT_RTCM;
     } else if (options == PostOptions) {
         processingOptions.refpos = ui->cBReferencePositionType->currentIndex() - 1; /* 2:single, 3:posfile, 4:rinex, 5: rtcm */
@@ -807,7 +847,8 @@ void OptDialog::updateOptions()
     if (ui->cBRoverPositionType->currentIndex() < 2) processingOptions.rovpos = POSOPT_POS_LLH;
     else if (ui->cBRoverPositionType->currentIndex() == 2) processingOptions.rovpos = POSOPT_POS_XYZ;
     else if (options == NaviOptions) {
-        if (ui->cBRoverPositionType->currentIndex() == 6) processingOptions.rovpos = POSOPT_RTCM;
+        if (ui->cBRoverPositionType->currentIndex() == 4) processingOptions.rovpos = POSOPT_FILE;
+        else if (ui->cBRoverPositionType->currentIndex() == 6) processingOptions.rovpos = POSOPT_RTCM;
     } else if (options == PostOptions) {
         processingOptions.rovpos = ui->cBRoverPositionType->currentIndex() - 1; /* 2:single, 3:posfile, 4:rinex */
     }
@@ -867,8 +908,10 @@ void OptDialog::updateOptions()
     processingOptions.posopt[3] = ui->cBPositionOption4->isChecked();
     processingOptions.posopt[4] = ui->cBPositionOption5->isChecked();
     processingOptions.posopt[5] = ui->cBPositionOption6->isChecked();
-    if (options == NaviOptions)
+
+    if (options == NaviOptions) {
         processingOptions.syncsol = ui->cBSyncSolution->currentIndex();
+    }
     /// processingOptions.odisp
     /// processingOptions.freqopt
     if (options == PostOptions)
@@ -924,6 +967,9 @@ void OptDialog::updateUi(const prcopt_t &prcopt, const solopt_t &solopt, const f
     QLineEdit *editr[] = {ui->lEReferencePosition1, ui->lEReferencePosition2, ui->lEReferencePosition3};
 
     proxyAddress = proxyaddr;
+
+    ui->lERovName->setText(prcopt.name[0]);
+    ui->lERefName->setText(prcopt.name[1]);
 
     if (options == NaviOptions) {
         ui->sBServerCycle->setValue(serverCycle);
@@ -1085,6 +1131,7 @@ void OptDialog::updateUi(const prcopt_t &prcopt, const solopt_t &solopt, const f
     ui->lEDCBFile->setText(filopt.dcb);
     ui->lEEOPFile->setText(filopt.eop);
     ui->lEBLQFile->setText(filopt.blq);
+    ui->lEElmaskFile->setText(filopt.elmask);
     if (options == NaviOptions)
         ui->lELocalDirectory->setText(filopt.tempdir);
     // filopt.geexe
@@ -1179,15 +1226,20 @@ void OptDialog::save(const QString &file)
     else if (options == PostOptions)
         procOpts.sbassatsel = ui->sBSbasSat->value();
 
+    snprintf(procOpts.name[0], sizeof(procOpts.name[0]), "%s", qPrintable(ui->lERovName->text()));
+    snprintf(procOpts.name[1], sizeof(procOpts.name[1]), "%s", qPrintable(ui->lERefName->text()));
+
     if (options == NaviOptions) {
         procOpts.rovpos = POSOPT_POS_LLH;
         if      (ui->cBRoverPositionType->currentIndex() < 2) procOpts.rovpos = POSOPT_POS_LLH;
         else if (ui->cBRoverPositionType->currentIndex() == 2) procOpts.rovpos = POSOPT_POS_XYZ;
+        else if (ui->cBRoverPositionType->currentIndex() == 4) procOpts.rovpos = POSOPT_FILE;
         else if (ui->cBRoverPositionType->currentIndex() == 6) procOpts.rovpos = POSOPT_RTCM;
         procOpts.refpos = POSOPT_POS_LLH;
         if      (ui->cBReferencePositionType->currentIndex() < 2) procOpts.refpos = POSOPT_POS_LLH;
         else if (ui->cBReferencePositionType->currentIndex() == 2) procOpts.refpos = POSOPT_POS_XYZ;
         else if (ui->cBReferencePositionType->currentIndex() == 3) procOpts.refpos = POSOPT_SINGLE;
+        else if (ui->cBReferencePositionType->currentIndex() == 4) procOpts.refpos = POSOPT_FILE;
         else if (ui->cBReferencePositionType->currentIndex() == 6) procOpts.refpos = POSOPT_RTCM;
     } else if (options == PostOptions) {
         procOpts.rovpos = ui->cBRoverPositionType->currentIndex() < 2 ? POSOPT_POS_LLH : ui->cBRoverPositionType->currentIndex() == 2 ? POSOPT_POS_XYZ : ui->cBRoverPositionType->currentIndex() - 1;
@@ -1292,6 +1344,7 @@ void OptDialog::save(const QString &file)
     strncpy(filopt.dcb, qPrintable(ui->lEDCBFile->text()), MAXSTRPATH-1);
     strncpy(filopt.eop, qPrintable(ui->lEEOPFile->text()), MAXSTRPATH-1);
     strncpy(filopt.blq, qPrintable(ui->lEBLQFile->text()), MAXSTRPATH-1);
+    strncpy(filopt.elmask, qPrintable(ui->lEElmaskFile->text()), MAXSTRPATH-1);
     if (options == NaviOptions)
         strncpy(filopt.tempdir, qPrintable(ui->lELocalDirectory->text()), MAXSTRPATH-1);
     // filopt.geexe
@@ -1470,7 +1523,11 @@ void OptDialog::saveOptions(QSettings &settings)
     settings.setValue("setting/dcbfile", ui->lEDCBFile->text());
     settings.setValue("setting/eopfile", ui->lEEOPFile->text());
     settings.setValue("setting/blqfile", ui->lEBLQFile->text());
+    settings.setValue("setting/elmaskfile", ui->lEElmaskFile->text());
     settings.setValue("setting/localdirectory", ui->lELocalDirectory->text());
+
+    settings.setValue("setting/rovname", ui->lERovName->text());
+    settings.setValue("setting/refname", ui->lERefName->text());
 
     if (options == NaviOptions) {
         settings.setValue("setting/svrcycle", ui->sBServerCycle->value());
@@ -1677,8 +1734,12 @@ void OptDialog::loadOptions(QSettings &settings)
     ui->lEDCBFile->setText(settings.value("setting/dcbfile", "").toString());
     ui->lEEOPFile->setText(settings.value("setting/eopfile", "").toString());
     ui->lEBLQFile->setText(settings.value("setting/blqfile", "").toString());
+    ui->lEElmaskFile->setText(settings.value("setting/elmaskfile", "").toString());
     if (options == NaviOptions)
         ui->lELocalDirectory->setText(settings.value("setting/localdirectory", QDir::tempPath()).toString());
+
+    ui->lERovName->setText(settings.value("setting/rovname", "*").toString());
+    ui->lERefName->setText(settings.value("setting/refname", "*").toString());
 
     if (options == NaviOptions) {
         ui->sBServerCycle->setValue(settings.value("setting/svrcycle", 10).toInt());
@@ -1794,23 +1855,26 @@ void OptDialog::updateEnable()
     ui->sBBaselineLen->setEnabled(ui->cBBaselineConstrain->isChecked() && ui->cBPositionMode->currentIndex() == PMODE_MOVEB);
     ui->sBBaselineSig->setEnabled(ui->cBBaselineConstrain->isChecked() && ui->cBPositionMode->currentIndex() == PMODE_MOVEB);
     ui->cBRoverPositionType->setEnabled(ui->cBPositionMode->currentIndex() == PMODE_FIXED || ui->cBPositionMode->currentIndex() == PMODE_PPP_FIXED);
+    setComboBoxItemEnabled(ui->cBRoverPositionType, 3, false);
+    setComboBoxItemEnabled(ui->cBRoverPositionType, 5, options == PostOptions);
     setComboBoxItemEnabled(ui->cBRoverPositionType, 6, options == NaviOptions);
     ui->lERoverPosition1->setEnabled(ui->cBRoverPositionType->isEnabled() && ui->cBRoverPositionType->currentIndex() <= 2);
     ui->lERoverPosition2->setEnabled(ui->cBRoverPositionType->isEnabled() && ui->cBRoverPositionType->currentIndex() <= 2);
     ui->lERoverPosition3->setEnabled(ui->cBRoverPositionType->isEnabled() && ui->cBRoverPositionType->currentIndex() <= 2);
-    ui->btnRoverPosition->setEnabled(ui->cBRoverPositionType->isEnabled() && ui->cBRoverPositionType->currentIndex() <= 2);
+    ui->btnRoverPosition->setEnabled(ui->cBRoverPositionType->isEnabled());
 
     ui->cBReferencePositionType->setEnabled(rel && ui->cBPositionMode->currentIndex() != PMODE_MOVEB);
-    setComboBoxItemEnabled(ui->cBReferencePositionType, 4, options == PostOptions);
     setComboBoxItemEnabled(ui->cBReferencePositionType, 5, options == PostOptions);
     setComboBoxItemEnabled(ui->cBReferencePositionType, 6, options == NaviOptions);
     ui->lEReferencePosition1->setEnabled(ui->cBReferencePositionType->isEnabled() && ui->cBReferencePositionType->currentIndex() <= 2);
     ui->lEReferencePosition2->setEnabled(ui->cBReferencePositionType->isEnabled() && ui->cBReferencePositionType->currentIndex() <= 2);
     ui->lEReferencePosition3->setEnabled(ui->cBReferencePositionType->isEnabled() && ui->cBReferencePositionType->currentIndex() <= 2);
-    ui->btnReferencePosition->setEnabled(ui->cBReferencePositionType->isEnabled() && ui->cBReferencePositionType->currentIndex() <= 2);
+    ui->btnReferencePosition->setEnabled(ui->cBReferencePositionType->isEnabled());
     ui->cBRoverAntenna->setEnabled(ui->cBRoverAntennaPcv->isChecked());
     ui->cBReferenceAntennaPcv->setEnabled(rel);
     ui->cBReferenceAntenna->setEnabled(rel && ui->cBReferenceAntennaPcv->isChecked());
+    ui->lblRefName->setEnabled(rel);
+    ui->lERefName->setEnabled(rel);
     if (options == NaviOptions) {
       // For rtknavi the delta can be supplied even when antenna selection is
       // automated, in which case the delta fills in until overwritten when

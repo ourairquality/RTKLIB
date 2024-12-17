@@ -393,7 +393,7 @@ void MonitorDialog::setRtk()
     int width[] = {500, 500};
 
     ui->tWConsole->setColumnCount(2);
-    ui->tWConsole->setRowCount(49 + NFREQ + ANTNFREQ * 2);
+    ui->tWConsole->setRowCount(51 + NFREQ + ANTNFREQ * 2);
     ui->tWConsole->setHorizontalHeaderLabels(header);
 
     for (int i = 0; (i < ui->tWConsole->columnCount()) && (i < 2); i++)
@@ -424,6 +424,7 @@ void MonitorDialog::showRtk()
     const QString ionoopt[] = {tr("OFF"), tr("Broadcast"), tr("SBAS"), tr("Dual-Frequency"), tr("Estimate STEC"), tr("IONEX TEC"), tr("QZSS LEX")};
     const QString tropopt[] = {tr("OFF"), tr("Saastamoinen"), tr("SBAS"), tr("Estimate ZTD"), tr("Estimate ZTD+Grad")};
     const QString ephopt [] = {tr("Broadcast"), tr("Precise"), tr("Broadcast+SBAS"), tr("Broadcast+SSR APC"), tr("Broadcast+SSR CoM"), tr("QZSS LEX")};
+    char name[2][MAXANT] = {{""}};
 
     rtk_t *rtk = static_cast<rtk_t *>(malloc(sizeof(rtk_t)));
     if (rtk == NULL) return;
@@ -439,6 +440,8 @@ void MonitorDialog::showRtk()
     cputime = rtksvr->cputime;
     prcout = rtksvr->prcout;
     nave = rtksvr->nave;
+    strcpy(name[0], rtksvr->name[0]);
+    strcpy(name[1], rtksvr->name[1]);
 
     for (row = 0; row < 3; row++) nb[row] = rtksvr->nb[row];
 
@@ -480,7 +483,7 @@ void MonitorDialog::showRtk()
     if (rtk->opt.navsys & SYS_IRN) navsys = navsys + tr("NavIC ");
     if (rtk->opt.navsys & SYS_SBS) navsys = navsys + tr("SBAS ");
 
-    if (ui->tWConsole->rowCount() < 49 + NFREQ + ANTNFREQ * 2) {
+    if (ui->tWConsole->rowCount() < 51 + NFREQ + ANTNFREQ * 2) {
       free(rtk);
       return;
     }
@@ -609,6 +612,9 @@ void MonitorDialog::showRtk()
     ui->tWConsole->item(row,   0)->setText(tr("# of All Estimated States"));
     ui->tWConsole->item(row++, 1)->setText(QString::number(rtk->nx));
 
+    ui->tWConsole->item(row,   0)->setText(tr("Rover Name"));
+    ui->tWConsole->item(row++, 1)->setText(name[0]);
+
     ui->tWConsole->item(row,   0)->setText(tr("Pos X/Y/Z Single (m) Rover"));
     ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1, %2, %3").arg(rtk->sol.rr[0], 0, 'f', 3).arg(rtk->sol.rr[1], 0, 'f', 3).arg(rtk->sol.rr[2], 0, 'f', 3));
 
@@ -638,6 +644,9 @@ void MonitorDialog::showRtk()
     ui->tWConsole->item(row,   0)->setText(tr("Pos X/Y/Z Fixed Std Rover"));
     ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1 m, %2 m, %3 m")
                               .arg(rtk->Pa ? SQRT(rtk->Pa[0]) : 0, 0, 'f', 3).arg(rtk->Pa ? SQRT(rtk->Pa[1 + 1 * rtk->na]) : 0, 0, 'f', 3).arg(rtk->Pa ? SQRT(rtk->Pa[2 + 2 * rtk->na]) : 0, 0, 'f', 3));
+
+    ui->tWConsole->item(row,   0)->setText(tr("Base Name"));
+    ui->tWConsole->item(row++, 1)->setText(name[1]);
 
     ui->tWConsole->item(row,   0)->setText(tr("Pos X/Y/Z Base Station"));
     ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1 m, %2 m, %3 m").arg(rtk->rb[0], 0, 'f', 3).arg(rtk->rb[1], 0, 'f', 3).arg(rtk->rb[2], 0, 'f', 3));

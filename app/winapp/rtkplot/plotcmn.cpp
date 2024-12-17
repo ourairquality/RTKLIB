@@ -357,7 +357,10 @@ TColor __fastcall TPlot::ObsColor(const obsd_t *obs, double az, double el)
         }
         color=SnrColor(obs->SNR[i]);
     }
-    if (el<ElMask*D2R||(ElMaskP&&el<ElMaskData[(int)(az*R2D+0.5)])) {
+    double azel[2];
+    azel[0] = az;
+    azel[1] = el;
+    if (el<ElMask*D2R||(ElMaskP&&testelmask(azel, &elevationMask))) {
         return HideLowSat?clBlack:MColor[0][0];
     }
     return color;

@@ -120,7 +120,6 @@ static int moniport     =0;             /* monitor port */
 static int keepalive    =0;             /* keep alive flag */
 static int start        =0;             /* auto start */
 static int fswapmargin  =30;            /* file swap margin (s) */
-static char sta_name[256]="";           /* station name */
 
 static prcopt_t prcopt;                 /* processing options */
 static solopt_t solopt[RTKSVRNSOL]={{0}}; /* solution options */
@@ -128,7 +127,7 @@ static filopt_t filopt  ={""};          /* file options */
 
 /* help text -----------------------------------------------------------------*/
 static const char *usage[]={
-    "usage: rtkrcv [-s][-p port][-d dev][-o file][-w pwd][-r level][-t level][-sta sta]",
+    "usage: rtkrcv [-s][-p port][-d dev][-o file][-w pwd][-r level][-t level]",
     "options",
     "  -s         start RTK server on program startup",
     "  -nc        start RTK server on program startup with no console",
@@ -139,7 +138,6 @@ static const char *usage[]={
     "  -w pwd     login password for remote console (\"\": no password)",
     "  -r level   output solution status file (0:off,1:states,2:residuals)",
     "  -t level   debug trace level (0:off,1-5:on)",
-    "  -sta sta   station name for receiver dcb",
     "  --deamon   detach from the console",
     "  --version  print the version and exit"
 };
@@ -455,7 +453,6 @@ static void readant(vt_t *vt, prcopt_t *opt, nav_t *nav, pcvs_t *pcvsr) {
 /* start rtk server ----------------------------------------------------------*/
 static int startsvr(vt_t *vt)
 {
-    static sta_t sta[MAXRCV]={{""}};
     double pos[3],npos[3];
     char s1[3][MAXRCVCMD]={"","",""},*cmds[]={NULL,NULL,NULL};
     char s2[3][MAXRCVCMD]={"","",""},*cmds_periodic[]={NULL,NULL,NULL};
@@ -494,11 +491,52 @@ static int startsvr(vt_t *vt)
 
     /* read antenna file */
     readant(vt,&prcopt,&svr.nav,&svr.pcvsr);
-    
-    /* read dcb file */
+
+    snprintf(svr.name[0], sizeof(svr.name[0]), "%s", prcopt.name[0]);
+    snprintf(svr.name[1], sizeof(svr.name[1]), "%s", prcopt.name[1]);
+
+    // Default the names.
+    for (int i = 0; i < 2; i++) {
+      if (strcmp(svr.name[i], "*") == 0) {
+        svr.name[i][0] = '\0';
+        if (strtype[i] == STR_NTRIPCLI) {
+          // Use the ntrip mount point.
+          char buff[MAXSTR];
+          snprintf(buff, sizeof(buff), "%s", strpath[i]);
+          char *p = strrchr(buff, '@');
+          if (!p) p = buff;
+          p = strchr(p, '/');
+          if (p && p[1] != '\0') {
+            char *q = strchr(p + 1, ':');
+            if (q) *q='\0';
+            snprintf(svr.name[i], sizeof(svr.name[0]), "%s", p + 1);
+          } else {
+            trace(2, "unable to default station %d name from ntrip mount point\n", i);
+            vt_printf(vt, "unable to default station %d name from ntrip mount point\n", i);
+          }
+        } else {
+          trace(2, "unable to default station %d name\n", i);
+          vt_printf(vt, "unable to default station %d name\n", i);
+        }
+      }
+    }
+    trace(3, "name[0]='%s' '%s' name[1]='%s' '%s'\n", prcopt.name[0], svr.name[0],
+          prcopt.name[1], svr.name[1]);
+
+    // Read dcb file.
     if (*filopt.dcb) {
-        strcpy(sta[0].name,sta_name);
-        readdcb(filopt.dcb,&svr.nav,sta);
+        sta_t stas[MAXRCV]={{""}};
+        snprintf(stas[0].name, sizeof(stas[0].name), "%s", svr.name[0]);
+        snprintf(stas[1].name, sizeof(stas[1].name), "%s", svr.name[1]);
+        readdcb(filopt.dcb, &svr.nav, stas);
+    }
+    // Read the elevation mask patterns.
+    if (*filopt.elmask) {
+      int mode = PMODE_DGPS <= prcopt.mode && prcopt.mode <= PMODE_FIXED;
+      for (int i = 0; i < (mode ? 2 : 1); i++) {
+        const char *name = svr.name[i];
+        if (*name != '\0') readelmask(filopt.elmask, name, &prcopt.elmask[i]);
+      }
     }
     /* open geoid data file */
     if (solopt[0].geoid>0&&!opengeoid(solopt[0].geoid,filopt.geoid)) {
@@ -529,6 +567,29 @@ static int startsvr(vt_t *vt)
     }
 #endif
     for (int i = 0; i < RTKSVRNSOL; i++) solopt[i].posf=ostrfmt[i];
+
+    if (prcopt.refpos == POSOPT_FILE && filopt.stapos[0] && svr.name[1][0]) {
+      double r[3];
+      if (getstapos(filopt.stapos, svr.name[1], r)) {
+        for (int i = 0; i < 3; i++) prcopt.rb[i] = r[i];
+      } else {
+        trace(1, "Reference \"%s\" position not found in: \"%s\"\n",
+              svr.name[1], filopt.stapos);
+        vt_printf(vt,"Reference \"%s\" position not found in: \"%s\"\n",
+                  svr.name[1], filopt.stapos);
+      }
+    }
+    if (prcopt.rovpos == POSOPT_FILE && filopt.stapos[0] && svr.name[0][0]) {
+      double r[3];
+      if (getstapos(filopt.stapos, svr.name[0], r)) {
+        for (int i = 0; i < 3; i++) prcopt.ru[i] = r[i];
+      } else {
+        trace(1, "Rover \"%s\" position not found in \"%s\"\n",
+              svr.name[0], filopt.stapos);
+        vt_printf(vt,"Rover \"%s\" position not found in \"%s\"\n",
+                  svr.name[0], filopt.stapos);
+      }
+    }
 
     for (int i = 0; i < MAXSTRRTK; i++) paths[i] = strpath[i];
 
@@ -806,6 +867,7 @@ static void prstatus(vt_t *vt)
     vt_printf(vt,"%-28s: %.1f,%.1f,%.1f,%.1f\n","GDOP/PDOP/HDOP/VDOP",dop[0],dop[1],dop[2],dop[3]);
     vt_printf(vt,"%-28s: %d\n","# of real estimated states",rtk->na);
     vt_printf(vt,"%-28s: %d\n","# of all estimated states",rtk->nx);
+    vt_printf(vt,"%-28s: %s\n","rover name", svr.name[0]);
     vt_printf(vt,"%-28s: %.3f,%.3f,%.3f\n","pos xyz single (m) rover",
             rtk->sol.rr[0],rtk->sol.rr[1],rtk->sol.rr[2]);
     if (norm(rtk->sol.rr,3)>0.0) ecef2pos(rtk->sol.rr,pos); else pos[0]=pos[1]=pos[2]=0.0;
@@ -821,6 +883,7 @@ static void prstatus(vt_t *vt)
             rtk->xa?rtk->xa[0]:0,rtk->xa?rtk->xa[1]:0,rtk->xa?rtk->xa[2]:0);
     vt_printf(vt,"%-28s: %.3f,%.3f,%.3f\n","pos xyz fixed std (m) rover",
             rtk->Pa?SQRT(rtk->Pa[0]):0,rtk->Pa?SQRT(rtk->Pa[1+1*rtk->na]):0,rtk->Pa?SQRT(rtk->Pa[2+2*rtk->na]):0);
+    vt_printf(vt,"%-28s: %s\n","base name", svr.name[1]);
     vt_printf(vt,"%-28s: %.3f,%.3f,%.3f\n","pos xyz (m) base",
             rtk->rb[0],rtk->rb[1],rtk->rb[2]);
     if (norm(rtk->rb,3)>0.0) ecef2pos(rtk->rb,pos); else pos[0]=pos[1]=pos[2]=0.0;
@@ -1704,7 +1767,7 @@ static void deamonise(void)
 
 /* rtkrcv main -----------------------------------------------------------------
 * synopsis
-*     rtkrcv [-s][-nc][-p port][-d dev][-o file][-r level][-t level][-sta sta]
+*     rtkrcv [-s][-nc][-p port][-d dev][-o file][-r level][-t level]
 *
 * description
 *     A command line version of the real-time positioning AP by rtklib. To start
@@ -1732,7 +1795,6 @@ static void deamonise(void)
 *     -w pwd     login password for remote console ("": no password)
 *     -r level   output solution status file (0:off,1:states,2:residuals)
 *     -t level   debug trace level (0:off,1-5:on)
-*     -sta sta   station name for receiver dcb
 *     --deamon   detach from the console
 *     --version  prints the version and exits
 *
@@ -1838,7 +1900,6 @@ int main(int argc, char **argv)
         else if (!strcmp(argv[i],"-w")&&i+1<argc) strcpy(passwd,argv[++i]);
         else if (!strcmp(argv[i],"-r")&&i+1<argc) outstat=atoi(argv[++i]);
         else if (!strcmp(argv[i],"-t")&&i+1<argc) trace=atoi(argv[++i]);
-        else if (!strcmp(argv[i],"-sta")&&i+1<argc) strcpy(sta_name,argv[++i]);
         else if (!strcmp(argv[i], "--deamon")) deamon=1;
         else if (!strcmp(argv[i], "--version")) {
             fprintf(stderr, "rtkrcv RTKLIB %s %s\n", VER_RTKLIB, PATCH_LEVEL);
