@@ -1060,6 +1060,11 @@ typedef struct {        /* SNR mask type */
     double mask[MAXFREQ][9]; /* mask (dBHz) at 5,10,...85 deg */
 } snrmask_t;
 
+typedef struct {        // Station elevation mask pattern.
+  char name[MAXANT];    // Station name.
+  float elmask[361];    // Elevation mask pattern (rad), per degree azimuth.
+} elmask_t;
+  
 typedef struct {        /* processing options type */
     int mode;           /* positioning mode (PMODE_???) */
     int soltype;        /* solution type (0:forward,1:backward,2:combined) */
@@ -1093,6 +1098,7 @@ typedef struct {        /* processing options type */
     int refpos;         /* base position for relative mode */
                         /* (0:pos in prcopt,  1:average of single pos, */
                         /*  2:read from file, 3:rinex header, 4:rtcm pos) */
+    char name[2][MAXANT]; // Rover and base name.
     double eratio[MAXFREQ]; /* code/phase error ratio */
     double err[8];      /* observation error terms */
                         /* [reserved,constant,elevation,baseline,doppler,snr-max,snr, rcv_std] */
@@ -1124,6 +1130,7 @@ typedef struct {        /* processing options type */
     double odisp[2][2][11][3]; // Ocean tide loading parameters {rov,base}{amp,phase}
     int  freqopt;       /* disable L2-AR */
     char pppopt[256];   /* ppp option */
+    elmask_t elmask[2]; // Elevation mask pattern: rover, base.
 } prcopt_t;
 
 typedef struct {        /* solution options type */
@@ -1158,6 +1165,7 @@ typedef struct {        /* file options type */
     char dcb    [MAXSTRPATH]; /* dcb data file */
     char eop    [MAXSTRPATH]; /* eop data file */
     char blq    [MAXSTRPATH]; /* ocean tide loading blq file */
+    char elmask [MAXSTRPATH]; // Elevation mask pattern file.
     char tempdir[MAXSTRPATH]; /* ftp/http temporary directory */
     char geexe  [MAXSTRPATH]; /* google earth exec file */
     char solstat[MAXSTRPATH]; /* solution statistics file */
@@ -1388,6 +1396,7 @@ typedef struct {        /* RTK server type */
     double bl_reset;    /* baseline length to reset (km) */
     pcvs_t pcvsr;       // Receiver antenna parameters.
     rtklib_lock_t lock; /* lock flag */
+    char name[2][MAXANT]; // Rover and reference effective names.
 } rtksvr_t;
 
 typedef struct {        /* GIS data point type */
@@ -1443,6 +1452,7 @@ EXPORT int  code2idx(int sys, uint8_t code);
 EXPORT int  satexclude(int sat, double var, int svh, const prcopt_t *opt);
 EXPORT int  testsnr(int base, int freq, double el, double snr,
                     const snrmask_t *mask);
+EXPORT int testelmask(const double *azel, const elmask_t *elmask);
 EXPORT void setcodepri(int sys, int idx, const char *pri);
 EXPORT int  getcodepri(int sys, uint8_t code, const char *opt);
 EXPORT int sigindex(obsd_t *data, int sys, int code, const char *opt);
@@ -1635,6 +1645,8 @@ EXPORT void freenav(nav_t *nav, int opt);
 EXPORT int  readblq(const char *file, const char *sta, double odisp[2][11][3]);
 EXPORT int  readerp(const char *file, erp_t *erp);
 EXPORT int  geterp (const erp_t *erp, gtime_t time, double *val);
+EXPORT int  readelmask(const char *file, const char *name, elmask_t *elmask);
+EXPORT void saveelmask(const char *file, elmask_t *elmask);
 
 /* debug trace functions -----------------------------------------------------*/
 #ifdef TRACE

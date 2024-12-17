@@ -374,6 +374,7 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	const char *ionoopt[]={"OFF","Broadcast","SBAS","Dual-Frequency","Estimate STEC","IONEX TEC","QZSS LEX",""};
 	const char *tropopt[]={"OFF","Saastamoinen","SBAS","Estimate ZTD","Estimate ZTD+Grad",""};
 	const char *ephopt []={"Broadcast","Precise","Broadcast+SBAS","Broadcat+SSR APC","Broadcast+SSR CoM","QZSS LEX",""};
+        char name[2][MAXANT] = {{""}};
 	
         rtk_t *rtk = static_cast<rtk_t *>(malloc(sizeof(rtk_t)));
         if (rtk == NULL) return;
@@ -390,6 +391,8 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	cputime=rtksvr.cputime;
 	prcout =rtksvr.prcout;
 	nave=rtksvr.nave;
+        strcpy(name[0], rtksvr.name[0]);
+        strcpy(name[1], rtksvr.name[1]);
 	for (i=0;i<3;i++) nb[i]=rtksvr.nb[i];
 	for (i=0;i<3;i++) for (j=0;j<10;j++) {
 		nmsg[i][j]=rtksvr.nmsg[i][j];
@@ -426,7 +429,7 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	if (rtk->opt.navsys&SYS_SBS) navsys=navsys+"SBAS ";
 	
 	Label->Caption="";
-	Tbl->RowCount = 57 + ANTNFREQ * 2;
+	Tbl->RowCount = 59 + ANTNFREQ * 2;
 	
 	i=1;
 	Tbl->Cells[0][i  ]="RTKLIB Version";
@@ -578,6 +581,9 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	Tbl->Cells[0][i  ]="# of All Estimated States";
 	Tbl->Cells[1][i++]=s.sprintf("%d",rtk->nx);
 	
+	Tbl->Cells[0][i  ]="Rover Name";
+	Tbl->Cells[1][i++]=name[0];
+
 	Tbl->Cells[0][i  ]="Pos X/Y/Z Single (m) Rover";
 	Tbl->Cells[1][i++]=s.sprintf("%.3f, %.3f, %.3f",rtk->sol.rr[0],rtk->sol.rr[1],rtk->sol.rr[2]);
 	
@@ -605,6 +611,9 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	Tbl->Cells[1][i++]=s.sprintf("%.3f, %.3f, %.3f",
 		rtk->Pa?SQRT(rtk->Pa[0]):0,rtk->Pa?SQRT(rtk->Pa[1+1*rtk->na]):0,rtk->Pa?SQRT(rtk->Pa[2+2*rtk->na]):0);
 	
+	Tbl->Cells[0][i  ]="Base Name";
+	Tbl->Cells[1][i++]=name[1];
+
 	Tbl->Cells[0][i  ]="Pos X/Y/Z (m) Base Station";
 	Tbl->Cells[1][i++]=s.sprintf("%.3f, %.3f, %.3f",rtk->rb[0],rtk->rb[1],rtk->rb[2]);
 	
@@ -645,7 +654,7 @@ void __fastcall TMonitorDialog::ShowRtk(void)
         for (j = 0; j < ANTNFREQ; j++) {
           double pco[3];
           antpco(&rtk->opt.pcvr[1], antcode2freq(j), pco);
-          Tbl->Cells[0][i  ]=s.sprintf("Ant Phase Center Ant @d E/N/U (m) Base Station",antcode2id(j));
+          Tbl->Cells[0][i  ]=s.sprintf("Ant Phase Center Ant %s E/N/U (m) Base",antcode2id(j));
           Tbl->Cells[1][i++]=s.sprintf("%.4f, %.4f, %.4f",pco[0],pco[1],pco[2]);
 	}
 	del=rtk->opt.antdel[1];
