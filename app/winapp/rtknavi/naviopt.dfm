@@ -1333,7 +1333,23 @@ object OptDialog: TOptDialog
             'Lat/Lon/Height (deg/m)'
             'Lat/Lon/Height (dms/m)'
             'X/Y/Z-ECEF (m)'
+            'Get from Position File'
             'RTCM/Raw Antenna Position')
+        end
+        object LabelRovName: TLabel
+          Left = 185
+          Top = 18
+          Width = 60
+          Height = 13
+          Caption = 'Name (*: Auto)'
+        end
+        object RovNameE: TEdit
+          Left = 263
+          Top = 14
+          Width = 104
+          Height = 21
+          TabOrder = 1
+          Text = '*'
         end
         object BtnRovPos: TButton
           Left = 371
@@ -1347,7 +1363,7 @@ object OptDialog: TOptDialog
           Font.Name = 'Tahoma'
           Font.Style = []
           ParentFont = False
-          TabOrder = 1
+          TabOrder = 2
           OnClick = BtnRovPosClick
         end
         object RovPos1: TEdit
@@ -1355,7 +1371,7 @@ object OptDialog: TOptDialog
           Top = 36
           Width = 126
           Height = 21
-          TabOrder = 2
+          TabOrder = 3
           Text = '0'
         end
         object RovPos2: TEdit
@@ -1363,7 +1379,7 @@ object OptDialog: TOptDialog
           Top = 36
           Width = 129
           Height = 21
-          TabOrder = 3
+          TabOrder = 4
           Text = '0'
         end
         object RovPos3: TEdit
@@ -1371,7 +1387,7 @@ object OptDialog: TOptDialog
           Top = 36
           Width = 129
           Height = 21
-          TabOrder = 4
+          TabOrder = 5
           Text = '0'
         end
         object RovAntPcv: TCheckBox
@@ -1380,7 +1396,7 @@ object OptDialog: TOptDialog
           Width = 161
           Height = 17
           Caption = 'Antenna Type (*: Auto)'
-          TabOrder = 5
+          TabOrder = 6
           OnClick = RovAntPcvClick
         end
         object LabelRovAntD: TLabel
@@ -1396,7 +1412,7 @@ object OptDialog: TOptDialog
           Width = 230
           Height = 21
           DropDownCount = 16
-          TabOrder = 6
+          TabOrder = 7
           OnClick = RovAntClick
         end
         object RovAntE: TEdit
@@ -1404,7 +1420,7 @@ object OptDialog: TOptDialog
           Top = 74
           Width = 51
           Height = 21
-          TabOrder = 7
+          TabOrder = 8
           Text = '0'
         end
         object RovAntN: TEdit
@@ -1412,7 +1428,7 @@ object OptDialog: TOptDialog
           Top = 74
           Width = 51
           Height = 21
-          TabOrder = 8
+          TabOrder = 9
           Text = '0'
         end
         object RovAntU: TEdit
@@ -1420,7 +1436,7 @@ object OptDialog: TOptDialog
           Top = 74
           Width = 51
           Height = 21
-          TabOrder = 9
+          TabOrder = 10
           Text = '0'
         end
       end
@@ -1445,8 +1461,24 @@ object OptDialog: TOptDialog
             'Lat/Lon/Height (deg/m)'
             'Lat/Lon/Height (dms/m)'
             'X/Y/Z-ECEF (m)'
-            'RTCM/Raw Antenna Position'
-            'Average of Single Position')
+            'Average of Single Position'
+            'Get from Position File'
+            'RTCM/Raw Antenna Position')
+        end
+        object LabelRefName: TLabel
+          Left = 185
+          Top = 18
+          Width = 60
+          Height = 13
+          Caption = 'Name (*: Auto)'
+        end
+        object RefNameE: TEdit
+          Left = 263
+          Top = 14
+          Width = 104
+          Height = 21
+          TabOrder = 1
+          Text = '*'
         end
         object BtnRefPos: TButton
           Left = 371
@@ -1460,7 +1492,7 @@ object OptDialog: TOptDialog
           Font.Name = 'Tahoma'
           Font.Style = []
           ParentFont = False
-          TabOrder = 1
+          TabOrder = 2
           OnClick = BtnRefPosClick
         end
         object LabelMaxAveEp: TLabel
@@ -1475,7 +1507,7 @@ object OptDialog: TOptDialog
           Top = 36
           Width = 43
           Height = 21
-          TabOrder = 2
+          TabOrder = 3
           Text = '3600'
         end
         object ChkInitRestart: TCheckBox
@@ -1484,14 +1516,14 @@ object OptDialog: TOptDialog
           Width = 89
           Height = 17
           Caption = 'Init by Restart'
-          TabOrder = 3
+          TabOrder = 4
         end
         object RefPos1: TEdit
           Left = 6
           Top = 58
           Width = 126
           Height = 21
-          TabOrder = 4
+          TabOrder = 5
           Text = '0'
         end
         object RefPos2: TEdit
@@ -1499,7 +1531,7 @@ object OptDialog: TOptDialog
           Top = 58
           Width = 129
           Height = 21
-          TabOrder = 5
+          TabOrder = 6
           Text = '0'
         end
         object RefPos3: TEdit
@@ -1507,7 +1539,7 @@ object OptDialog: TOptDialog
           Top = 58
           Width = 129
           Height = 21
-          TabOrder = 6
+          TabOrder = 7
           Text = '0'
         end
         object RefAntPcv: TCheckBox
@@ -1516,7 +1548,7 @@ object OptDialog: TOptDialog
           Width = 165
           Height = 17
           Caption = 'Antenna Type (*: Auto)'
-          TabOrder = 7
+          TabOrder = 8
           OnClick = RovAntPcvClick
         end
         object LabelRefAntD: TLabel
@@ -1532,14 +1564,14 @@ object OptDialog: TOptDialog
           Width = 231
           Height = 21
           DropDownCount = 16
-          TabOrder = 8
+          TabOrder = 9
         end
         object RefAntE: TEdit
           Left = 239
           Top = 96
           Width = 51
           Height = 21
-          TabOrder = 9
+          TabOrder = 10
           Text = '0'
         end
         object RefAntN: TEdit
@@ -1547,7 +1579,7 @@ object OptDialog: TOptDialog
           Top = 96
           Width = 51
           Height = 21
-          TabOrder = 10
+          TabOrder = 11
           Text = '0'
         end
         object RefAntU: TEdit
@@ -1555,7 +1587,7 @@ object OptDialog: TOptDialog
           Top = 96
           Width = 51
           Height = 21
-          TabOrder = 11
+          TabOrder = 12
           Text = '0'
         end
       end
@@ -1984,21 +2016,49 @@ object OptDialog: TOptDialog
         TabOrder = 13
         OnClick = BtnBLQFileClick
       end
-      object Label31: TLabel
+      object Label56: TLabel
         Left = 6
         Top = 233
         Width = 121
         Height = 13
-        Caption = 'FTP/HTTP Local Directory'
+        Caption = 'Elevation Mask File'
       end
-      object LocalDir: TEdit
+      object BtnElmaskView: TSpeedButton
+        Left = 381
+        Top = 232
+        Width = 21
+        Height = 17
+        Flat = True
+        Glyph.Data = {
+          3E020000424D3E0200000000000036000000280000000D0000000D0000000100
+          1800000000000802000000000000000000000000000000000000FFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFF00FFFFFF00000000000000000000000000000000000000
+          0000000000000000000000000000FFFFFF00FFFFFF000000FFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000
+          FFFFFF808080808080808080808080808080FFFFFFFFFFFFFFFFFF000000FFFF
+          FF00FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFF000000FFFFFF00FFFFFF000000FFFFFF808080808080808080FFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000FFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000
+          FFFFFF808080808080808080808080808080808080808080FFFFFF000000FFFF
+          FF00FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFF000000FFFFFF00FFFFFF00000000000000000000000000000000000000
+          0000000000000000000000000000FFFFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FF00}
+        OnClick = BtnElmaskViewClick
+      end
+      object ElmaskFile: TEdit
         Left = 2
         Top = 247
         Width = 378
         Height = 21
         TabOrder = 14
       end
-      object BtnLocalDir: TButton
+      object BtnElmaskFile: TButton
         Left = 381
         Top = 247
         Width = 21
@@ -2011,6 +2071,35 @@ object OptDialog: TOptDialog
         Font.Style = []
         ParentFont = False
         TabOrder = 15
+        OnClick = BtnElmaskFileClick
+      end
+      object Label31: TLabel
+        Left = 6
+        Top = 268
+        Width = 121
+        Height = 13
+        Caption = 'FTP/HTTP Local Directory'
+      end
+      object LocalDir: TEdit
+        Left = 2
+        Top = 282
+        Width = 378
+        Height = 21
+        TabOrder = 16
+      end
+      object BtnLocalDir: TButton
+        Left = 381
+        Top = 282
+        Width = 21
+        Height = 21
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 17
         OnClick = BtnLocalDirClick
       end
     end

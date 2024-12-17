@@ -2188,75 +2188,7 @@
           <string>Base Station</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_10">
-          <item row="5" column="6">
-           <widget class="QDoubleSpinBox" name="sBReferenceAntennaU">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the delta position in up direction of the rover antenna as offsets of ARP (antenna reference point) position with refer to the marker (option: &lt;span style=&quot; font-style:italic;&quot;&gt;ant2-antdelu&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> m</string>
-            </property>
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="minimum">
-             <double>-10000.000000000000000</double>
-            </property>
-            <property name="maximum">
-             <double>10000.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="6">
-           <widget class="QPushButton" name="btnReferencePosition">
-            <property name="toolTip">
-             <string>Select reference position</string>
-            </property>
-            <property name="text">
-             <string>...</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="4">
-           <widget class="QLabel" name="lblReferenceAntennaD">
-            <property name="text">
-             <string>De&amp;lta-E/N/U (m)</string>
-            </property>
-            <property name="buddy">
-             <cstring>sBReferenceAntennaE</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0" colspan="2">
-           <widget class="QCheckBox" name="cBReferenceAntennaPcv">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify base station antenna type and/or delta position&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="text">
-             <string>Antenna Type (*: Auto)</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="4">
-           <widget class="QDoubleSpinBox" name="sBReferenceAntennaE">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the delta position in east direction of the rover antenna as offsets of ARP (antenna reference point) position with refer to the marker (option: &lt;span style=&quot; font-style:italic;&quot;&gt;ant2-antdele&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> m</string>
-            </property>
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="minimum">
-             <double>-100000.000000000000000</double>
-            </property>
-            <property name="maximum">
-             <double>1000000.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
+          <item row="0" column="0" colspan="2">
            <widget class="QComboBox" name="cBReferencePositionType">
             <property name="toolTip">
              <string>Select base station position format</string>
@@ -2298,7 +2230,158 @@
             </item>
            </widget>
           </item>
-          <item row="5" column="5">
+          <item row="0" column="2" colspan="2">
+            <widget class="QLabel" name="lblRefName">
+              <property name="toolTip">
+                <string></string>
+              </property>
+              <property name="text">
+                <string>Name (*: auto)</string>
+              </property>
+              <property name="buddy">
+                <cstring>lERefName</cstring>
+              </property>
+              <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+              </property>
+            </widget>
+          </item>
+          <item row="0" column="4" colspan="1">
+            <widget class="QLineEdit" name="lERefName">
+              <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Base station name used as a key for ANTEX, BLQ, and elevation mask files&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+            </widget>
+          </item>
+          <item row="0" column="5">
+           <widget class="QPushButton" name="btnReferencePosition">
+            <property name="toolTip">
+             <string>Select reference position</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="lblMaxAveEp">
+            <property name="text">
+             <string>Ma&amp;x # Average</string>
+            </property>
+            <property name="buddy">
+             <cstring>sBMaxAveEp</cstring>
+            </property>
+            <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="sBMaxAveEp">
+            <property name="toolTip">
+             <string>Maximum averaging epochs</string>
+            </property>
+            <property name="suffix">
+             <string> epochs</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+            <property name="value">
+             <number>3600</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QCheckBox" name="cBInitRestart">
+            <property name="toolTip">
+             <string>Initialize by restart</string>
+            </property>
+            <property name="text">
+             <string>Init by Restart</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QLineEdit" name="lEReferencePosition1">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="toolTip">
+             <string>Base station position as specify by the format.</string>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2" colspan="2">
+           <widget class="QLineEdit" name="lEReferencePosition2">
+            <property name="toolTip">
+             <string>Base station position as specify by the format.</string>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="4" colspan="2">
+           <widget class="QLineEdit" name="lEReferencePosition3">
+            <property name="toolTip">
+             <string>Base station position as specify by the format.</string>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="2">
+           <widget class="QCheckBox" name="cBReferenceAntennaPcv">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify base station antenna type and/or delta position&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="text">
+             <string>Antenna Type (*: Auto)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3" colspan="3">
+           <widget class="QLabel" name="lblReferenceAntennaD">
+            <property name="text">
+             <string>De&amp;lta-E/N/U (m)</string>
+            </property>
+            <property name="buddy">
+             <cstring>sBReferenceAntennaE</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0" colspan="3">
+           <widget class="QComboBox" name="cBReferenceAntenna">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select the type of the base station antenna (option: &lt;span style=&quot; font-style:italic;&quot;&gt;ant2-anttype&lt;/span&gt;).&lt;/p&gt;&lt;p&gt;To select the antenna type, set the &amp;quot;Receiver Antenna PCV File&amp;quot; path in &amp;quot;Files&amp;quot;. &lt;/p&gt;&lt;p&gt;If &amp;quot;*&amp;quot; is used, antenna type and antenna delta are recognized by the antenna information of RINEX OBS header.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="3">
+           <widget class="QDoubleSpinBox" name="sBReferenceAntennaE">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the delta position in east direction of the rover antenna as offsets of ARP (antenna reference point) position with refer to the marker (option: &lt;span style=&quot; font-style:italic;&quot;&gt;ant2-antdele&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="suffix">
+             <string> m</string>
+            </property>
+            <property name="decimals">
+             <number>4</number>
+            </property>
+            <property name="minimum">
+             <double>-100000.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>1000000.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="4">
            <widget class="QDoubleSpinBox" name="sBReferenceAntennaN">
             <property name="toolTip">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the delta position in north direction of the rover antenna as offsets of ARP (antenna reference point) position with refer to the marker (option: &lt;span style=&quot; font-style:italic;&quot;&gt;ant2-antdeln&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -2317,85 +2400,30 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="lblMaxAveEp">
-            <property name="text">
-             <string>Ma&amp;x # Average</string>
-            </property>
-            <property name="buddy">
-             <cstring>sBMaxAveEp</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QSpinBox" name="sBMaxAveEp">
+          <item row="5" column="5">
+           <widget class="QDoubleSpinBox" name="sBReferenceAntennaU">
             <property name="toolTip">
-             <string>Maximum averaging epochs</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the delta position in up direction of the rover antenna as offsets of ARP (antenna reference point) position with refer to the marker (option: &lt;span style=&quot; font-style:italic;&quot;&gt;ant2-antdelu&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="suffix">
-             <string> epochs</string>
+             <string> m</string>
+            </property>
+            <property name="decimals">
+             <number>4</number>
+            </property>
+            <property name="minimum">
+             <double>-10000.000000000000000</double>
             </property>
             <property name="maximum">
-             <number>10000</number>
-            </property>
-            <property name="value">
-             <number>3600</number>
+             <double>10000.000000000000000</double>
             </property>
            </widget>
           </item>
-          <item row="0" column="3">
-           <widget class="QCheckBox" name="cBInitRestart">
-            <property name="toolTip">
-             <string>Initialize by restart</string>
-            </property>
-            <property name="text">
-             <string>Init by Restart</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0" colspan="4">
-           <widget class="QComboBox" name="cBReferenceAntenna">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select the type of the base station antenna (option: &lt;span style=&quot; font-style:italic;&quot;&gt;ant2-anttype&lt;/span&gt;).&lt;/p&gt;&lt;p&gt;To select the antenna type, set the &amp;quot;Receiver Antenna PCV File&amp;quot; path in &amp;quot;Files&amp;quot;. &lt;/p&gt;&lt;p&gt;If &amp;quot;*&amp;quot; is used, antenna type and antenna delta are recognized by the antenna information of RINEX OBS header.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="5" colspan="2">
-           <widget class="QLineEdit" name="lEReferencePosition3">
-            <property name="toolTip">
-             <string>Base station position as specify by the format.</string>
-            </property>
-            <property name="text">
-             <string>0</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2" colspan="3">
-           <widget class="QLineEdit" name="lEReferencePosition2">
-            <property name="toolTip">
-             <string>Base station position as specify by the format.</string>
-            </property>
-            <property name="text">
-             <string>0</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0" colspan="2">
-           <widget class="QLineEdit" name="lEReferencePosition1">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="toolTip">
-             <string/>
-            </property>
-            <property name="text">
-             <string>0</string>
-            </property>
-           </widget>
-          </item>
+
          </layout>
         </widget>
        </item>
+
        <item row="1" column="0">
         <widget class="QGroupBox" name="GroupRovAnt">
          <property name="title">
@@ -2447,6 +2475,31 @@
             </item>
            </widget>
           </item>
+
+          <item row="0" column="2" colspan="2">
+           <widget class="QLabel" name="lblRovName">
+            <property name="toolTip">
+             <string></string>
+            </property>
+            <property name="text">
+             <string>Name (*: auto)</string>
+            </property>
+            <property name="buddy">
+             <cstring>lERovName</cstring>
+            </property>
+            <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4" colspan="1">
+           <widget class="QLineEdit" name="lERovName">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Rover station name used as a key for ANTEX, BLQ, and elevation mask files&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
+
           <item row="0" column="5">
            <widget class="QPushButton" name="btnRoverPosition">
             <property name="toolTip">
@@ -2457,7 +2510,7 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
+          <item row="1" column="0" colspan="2">
            <widget class="QLineEdit" name="lERoverPosition1">
             <property name="enabled">
              <bool>true</bool>
@@ -2470,7 +2523,7 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="1" colspan="2">
+          <item row="1" column="2" colspan="2">
            <widget class="QLineEdit" name="lERoverPosition2">
             <property name="toolTip">
              <string>Rover position as specify by the format.</string>
@@ -2480,7 +2533,7 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="3" colspan="3">
+          <item row="1" column="4" colspan="2">
            <widget class="QLineEdit" name="lERoverPosition3">
             <property name="toolTip">
              <string>Rover position as specify by the format.</string>
@@ -2500,7 +2553,7 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="2" colspan="3">
+          <item row="3" column="3" colspan="3">
            <widget class="QLabel" name="lblRoverAntennaD">
             <property name="text">
              <string>Delta-E/N/U</string>
@@ -2517,7 +2570,7 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="2">
+          <item row="5" column="3">
            <widget class="QDoubleSpinBox" name="sBRoverAntennaE">
             <property name="toolTip">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the delta position in east direction of the rover antenna as offsets of ARP (antenna reference point) position with refer to the marker (option: &lt;span style=&quot; font-style:italic;&quot;&gt;ant1-antdele&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -2530,6 +2583,25 @@
             </property>
             <property name="minimum">
              <double>-1000000.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>1000000.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="4">
+           <widget class="QDoubleSpinBox" name="sBRoverAntennaN">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the delta position in north direction of the rover antenna as offsets of ARP (antenna reference point) position with refer to the marker (option: &lt;span style=&quot; font-style:italic;&quot;&gt;ant1-antdeln&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="suffix">
+             <string> m</string>
+            </property>
+            <property name="decimals">
+             <number>4</number>
+            </property>
+            <property name="minimum">
+             <double>-100000.000000000000000</double>
             </property>
             <property name="maximum">
              <double>1000000.000000000000000</double>
@@ -2555,26 +2627,8 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="3" colspan="2">
-           <widget class="QDoubleSpinBox" name="sBRoverAntennaN">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the delta position in north direction of the rover antenna as offsets of ARP (antenna reference point) position with refer to the marker (option: &lt;span style=&quot; font-style:italic;&quot;&gt;ant1-antdeln&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> m</string>
-            </property>
-            <property name="decimals">
-             <number>4</number>
-            </property>
-            <property name="minimum">
-             <double>-100000.000000000000000</double>
-            </property>
-            <property name="maximum">
-             <double>1000000.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-         </layout>
+
+        </layout>
         </widget>
        </item>
       </layout>
@@ -2714,6 +2768,23 @@
         </widget>
        </item>
        <item row="15" column="0">
+        <widget class="QLabel" name="Label34b">
+         <property name="text">
+          <string>Elevation Mask Pattern File</string>
+         </property>
+         <property name="buddy">
+          <cstring>lEElmaskFile</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="16" column="0">
+        <widget class="QLineEdit" name="lEElmaskFile">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Input the file path of an elevation mask patterns file (option: &lt;span style=&quot; font-style:italic;&quot;&gt;file-elmaskfile&lt;/span&gt;). &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="16" column="0">
         <widget class="QLabel" name="lblIonosphereFile">
          <property name="text">
           <string>Ionosphere Data File</string>
@@ -2723,14 +2794,14 @@
          </property>
         </widget>
        </item>
-       <item row="16" column="0">
+       <item row="17" column="0">
         <widget class="QLineEdit" name="lEIonosphereFile">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Input the file path of an ionospheric corrections file (*.yyi)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
        </item>
-       <item row="17" column="0">
+       <item row="18" column="0">
         <widget class="QLabel" name="lblLocalDirectory">
          <property name="text">
           <string>FTP/HTTP Local Directory</string>
@@ -2740,7 +2811,7 @@
          </property>
         </widget>
        </item>
-       <item row="18" column="0">
+       <item row="19" column="0">
         <widget class="QLineEdit" name="lELocalDirectory">
          <property name="toolTip">
           <string>Local directory for downloaded data</string>
@@ -3604,6 +3675,7 @@
   <tabstop>lEDCBFile</tabstop>
   <tabstop>lEEOPFile</tabstop>
   <tabstop>lEBLQFile</tabstop>
+  <tabstop>lEElmaskFile</tabstop>
   <tabstop>lEIonosphereFile</tabstop>
   <tabstop>lELocalDirectory</tabstop>
   <tabstop>sBServerCycle</tabstop>
