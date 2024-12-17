@@ -268,10 +268,11 @@ public:
 	int RovPosTypeF,RefPosTypeF,RovAntPcvF,RefAntPcvF;
         AnsiString RovAntF,RefAntF,SatPcvFileF,AntPcvFileF,SatMetaFileF;
 	double RovAntDel[3],RefAntDel[3],RovPos[3],RefPos[3],NmeaPos[3];
+	AnsiString RovName,RefName;
 	double Baseline[2];
 	AnsiString History[10],MntpHist[10];
 	
-        AnsiString GeoidDataFileF,StaPosFileF,DCBFileF,EOPFileF,BLQFileF;
+        AnsiString GeoidDataFileF,StaPosFileF,DCBFileF,EOPFileF,BLQFileF,ElmaskFileF;
 	AnsiString LocalDirectory,PntName[MAXMAPPNT];
 	double PntPos[MAXMAPPNT][3];
 	int NMapPnt;

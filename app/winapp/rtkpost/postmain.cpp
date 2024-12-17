@@ -1054,18 +1054,28 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt,
         prcopt.baseline[0]=0.0;
         prcopt.baseline[1]=0.0;
     }
-    for (int i=0;i<3;i++) prcopt.ru[i]=RovPos[i];
-    if (RovPosType<=2) {
+
+    for (int i = 0; i < 3; i++) prcopt.ru[i] = 0;
+    if (RovPosType <= 2) {
         prcopt.rovpos = RovPosType < 2 ? POSOPT_POS_LLH : POSOPT_POS_XYZ;
+        for (int i = 0; i < 3; i++) prcopt.ru[i] = RovPos[i];
     }
-    else prcopt.rovpos=RovPosType-1; /* 1:single,2:posfile,3:rinex */
+    else if (RovPosType == 3) prcopt.rovpos = POSOPT_FILE;
+    else  { // RINEX position
+        prcopt.rovpos = POSOPT_RINEX;
+    }
     
-    for (int i=0;i<3;i++) prcopt.rb[i]=RefPos[i];
-    if (RefPosType<=2) {
+    for (int i = 0; i < 3; i++) prcopt.rb[i] = 0;
+    if (RefPosType <= 2) {
         prcopt.refpos = RefPosType < 2 ? POSOPT_POS_LLH : POSOPT_POS_XYZ;
+        for (int i = 0; i < 3; i++) prcopt.rb[i] = RefPos[i];
     }
-    else prcopt.refpos=RefPosType-1;
-    
+    else if (RefPosType == 3) prcopt.refpos = POSOPT_SINGLE;
+    else if (RefPosType == 4) prcopt.refpos = POSOPT_FILE;
+    else { // RINEX position
+        prcopt.refpos = POSOPT_RINEX;
+    }
+
     prcopt.antdel[0][0]=RovAntE;
     prcopt.antdel[0][1]=RovAntN;
     prcopt.antdel[0][2]=RovAntU;
@@ -1078,6 +1088,9 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt,
     if (RefAntPcv) {
         strcpy(prcopt.anttype[1],RefAnt.c_str());
     }
+    trace(3,"rovname='%s' refname='%s'\n",RovName.c_str(),RefName.c_str());
+    strcpy(prcopt.name[0],RovName.c_str());
+    strcpy(prcopt.name[1],RefName.c_str());
     if (ExSats!="") { // excluded satellites
         strcpy(buff,ExSats.c_str());
         for (p=strtok(buff," ");p;p=strtok(NULL," ")) {
@@ -1471,6 +1484,8 @@ void __fastcall TMainForm::LoadOpt(void)
     RefAntE            =ini->ReadFloat  ("opt","refante",      0.0);
     RefAntN            =ini->ReadFloat  ("opt","refantn",      0.0);
     RefAntU            =ini->ReadFloat  ("opt","refantu",      0.0);
+    RovName            =ini->ReadString ("opt","rovname",       "");
+    RefName            =ini->ReadString ("opt","refname",       "");
     
     RnxOpts1           =ini->ReadString ("opt","rnxopts1",      "");
     RnxOpts2           =ini->ReadString ("opt","rnxopts2",      "");
@@ -1715,6 +1730,8 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteFloat  ("opt","refante",     RefAntE     );
     ini->WriteFloat  ("opt","refantn",     RefAntN     );
     ini->WriteFloat  ("opt","refantu",     RefAntU     );
+    ini->WriteString ("opt","rovname",     RovName     );
+    ini->WriteString ("opt","refname",     RefName     );
     
     ini->WriteString ("opt","rnxopts1",    RnxOpts1    );
     ini->WriteString ("opt","rnxopts2",    RnxOpts2    );

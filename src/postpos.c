@@ -61,7 +61,6 @@ static pcvs_t pcvsr={0};        /* receiver antenna parameters */
 static obs_t obss={0};          /* observation data */
 static nav_t navs={0};          /* navigation data */
 static sbs_t sbss={0};          /* sbas messages */
-static sta_t stas[MAXRCV];      /* station information */
 static int nepoch=0;            /* number of observation epochs */
 static int nitm  =0;            /* number of invalid time marks */
 static int iobsu =0;            /* current rover observation data index */
@@ -944,7 +943,7 @@ static void closeses(nav_t *nav, satsvns_t *satsvns, pcvs_t *pcvs, pcvs_t *pcvr)
 }
 /* Set antenna parameters ----------------------------------------------------*/
 static void setpcv(gtime_t time, prcopt_t *popt, nav_t *nav, const satsvns_t *satsvns,
-                   const pcvs_t *pcvs, const pcvs_t *pcvr, const sta_t *sta)
+                   const pcvs_t *pcvs, const pcvs_t *pcvr, const sta_t *stas)
 {
     pcv_t pcv0={0};
     double pos[3],del[3];
@@ -971,12 +970,12 @@ static void setpcv(gtime_t time, prcopt_t *popt, nav_t *nav, const satsvns_t *sa
             // type and antenna delta, which are ignored in this case. The
             // delta is applied even if the antenna type does not map to a
             // known PCV, to at least get to the ARP.
-            strcpy(popt->anttype[i],sta[i].antdes);
-            if (sta[i].deltype==1) { // XYZ
+            strcpy(popt->anttype[i],stas[i].antdes);
+            if (stas[i].deltype==1) { // XYZ
                 // Need at least an approx position to map the delta.
-                if (norm(sta[i].pos,3)>0.0) {
-                    ecef2pos(sta[i].pos,pos);
-                    ecef2enu(pos,sta[i].del,del);
+                if (norm(stas[i].pos,3)>0.0) {
+                    ecef2pos(stas[i].pos,pos);
+                    ecef2enu(pos,stas[i].del,del);
                     for (j=0;j<3;j++) popt->antdel[i][j]=del[j];
                 }
             }
@@ -995,12 +994,12 @@ static void setpcv(gtime_t time, prcopt_t *popt, nav_t *nav, const satsvns_t *sa
     }
 }
 /* read ocean tide loading parameters ----------------------------------------*/
-static void readotl(prcopt_t *popt, const char *file, const sta_t *sta)
+static void readotl(prcopt_t *popt, const char *file, const sta_t *stas)
 {
     int i,mode=PMODE_DGPS<=popt->mode&&popt->mode<=PMODE_FIXED;
 
     for (i=0;i<(mode?2:1);i++) {
-        readblq(file,sta[i].name,popt->odisp[i]);
+        readblq(file,stas[i].name,popt->odisp[i]);
     }
 }
 /* write header to output file -----------------------------------------------*/
@@ -1059,7 +1058,7 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     prcopt_t popt_=*popt;
     char tracefile[1024],statfile[1024],path[1024],outfiletm[1024]={0};
     const char *ext;
-    int i,j,k,dcb_ok;
+    int j,k,dcb_ok;
 
     trace(3,"execses : n=%d outfile=%s\n",n,outfile);
 
@@ -1097,19 +1096,47 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     int err = 0;
 
     /* Read obs and nav data */
+    sta_t stas[MAXRCV]; // Station information.
     if (!readobsnav(ts,te,ti,infile,index,n,&popt_,&obss,&navs,stas)) {
       err = 1;
       goto done;
     }
 
+    trace(2, "rinex marker names: rover '%s', base '%s'\n", stas[0].name, stas[1].name);
+
+    // If the names are automatic then use the rinex marker name or
+    // the process name else use the supplied name.
+    if (strcmp(popt_.name[0], "*") == 0) {
+      if (stas[0].name[0] == '\0' && strcmp(proc_rov, stas[0].name)) {
+        snprintf(stas[0].name, sizeof(stas[0].name), "%s", proc_rov);
+        trace(2, "effective rover name (%s)\n", stas[0].name);
+      }
+      snprintf(popt_.name[0], sizeof(popt_.name[0]), "%s", stas[0].name);
+    } else if (popt_.name[0][0] != '\0' && strcmp(popt_.name[0], stas[0].name)) {
+      snprintf(stas[0].name, sizeof(stas[0].name), "%s", popt_.name[0]);
+      trace(2, "effective rover name (%s)\n", stas[0].name);
+    }
+
+    if (strcmp(popt_.name[1], "*") == 0) {
+      if (stas[1].name[0] == '\0' && strcmp(proc_base, stas[1].name)) {
+        snprintf(stas[1].name, sizeof(stas[1].name), "%s", proc_base);
+        trace(2, "effective base name (%s)\n", stas[1].name);
+      }
+      snprintf(popt_.name[1], sizeof(popt_.name[1]), "%s", stas[1].name);
+    } else if (popt_.name[1][0] != '\0' && strcmp(popt_.name[1], stas[1].name)) {
+      snprintf(stas[1].name, sizeof(stas[1].name), "%s", popt_.name[1]);
+      trace(2, "effective base name (%s)\n", stas[1].name);
+    }
+
     /* read dcb parameters from DCB, BIA, BSX files */
     dcb_ok = 0;
-    for (i=0;i<MAX_CODE_BIASES;i++) for (k=0;k<MAX_CODE_BIAS_FREQS;k++) {
+    for (int i=0;i<MAX_CODE_BIASES;i++)
+      for (k=0;k<MAX_CODE_BIAS_FREQS;k++) {
         /* FIXME: cbias later initialized with 0 in readdcb()!  */
         for (j=0;j<MAXSAT;j++) navs.cbias[j][k][i]=-1;
         for (j=0;j<MAXRCV;j++) navs.rbias[j][k][i]=0;
-        }
-    for (i=0;i<n;i++) {  /* first check infiles for .BIA or .BSX files */
+      }
+    for (int i=0;i<n;i++) {  /* first check infiles for .BIA or .BSX files */
         if ((dcb_ok=readdcb(infile[i],&navs,stas))) break;
     }
     if (!dcb_ok&&*fopt->dcb) {  /* then check if DCB file specified */
@@ -1142,6 +1169,15 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
           goto done;
         }
     }
+    // Read the elevation mask patterns.
+    if (*fopt->elmask) {
+      int mode = PMODE_DGPS <= popt->mode && popt->mode <= PMODE_FIXED;
+      for (int i = 0; i < (mode ? 2 : 1); i++) {
+        const char *name = stas[i].name;
+        readelmask(fopt->elmask, name, &popt_.elmask[i]);
+      }
+    }
+
     /* open solution statistics */
     if (flag&&sopt->sstat>0) {
         strcpy(statfile,outfile);

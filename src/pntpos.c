@@ -436,7 +436,10 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
 
         double dion = 0.0, vion = 0.0, dtrp = 0.0, vtrp = 0.0, dant = 0.0;
         if (iter>0) {
-            /* Test SNR mask */
+            // Test elevation mask.
+            if (testelmask(azel+i*2,&opt->elmask[base])) continue;
+
+            // Test SNR mask.
             if (!snrmask(obs+i,azel+i*2,opt,base)) continue;
 
             if (opt->ionoopt!=IONOOPT_IFLC) {

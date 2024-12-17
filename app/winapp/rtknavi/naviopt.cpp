@@ -200,6 +200,7 @@ void __fastcall TOptDialog::BtnRovPosClick(TObject *Sender)
 	RefDialog->RovPos[0]=pos[0]*R2D;
 	RefDialog->RovPos[1]=pos[1]*R2D;
 	RefDialog->Pos[2]=pos[2];
+        RefDialog->StaId=RovNameE->Text;
 	RefDialog->StaPosFile=StaPosFile->Text;
 	RefDialog->Left=Left+Width/2-RefDialog->Width/2;
 	RefDialog->Top=Top+Height/2-RefDialog->Height/2;
@@ -208,6 +209,7 @@ void __fastcall TOptDialog::BtnRovPosClick(TObject *Sender)
 	pos[1]=RefDialog->Pos[1]*D2R;
 	pos[2]=RefDialog->Pos[2];
 	pos2ecef(pos,p);
+        RovNameE->Text=RefDialog->StaId;
 	SetPos(RovPosTypeP->ItemIndex,edit,p);
 }
 //---------------------------------------------------------------------------
@@ -220,6 +222,7 @@ void __fastcall TOptDialog::BtnRefPosClick(TObject *Sender)
 	RefDialog->RovPos[0]=pos[0]*R2D;
 	RefDialog->RovPos[1]=pos[1]*R2D;
 	RefDialog->RovPos[2]=pos[2];
+        RefDialog->StaId=RefNameE->Text;
 	RefDialog->StaPosFile=StaPosFile->Text;
 	RefDialog->Left=Left+Width/2-RefDialog->Width/2;
 	RefDialog->Top=Top+Height/2-RefDialog->Height/2;
@@ -228,6 +231,7 @@ void __fastcall TOptDialog::BtnRefPosClick(TObject *Sender)
 	pos[1]=RefDialog->Pos[1]*D2R;
 	pos[2]=RefDialog->Pos[2];
 	pos2ecef(pos,p);
+        RefNameE->Text=RefDialog->StaId;
 	SetPos(RefPosTypeP->ItemIndex,edit,p);
 }
 //---------------------------------------------------------------------------
@@ -334,6 +338,23 @@ void __fastcall TOptDialog::BtnBLQViewClick(TObject *Sender)
 	viewer->Show();
 	viewer->Read(BLQFile->Text);
 }
+//---------------------------------------------------------------------------
+void __fastcall TOptDialog::BtnElmaskFileClick(TObject *Sender)
+{
+	OpenDialog->Title="Elevation Mask File";
+	OpenDialog->FilterIndex=1;
+	if (!OpenDialog->Execute()) return;
+	ElmaskFile->Text=OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TOptDialog::BtnElmaskViewClick(TObject *Sender)
+{
+	if (ElmaskFile->Text=="") return;
+	TTextViewer *viewer=new TTextViewer(Application);
+	viewer->Show();
+	viewer->Read(ElmaskFile->Text);
+}
+//---------------------------------------------------------------------------
 void __fastcall TOptDialog::BtnLocalDirClick(TObject *Sender)
 {
     UnicodeString dir=LocalDir->Text;
@@ -543,6 +564,8 @@ void __fastcall TOptDialog::GetOpt(void)
 	RefAntU		 ->Text     =s.sprintf("%.4f",RefAntDel[2]);
 	SetPos(RovPosTypeP->ItemIndex,editu,RovPos);
 	SetPos(RefPosTypeP->ItemIndex,editr,RefPos);
+        RovNameE         ->Text     =RovName;
+        RefNameE         ->Text     =RefName;
 	
 	SatPcvFile	 ->Text     =SatPcvFileF;
 	AntPcvFile	 ->Text     =AntPcvFileF;
@@ -552,6 +575,7 @@ void __fastcall TOptDialog::GetOpt(void)
 	DCBFile      ->Text     =DCBFileF;
 	EOPFile      ->Text     =EOPFileF;
 	BLQFile      ->Text     =BLQFileF;
+	ElmaskFile   ->Text     =ElmaskFileF;
 	LocalDir	 ->Text     =LocalDirectory;
 	ReadAntList();
 	
@@ -694,6 +718,8 @@ void __fastcall TOptDialog::SetOpt(void)
 	RefAntDel[2]     =str2dbl(RefAntU   ->Text);
 	GetPos(RovPosTypeP->ItemIndex,editu,RovPos);
 	GetPos(RefPosTypeP->ItemIndex,editr,RefPos);
+	RovName          =RovNameE     ->Text;
+	RefName          =RefNameE     ->Text;
 	
 	SatPcvFileF      =SatPcvFile  ->Text;
 	AntPcvFileF      =AntPcvFile  ->Text;
@@ -703,6 +729,7 @@ void __fastcall TOptDialog::SetOpt(void)
 	DCBFileF         =DCBFile     ->Text;
 	EOPFileF         =EOPFile     ->Text;
 	BLQFileF         =BLQFile     ->Text;
+	ElmaskFileF      =ElmaskFile  ->Text;
 	LocalDirectory   =LocalDir    ->Text;
 	
 	SvrCycle	     =SvrCycleE   ->Text.ToInt();
@@ -881,19 +908,23 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	RefAntE		 ->Text			=s.sprintf("%.4f",prcopt.antdel[1][0]);
 	RefAntN		 ->Text			=s.sprintf("%.4f",prcopt.antdel[1][1]);
 	RefAntU		 ->Text			=s.sprintf("%.4f",prcopt.antdel[1][2]);
+        RovNameE         ->Text                 =prcopt.name[0];
+        RefNameE         ->Text                 =prcopt.name[1];
 	MaxAveEp	 ->Text			=s.sprintf("%d",prcopt.maxaveep);
 	ChkInitRestart->Checked		=prcopt.initrst;
 	
 	RovPosTypeP	 ->ItemIndex	=0;
         if (prcopt.rovpos == POSOPT_POS_LLH) RovPosTypeP->ItemIndex = 0;
         else if (prcopt.rovpos == POSOPT_POS_XYZ) RovPosTypeP->ItemIndex = 2;
-	else if (prcopt.rovpos == POSOPT_RTCM) RovPosTypeP->ItemIndex= 3;
+	else if (prcopt.rovpos == POSOPT_FILE) RovPosTypeP->ItemIndex= 3;
+	else if (prcopt.rovpos == POSOPT_RTCM) RovPosTypeP->ItemIndex= 4;
 
 	RefPosTypeP	 ->ItemIndex	=0;
         if (prcopt.refpos == POSOPT_POS_LLH) RefPosTypeP->ItemIndex = 0;
         else if (prcopt.refpos == POSOPT_POS_XYZ) RefPosTypeP->ItemIndex = 2;
-	else if (prcopt.refpos==POSOPT_RTCM  ) RefPosTypeP->ItemIndex=3;
-	else if (prcopt.refpos==POSOPT_SINGLE) RefPosTypeP->ItemIndex=4;
+	else if (prcopt.refpos == POSOPT_SINGLE) RefPosTypeP->ItemIndex = 3;
+	else if (prcopt.refpos == POSOPT_FILE) RefPosTypeP->ItemIndex = 4;
+	else if (prcopt.refpos == POSOPT_RTCM) RefPosTypeP->ItemIndex = 5;
 	
 	RovPosTypeF					=RovPosTypeP->ItemIndex;
 	RefPosTypeF					=RefPosTypeP->ItemIndex;
@@ -908,6 +939,7 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	DCBFile    ->Text			=filopt.dcb;
 	EOPFile    ->Text			=filopt.eop;
 	BLQFile    ->Text			=filopt.blq;
+	ElmaskFile ->Text			=filopt.elmask;
 	LocalDir   ->Text			=filopt.tempdir;
 
 	ProxyAddrE ->Text                       =proxyaddr;
@@ -922,6 +954,7 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 	AnsiString ExSatsE_Text=ExSatsE->Text;
 	AnsiString FieldSep_Text=FieldSep->Text;
 	AnsiString RovAnt_Text=RovAnt->Text,RefAnt_Text=RefAnt->Text;
+	AnsiString RovNameE_Text=RovNameE->Text,RefNameE_Text=RefNameE->Text;
 	AnsiString SatPcvFile_Text=SatPcvFile->Text;
 	AnsiString AntPcvFile_Text=AntPcvFile->Text;
 	AnsiString SatMetaFile_Text=SatMetaFile->Text;
@@ -930,6 +963,7 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 	AnsiString DCBFile_Text=DCBFile->Text;
 	AnsiString EOPFile_Text=EOPFile->Text;
 	AnsiString BLQFile_Text=BLQFile->Text;
+	AnsiString ElmaskFile_Text=ElmaskFile->Text;
 	AnsiString LocalDir_Text=LocalDir->Text;
     int itype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPCLI,STR_FILE,STR_FTP,STR_HTTP};
     int otype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSVR,STR_NTRIPCAS,STR_FILE};
@@ -1134,18 +1168,23 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
         prcopt.rovpos = POSOPT_POS_LLH;
         if (RovPosTypeP->ItemIndex < 2) prcopt.rovpos = POSOPT_POS_LLH;
         else if (RovPosTypeP->ItemIndex == 2) prcopt.rovpos = POSOPT_POS_XYZ;
-        else if (RovPosTypeP->ItemIndex == 3) prcopt.rovpos = POSOPT_RTCM;
+        else if (RovPosTypeP->ItemIndex == 3) prcopt.rovpos = POSOPT_FILE;
+        else if (RovPosTypeP->ItemIndex == 4) prcopt.rovpos = POSOPT_RTCM;
 
         prcopt.refpos = POSOPT_POS_LLH;
         if (RefPosTypeP->ItemIndex < 2) prcopt.refpos = POSOPT_POS_LLH;
         else if (RefPosTypeP->ItemIndex == 2) prcopt.refpos = POSOPT_POS_XYZ;
-        else if (RefPosTypeP->ItemIndex == 3) prcopt.refpos=POSOPT_RTCM;
-	else if (RefPosTypeP->ItemIndex==4) prcopt.refpos=POSOPT_SINGLE;
+	else if (RefPosTypeP->ItemIndex == 3) prcopt.refpos = POSOPT_SINGLE;
+	else if (RefPosTypeP->ItemIndex == 4) prcopt.refpos = POSOPT_FILE;
+        else if (RefPosTypeP->ItemIndex == 5) prcopt.refpos = POSOPT_RTCM;
 	
         if (prcopt.rovpos == POSOPT_POS_LLH || prcopt.rovpos == POSOPT_POS_XYZ)
           GetPos(RovPosTypeP->ItemIndex, editu, prcopt.ru);
         if (prcopt.refpos == POSOPT_POS_LLH || prcopt.refpos == POSOPT_POS_XYZ)
           GetPos(RefPosTypeP->ItemIndex, editr, prcopt.rb);
+
+	snprintf(prcopt.name[0],sizeof(prcopt.name[0]),"%s",RovNameE_Text.c_str());
+	snprintf(prcopt.name[1],sizeof(prcopt.name[1]),"%s",RefNameE_Text.c_str());
 
 	strcpy(filopt.satantp,SatPcvFile_Text.c_str());
 	strcpy(filopt.rcvantp,AntPcvFile_Text.c_str());
@@ -1155,6 +1194,7 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 	strcpy(filopt.dcb,    DCBFile_Text.c_str());
 	strcpy(filopt.eop,    EOPFile_Text.c_str());
 	strcpy(filopt.blq,    BLQFile_Text.c_str());
+	strcpy(filopt.elmask, ElmaskFile_Text.c_str());
 	strcpy(filopt.tempdir,LocalDir_Text.c_str());
 	
 	time2str(utc2gpst(timeget()),s,0);
@@ -1238,17 +1278,18 @@ void __fastcall TOptDialog::UpdateEnable(void)
 	RovPos1        ->Enabled=RovPosTypeP->Enabled&&RovPosTypeP->ItemIndex<=2;
 	RovPos2        ->Enabled=RovPosTypeP->Enabled&&RovPosTypeP->ItemIndex<=2;
 	RovPos3        ->Enabled=RovPosTypeP->Enabled&&RovPosTypeP->ItemIndex<=2;
-	BtnRovPos      ->Enabled=RovPosTypeP->Enabled&&RovPosTypeP->ItemIndex<=2;
 	
 	RefPosTypeP    ->Enabled=rel&&PosMode->ItemIndex!=PMODE_MOVEB;
 	RefPos1        ->Enabled=RefPosTypeP->Enabled&&RefPosTypeP->ItemIndex<=2;
 	RefPos2        ->Enabled=RefPosTypeP->Enabled&&RefPosTypeP->ItemIndex<=2;
 	RefPos3        ->Enabled=RefPosTypeP->Enabled&&RefPosTypeP->ItemIndex<=2;
-	BtnRefPos      ->Enabled=RefPosTypeP->Enabled&&RefPosTypeP->ItemIndex<=2;
+        LabelRefName   ->Enabled=RefPosTypeP->Enabled;
+        RefNameE       ->Enabled=RefPosTypeP->Enabled;
+	BtnRefPos      ->Enabled=RefPosTypeP->Enabled;
 	
-	LabelMaxAveEp  ->Enabled=RefPosTypeP->ItemIndex==4;
-	MaxAveEp       ->Enabled=RefPosTypeP->ItemIndex==4;
-	ChkInitRestart ->Enabled=RefPosTypeP->ItemIndex==4;
+	LabelMaxAveEp  ->Enabled=RefPosTypeP->ItemIndex==3;
+	MaxAveEp       ->Enabled=RefPosTypeP->ItemIndex==3;
+	ChkInitRestart ->Enabled=RefPosTypeP->ItemIndex==3;
 	
 //	SbasSatE       ->Enabled=PosMode->ItemIndex==0;
 }

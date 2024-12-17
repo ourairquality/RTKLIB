@@ -1347,9 +1347,23 @@ object OptDialog: TOptDialog
             'Lat/Lon/Height (deg/m)'
             'Lat/Lon/Height (dms/m)'
             'X/Y/Z-ECEF (m)'
-            'Average of Single Pos'
             'Get from Position File'
             'RINEX Header Position')
+        end
+        object LabelRovName: TLabel
+          Left = 185
+          Top = 18
+          Width = 60
+          Height = 13
+          Caption = 'Name (*: Auto)'
+        end
+        object RovNameE: TEdit
+          Left = 263
+          Top = 14
+          Width = 104
+          Height = 21
+          TabOrder = 1
+          Text = '*'
         end
         object BtnRovPos: TButton
           Left = 371
@@ -1464,6 +1478,21 @@ object OptDialog: TOptDialog
             'Average of Single Position'
             'Get from Position File'
             'RINEX Header Position')
+        end
+        object LabelRefName: TLabel
+          Left = 185
+          Top = 18
+          Width = 60
+          Height = 13
+          Caption = 'Name (*: Auto)'
+        end
+        object RefNameE: TEdit
+          Left = 263
+          Top = 14
+          Width = 104
+          Height = 21
+          TabOrder = 1
+          Text = '*'
         end
         object BtnRefPos: TButton
           Left = 371

@@ -508,6 +508,8 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     OptDialog->RefAntPcvF =RefAntPcvF;
     OptDialog->RovAntF    =RovAntF;
     OptDialog->RefAntF    =RefAntF;
+    OptDialog->RovName    =RovName;
+    OptDialog->RefName    =RefName;
     
     OptDialog->SatPcvFileF=SatPcvFileF;
     OptDialog->AntPcvFileF=AntPcvFileF;
@@ -516,6 +518,7 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     OptDialog->GeoidDataFileF=GeoidDataFileF;
     OptDialog->DCBFileF   =DCBFileF;
     OptDialog->EOPFileF   =EOPFileF;
+    OptDialog->ElmaskFileF=ElmaskFileF;
     OptDialog->LocalDirectory=LocalDirectory;
     
     OptDialog->SvrCycle   =SvrCycle;
@@ -540,6 +543,8 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
         OptDialog->RovPos   [i]=RovPos   [i];
         OptDialog->RefPos   [i]=RefPos   [i];
     }
+    OptDialog->RovName=RovName;
+    OptDialog->RefName=RefName;
     OptDialog->PanelFont->Assign(PanelFont);
     OptDialog->PosFont->Assign(PosFont);
     
@@ -557,6 +562,8 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     RefAntPcvF =OptDialog->RefAntPcvF;
     RovAntF    =OptDialog->RovAntF;
     RefAntF    =OptDialog->RefAntF;
+    RovName    =OptDialog->RovName;
+    RefName    =OptDialog->RefName;
     
     SatPcvFileF=OptDialog->SatPcvFileF;
     AntPcvFileF=OptDialog->AntPcvFileF;
@@ -565,6 +572,7 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     GeoidDataFileF=OptDialog->GeoidDataFileF;
     DCBFileF   =OptDialog->DCBFileF;
     EOPFileF   =OptDialog->EOPFileF;
+    ElmaskFileF=OptDialog->ElmaskFileF;
     LocalDirectory=OptDialog->LocalDirectory;
     
     SvrCycle   =OptDialog->SvrCycle;
@@ -1141,30 +1149,28 @@ void __fastcall TMainForm::SvrStart(void)
         traceopen(TRACEFILE);
         tracelevel(SolOpt.trace);
     }
-    if (RovPosTypeF<=2) { // LLH,XYZ
+
+    for (int i = 0; i < 3; i++) PrcOpt.ru[i] = 0;
+    if (RovPosTypeF <= 2) { // LLH,XYZ
         PrcOpt.rovpos = RovPosTypeF < 2 ? POSOPT_POS_LLH : POSOPT_POS_XYZ;
-        PrcOpt.ru[0]=RovPos[0];
-        PrcOpt.ru[1]=RovPos[1];
-        PrcOpt.ru[2]=RovPos[2];
+        for (int i = 0; i < 3; i++) PrcOpt.ru[i] = RovPos[i];
     }
+    else if (RovPosTypeF == 3) PrcOpt.rovpos = POSOPT_FILE;
     else { // RTCM position
-        PrcOpt.rovpos=POSOPT_RTCM;
-        for (i=0;i<3;i++) PrcOpt.ru[i]=0.0;
+        PrcOpt.rovpos = POSOPT_RTCM;
     }
-    if (RefPosTypeF<=2) { // LLH,XYZ
+
+    for (int i = 0; i < 3; i++) PrcOpt.rb[i] = 0;
+    if (RefPosTypeF <= 2) { // LLH,XYZ
         PrcOpt.refpos = RefPosTypeF < 2 ? POSOPT_POS_LLH : POSOPT_POS_XYZ;
-        PrcOpt.rb[0]=RefPos[0];
-        PrcOpt.rb[1]=RefPos[1];
-        PrcOpt.rb[2]=RefPos[2];
+        for (int i = 0; i < 3; i++) PrcOpt.rb[i] = RefPos[i];
     }
-    else if (RefPosTypeF==3) { // RTCM/Raw position
-        PrcOpt.refpos=POSOPT_RTCM;
-        for (i=0;i<3;i++) PrcOpt.rb[i]=0.0;
+    else if (RefPosTypeF == 3) PrcOpt.refpos = POSOPT_SINGLE;
+    else if (RefPosTypeF == 4) PrcOpt.refpos = POSOPT_FILE;
+    else { // RTCM position
+        PrcOpt.refpos = POSOPT_RTCM;
     }
-    else { // average of single position
-        PrcOpt.refpos=POSOPT_SINGLE;
-        for (i=0;i<3;i++) PrcOpt.rb[i]=0.0;
-    }
+
     for (i=0;i<MAXSAT;i++) {
         PrcOpt.exsats[i]=0;
     }
@@ -1288,8 +1294,50 @@ void __fastcall TMainForm::SvrStart(void)
     if (SolOpt.geoid>0&&GeoidDataFileF!="") {
         opengeoid(SolOpt.geoid,GeoidDataFileF.c_str());
     }
+
+    snprintf(rtksvr.name[0], sizeof(rtksvr.name[0]), "%s", RovName.c_str());
+    snprintf(rtksvr.name[1], sizeof(rtksvr.name[1]), "%s", RefName.c_str());
+
+    // Default the names.
+    for (int i = 0; i < 2; i++) {
+      if (strcmp(rtksvr.name[i], "*") == 0) {
+        rtksvr.name[i][0] = '\0';
+        if (strs[i] == STR_NTRIPCLI) {
+          // Use the ntrip mount point.
+          char buff[1024];
+          snprintf(buff, sizeof(buff), "%s", paths[i]);
+          char *p = strrchr(buff, '@');
+          if (!p) p = buff;
+          p = strchr(p, '/');
+          if (p && p[1] != '\0') {
+            char *q = strchr(p + 1, ':');
+            if (q) *q='\0';
+            snprintf(rtksvr.name[i], sizeof(rtksvr.name[0]), "%s", p + 1);
+          } else {
+            trace(2, "unable to default station %d name from ntrip mount point\n", i);
+          }
+        } else {
+          trace(2, "unable to default station %d name\n", i);
+        }
+      }
+    }
+    trace(3, "rovname='%s' '%s' refname='%s' '%s'\n", RovName.c_str(), rtksvr.name[0],
+          RefName.c_str(), rtksvr.name[1]);
+
     if (DCBFileF!="") {
-        readdcb(DCBFileF.c_str(),&rtksvr.nav,NULL);
+      trace(3,"dcbfile='%s'\n",DCBFileF.c_str());
+      sta_t stas[MAXRCV] = {{""}};
+      snprintf(stas[0].name, sizeof(stas[0].name), "%s", rtksvr.name[0]);
+      snprintf(stas[1].name, sizeof(stas[1].name), "%s", rtksvr.name[1]);
+      readdcb(DCBFileF.c_str(),&rtksvr.nav,stas);
+    }
+    // Read the elevation mask patterns.
+    if (ElmaskFileF!="") {
+      trace(3,"elmaskfile='%s'\n",ElmaskFileF.c_str());
+      if (RovName!="")
+        readelmask(ElmaskFileF.c_str(), RovName.c_str(), &rtksvr.rtk.opt.elmask[0]);
+      if (PMODE_DGPS <= rtksvr.rtk.opt.mode && rtksvr.rtk.opt.mode <= PMODE_FIXED && RefName!="")
+        readelmask(ElmaskFileF.c_str(), RefName.c_str(), &rtksvr.rtk.opt.elmask[1]);
     }
 
     for (i=0;i<RTKSVRNSOL;i++) {
@@ -1305,12 +1353,30 @@ void __fastcall TMainForm::SvrStart(void)
     strcpy(rtksvr.cmd_reset,ResetCmd.c_str());
     rtksvr.bl_reset=MaxBL;
     
+    if (PrcOpt.refpos == POSOPT_FILE && StaPosFileF != "" && rtksvr.name[1][0]) {
+      double r[3];
+      if (getstapos(StaPosFileF.c_str(), rtksvr.name[1], r)) {
+        for (int i = 0; i < 3; i++) PrcOpt.rb[i] = r[i];
+      } else {
+        trace(2, "Reference \"%s\" position not found in \"%s\"\n", rtksvr.name[1], StaPosFileF.c_str());
+      }
+    }
+
+    if (PrcOpt.rovpos == POSOPT_FILE && StaPosFileF != "" && rtksvr.name[1][0]) {
+      double r[3];
+      if (getstapos(StaPosFileF.c_str(), rtksvr.name[0], r)) {
+        for (int i = 0; i < 3; i++) PrcOpt.ru[i] = r[i];
+      } else {
+        trace(2, "Rover \"%s\" position not found in \"%s\"\n", rtksvr.name[0], StaPosFileF.c_str());
+      }
+    }
+
     // start rtk server
     if (!rtksvrstart(&rtksvr,SvrCycle,SvrBuffSize,strs,(const char **)paths,Format,
                      NavSelect,(const char **)cmds,(const char **)cmds_periodic,
                      (const char **)rcvopts,NmeaCycle,NmeaReq,nmeapos,&PrcOpt,
                      solopt,&monistr,errmsg)) {
-        trace(2,"rtksvrstart error %s\n",errmsg);
+        trace(2, "rtksvrstart error %s\n", errmsg);
         if (SolOpt.trace>0) traceclose();
         free_pcvs(&rtksvr.pcvsr);
         for (int i = 0; i < 2; i++) free_pcv(&PrcOpt.pcvr[i]);
@@ -2574,6 +2640,8 @@ void __fastcall TMainForm::LoadOpt(void)
     RovAntPcvF      =ini->ReadInteger("setting","rovantpcv",       0);
     RefAntPcvF      =ini->ReadInteger("setting","refantpcv",       0);
     RovAntF         =ini->ReadString ("setting","rovant",         "");
+    RovName         =ini->ReadString ("setting","rovname",       "*");
+    RefName         =ini->ReadString ("setting","refname",       "*");
     RefAntF         =ini->ReadString ("setting","refant",         "");
     SatPcvFileF     =ini->ReadString ("setting","satpcvfile",     "");
     AntPcvFileF     =ini->ReadString ("setting","antpcvfile",     "");
@@ -2582,6 +2650,7 @@ void __fastcall TMainForm::LoadOpt(void)
     GeoidDataFileF  =ini->ReadString ("setting","geoiddatafile",  "");
     DCBFileF        =ini->ReadString ("setting","dcbfile",        "");
     EOPFileF        =ini->ReadString ("setting","eopfile",        "");
+    ElmaskFileF     =ini->ReadString ("setting","elmaskfile",     "");
     LocalDirectory  =ini->ReadString ("setting","localdirectory","C:\\Temp");
     
     SvrCycle        =ini->ReadInteger("setting","svrcycle",       10);
@@ -2838,6 +2907,8 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteInteger("setting","refantpcv",  RefAntPcvF         );
     ini->WriteString ("setting","rovant",     RovAntF            );
     ini->WriteString ("setting","refant",     RefAntF            );
+    ini->WriteString ("setting","rovname",    RovName            );
+    ini->WriteString ("setting","refname",    RefName            );
     ini->WriteString ("setting","satpcvfile", SatPcvFileF        );
     ini->WriteString ("setting","antpcvfile", AntPcvFileF        );
     ini->WriteString ("setting","satmetafile",SatMetaFileF       );
@@ -2845,6 +2916,7 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteString ("setting","geoiddatafile",GeoidDataFileF   );
     ini->WriteString ("setting","dcbfile",    DCBFileF           );
     ini->WriteString ("setting","eopfile",    EOPFileF           );
+    ini->WriteString ("setting","elmaskfile", ElmaskFileF        );
     ini->WriteString ("setting","localdirectory",LocalDirectory  );
     
     ini->WriteInteger("setting","svrcycle",   SvrCycle           );

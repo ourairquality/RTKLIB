@@ -1134,7 +1134,10 @@ void Plot::generateObservationSlips(int *LLI)
 
         // check elevation mask(s)
         if (elevation[i] < plotOptDialog->getElevationMask() * D2R || !satelliteSelection[obs->sat - 1]) continue;
-        if (plotOptDialog->getElevationMaskEnabled() && elevation[i] < elevationMaskData[(int)(azimuth[i] * R2D + 0.5)]) continue;
+        double azel[2];
+        azel[0] = azimuth[i];
+        azel[1] = elevation[i];
+        if (plotOptDialog->getElevationMaskEnabled() && testelmask(azel, &elevationMask)) continue;
 
         if (plotOptDialog->getShowSlip() == 1) { // LG jump
             if (obstype.isNull()) {  // "ALL" selected
@@ -1372,7 +1375,10 @@ void Plot::drawSky(QPainter &c, int level)
             obs = &observation.data[i];
             if (satelliteMask[obs->sat - 1] || !satelliteSelection[obs->sat - 1]) continue;
             if (plotOptDialog->getHideLowSatellites() && elevation[i] < plotOptDialog->getElevationMask() * D2R) continue;
-            if (plotOptDialog->getHideLowSatellites() && plotOptDialog->getElevationMaskEnabled() && elevation[i] < elevationMaskData[static_cast<int>(azimuth[i] * R2D + 0.5)]) continue;
+            double azel[2];
+            azel[0] = azimuth[i];
+            azel[1] = elevation[i];
+            if (plotOptDialog->getHideLowSatellites() && plotOptDialog->getElevationMaskEnabled() && testelmask(azel, &elevationMask)) continue;
 
             satno2id(obs->sat, satId);
             s = QStringLiteral("%1: ").arg(satId, 3, QChar('-'));
@@ -1542,8 +1548,8 @@ void Plot::drawSky(QPainter &c, int level)
         double *y = new double [361];
 
         for (i = 0; i <= 360; i++) {
-            x[i] = radius * sin(i * D2R) * (1.0 - 2.0 * elevationMaskData[i] / PI);
-            y[i] = radius * cos(i * D2R) * (1.0 - 2.0 * elevationMaskData[i] / PI);
+            x[i] = radius * sin(i * D2R) * (1.0 - 2.0 * elevationMask.elmask[i] / PI);
+            y[i] = radius * cos(i * D2R) * (1.0 - 2.0 * elevationMask.elmask[i] / PI);
         }
         QPen pen = c.pen(); pen.setWidth(2); c.setPen(pen);  // set prn width
         graphSky->drawPoly(c, x, y, 361, COL_ELMASK, 0);
@@ -1611,7 +1617,10 @@ void Plot::drawSky(QPainter &c, int level)
             obs = &observation.data[i];
             if (satelliteMask[obs->sat - 1] || !satelliteSelection[obs->sat - 1]) continue;
             if (plotOptDialog->getHideLowSatellites() && elevation[i] < plotOptDialog->getElevationMask() * D2R) continue;
-            if (plotOptDialog->getHideLowSatellites() && plotOptDialog->getElevationMaskEnabled() && elevation[i] < elevationMaskData[static_cast<int>(azimuth[i] * R2D + 0.5)]) continue;
+            double azel[2];
+            azel[0] = azimuth[i];
+            azel[1] = elevation[i];
+            if (plotOptDialog->getHideLowSatellites() && plotOptDialog->getElevationMaskEnabled() && testelmask(azel, &elevationMask)) continue;
 
             char satId[8];
             satno2id(obs->sat, satId);
@@ -1737,10 +1746,11 @@ void Plot::drawSolSky(QPainter &c, int level) {
       QColor col = snrColor(solstat->snr);
       // Include satellites with invalid data but note this in the color.
       if ((solstat->flag & 0x20) == 0) col = plotOptDialog->getMarkerColor(0, 7);
-      // Check against elevation mask.
+      double azel[2];
+      azel[0] = solstat->az;
+      azel[1] = solstat->el;
       if (solstat->el < plotOptDialog->getElevationMask() * D2R ||
-          (plotOptDialog->getElevationMaskEnabled() &&
-           solstat->el < elevationMaskData[static_cast<int>(solstat->az * R2D + 0.5)])) {
+          (plotOptDialog->getElevationMaskEnabled() && testelmask(azel, &elevationMask))) {
         if (plotOptDialog->getHideLowSatellites()) continue;
         col = plotOptDialog->getMarkerColor(0, 0);
       }
@@ -1820,8 +1830,8 @@ void Plot::drawSolSky(QPainter &c, int level) {
     double *y = new double[361];
 
     for (int i = 0; i <= 360; i++) {
-      x[i] = radius * sin(i * D2R) * (1.0 - 2.0 * elevationMaskData[i] / PI);
-      y[i] = radius * cos(i * D2R) * (1.0 - 2.0 * elevationMaskData[i] / PI);
+      x[i] = radius * sin(i * D2R) * (1.0 - 2.0 * elevationMask.elmask[i] / PI);
+      y[i] = radius * cos(i * D2R) * (1.0 - 2.0 * elevationMask.elmask[i] / PI);
     }
     QPen pen = c.pen();
     pen.setWidth(2);
@@ -1848,10 +1858,11 @@ void Plot::drawSolSky(QPainter &c, int level) {
       QColor col = snrColor(solstat->snr);
       // Include satellites with invalid data but note this in the color.
       if ((solstat->flag & 0x20) == 0) col = plotOptDialog->getMarkerColor(0, 7);
-      // Check against elevation mask.
+      double azel[2];
+      azel[0] = solstat->az;
+      azel[1] = solstat->el;
       if (solstat->el < plotOptDialog->getElevationMask() * D2R ||
-          (plotOptDialog->getElevationMaskEnabled() &&
-           solstat->el < elevationMaskData[static_cast<int>(solstat->az * R2D + 0.5)])) {
+          (plotOptDialog->getElevationMaskEnabled() && testelmask(azel, &elevationMask))) {
         if (plotOptDialog->getHideLowSatellites()) continue;
         col = plotOptDialog->getMarkerColor(0, 0);
       }
@@ -1930,10 +1941,9 @@ void Plot::drawDop(QPainter &c, int level)
         for (j = indexObservation[i]; j < observation.n && j < indexObservation[i + 1]; j++) {
             if (satelliteMask[observation.data[j].sat - 1] || !satelliteSelection[observation.data[j].sat - 1]) continue;
             if (elevation[j] < plotOptDialog->getElevationMask() * D2R) continue;
-            if (plotOptDialog->getElevationMaskEnabled() && elevation[j] < elevationMaskData[static_cast<int>(azimuth[j] * R2D + 0.5)]) continue;
-
             azel[ns[n] * 2] = azimuth[j];
             azel[ns[n] * 2 + 1] = elevation[j];
+            if (plotOptDialog->getElevationMaskEnabled() && testelmask(azel + ns[n] * 2, &elevationMask)) continue;
             ns[n]++;
         }
         dops(ns[n], azel, plotOptDialog->getElevationMask() * D2R, dop + n * 4);
@@ -1980,10 +1990,9 @@ void Plot::drawDop(QPainter &c, int level)
         for (i = indexObservation[ind]; i < observation.n && i < indexObservation[ind + 1]; i++) {
             if (satelliteMask[observation.data[i].sat - 1] || !satelliteSelection[observation.data[i].sat - 1]) continue;
             if (elevation[i] < plotOptDialog->getElevationMask() * D2R) continue;
-            if (plotOptDialog->getElevationMaskEnabled() && elevation[i] < elevationMaskData[static_cast<int>(azimuth[i] * R2D + 0.5)]) continue;
-
             azel[ns[0] * 2] = azimuth[i];
             azel[ns[0] * 2 + 1] = elevation[i];
+            if (plotOptDialog->getElevationMaskEnabled() && testelmask(azel + ns[0] * 2, &elevationMask)) continue;
             ns[0]++;
         }
         dops(ns[0], azel, plotOptDialog->getElevationMask() * D2R, dop);
@@ -2103,12 +2112,11 @@ void Plot::drawSolDop(QPainter &c, int level) {
     }
     if (satelliteMask[solstat->sat - 1] || !satelliteSelection[solstat->sat - 1]) continue;
     if (solstat->el < plotOptDialog->getElevationMask() * D2R) continue;
-    if (plotOptDialog->getElevationMaskEnabled() &&
-        solstat->el < elevationMaskData[static_cast<int>(solstat->az * R2D + 0.5)])
-      continue;
     if (solstat->sat != prev_sat && (solstat->flag & 0x20) != 0) {
       azel[nsat * 2] = solstat->az;
       azel[nsat * 2 + 1] = solstat->el;
+      if (plotOptDialog->getElevationMaskEnabled() && testelmask(azel + nsat * 2, &elevationMask))
+        continue;
       prev_sat = solstat->sat;
       nsat++;
     }
@@ -2847,7 +2855,10 @@ void Plot::drawIonoSky(QPainter &c, int level)
             obs = &observation.data[i];
             if (satelliteMask[obs->sat - 1] || !satelliteSelection[obs->sat - 1]) continue;
             if (plotOptDialog->getHideLowSatellites() && elevation[i] < plotOptDialog->getElevationMask() * D2R) continue;
-            if (plotOptDialog->getHideLowSatellites() && plotOptDialog->getElevationMaskEnabled() && elevation[i] < elevationMaskData[static_cast<int>(azimuth[i] * R2D + 0.5)]) continue;
+            double azel[2];
+            azel[0] = azimuth[i];
+            azel[1] = elevation[i];
+            if (plotOptDialog->getHideLowSatellites() && plotOptDialog->getElevationMaskEnabled() && testelmask(azel, &elevationMask)) continue;
 
             satno2id(obs->sat, satId);
             s = QStringLiteral("%1: ").arg(satId, 3, QChar('-'));

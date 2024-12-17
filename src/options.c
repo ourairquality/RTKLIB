@@ -172,6 +172,7 @@ EXPORT opt_t sysopts[]={
     {"ant1-antdele",    1,  (void *)&prcopt_.antdel[0][0],"m"   },
     {"ant1-antdeln",    1,  (void *)&prcopt_.antdel[0][1],"m"   },
     {"ant1-antdelu",    1,  (void *)&prcopt_.antdel[0][2],"m"   },
+    {"ant1-name",       2,  (void *)&prcopt_.name[0],     ""    },
     
     {"ant2-postype",    3,  (void *)&prcopt_.refpos,     POSOPT },
     {"ant2-pos1",       1,  (void *)&antpos_[1][0],      "deg|m"},
@@ -183,7 +184,8 @@ EXPORT opt_t sysopts[]={
     {"ant2-antdelu",    1,  (void *)&prcopt_.antdel[1][2],"m"   },
     {"ant2-maxaveep",   0,  (void *)&prcopt_.maxaveep    ,""    },
     {"ant2-initrst",    3,  (void *)&prcopt_.initrst,    SWTOPT },
-    
+    {"ant2-name",       2,  (void *)&prcopt_.name[1],     ""    },
+
     {"misc-timeinterp", 3,  (void *)&prcopt_.intpref,    SWTOPT },
     {"misc-sbasatsel",  0,  (void *)&prcopt_.sbassatsel, "0:all"},
     {"misc-rnxopt1",    2,  (void *)prcopt_.rnxopt[0],   ""     },
@@ -199,6 +201,7 @@ EXPORT opt_t sysopts[]={
     {"file-dcbfile",    2,  (void *)&filopt_.dcb,        ""     },
     {"file-eopfile",    2,  (void *)&filopt_.eop,        ""     },
     {"file-blqfile",    2,  (void *)&filopt_.blq,        ""     },
+    {"file-elmaskfile", 2,  (void *)&filopt_.elmask,     ""     },
     {"file-tempdir",    2,  (void *)&filopt_.tempdir,    ""     },
     {"file-geexefile",  2,  (void *)&filopt_.geexe,      ""     },
     {"file-solstatfile",2,  (void *)&filopt_.solstat,    ""     },
@@ -527,6 +530,7 @@ extern void resetsysopts(void)
     filopt_.geoid  [0]='\0';
     filopt_.dcb    [0]='\0';
     filopt_.blq    [0]='\0';
+    filopt_.elmask [0]='\0';
     filopt_.solstat[0]='\0';
     filopt_.trace  [0]='\0';
     elmask_=15.0;
