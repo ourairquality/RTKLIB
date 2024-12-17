@@ -240,6 +240,7 @@ public:
 	AnsiString GeoidDataFile,IonoFile,DCBFile,EOPFile,BLQFile;
         AnsiString SbasCorrFile,SatPcvFile,SatMetaFile,ExSats;
 	AnsiString RovList,BaseList;
+	AnsiString RovName,RefName;
 	
 	void __fastcall ViewFile(AnsiString file);
 	void __fastcall ShowMsg(char *msg);
