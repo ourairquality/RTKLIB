@@ -156,6 +156,9 @@ Plot::Plot(QWidget *parent) : QMainWindow(parent), ui(new Ui::Plot)
 
     ionosphere = NULL;
 
+    elevationMask.name[0] = '\0';
+    for (int i = 0; i < 361; i++) elevationMask.elmask[i] = 0.0;
+
     graphTrack = new Graph(ui->lblDisplay);
     graphTrack->fit = 0;
 
@@ -187,7 +190,7 @@ Plot::Plot(QWidget *parent) : QMainWindow(parent), ui(new Ui::Plot)
     console1 = new Console(this);
     console2 = new Console(this);
 
-    for (int i = 0; i < 361; i++) elevationMaskData[i] = 0.0;
+    for (int i = 0; i < 361; i++) elevationMask.elmask[i] = 0.0;
 
     traceLevel = 0;
     connectState = openRaw = 0;
@@ -733,7 +736,10 @@ void Plot::openElevationMaskFile()
     trace(3, "openElevationMaskFile\n");
 
     QString filename = QFileDialog::getOpenFileName(this, tr("Open Elevation Mask"), QString(), tr("Text File (*.txt);;All (*.*)"));
-    if (!filename.isEmpty()) readElevationMaskData(QDir::toNativeSeparators(filename));
+    if (filename.isEmpty()) return;
+    readelmask(qPrintable(QDir::toNativeSeparators(filename)), NULL, &elevationMask);
+    updatePlot();
+    updateEnable();
 }
 // callback on menu-vis-analysis --------------------------------------------
 void Plot::visibilityAnalysis()
@@ -808,7 +814,8 @@ void Plot::saveElevationMaskFile()
 {
     trace(3, "saveElevationMaskFile\n");
     QString filename = QFileDialog::getSaveFileName(this, tr("Save Data"), QString(), tr("All (*.*);;Text File (*.txt)"));
-    if (!filename.isEmpty()) saveElevationMask(QDir::toNativeSeparators(filename));
+    if (filename.isEmpty()) return;
+    saveelmask(qPrintable(QDir::toNativeSeparators(filename)), &elevationMask);
 }
 // callback on menu-connection-settings -------------------------------------
 void Plot::showConnectionSettingsDialog()

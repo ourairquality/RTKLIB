@@ -41,9 +41,9 @@ void __fastcall TPlot::UpdateTimeObs(void)
         for (i=IndexObs[ind];i<Obs.n&&i<IndexObs[ind+1];i++,no++) {
             if (SatMask[Obs.data[i].sat-1]||!SatSel[Obs.data[i].sat-1]) continue;
             if (El[i]<ElMask*D2R) continue;
-            if (ElMaskP&&El[i]<ElMaskData[(int)(Az[i]*R2D+0.5)]) continue;
             azel[  ns*2]=Az[i];
             azel[1+ns*2]=El[i];
+            if (ElMaskP&&testelmask(azel + ns*2, &elevationMask)) continue;
             ns++;
         }
     }

@@ -1009,7 +1009,10 @@ void __fastcall TPlot::GenObsSlip(int *LLI)
         
         LLI[i]=0;
         if (El[i]<ElMask*D2R||!SatSel[obs->sat-1]) continue;
-        if (ElMaskP&&El[i]<ElMaskData[(int)(Az[i]*R2D+0.5)]) continue;
+        double azel[2];
+        azel[0]=Az[i];
+        azel[1]=El[i];
+        if (ElMaskP&&testelmask(azel, &elevationMask)) continue;
         
         if (ShowSlip==1) { // LG jump
             double freq1,freq2,gf;
@@ -1282,8 +1285,8 @@ void __fastcall TPlot::DrawSky(int level)
         double *x=new double [361];
         double *y=new double [361];
         for (i=0;i<=360;i++) {
-            x[i]=r*sin(i*D2R)*(1.0-2.0*ElMaskData[i]/PI);
-            y[i]=r*cos(i*D2R)*(1.0-2.0*ElMaskData[i]/PI);
+            x[i]=r*sin(i*D2R)*(1.0-2.0*elevationMask.elmask[i]/PI);
+            y[i]=r*cos(i*D2R)*(1.0-2.0*elevationMask.elmask[i]/PI);
         }
         Disp->Canvas->Pen->Width=2;
         GraphS->DrawPoly(x,y,361,COL_ELMASK,0);
@@ -1341,7 +1344,10 @@ void __fastcall TPlot::DrawSky(int level)
             obs=&Obs.data[i];
             if (SatMask[obs->sat-1]||!SatSel[obs->sat-1]) continue;
             if (HideLowSat&&El[i]<ElMask*D2R) continue;
-            if (HideLowSat&&ElMaskP&&El[i]<ElMaskData[(int)(Az[i]*R2D+0.5)]) continue;
+            double azel[2];
+            azel[0] = Az[i];
+            azel[1] = El[i];
+            if (HideLowSat&&ElMaskP&&testelmask(azel, &elevationMask)) continue;
             
             satno2id(obs->sat,id);
             ustr.sprintf("%-3s: ",id);
@@ -1430,8 +1436,7 @@ void __fastcall TPlot::DrawSolSky(int level) {
       double azel[2];
       azel[0] = solstat->az;
       azel[1] = solstat->el;
-      if (solstat->el < ElMask * D2R ||
-          (ElMaskP && solstat->el < ElMaskData[(int)(solstat->az * R2D + 0.5)])) {
+      if (solstat->el < ElMask * D2R || (ElMaskP && testelmask(azel, &elevationMask))) {
         if (HideLowSat) continue;
         col = MColor[0][0];
       }
@@ -1500,8 +1505,8 @@ void __fastcall TPlot::DrawSolSky(int level) {
     double *x = new double[361];
     double *y = new double[361];
     for (int i = 0; i <= 360; i++) {
-      x[i] = r * sin(i * D2R) * (1.0 - 2.0 * ElMaskData[i] / PI);
-      y[i] = r * cos(i * D2R) * (1.0 - 2.0 * ElMaskData[i] / PI);
+      x[i] = r * sin(i * D2R) * (1.0 - 2.0 * elevationMask.elmask[i] / PI);
+      y[i] = r * cos(i * D2R) * (1.0 - 2.0 * elevationMask.elmask[i] / PI);
     }
     Disp->Canvas->Pen->Width = 2;
     GraphS->DrawPoly(x, y, 361, COL_ELMASK, 0);
@@ -1526,8 +1531,7 @@ void __fastcall TPlot::DrawSolSky(int level) {
       double azel[2];
       azel[0] = solstat->az;
       azel[1] = solstat->el;
-      if (solstat->el < ElMask * D2R ||
-          (ElMaskP && solstat->el < ElMaskData[(int)(solstat->az * R2D + 0.5)])) {
+      if (solstat->el < ElMask * D2R || (ElMaskP && testelmask(azel, &elevationMask))) {
         if (HideLowSat) continue;
         col = MColor[0][0];
       }
@@ -1602,9 +1606,9 @@ void __fastcall TPlot::DrawDop(int level)
         for (j=IndexObs[i];j<Obs.n&&j<IndexObs[i+1];j++) {
             if (SatMask[Obs.data[j].sat-1]||!SatSel[Obs.data[j].sat-1]) continue;
             if (El[j]<ElMask*D2R) continue;
-            if (ElMaskP&&El[j]<ElMaskData[(int)(Az[j]*R2D+0.5)]) continue;
             azel[  ns[n]*2]=Az[j];
             azel[1+ns[n]*2]=El[j];
+            if (ElMaskP&&testelmask(azel + ns[n] * 2, &elevationMask)) continue;
             ns[n]++;
         }
         dops(ns[n],azel,ElMask*D2R,dop+n*4);
@@ -1647,9 +1651,9 @@ void __fastcall TPlot::DrawDop(int level)
         for (i=IndexObs[ind];i<Obs.n&&i<IndexObs[ind+1];i++) {
             if (SatMask[Obs.data[i].sat-1]||!SatSel[Obs.data[i].sat-1]) continue;
             if (El[i]<ElMask*D2R) continue;
-            if (ElMaskP&&El[i]<ElMaskData[(int)(Az[i]*R2D+0.5)]) continue;
             azel[  ns[0]*2]=Az[i];
             azel[1+ns[0]*2]=El[i];
+            if (ElMaskP&&testelmask(azel + ns[0] * 2, &elevationMask)) continue;
             ns[0]++;
         }
         dops(ns[0],azel,ElMask*D2R,dop);
@@ -1755,10 +1759,10 @@ void __fastcall TPlot::DrawSolDop(int level) {
     }
     if (SatMask[solstat->sat - 1] || !SatSel[solstat->sat - 1]) continue;
     if (solstat->el < ElMask * D2R) continue;
-    if (ElMaskP && solstat->el < ElMaskData[(int)(solstat->az * R2D + 0.5)]) continue;
     if (solstat->sat != prev_sat && (solstat->flag & 0x20) != 0) {
       azel[nsat * 2] = solstat->az;
       azel[nsat * 2 + 1] = solstat->el;
+      if (ElMaskP && testelmask(azel + nsat * 2, &elevationMask)) continue;
       prev_sat = solstat->sat;
       nsat++;
     }
