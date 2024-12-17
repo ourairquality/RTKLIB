@@ -108,6 +108,8 @@ __published:
 	TCheckBox *RovAntPcv;
 	TComboBox *RovAnt;
 	TComboBox *RovPosTypeP;
+	TLabel *LabelRovName;
+        TEdit *RovNameE;
 	TGroupBox *GroupRefAnt;
 	TLabel *LabelRefAntD;
 	TEdit *RefAntE;
@@ -120,6 +122,8 @@ __published:
 	TCheckBox *RefAntPcv;
 	TComboBox *RefAnt;
 	TComboBox *RefPosTypeP;
+	TLabel *LabelRefName;
+        TEdit *RefNameE;
 	TTabSheet *TabSheet7;
 	TLabel *Label1;
 	TSpeedButton *BtnAntPcvView;
@@ -202,8 +206,11 @@ __published:
 	TLabel *Label23;
 	TEdit *EOPFile;
 	TButton *BtnEOPFile;
+	TEdit *ElmaskFile;
+	TButton *BtnElmaskFile;
 	TSpeedButton *BtnEOPView;
 	TComboBox *ElMask;
+	TSpeedButton *BtnElmaskView;
 	TCheckBox *PosOpt1;
 	TCheckBox *PosOpt2;
 	TCheckBox *PosOpt3;
@@ -254,6 +261,7 @@ __published:
 	TLabel *Label53;
 	TLabel *Label54;
 	TLabel *Label55;
+	TLabel *Label56;
 	void __fastcall BtnOkClick(TObject *Sender);
 	void __fastcall RovAntPcvClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
@@ -295,6 +303,8 @@ __published:
 	void __fastcall BtnEOPViewClick(TObject *Sender);
 	void __fastcall BtnBLQFileClick(TObject *Sender);
 	void __fastcall BtnBLQViewClick(TObject *Sender);
+	void __fastcall BtnElmaskFileClick(TObject *Sender);
+	void __fastcall BtnElmaskViewClick(TObject *Sender);
 	void __fastcall BtnSnrMaskClick(TObject *Sender);
 	void __fastcall NavSys6Click(TObject *Sender);
 	void __fastcall ObsWeightChange(TObject *Sender);
@@ -319,7 +329,8 @@ public:
 	int MoniPort,FileSwapMargin,PanelStack;
 	AnsiString ExSats,LocalDirectory;
         AnsiString RovAntF,RefAntF,SatPcvFileF,AntPcvFileF,SatMetaFileF,StaPosFileF;
-        AnsiString GeoidDataFileF,DCBFileF,EOPFileF,BLQFileF;
+	AnsiString RovName,RefName;
+        AnsiString GeoidDataFileF,DCBFileF,EOPFileF,BLQFileF,ElmaskFileF;
 	AnsiString ProxyAddr;
 	double RovAntDel[3],RefAntDel[3],RovPos[3],RefPos[3];
 	double Baseline[2],NmeaIntv[2];

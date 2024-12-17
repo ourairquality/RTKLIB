@@ -111,6 +111,8 @@ __published:
 	TCheckBox *RovAntPcv;
 	TComboBox *RovAnt;
 	TComboBox *RovPosType;
+	TLabel *LabelRovName;
+        TEdit *RovNameE;
 	TGroupBox *GroupRefAnt;
 	TLabel *LabelRefAntD;
 	TEdit *RefAntE;
@@ -123,6 +125,8 @@ __published:
 	TCheckBox *RefAntPcv;
 	TComboBox *RefAnt;
 	TComboBox *RefPosType;
+	TLabel *LabelRefName;
+        TEdit *RefNameE;
 	TTabSheet *TabSheet7;
 	TLabel *Label1;
 	TSpeedButton *BtnAntPcvView;

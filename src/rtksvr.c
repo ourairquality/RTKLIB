@@ -867,6 +867,7 @@ extern int rtksvrinit(rtksvr_t *svr)
     svr->bl_reset=10.0;
     svr->pcvsr.pcv = NULL;
     svr->pcvsr.n = svr->pcvsr.nmax = 0;
+    svr->name[0][0] = svr->name[1][0] = '\0';
     rtklib_initlock(&svr->lock);
     
     return 1;
