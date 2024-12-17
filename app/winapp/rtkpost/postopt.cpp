@@ -116,6 +116,7 @@ void __fastcall TOptDialog::BtnRovPosClick(TObject *Sender)
 	RefDialog->RovPos[0]=pos[0]*R2D;
 	RefDialog->RovPos[1]=pos[1]*R2D;
 	RefDialog->Pos[2]=pos[2];
+        RefDialog->StaId=RovNameE->Text;
 	RefDialog->StaPosFile=StaPosFile->Text;
 	RefDialog->Left=Left+Width/2-RefDialog->Width/2;
 	RefDialog->Top=Top+Height/2-RefDialog->Height/2;
@@ -124,6 +125,7 @@ void __fastcall TOptDialog::BtnRovPosClick(TObject *Sender)
 	pos[1]=RefDialog->Pos[1]*D2R;
 	pos[2]=RefDialog->Pos[2];
 	pos2ecef(pos,p);
+        RovNameE->Text=RefDialog->StaId;
 	SetPos(RovPosType->ItemIndex,edit,p);
 }
 //---------------------------------------------------------------------------
@@ -136,6 +138,7 @@ void __fastcall TOptDialog::BtnRefPosClick(TObject *Sender)
 	RefDialog->RovPos[0]=pos[0]*R2D;
 	RefDialog->RovPos[1]=pos[1]*R2D;
 	RefDialog->RovPos[2]=pos[2];
+        RefDialog->StaId=RefNameE->Text;
 	RefDialog->StaPosFile=StaPosFile->Text;
 	RefDialog->Left=Left+Width/2-RefDialog->Width/2;
 	RefDialog->Top=Top+Height/2-RefDialog->Height/2;
@@ -144,6 +147,7 @@ void __fastcall TOptDialog::BtnRefPosClick(TObject *Sender)
 	pos[1]=RefDialog->Pos[1]*D2R;
 	pos[2]=RefDialog->Pos[2];
 	pos2ecef(pos,p);
+        RefNameE->Text=RefDialog->StaId;
 	SetPos(RefPosType->ItemIndex,edit,p);
 }
 //---------------------------------------------------------------------------
@@ -470,6 +474,8 @@ void __fastcall TOptDialog::GetOpt(void)
 	RefAntN		 ->Text			=s.sprintf("%.4f",MainForm->RefAntN);
 	RefAntU		 ->Text			=s.sprintf("%.4f",MainForm->RefAntU);
 	AntPcvFile	 ->Text			=MainForm->AntPcvFile;
+	RovNameE	 ->Text			=MainForm->RovName;
+	RefNameE	 ->Text			=MainForm->RefName;
 	
 	RnxOpts1	 ->Text			=MainForm->RnxOpts1;
 	RnxOpts2	 ->Text			=MainForm->RnxOpts2;
@@ -607,6 +613,8 @@ void __fastcall TOptDialog::SetOpt(void)
 	MainForm->RefAntE	  =str2dbl(RefAntE	->Text);
 	MainForm->RefAntN	  =str2dbl(RefAntN	->Text);
 	MainForm->RefAntU	  =str2dbl(RefAntU	->Text);
+	MainForm->RovName	  =RovNameE		->Text;
+	MainForm->RefName	  =RefNameE		->Text;
 	
 	MainForm->RnxOpts1	  =RnxOpts1		->Text;
 	MainForm->RnxOpts2	  =RnxOpts2		->Text;
@@ -762,6 +770,8 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	RefAntE		 ->Text			=s.sprintf("%.4f",prcopt.antdel[1][0]);
 	RefAntN		 ->Text			=s.sprintf("%.4f",prcopt.antdel[1][1]);
 	RefAntU		 ->Text			=s.sprintf("%.4f",prcopt.antdel[1][2]);
+	RovNameE	 ->Text			=prcopt.name[0];
+	RefNameE	 ->Text			=prcopt.name[1];
 	
 	RnxOpts1	 ->Text			=prcopt.rnxopt[0];
 	RnxOpts2	 ->Text			=prcopt.rnxopt[1];
@@ -769,8 +779,20 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	
 	IntpRefObs	 ->ItemIndex	=prcopt.intpref;
 	SbasSat		 ->Text			=s.sprintf("%d",prcopt.sbassatsel);
-        RovPosType->ItemIndex = prcopt.rovpos == POSOPT_POS_LLH ? 0 : prcopt.rovpos == POSOPT_POS_XYZ ? 2 : prcopt.rovpos + 1;
-        RefPosType->ItemIndex = prcopt.refpos == POSOPT_POS_LLH ? 0 : prcopt.refpos == POSOPT_POS_XYZ ? 2 : prcopt.refpos + 1;
+
+        RovPosType->ItemIndex = 0;
+        if (prcopt.rovpos == POSOPT_POS_LLH) RovPosType->ItemIndex = 0;
+        else if (prcopt.rovpos == POSOPT_POS_XYZ) RovPosType->ItemIndex = 2;
+        else if (prcopt.rovpos == POSOPT_FILE) RovPosType->ItemIndex = 3;
+        else if (prcopt.rovpos == POSOPT_RINEX) RovPosType->ItemIndex = 4;
+
+        RefPosType->ItemIndex = 0;
+        if (prcopt.refpos == POSOPT_POS_LLH) RefPosType->ItemIndex = 0;
+        else if (prcopt.refpos == POSOPT_POS_XYZ) RefPosType->ItemIndex = 2;
+        else if (prcopt.refpos == POSOPT_SINGLE) RefPosType->ItemIndex = 3;
+        else if (prcopt.refpos == POSOPT_FILE) RefPosType->ItemIndex = 4;
+        else if (prcopt.refpos == POSOPT_RINEX) RefPosType->ItemIndex = 5;
+
 	RovPosTypeP					=RovPosType->ItemIndex;
 	RefPosTypeP					=RefPosType->ItemIndex;
 	SetPos(RovPosType->ItemIndex,editu,prcopt.ru);
@@ -797,6 +819,7 @@ int ppp=PosMode->ItemIndex>=PMODE_PPP_KINEMA;
 
 	AnsiString ExSats_Text=ExSats->Text,FieldSep_Text=FieldSep->Text;
 	AnsiString RovAnt_Text=RovAnt->Text,RefAnt_Text=RefAnt->Text;
+	AnsiString RovNameE_Text=RovNameE->Text,RefNameE_Text=RefNameE->Text;
 	AnsiString SatPcvFile_Text=SatPcvFile->Text;
 	AnsiString AntPcvFile_Text=AntPcvFile->Text;
 	AnsiString SatMetaFile_Text=SatMetaFile->Text;
@@ -932,13 +955,28 @@ int ppp=PosMode->ItemIndex>=PMODE_PPP_KINEMA;
 	
 	prcopt.intpref	=IntpRefObs->ItemIndex;
 	prcopt.sbassatsel=SbasSat->Text.ToInt();
-        prcopt.rovpos = RovPosType->ItemIndex < 2 ? POSOPT_POS_LLH : RovPosType->ItemIndex == 2 ? POSOPT_POS_XYZ : (RovPosType->ItemIndex - 1);
-        prcopt.refpos = RefPosType->ItemIndex < 2 ? POSOPT_POS_LLH : RefPosType->ItemIndex == 2 ? POSOPT_POS_XYZ : (RefPosType->ItemIndex - 1);
+
+        prcopt.rovpos = POSOPT_POS_LLH;
+        if (RovPosType->ItemIndex < 2) prcopt.rovpos = POSOPT_POS_LLH;
+        else if (RovPosType->ItemIndex == 2) prcopt.rovpos = POSOPT_POS_XYZ;
+        else if (RovPosType->ItemIndex == 3) prcopt.rovpos = POSOPT_FILE;
+        else if (RovPosType->ItemIndex == 4) prcopt.rovpos = POSOPT_RINEX;
+
+        prcopt.refpos = POSOPT_POS_LLH;
+        if (RefPosType->ItemIndex < 2) prcopt.refpos = POSOPT_POS_LLH;
+        else if (RefPosType->ItemIndex == 2) prcopt.refpos = POSOPT_POS_XYZ;
+	else if (RefPosType->ItemIndex == 3) prcopt.refpos = POSOPT_SINGLE;
+	else if (RefPosType->ItemIndex == 4) prcopt.refpos = POSOPT_FILE;
+        else if (RefPosType->ItemIndex == 5) prcopt.refpos = POSOPT_RINEX;
+
         if (prcopt.rovpos == POSOPT_POS_LLH || prcopt.rovpos == POSOPT_POS_XYZ)
           GetPos(RovPosType->ItemIndex, editu, prcopt.ru);
         if (prcopt.refpos == POSOPT_POS_LLH || prcopt.refpos == POSOPT_POS_XYZ)
           GetPos(RefPosType->ItemIndex, editr, prcopt.rb);
 	
+	snprintf(prcopt.name[0],sizeof(prcopt.name[0]),"%s",RovNameE_Text.c_str());
+	snprintf(prcopt.name[1],sizeof(prcopt.name[1]),"%s",RefNameE_Text.c_str());
+
 	strcpy(prcopt.rnxopt[0],RnxOpts1_Text.c_str());
 	strcpy(prcopt.rnxopt[1],RnxOpts2_Text.c_str());
 	strcpy(prcopt.pppopt,PPPOpts_Text.c_str());
@@ -1043,13 +1081,14 @@ void __fastcall TOptDialog::UpdateEnable(void)
 	RovPos1        ->Enabled=RovPosType->Enabled&&RovPosType->ItemIndex<=2;
 	RovPos2        ->Enabled=RovPosType->Enabled&&RovPosType->ItemIndex<=2;
 	RovPos3        ->Enabled=RovPosType->Enabled&&RovPosType->ItemIndex<=2;
-	BtnRovPos      ->Enabled=RovPosType->Enabled&&RovPosType->ItemIndex<=2;
 	
 	RefPosType     ->Enabled=rel&&PosMode->ItemIndex!=PMODE_MOVEB;
 	RefPos1        ->Enabled=RefPosType->Enabled&&RefPosType->ItemIndex<=2;
 	RefPos2        ->Enabled=RefPosType->Enabled&&RefPosType->ItemIndex<=2;
 	RefPos3        ->Enabled=RefPosType->Enabled&&RefPosType->ItemIndex<=2;
-	BtnRefPos      ->Enabled=RefPosType->Enabled&&RefPosType->ItemIndex<=2;
+        LabelRefName   ->Enabled=RefPosType->Enabled;
+        RefNameE       ->Enabled=RefPosType->Enabled;
+	BtnRefPos      ->Enabled=RefPosType->Enabled;
 }
 //---------------------------------------------------------------------------
 void __fastcall TOptDialog::GetPos(int type, TEdit **edit, double *pos)

@@ -442,7 +442,6 @@ private:
     void __fastcall GenVisData   (void);
     void __fastcall SaveDop      (AnsiString file);
     void __fastcall SaveSnrMp    (AnsiString file);
-    void __fastcall SaveElMask   (AnsiString file);
     void __fastcall Connect      (void);
     void __fastcall Disconnect   (void);
     void __fastcall ConnectPath  (const char *path, int ch);
@@ -580,6 +579,7 @@ public:
     int RtTimeOutTime;
     int RtReConnTime;
     double ElMaskData[361];
+    elmask_t elevationMask;
     
     // time options 
     int TimeEna[3];
@@ -669,7 +669,6 @@ public:
     void __fastcall UpdateSky  (void);
     void __fastcall UpdatePlot (void);
     void __fastcall GenObsSlip(int *LLI);
-    void __fastcall ReadElMaskData(AnsiString file);
     int __fastcall GetCurrentPos(double *rr);
     int __fastcall GetCenterPos(double *rr);
     void __fastcall SetTrkCent(double lat, double lon);
