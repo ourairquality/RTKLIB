@@ -335,39 +335,6 @@ void __fastcall TPlot::ReadNav(TStrings *files)
     UpdatePlot();
     UpdateEnable();
 }
-// read elevation mask data -------------------------------------------------
-void __fastcall TPlot::ReadElMaskData(AnsiString file)
-{
-    AnsiString s;
-    FILE *fp;
-    double az0=0.0,el0=0.0,az1,el1;
-    int i,j;
-    char buff[256];
-    
-    trace(3,"ReadElMaskData\n");
-    
-    for (i=0;i<=360;i++) ElMaskData[i]=0.0;
-    
-    if (!(fp=fopen(file.c_str(),"r"))) {
-        ShowMsg(s.sprintf("no el mask data: %s...",file.c_str()));
-        ShowLegend(NULL);
-        return;
-    }
-    while (fgets(buff,sizeof(buff),fp)) {
-        
-        if (buff[0]=='%'||sscanf(buff,"%lf %lf",&az1,&el1)<2) continue;
-        
-        if (az0<az1&&az1<=360.0&&0.0<=el1&&el1<=90.0) {
-            
-            for (j=(int)az0;j<(int)az1;j++) ElMaskData[j]=el0*D2R;
-            ElMaskData[j]=el1*D2R;
-        }
-        az0=az1; el0=el1;
-    }
-    fclose(fp);
-    UpdatePlot();
-    UpdateEnable();
-}
 // generate visibility data ---------------------------------------------------
 void __fastcall TPlot::GenVisData(void)
 {
@@ -978,9 +945,9 @@ void __fastcall TPlot::SaveDop(AnsiString file)
         for (j=IndexObs[i];j<Obs.n&&j<IndexObs[i+1];j++) {
             if (SatMask[Obs.data[j].sat-1]) continue;
             if (El[j]<ElMask*D2R) continue;
-            if (ElMaskP&&El[j]<ElMaskData[(int)(Az[j]*R2D+0.5)]) continue;
             azel[  ns*2]=Az[j];
             azel[1+ns*2]=El[j];
+            if (ElMaskP&&testelmask(azel + ns * 2, &elevationMask)) continue;
             ns++;
         }
         if (ns<=0) continue;
@@ -1057,28 +1024,6 @@ void __fastcall TPlot::SaveSnrMp(AnsiString file)
             fprintf(fp,"%s %6s %8.1f %8.1f %9.2f %10.4f\n",tstr,sat,Az[j]*R2D,
                     El[j]*R2D,Obs.data[j].SNR[k],!Mp[k]?0.0:Mp[k][j]);
         }
-    }
-    fclose(fp);
-}
-// save elev mask --------------------------------------------------------------
-void __fastcall TPlot::SaveElMask(AnsiString file)
-{
-    FILE *fp;
-    double el,el0=0.0;
-    int az;
-    
-    trace(3,"SaveElMask: file=%s\n",file.c_str());
-    
-    if (!(fp=fopen(file.c_str(),"w"))) return;
-    
-    fprintf(fp,"%% Elevation Mask\n");
-    fprintf(fp,"%% AZ(deg) EL(deg)\n");
-    
-    for (az=0;az<=360;az++) {
-        el=floor(ElMaskData[az]*R2D/0.1+0.5)*0.1;
-        if (el==el0) continue;
-        fprintf(fp,"%9.1f %6.1f\n",(double)az,el);
-        el0=el;
     }
     fclose(fp);
 }
@@ -1455,7 +1400,7 @@ void __fastcall TPlot::Clear(void)
         initsolbuf(SolData  ,1,RtBuffSize+1);
         initsolbuf(SolData+1,1,RtBuffSize+1);
     }
-    for (i=0;i<=360;i++) ElMaskData[i]=0.0;
+    for (i=0;i<=360;i++) elevationMask.elmask[i]=0.0;
     
     NWayPnt=0;
     SelWayPnt=-1;

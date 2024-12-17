@@ -1613,10 +1613,14 @@ extern int outprcopts(uint8_t *buff, const prcopt_t *opt)
         p+=sprintf(p,"%s baseline  : %.4f %.4f m\r\n",COMMENTH,
                    opt->baseline[0],opt->baseline[1]);
     }
+    if (*opt->name[0])
+      p += sprintf(p, "%s rover name: %s\r\n", COMMENTH, opt->name[0]);
     p+=sprintf(p,"%s antenna1  : %-21s (%7.4f %7.4f %7.4f)\r\n",COMMENTH,
                opt->anttype[0],opt->antdel[0][0],opt->antdel[0][1],
                opt->antdel[0][2]);
     if (opt->mode >= PMODE_DGPS && opt->mode <= PMODE_FIXED) {
+      if (*opt->name[1])
+        p += sprintf(p, "%s base name : %s\r\n", COMMENTH, opt->name[1]);
       p+=sprintf(p,"%s antenna2  : %-21s (%7.4f %7.4f %7.4f)\r\n",COMMENTH,
                  opt->anttype[1],opt->antdel[1][0],opt->antdel[1][1],
                  opt->antdel[1][2]);

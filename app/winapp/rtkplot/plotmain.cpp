@@ -171,7 +171,8 @@ __fastcall TPlot::TPlot(TComponent* Owner) : TForm(Owner)
     Console1=new TConsole(Owner);
     Console2=new TConsole(Owner);
     
-    for (int i=0;i<361;i++) ElMaskData[i]=0.0;
+    elevationMask.name[0] = '\0';
+    for (int i=0;i<361;i++) elevationMask.elmask[i]=0.0;
     
     Trace=0;
     ConnectState=OpenRaw=0;
@@ -460,7 +461,9 @@ void __fastcall TPlot::MenuOpenElevMaskClick(TObject *Sender)
     trace(3,"MenuOpenElevMaskClick\n");
     
     if (!OpenElMaskDialog->Execute()) return;
-    ReadElMaskData(OpenElMaskDialog->FileName);
+    readelmask(U2A(OpenElMaskDialog->FileName).c_str(), NULL, &elevationMask);
+    UpdatePlot();
+    UpdateEnable();
 }
 // callback on menu-vis-analysis --------------------------------------------
 void __fastcall TPlot::MenuVisAnaClick(TObject *Sender)
@@ -542,7 +545,7 @@ void __fastcall TPlot::MenuSaveElMaskClick(TObject *Sender)
     
     if (!SaveDialog->Execute()) return;
     
-    SaveElMask(SaveDialog->FileName);
+    saveelmask(U2A(SaveDialog->FileName).c_str(), &elevationMask);
 }
 // callback on menu-connect -------------------------------------------------
 void __fastcall TPlot::MenuConnectClick(TObject *Sender)
