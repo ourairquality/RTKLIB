@@ -261,6 +261,9 @@
         <CppCompile Include="..\..\..\..\src\sofa.c">
             <BuildOrder>27</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\..\src\tides.c">
+            <BuildOrder>28</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\..\src\trace.c">
             <BuildOrder>25</BuildOrder>
         </CppCompile>
