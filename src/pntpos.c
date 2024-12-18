@@ -354,10 +354,21 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
     for (int i=0;i<3;i++) rr[i]=x[i];
     double dtr=x[3];
 
+    // rr_ = local copy of rcvr pos.
+    double rr_[3];
+    for (int i = 0; i < 3; i++) rr_[i] = rr[i];
+
+    // Adjust rcvr pos for earth tide correction.
+    if (opt->tidecorr) {
+      double disp[3];
+      tidedisp(gpst2utc(obs[0].time), rr_, opt->tidecorr, &nav->erp, opt->odisp[base], disp);
+      for (int i = 0; i < 3; i++) rr_[i] += disp[i];
+    }
+
     // Geodetic position of the marker.
     double pos[3];
-    ecef2pos(rr,pos);
-    trace(3, "rescode: iter=%d base=%d rr=%.3f %.3f %.3f\n", iter, base, rr[0], rr[1], rr[2]);
+    ecef2pos(rr_,pos);
+    trace(3, "rescode: iter=%d base=%d rr=%.3f %.3f %.3f\n", iter, base, rr_[0], rr_[1], rr_[2]);
 
     int nv=0,mask[NX-3]={0};
     *ns=0;

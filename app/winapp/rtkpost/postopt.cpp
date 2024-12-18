@@ -970,7 +970,7 @@ void __fastcall TOptDialog::UpdateEnable(void)
 	Solution       ->Enabled=rel||ppp;
 	DynamicModel   ->Enabled=PosMode->ItemIndex==PMODE_KINEMA||
 	                         PosMode->ItemIndex==PMODE_PPP_KINEMA;
-	TideCorr       ->Enabled=rel||ppp;
+	TideCorr       ->Enabled=1;
 	//IonoOpt        ->Enabled=!ppp;
 	PosOpt1        ->Enabled=rel||ppp;
 	PosOpt2        ->Enabled=rel||ppp;
