@@ -2,6 +2,7 @@ add_executable(rtknavi_qt
     main.cpp
     mondlg.cpp
     instrdlg.cpp
+    infiledlg.cpp
     logstrdlg.cpp
     navimain.cpp
     outstrdlg.cpp
@@ -10,6 +11,7 @@ add_executable(rtknavi_qt
     markdlg.cpp
 
     instrdlg.ui
+    infiledlg.ui
     logstrdlg.ui
     navimain.ui
     outstrdlg.ui

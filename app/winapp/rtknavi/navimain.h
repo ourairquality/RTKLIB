@@ -73,9 +73,11 @@ __published:
 	TPanel *Panel122;
 	TSpeedButton *BtnOutputStr;
 	TPanel *Panel123;
+	TPanel *Panel124;
 	TSpeedButton *BtnLogStr;
 	TPanel *Panel121;
 	TSpeedButton *BtnInputStr;
+	TSpeedButton *BtnInputFiles;
 	TPanel *Panel21;
 	TPanel *Panel211;
 	TLabel *LabelNSat;
@@ -155,6 +157,7 @@ __published:
 	
 	void __fastcall BtnTimeSysClick   (TObject *Sender);
 	void __fastcall BtnInputStrClick  (TObject *Sender);
+	void __fastcall BtnInputFilesClick(TObject *Sender);
 	void __fastcall BtnOutputStrClick (TObject *Sender);
 	void __fastcall BtnLogStrClick    (TObject *Sender);
 	void __fastcall BtnSolTypeClick   (TObject *Sender);
@@ -265,6 +268,7 @@ public:
 	double *SolRov,*SolRef,*Qr,*VelRov,*Age,*Ratio;
 	double TrkOri[3],MaxBL;
 	AnsiString Paths[MAXSTRRTK][4],Cmds[RTKSVRNIN][3],CmdsTcp[RTKSVRNIN][3];
+        AnsiString InputFiles[MAXINFILES];
 	AnsiString InTimeStart,InTimeSpeed,ExSats;
 	AnsiString RcvOpt[RTKSVRNIN],ProxyAddr;
 	AnsiString OutSwapInterval,LogSwapInterval,ResetCmd;
