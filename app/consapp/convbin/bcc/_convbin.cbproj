@@ -255,6 +255,9 @@
             <BuildOrder>9</BuildOrder>
             <BuildOrder>2</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\..\src\tides.c">
+            <BuildOrder>28</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\..\src\trace.c">
             <BuildOrder>25</BuildOrder>
         </CppCompile>

@@ -359,6 +359,9 @@
         <CppCompile Include="..\..\..\src\sbas.c">
             <BuildOrder>37</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\src\tides.c">
+            <BuildOrder>41</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\src\trace.c">
             <BuildOrder>38</BuildOrder>
         </CppCompile>
@@ -609,6 +612,8 @@
                 <DeployFile LocalName="..\..\..\src\rtkcmn.c" Configuration="Release" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\..\src\sbas.c" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\..\src\sbas.c" Configuration="Release" Class="ProjectFile"/>
+                <DeployFile LocalName="..\..\..\src\tides.c" Configuration="Debug" Class="ProjectFile"/>
+                <DeployFile LocalName="..\..\..\src\tides.c" Configuration="Release" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\..\src\trace.c" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\..\src\trace.c" Configuration="Release" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\src\convrnx.c" Configuration="Debug" Class="ProjectFile"/>
