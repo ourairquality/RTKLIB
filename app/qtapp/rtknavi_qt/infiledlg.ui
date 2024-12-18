@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>InputFileDialog</class>
+ <widget class="QWidget" name="InputFileDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>927</width>
+    <height>280</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Input Streams</string>
+  </property>
+  <property name="toolTip">
+   <string/>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0" colspan="2">
+    <widget class="QWidget" name="PanelInputs" native="true">
+     <layout class="QGridLayout" name="gridLayout_6">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item row="0" column="0" colspan="2">
+       <widget class="QLabel" name="lblInputFilePath">
+        <property name="toolTip">
+         <string>Files loaded at or after startup, including precise satellite ephemeris, clock RINEX, and earth orientation parameters. For real time usage these will need to be ultra rapid predicted products. Pathname replacements are applied and wildcards expanded.</string>
+        </property>
+        <property name="text">
+         <string>Input File Paths</string>
+        </property>
+        <property name="buddy">
+         <cstring>lEFilePath1</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_1">
+        <property name="text">
+         <string>(1)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="lEFilePath1">
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>(2)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="lEFilePath2">
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>(3)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLineEdit" name="lEFilePath3">
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>(4)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLineEdit" name="lEFilePath4">
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>(5)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QLineEdit" name="lEFilePath5">
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>(6)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QLineEdit" name="lEFilePath6">
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>lEFilePath1</tabstop>
+  <tabstop>lEFilePath2</tabstop>
+  <tabstop>lEFilePath3</tabstop>
+  <tabstop>lEFilePath4</tabstop>
+  <tabstop>lEFilePath5</tabstop>
+  <tabstop>lEFilePath6</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../icon/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

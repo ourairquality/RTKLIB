@@ -1367,15 +1367,44 @@ object MainForm: TMainForm
     object Panel12: TPanel
       Left = 425
       Top = 2
-      Width = 198
+      Width = 226
       Height = 23
       Align = alRight
       BevelOuter = bvNone
       TabOrder = 0
-      object Panel121: TPanel
+      object Panel124: TPanel
         Left = 0
         Top = 0
         Width = 27
+        Height = 22
+        TabOrder = 9
+        object BtnInputFiles: TSpeedButton
+          Left = 1
+          Top = 0
+          Width = 25
+          Height = 21
+          Hint = 'Input Files'
+          Margins.Left = 2
+          Margins.Top = 2
+          Margins.Right = 2
+          Margins.Bottom = 2
+          Caption = 'F'
+          Flat = True
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clBlack
+          Font.Height = -11
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+          ParentShowHint = False
+          ShowHint = True
+          OnClick = BtnInputFilesClick
+        end
+      end
+      object Panel121: TPanel
+        Left = 27
+        Top = 0
+        Width = 28
         Height = 22
         TabOrder = 9
         object BtnInputStr: TSpeedButton
@@ -1402,7 +1431,7 @@ object MainForm: TMainForm
         end
       end
       object Str1: TPanel
-        Left = 31
+        Left = 58
         Top = 5
         Width = 9
         Height = 14
@@ -1413,7 +1442,7 @@ object MainForm: TMainForm
         TabOrder = 0
       end
       object Image2: TImage
-        Left = 38
+        Left = 65
         Top = 3
         Width = 29
         Height = 17
@@ -1475,7 +1504,7 @@ object MainForm: TMainForm
         Transparent = True
       end
       object Str2: TPanel
-        Left = 40
+        Left = 67
         Top = 5
         Width = 9
         Height = 14
@@ -1486,7 +1515,7 @@ object MainForm: TMainForm
         TabOrder = 1
       end
       object Str3: TPanel
-        Left = 49
+        Left = 76
         Top = 5
         Width = 9
         Height = 14
@@ -1497,7 +1526,7 @@ object MainForm: TMainForm
         TabOrder = 2
       end
       object Image1: TImage
-        Left = 56
+        Left = 83
         Top = 3
         Width = 29
         Height = 17
@@ -1559,7 +1588,7 @@ object MainForm: TMainForm
         Transparent = True
       end
       object Svr: TPanel
-        Left = 67
+        Left = 94
         Top = 5
         Width = 9
         Height = 14
@@ -1570,7 +1599,7 @@ object MainForm: TMainForm
         TabOrder = 8
       end
       object Str4: TPanel
-        Left = 85
+        Left = 112
         Top = 5
         Width = 9
         Height = 14
@@ -1581,7 +1610,7 @@ object MainForm: TMainForm
         TabOrder = 3
       end
       object Str5: TPanel
-        Left = 94
+        Left = 121
         Top = 5
         Width = 9
         Height = 14
@@ -1592,7 +1621,7 @@ object MainForm: TMainForm
         TabOrder = 4
       end
       object Str6: TPanel
-        Left = 103
+        Left = 130
         Top = 5
         Width = 9
         Height = 14
@@ -1603,7 +1632,7 @@ object MainForm: TMainForm
         TabOrder = 5
       end
       object Str7: TPanel
-        Left = 114
+        Left = 141
         Top = 5
         Width = 9
         Height = 14
@@ -1614,7 +1643,7 @@ object MainForm: TMainForm
         TabOrder = 6
       end
       object Str8: TPanel
-        Left = 123
+        Left = 150
         Top = 5
         Width = 9
         Height = 14
@@ -1625,7 +1654,7 @@ object MainForm: TMainForm
         TabOrder = 7
       end
       object Str9: TPanel
-        Left = 132
+        Left = 159
         Top = 5
         Width = 9
         Height = 14
@@ -1636,7 +1665,7 @@ object MainForm: TMainForm
         TabOrder = 7
       end
       object Panel123: TPanel
-        Left = 143
+        Left = 170
         Top = 0
         Width = 27
         Height = 22
@@ -1666,7 +1695,7 @@ object MainForm: TMainForm
         end
       end
       object Panel122: TPanel
-        Left = 171
+        Left = 199
         Top = 0
         Width = 27
         Height = 22
