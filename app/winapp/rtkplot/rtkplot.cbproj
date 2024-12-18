@@ -484,6 +484,9 @@
         <CppCompile Include="..\..\..\src\stream.c">
             <BuildOrder>60</BuildOrder>
         </CppCompile>
+        <CppCompile Include="..\..\..\src\tides.c">
+            <BuildOrder>63</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\..\src\tle.c">
             <BuildOrder>61</BuildOrder>
         </CppCompile>
@@ -748,6 +751,8 @@
                 <DeployFile LocalName="..\..\..\src\solution.c" Configuration="Release" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\..\src\stream.c" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\..\src\stream.c" Configuration="Release" Class="ProjectFile"/>
+                <DeployFile LocalName="..\..\..\src\tides.c" Configuration="Debug" Class="ProjectFile"/>
+                <DeployFile LocalName="..\..\..\src\tides.c" Configuration="Release" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\..\src\tle.c" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\..\src\tle.c" Configuration="Release" Class="ProjectFile"/>
                 <DeployFile LocalName="Debug_Build\rtkplot.exe" Configuration="Debug" Class="ProjectOutput"/>
