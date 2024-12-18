@@ -2780,6 +2780,7 @@
          </property>
         </widget>
        </item>
+
        <item row="13" column="0">
         <widget class="QLabel" name="Label34">
          <property name="text">
@@ -2814,7 +2815,7 @@
          </property>
         </widget>
        </item>
-       <item row="16" column="0">
+       <item row="17" column="0">
         <widget class="QLabel" name="lblIonosphereFile">
          <property name="text">
           <string>Ionosphere Data File</string>
@@ -2824,14 +2825,14 @@
          </property>
         </widget>
        </item>
-       <item row="17" column="0">
+       <item row="18" column="0">
         <widget class="QLineEdit" name="lEIonosphereFile">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Input the file path of an ionospheric corrections file (*.yyi)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
        </item>
-       <item row="18" column="0">
+       <item row="19" column="0">
         <widget class="QLabel" name="lblLocalDirectory">
          <property name="text">
           <string>FTP/HTTP Local Directory</string>
@@ -2841,7 +2842,7 @@
          </property>
         </widget>
        </item>
-       <item row="19" column="0">
+       <item row="20" column="0">
         <widget class="QLineEdit" name="lELocalDirectory">
          <property name="toolTip">
           <string>Local directory for downloaded data</string>
