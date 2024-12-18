@@ -368,8 +368,8 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	double *del,*off,runtime,rt[3]={0},dop[4]={0};
 	double azel[MAXSAT*2],pos[3],vel[3],rr[3]={0},enu[3]={0};
 	int i,j,k,thread,cycle,state,rtkstat,nsat0,nsat1,prcout,nave;
-	int cputime,nb[3]={0},nmsg[3][10]={{0}},ne;
-	char tstr[40],*ant,id[8],s1[40]="-",s2[40]="-",s3[40]="-";
+	int cputime,nb[3]={0},nmsg[3][10]={{0}};
+	char tstr[40],*ant,id[8];
 	char file[1024]="";
 	const char *ionoopt[]={"OFF","Broadcast","SBAS","Dual-Frequency","Estimate STEC","IONEX TEC","QZSS LEX",""};
 	const char *tropopt[]={"OFF","Saastamoinen","SBAS","Estimate ZTD","Estimate ZTD+Grad",""};
@@ -402,13 +402,34 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 		rt[0]=floor(runtime/3600.0); runtime-=rt[0]*3600.0;
 		rt[1]=floor(runtime/60.0); rt[2]=runtime-rt[1]*60.0;
 	}
-	if ((ne=rtksvr.nav.ne)>0) {
-		time2str(rtksvr.nav.peph[   0].time,s1,0);
-		time2str(rtksvr.nav.peph[ne-1].time,s2,0);
-		time2str(rtksvr.ftime[2],s3,0);
-	}
 	strcpy(file,rtksvr.files[2]);
 
+        int ne = rtksvr.nav.ne;
+        gtime_t etime0, etime1, ftime;
+        if (ne > 0) {
+          etime0 = rtksvr.nav.peph[0].time;
+          etime1 = rtksvr.nav.peph[ne - 1].time;
+          ftime = rtksvr.ftime[2];
+        }
+	strcpy(file,rtksvr.files[2]);
+        int ppos[MAXSAT];
+        int nppos = pephpos_avail(rtk->sol.time, &rtksvr.nav, ppos);
+
+        int nc = rtksvr.nav.nc;
+        gtime_t ctime0, ctime1;
+        if (nc > 0) {
+          ctime0 = rtksvr.nav.pclk[0].time;
+          ctime1 = rtksvr.nav.pclk[nc - 1].time;
+        }
+        int pclk[MAXSAT];
+        int npclk = pephclk_avail(rtk->sol.time, &rtksvr.nav, pclk);
+
+        int nerp = rtksvr.nav.erp.n;
+        double mjd0 = 0, mjd1 = 0;
+        if (nerp > 0) {
+          mjd0 = rtksvr.nav.erp.data[0].mjd;
+          mjd1 = rtksvr.nav.erp.data[nerp - 1].mjd;
+        }
 	rtksvrunlock(&rtksvr); // unlock
 	
 	for (j=k=0;j<MAXSAT;j++) {
@@ -429,7 +450,7 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	if (rtk->opt.navsys&SYS_SBS) navsys=navsys+"SBAS ";
 	
 	Label->Caption="";
-	Tbl->RowCount = 59 + ANTNFREQ * 2;
+	Tbl->RowCount = 62 + ANTNFREQ * 2;
 	
 	i=1;
 	Tbl->Cells[0][i  ]="RTKLIB Version";
@@ -661,14 +682,36 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	Tbl->Cells[0][i  ]="Ant Delta E/N/U (m) Base Station";
 	Tbl->Cells[1][i++]=s.sprintf("%.4f, %.4f, %.4f",del[0],del[1],del[2]);
 	
-	Tbl->Cells[0][i  ]="Precise Ephemeris Time/# of Epoch";
-	Tbl->Cells[1][i++]=s.sprintf("%s-%s (%d)",s1,s2,ne);
+	char s1[40]="-", s2[40]="-", s3[40]="-";
+	if (ne) {
+          time2str(etime0, s1, 0);
+          time2str(etime1, s2, 0);
+          time2str(ftime, s3, 0);
+	}
+	Tbl->Cells[0][i  ]="Precise Ephemeris Time/# of Epoch Available";
+	Tbl->Cells[1][i++]=s.sprintf("%s-%s (%d / %d)",s1,s2,nppos,ne);
 	
 	Tbl->Cells[0][i  ]="Precise Ephemeris Download Time";
 	Tbl->Cells[1][i++]=s3;
 	
 	Tbl->Cells[0][i  ]="Precise Ephemeris Download File";
 	Tbl->Cells[1][i++]=file;
+
+        char sc1[40] = "-", sc2[40] = "-";
+        if (nc > 0) {
+          time2str(ctime0, sc1, 0);
+          time2str(ctime1, sc2, 0);
+        }
+	Tbl->Cells[0][i  ]="Precise Clock Time/# of Epoch Available";
+	Tbl->Cells[1][i++]=s.sprintf("%s-%s (%d / %d)", sc1, sc2, npclk, nc);
+
+        Tbl->Cells[0][i  ]="ERP MJD/# of Epoch";
+	Tbl->Cells[1][i++]=s.sprintf("%.2f-%.2fs (%d)", mjd0, mjd1, nerp);
+
+        const double ep[] = {2000, 1, 1, 12, 0, 0};
+        double mjd = 51544.5 + timediff(gpst2utc(rtk->sol.time), epoch2time(ep)) / 86400.0;
+	Tbl->Cells[0][i  ]="Current MJD";
+	Tbl->Cells[1][i++]=s.sprintf("%.2f", mjd);
         free(rtk);
 }
 //---------------------------------------------------------------------------
