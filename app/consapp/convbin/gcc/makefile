@@ -15,7 +15,7 @@ LDLIBS = -lm
 all  : convbin
 
 convbin    : convbin.o rtkcmn.o trace.o rinex.o sbas.o preceph.o rcvraw.o convrnx.o
-convbin    : rtcm.o rtcm2.o rtcm3.o rtcm3e.o pntpos.o ephemeris.o ionex.o
+convbin    : rtcm.o rtcm2.o rtcm3.o rtcm3e.o pntpos.o ephemeris.o ionex.o tides.o
 convbin    : novatel.o ublox.o crescent.o skytraq.o javad.o nvs.o
 convbin    : binex.o rt17.o septentrio.o swiftnav.o unicore.o
 convbin    : sofa.o
@@ -48,6 +48,8 @@ pntpos.o   : $(SRC)/pntpos.c
 	$(CC) -c $(CFLAGS) $(SRC)/pntpos.c
 ionex.o    : $(SRC)/ionex.c
 	$(CC) -c $(CFLAGS) $(SRC)/ionex.c
+tides.o    : $(SRC)/tides.c
+	$(CC) -c $(CFLAGS) $(SRC)/tides.c
 ephemeris.o: $(SRC)/ephemeris.c
 	$(CC) -c $(CFLAGS) $(SRC)/ephemeris.c
 novatel.o  : $(SRC)/rcv/novatel.c
@@ -92,6 +94,7 @@ rtcm3e.o   : $(SRC)/rtklib.h
 pntpos.o   : $(SRC)/rtklib.h
 ephemeris.o: $(SRC)/rtklib.h
 ionex.o    : $(SRC)/rtklib.h
+tides.o    : $(SRC)/rtklib.h
 novatel.o  : $(SRC)/rtklib.h
 ss2.o      : $(SRC)/rtklib.h
 ublox.o    : $(SRC)/rtklib.h

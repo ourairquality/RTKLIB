@@ -1122,7 +1122,7 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     /* set antenna parameters */
     setpcv(obss.n>0?obss.data[0].time:timeget(),&popt_,&navs,&satsvns,&pcvss,&pcvsr,stas);
     /* read ocean tide loading parameters */
-    if (popt_.mode>PMODE_SINGLE&&*fopt->blq) {
+    if (*fopt->blq) {
         readotl(&popt_,fopt->blq,stas);
     }
     /* rover/reference fixed position */
