@@ -36,7 +36,6 @@ public:
     solopt_t solutionOptions;
     filopt_t fileOptions;
 
-
     // RTKNavi options
     int serverCycle, serverBufferSize, solutionBufferSize, navSelect, savedSolutions;
     int nmeaCycle, timeoutTime, reconnectTime;

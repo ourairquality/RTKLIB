@@ -314,6 +314,12 @@
             <DependentOn>instrdlg.h</DependentOn>
             <BuildOrder>59</BuildOrder>
         </CppCompile>
+        <CppCompile Include="infiledlg.cpp">
+            <Form>InputFileDialog</Form>
+            <FormType>dfm</FormType>
+            <DependentOn>infiledlg.h</DependentOn>
+            <BuildOrder>59</BuildOrder>
+        </CppCompile>
         <CppCompile Include="logstrdlg.cpp">
             <Form>LogStrDialog</Form>
             <FormType>dfm</FormType>
@@ -515,6 +521,7 @@
         <FormResources Include="..\appcmn\ftpoptdlg.dfm"/>
         <FormResources Include="..\appcmn\freqdlg.dfm"/>
         <FormResources Include="instrdlg.dfm"/>
+        <FormResources Include="infiledlg.dfm"/>
         <FormResources Include="mondlg.dfm"/>
         <FormResources Include="markdlg.dfm"/>
         <FormResources Include="logstrdlg.dfm"/>

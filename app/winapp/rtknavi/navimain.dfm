@@ -1372,6 +1372,35 @@ object MainForm: TMainForm
       Align = alRight
       BevelOuter = bvNone
       TabOrder = 0
+      object Panel124: TPanel
+        Left = 0
+        Top = 0
+        Width = 27
+        Height = 22
+        TabOrder = 9
+        object BtnInputFiles: TSpeedButton
+          Left = 1
+          Top = 0
+          Width = 25
+          Height = 21
+          Hint = 'Input Files'
+          Margins.Left = 2
+          Margins.Top = 2
+          Margins.Right = 2
+          Margins.Bottom = 2
+          Caption = 'F'
+          Flat = True
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clBlack
+          Font.Height = -11
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+          ParentShowHint = False
+          ShowHint = True
+          OnClick = BtnInputFilesClick
+        end
+      end
       object Panel121: TPanel
         Left = 27
         Top = 0
