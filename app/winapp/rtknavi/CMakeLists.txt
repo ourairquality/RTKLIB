@@ -1,5 +1,6 @@
 add_executable(rtknavi WIN32
      instrdlg.cpp  
+     infiledlg.cpp
      logstrdlg.cpp  
      mapdlg.cpp  
      markdlg.cpp  

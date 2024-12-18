@@ -125,9 +125,12 @@ static prcopt_t prcopt;                 /* processing options */
 static solopt_t solopt[RTKSVRNSOL]={{0}}; /* solution options */
 static filopt_t filopt  ={""};          /* file options */
 
+static char *infiles[MAXINFILES];
+static int ninfiles = 0;
+
 /* help text -----------------------------------------------------------------*/
 static const char *usage[]={
-    "usage: rtkrcv [-s][-p port][-d dev][-o file][-w pwd][-r level][-t level]",
+    "usage: rtkrcv [-s][-p port][-d dev][-o file][-w pwd][-r level][-t level][...]",
     "options",
     "  -s         start RTK server on program startup",
     "  -nc        start RTK server on program startup with no console",
@@ -139,7 +142,8 @@ static const char *usage[]={
     "  -r level   output solution status file (0:off,1:states,2:residuals)",
     "  -t level   debug trace level (0:off,1-5:on)",
     "  --deamon   detach from the console",
-    "  --version  print the version and exit"
+    "  --version  print the version and exit",
+    "  SP3, RINEX CLK, and ERP files many be supplied, the default maximum is 4 files."
 };
 static const char *helptxt[]={
     "start                 : start rtk server",
@@ -150,6 +154,7 @@ static const char *helptxt[]={
     "satellite [-n] [cycle]: show satellite status",
     "observ [-n] [cycle]   : show observation data",
     "navidata [cycle]      : show navigation data",
+    "precdata [files]      : show or load precise ephemeris, clock, and erp data",
     "stream [cycle]        : show stream status",
     "ssr [cycle]           : show ssr corrections",
     "error                 : show error/warning messages",
@@ -530,6 +535,14 @@ static int startsvr(vt_t *vt)
         snprintf(stas[1].name, sizeof(stas[1].name), "%s", svr.name[1]);
         readdcb(filopt.dcb, &svr.nav, stas);
     }
+    // Read ocean tide loading parameters.
+    if (prcopt.mode > PMODE_SINGLE && *filopt.blq) {
+      int mode = PMODE_DGPS <= prcopt.mode && prcopt.mode <= PMODE_FIXED;
+      for (int i = 0; i < (mode ? 2 : 1); i++) {
+        const char *name = svr.name[i];
+        if (*name != '\0') readblq(filopt.blq, name, prcopt.odisp[i]);
+      }
+    }
     // Read the elevation mask patterns.
     if (*filopt.elmask) {
       int mode = PMODE_DGPS <= prcopt.mode && prcopt.mode <= PMODE_FIXED;
@@ -591,6 +604,11 @@ static int startsvr(vt_t *vt)
       }
     }
 
+    for (int i = 0; i < MAXINFILES; i++) svr.infiles[i][0] = '\0';
+    for (int i = 0; i < ninfiles; i++)
+      snprintf(svr.infiles[i], sizeof(svr.infiles[0]), "%s", infiles[i]);
+    svr.ninfiles = ninfiles;
+
     for (int i = 0; i < MAXSTRRTK; i++) paths[i] = strpath[i];
 
     /* start rtk server */
@@ -636,6 +654,11 @@ static void stopsvr(vt_t *vt)
     }
 #endif
     if (solopt[0].geoid>0) closegeoid();
+
+    // Free erp data.
+    free(svr.nav.erp.data);
+    svr.nav.erp.data = NULL;
+    svr.nav.erp.n = svr.nav.erp.nmax = 0;
 
     for (int i = 0; i < 2; i++) free_pcv(&prcopt.pcvr[i]);
     free_pcvs(&svr.pcvsr);
@@ -1058,6 +1081,110 @@ static void prnavidata(vt_t *vt)
     vt_printf(vt,"UTC: %9.2E %9.2E %9.2E %9.2E  LEAPS: %.0f\n",utc[0],utc[1],utc[2],
             utc[3],utc[4]);
 }
+/* Print precise ephemeris and clock data availability -----------------------*/
+static void prprecdata(vt_t *vt) {
+  trace(4, "prprecdata:\n");
+
+  rtksvrlock(&svr);
+  gtime_t time = svr.rtk.sol.time;
+
+  int ne = svr.nav.ne;
+  gtime_t etime0, etime1;
+  if (ne > 0) {
+    etime0 = svr.nav.peph[0].time;
+    etime1 = svr.nav.peph[ne - 1].time;
+  }
+  int ppos[MAXSAT];
+  int nppos = pephpos_avail(time, &svr.nav, ppos);
+
+  int nc = svr.nav.nc;
+  gtime_t ctime0, ctime1;
+  if (nc > 0) {
+    ctime0 = svr.nav.pclk[0].time;
+    ctime1 = svr.nav.pclk[nc - 1].time;
+  }
+  int pclk[MAXSAT];
+  int npclk = pephclk_avail(time, &svr.nav, pclk);
+
+  int nerp = svr.nav.erp.n;
+  double mjd0 = 0, mjd1 = 0;
+  if (nerp > 0) {
+    mjd0 = svr.nav.erp.data[0].mjd;
+    mjd1 = svr.nav.erp.data[nerp - 1].mjd;
+  }
+  rtksvrunlock(&svr);
+
+  vt_printf(vt, "\n%sPrecise ephemeris%s\n", ESC_BOLD, ESC_RESET);
+  vt_printf(vt, "%-16s: %d\n", "number of epochs", ne);
+  if (ne > 0) {
+    char tstr1[40] = "", tstr2[40] = "", tstr3[40] = "";
+    time2str(etime0, tstr1, 0);
+    time2str(etime1, tstr2, 0);
+    time2str(time, tstr3, 0);
+    vt_printf(vt, "%-16s: %s\n", "first epoch", tstr1);
+    vt_printf(vt, "%-16s: %s\n", "last epoch", tstr2);
+    vt_printf(vt, "%-16s: %s\n", "current time", tstr3);
+    vt_printf(vt, "%-16s: %d\n", "available sats", nppos);
+    int last_sys = SYS_GPS;
+    int line_start = 1;
+    for (int i = 0; i < MAXSAT; i++) {
+      if (ppos[i]) {
+        int sys = satsys(i + 1, NULL);
+        char id[8];
+        satno2id(i + 1, id);
+        if (sys != last_sys && !line_start) {
+          vt_printf(vt, "\n");
+          line_start = 1;
+        }
+        vt_printf(vt, "%s%s", line_start ? "" : " ", id);
+        line_start = 0;
+        last_sys = sys;
+      }
+    }
+    vt_printf(vt, "\n");
+  }
+
+  vt_printf(vt, "\n%sPrecise clocks%s\n", ESC_BOLD, ESC_RESET);
+  vt_printf(vt, "%-16s: %d\n", "number of epochs", nc);
+  if (nc > 0) {
+    char tstr1[40] = "", tstr2[40] = "", tstr3[40] = "";
+    time2str(ctime0, tstr1, 0);
+    time2str(ctime1, tstr2, 0);
+    time2str(time, tstr3, 0);
+    vt_printf(vt, "%-16s: %s\n", "first epoch", tstr1);
+    vt_printf(vt, "%-16s: %s\n", "last epoch", tstr2);
+    vt_printf(vt, "%-16s: %s\n", "current time", tstr3);
+    vt_printf(vt, "%-16s: %d\n", "available sats", npclk);
+    int last_sys = SYS_GPS;
+    int line_start = 1;
+    for (int i = 0; i < MAXSAT; i++) {
+      if (pclk[i]) {
+        int sys = satsys(i + 1, NULL);
+        char id[8];
+        satno2id(i + 1, id);
+        if (sys != last_sys && !line_start) {
+          vt_printf(vt, "\n");
+          line_start = 1;
+        }
+        vt_printf(vt, "%s%s", line_start ? "" : " ", id);
+        line_start = 0;
+        last_sys = sys;
+      }
+    }
+    vt_printf(vt, "\n");
+  }
+
+  vt_printf(vt, "\n%sERP%s\n", ESC_BOLD, ESC_RESET);
+  vt_printf(vt, "%-16s: %d\n", "number of epochs", nerp);
+  if (nerp > 0) {
+    vt_printf(vt, "%-16s: %.2lf\n", "first MJD", mjd0);
+    vt_printf(vt, "%-16s: %.2lf\n", "last MJD", mjd1);
+    const double ep[] = {2000, 1, 1, 12, 0, 0};
+    double mjd = 51544.5 + timediff(gpst2utc(time), epoch2time(ep)) / 86400.0;
+    vt_printf(vt, "%-16s: %.2lf\n", "current MJD", mjd);
+    vt_printf(vt, "\n");
+  }
+}
 /* print error/warning messages ----------------------------------------------*/
 static void prerror(vt_t *vt)
 {
@@ -1253,6 +1380,26 @@ static void cmd_navidata(char **args, int narg, vt_t *vt)
         prnavidata(vt);
         if (cycle>0) sleepms(cycle); else return;
     }
+    vt_printf(vt,"\n");
+}
+/* Precise ephemeris and clock data availability command ---------------------*/
+static void cmd_precdata(char **args, int narg, vt_t *vt)
+{
+    trace(3,"cmd_precdata:\n");
+
+    if (narg > 1) {
+      ninfiles = 0;
+      rtksvrlock(&svr);
+      for (int i = 0; i < MAXINFILES; i++) svr.infiles[i][0] = '\0';
+      int ninfiles = 0;
+      for (int i = 0; i < narg - 1 && ninfiles < MAXINFILES; i++)
+        snprintf(svr.infiles[ninfiles++], sizeof(svr.infiles[0]), "%s", args[i + 1]);
+      svr.ninfiles = ninfiles;
+      rtksvrunlock(&svr);
+      sleepms(1000);
+    }
+
+    prprecdata(vt);
     vt_printf(vt,"\n");
 }
 /* error command -------------------------------------------------------------*/
@@ -1550,7 +1697,7 @@ static void *con_thread(void *arg)
 {
     const char *cmds[]={
         "start","stop","restart","solution","status","satellite","observ",
-        "navidata","stream","ssr","error","option","set",
+        "navidata","precdata","stream","ssr","error","option","set",
         "mark","mode","load","save","log","help","?","exit","shutdown",""
     };
     con_t *con=(con_t *)arg;
@@ -1605,22 +1752,23 @@ static void *con_thread(void *arg)
             case  5: cmd_satellite(args,narg,con->vt); break;
             case  6: cmd_observ   (args,narg,con->vt); break;
             case  7: cmd_navidata (args,narg,con->vt); break;
-            case  8: cmd_stream   (args,narg,con->vt); break;
-            case  9: cmd_ssr      (args,narg,con->vt); break;
-            case 10: cmd_error    (args,narg,con->vt); break;
-            case 11: cmd_option   (args,narg,con->vt); break;
-            case 12: cmd_set      (args,narg,con->vt); break;
-            case 13: cmd_mark     (args,narg,con->vt); break;
-            case 14: cmd_mode     (args,narg,con->vt); break;
-            case 15: cmd_load     (args,narg,con->vt); break;
-            case 16: cmd_save     (args,narg,con->vt); break;
-            case 17: cmd_log      (args,narg,con->vt); break;
-            case 18: cmd_help     (args,narg,con->vt); break;
+            case  8: cmd_precdata (args,narg,con->vt); break;
+            case  9: cmd_stream   (args,narg,con->vt); break;
+            case 10: cmd_ssr      (args,narg,con->vt); break;
+            case 11: cmd_error    (args,narg,con->vt); break;
+            case 12: cmd_option   (args,narg,con->vt); break;
+            case 13: cmd_set      (args,narg,con->vt); break;
+            case 14: cmd_mark     (args,narg,con->vt); break;
+            case 15: cmd_mode     (args,narg,con->vt); break;
+            case 16: cmd_load     (args,narg,con->vt); break;
+            case 17: cmd_save     (args,narg,con->vt); break;
+            case 18: cmd_log      (args,narg,con->vt); break;
             case 19: cmd_help     (args,narg,con->vt); break;
-            case 20: /* exit */
+            case 20: cmd_help     (args,narg,con->vt); break;
+            case 21: /* exit */
                 if (con->vt->type) con->state=0;
                 break;
-            case 21: /* shutdown */
+            case 22: /* shutdown */
                 if (!strcmp(args[0],"shutdown")) {
                     vt_printf(con->vt,"rtk server shutdown ...\n");
                     sleepms(1000);
@@ -1767,7 +1915,7 @@ static void deamonise(void)
 
 /* rtkrcv main -----------------------------------------------------------------
 * synopsis
-*     rtkrcv [-s][-nc][-p port][-d dev][-o file][-r level][-t level]
+*     rtkrcv [-s][-nc][-p port][-d dev][-o file][-r level][-t level][...]
 *
 * description
 *     A command line version of the real-time positioning AP by rtklib. To start
@@ -1797,6 +1945,7 @@ static void deamonise(void)
 *     -t level   debug trace level (0:off,1-5:on)
 *     --deamon   detach from the console
 *     --version  prints the version and exits
+*     SP3, RINEX CLK, and ERP files many be supplied.
 *
 * command
 *     start
@@ -1828,6 +1977,9 @@ static void deamonise(void)
 *
 *     navidata [cycle]
 *       Show navigation data. Use option cycle for cyclic display.
+*
+*     precdata [files]
+*       Show or load precise ephemeris, clock, and erp data.
 *
 *     stream [cycle]
 *       Show stream status. Use option cycle for cyclic display.
@@ -1905,7 +2057,8 @@ int main(int argc, char **argv)
             fprintf(stderr, "rtkrcv RTKLIB %s %s\n", VER_RTKLIB, PATCH_LEVEL);
             exit(0);
         }
-        else printusage();
+        else if (*argv[i] == '-') printusage();
+        else if (ninfiles < MAXINFILES) infiles[ninfiles++] = argv[i];
     }
     if (deamon) deamonise();
     if (trace>0) {
@@ -1935,6 +2088,10 @@ int main(int argc, char **argv)
     /* Copy the system options for the other output solution streams */
     for (int i = 1; i < RTKSVRNSOL; i++) solopt[i] = solopt[0];
     
+    // If ERP data was specified in file-eopfile then queue it as an
+    // additional input file.
+    if (*filopt.eop && ninfiles < MAXINFILES) infiles[ninfiles++] = filopt.eop;
+
     /* read navigation data */
     if (!readnav(NAVIFILE,&svr.nav)) {
         fprintf(stderr,"no navigation data: %s\n",NAVIFILE);

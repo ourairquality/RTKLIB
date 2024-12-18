@@ -297,6 +297,7 @@ extern "C" {
 #define MAXRCVCMD   4096                /* max length of receiver commands */
 #define MAX_CODE_BIASES 3               /* max # of different code biases per freq */
 #define MAX_CODE_BIAS_FREQS 2           /* max # of freqs supported for code biases  */
+#define MAXINFILES   6                  // Max # of rtksvr input files.
 
 #define RNX2VER     2.10                /* RINEX ver.2 default output version */
 #define RNX3VER     3.00                /* RINEX ver.3 default output version */
@@ -1400,6 +1401,8 @@ typedef struct {        /* RTK server type */
     pcvs_t pcvsr;       // Receiver antenna parameters.
     rtklib_lock_t lock; /* lock flag */
     char name[2][MAXANT]; // Rover and reference effective names.
+    char infiles[MAXINFILES][MAXSTRPATH]; // Queued SP3, CLK and ERP files.
+    int ninfiles;       // Number of queued SP3, CLK and ERP files.
 } rtksvr_t;
 
 typedef struct {        /* GIS data point type */
@@ -1801,6 +1804,8 @@ EXPORT void seph2pos(gtime_t time, const seph_t *seph, double *rs, double *dts,
                      double *var);
 EXPORT int  peph2pos(gtime_t time, int sat, const nav_t *nav, int opt,
                      double *rs, double *dts, double *var);
+EXPORT int pephpos_avail(gtime_t time, const nav_t *nav, int avail[MAXSAT]);
+EXPORT int pephclk_avail(gtime_t time, const nav_t *nav, int avail[MAXSAT]);
 EXPORT void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
                       double *dant);
 EXPORT int  satpos(gtime_t time, gtime_t teph, int sat, int ephopt,

@@ -34,6 +34,7 @@ SOURCES += \
     ../appcmn_qt/navi_post_opt.cpp \
     mondlg.cpp \
     instrdlg.cpp \
+    infiledlg.cpp \
     logstrdlg.cpp \
     main.cpp \
     navimain.cpp \
@@ -45,6 +46,7 @@ SOURCES += \
 HEADERS  += \
     ../appcmn_qt/labelstretcher.h \
     instrdlg.h \
+    infiledlg.h \
     rcvoptdlg.h \
     logstrdlg.h \
     navimain.h \
@@ -75,6 +77,7 @@ HEADERS  += \
 
 FORMS    += \
     instrdlg.ui \
+    infiledlg.ui \
     logstrdlg.ui \
     navimain.ui \
     outstrdlg.ui \

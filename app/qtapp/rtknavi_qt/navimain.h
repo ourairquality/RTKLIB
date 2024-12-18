@@ -21,6 +21,7 @@ class MainForm;
 class AboutDialog;
 class OptDialog;
 class InputStrDialog;
+class InputFileDialog;
 class OutputStrDialog;
 class LogStrDialog;
 class MonitorDialog;
@@ -51,6 +52,7 @@ public slots:
     void changeTimeSystem();
     void changeSolutionType();
     void showInputStreamDialog();
+    void showInputFileDialog();
     void showOutputStreamDialog();
     void showLogStreamDialog();
     void showMonitorDialog();
@@ -89,6 +91,7 @@ protected:
 
 private:
     InputStrDialog *inputStrDialog;
+    InputFileDialog *inputFileDialog;
     OutputStrDialog *outputStrDialog;
     LogStrDialog *logStrDialog;
     MonitorDialog *monitor;
@@ -168,6 +171,7 @@ public:
     double trackOrigin[3], maxBaseLine;
 
     QString paths[MAXSTRRTK][4], commands[3][3], commandsTcp[3][3];
+    QString inputFiles[MAXINFILES];
     QString inputTimeSpeed;
     double inputTimeStart;
     QString receiverOptions[3];

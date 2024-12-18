@@ -511,6 +511,97 @@ static void decodefile(rtksvr_t *svr, int index)
     }
     free(nav);
 }
+
+static void read_infiles(rtksvr_t *svr) {
+  if (svr->ninfiles == 0) return;
+
+  nav_t *nav = (nav_t *)calloc(1, sizeof(nav_t));
+  if (nav == NULL) {
+    trace(1, "read_infiles: nav alloc failed\n");
+    return;
+  }
+
+  char *efiles[MAXEXFILE];
+  for (int i = 0; i < MAXEXFILE; i++) {
+    efiles[i] = (char *)malloc(1024);
+    if (!efiles[i]) {
+      for (i--; i >= 0;i--) free(efiles[i]);
+      free(nav);
+      return;
+    }
+  }
+
+  rtksvrlock(svr);
+  int ninfiles = svr->ninfiles;
+  char infiles[MAXINFILES][MAXSTRPATH];
+  memcpy(infiles, svr->infiles, sizeof(infiles));
+  rtksvrunlock(svr);
+
+  for (int i = 0; i < ninfiles; i++) {
+    char path[1024];
+    reppath(infiles[i], path, timeget(), "", "");
+
+    // Expand wild card in file path.
+    int n = expath(path, efiles, MAXEXFILE);
+
+    for (int j = 0; j < n; j++) {
+      char *ext = strrchr(efiles[j], '.');
+      if (ext == NULL) {
+        tracet(1, "unrecognised input file extension: %s\n", efiles[j]);
+        continue;
+      }
+
+      if (!strcmp(ext, ".sp3") || !strcmp(ext, ".SP3")) {
+        // Read SP3 precise ephemeris data.
+        readsp3(efiles[j], nav, 0);
+        continue;
+      }
+
+      if (!strcmp(ext, ".clk") || !strcmp(ext, ".CLK")) {
+        if (readrnxc(efiles[j], nav) <= 0)
+          tracet(1, "rinex clock file read error: %s\n", efiles[j]);
+        continue;
+      }
+
+      if (!strcmp(ext, ".erp") || !strcmp(ext, ".ERP")) {
+        // Read erp data.
+        if (!readerp(efiles[j], &nav->erp))
+          tracet(1, "ERP file read error: %s\n", efiles[j]);
+        continue;
+      }
+    }
+  }
+
+  for (int j = 0; j < MAXEXFILE; j++) free(efiles[j]);
+
+  rtksvrlock(svr);
+  if (nav->ne > 0 || nav->nc > 0 || nav->erp.n > 0) {
+    if (nav->ne > 0) {
+      // Update precise ephemeris.
+      if (svr->nav.peph) free(svr->nav.peph);
+      svr->nav.ne = nav->ne;
+      svr->nav.nemax = nav->nemax;
+      svr->nav.peph = nav->peph;
+    }
+    if (nav->nc > 0) {
+      // Update precise clock.
+      if (svr->nav.pclk) free(svr->nav.pclk);
+      svr->nav.nc = nav->nc;
+      svr->nav.ncmax = nav->ncmax;
+      svr->nav.pclk = nav->pclk;
+    }
+    if (nav->erp.n > 0) {
+      // Update ERP data.
+      free(svr->nav.erp.data);
+      svr->nav.erp = nav->erp;
+    }
+  }
+  svr->ninfiles = 0;
+  rtksvrunlock(svr);
+
+  free(nav);
+}
+
 /* carrier-phase bias (fcb) correction ---------------------------------------*/
 static void corr_phase_bias(obsd_t *obs, int n, const nav_t *nav)
 {
@@ -650,6 +741,7 @@ static void *rtksvrthread(void *arg)
 
     for (cycle=0;svr->state;cycle++) {
         tick=tickget();
+        read_infiles(svr);
         for (i=0;i<3;i++) {
             p=svr->buff[i]+svr->nb[i]; q=svr->buff[i]+svr->buffsize;
             
@@ -1014,6 +1106,9 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
     strsync(svr->stream,svr->stream+1);
     strsync(svr->stream,svr->stream+2);
     
+    // Load initial SP3, CLK and ERP files.
+    read_infiles(svr);
+
     /* write start commands to input streams */
     for (i=0;i<3;i++) {
         if (!cmds[i]) continue;

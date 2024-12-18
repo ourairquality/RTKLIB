@@ -47,6 +47,7 @@
 #include <QCommandLineParser>
 
 #include "rtklib.h"
+#include "infiledlg.h"
 #include "instrdlg.h"
 #include "outstrdlg.h"
 #include "logstrdlg.h"
@@ -190,6 +191,7 @@ MainWindow::MainWindow(QWidget *parent)
     optDialog = new OptDialog(this, OptDialog::NaviOptions);
     optDialog->appOptions = rcvopts;
     inputStrDialog = new InputStrDialog(this);
+    inputFileDialog = new InputFileDialog(this);
     outputStrDialog = new OutputStrDialog(this);
     logStrDialog = new LogStrDialog(this);
     monitor = new MonitorDialog(this, rtksvr, &monistr);
@@ -245,6 +247,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->btnExpand4, &QPushButton::clicked, this, &MainWindow::expandPlot4);
     connect(ui->btnShrink4, &QPushButton::clicked, this, &MainWindow::shrinkPlot4);
     connect(ui->btnInputStream, &QPushButton::clicked, this, &MainWindow::showInputStreamDialog);
+    connect(ui->btnInputFile, &QPushButton::clicked, this, &MainWindow::showInputFileDialog);
     connect(ui->btnLogStream, &QPushButton::clicked, this, &MainWindow::showLogStreamDialog);
     connect(ui->btnMonitor, &QPushButton::clicked, this, &MainWindow::showMonitorDialog);
     connect(ui->btnOptions, &QPushButton::clicked, this, &MainWindow::showOptionsDialog);
@@ -708,6 +711,32 @@ void MainWindow::showInputStreamDialog()
     resetCommand = inputStrDialog->getResetCommand();
     maxBaseLine = inputStrDialog->getMaxBaseLine();
 }
+// callback on button-input-filess -----------------------------------------
+void MainWindow::showInputFileDialog()
+{
+    trace(3, "showInputFileDialog\n");
+
+    /* Paths -> [0]:serial, [1]:tcp, [2]:file, [3]:ftp */
+    for (int i = 0; i < MAXINFILES; i++) inputFileDialog->setPath(i, inputFiles[i]);
+
+    inputFileDialog->exec();
+
+    if (inputFileDialog->result() != QDialog::Accepted) return;
+
+    for (int i = 0; i < MAXINFILES; i++) inputFiles[i] = inputFileDialog->getPath(i);
+
+    if (ui->btnStart->isEnabled()) return;
+
+    rtksvrlock(rtksvr);
+    for (int i = 0; i < MAXINFILES; i++) rtksvr->infiles[i][0] = '\0';
+    int ninfiles = 0;
+    for (int i = 0; i < MAXINFILES; i++) {
+      if (inputFiles[i].isEmpty()) continue;
+      snprintf(rtksvr->infiles[ninfiles++], sizeof(rtksvr->infiles[0]), "%s", qPrintable(inputFiles[i]));
+    }
+    rtksvr->ninfiles = ninfiles;
+    rtksvrunlock(rtksvr);
+}
 // confirm overwrite --------------------------------------------------------
 int MainWindow::confirmOverwrite(const QString &path)
 {
@@ -1133,6 +1162,18 @@ void MainWindow::serverStart()
         tracelevel(optDialog->solutionOptions.trace);
     }
 
+    for (int i = 0; i < MAXINFILES; i++) rtksvr->infiles[i][0] = '\0';
+    int ninfiles = 0;
+    for (int i = 0; i < MAXINFILES; i++) {
+      if (inputFiles[i].isEmpty()) continue;
+      snprintf(rtksvr->infiles[ninfiles++], sizeof(rtksvr->infiles[0]), "%s", qPrintable(inputFiles[i]));
+    }
+    if (strlen(optDialog->fileOptions.eop) > 0 && ninfiles < MAXINFILES) {
+      trace(3, "add to input files eopfile='%s'\n", optDialog->fileOptions.eop);
+      snprintf(rtksvr->infiles[ninfiles++], sizeof(rtksvr->infiles[0]), "%s", optDialog->fileOptions.eop);
+    }
+    rtksvr->ninfiles = ninfiles;
+
     if (optDialog->fileOptions.rcvantp[0] != '\0' &&
         !readpcv(optDialog->fileOptions.rcvantp, 2, &rtksvr->pcvsr)) {
         if (optDialog->solutionOptions.trace > 0) traceclose();
@@ -1233,10 +1274,10 @@ void MainWindow::serverStart()
     for (int i = 0; i < 2; i++) {
       if (strcmp(rtksvr->name[i], "*") == 0) {
         rtksvr->name[i][0] = '\0';
-        if (strtype[i] == STR_NTRIPCLI) {
+        if (streamTypes[i] == STR_NTRIPCLI) {
           // Use the ntrip mount point.
           char buff[MAXSTR];
-          snprintf(buff, sizeof(buff), "%s", strpath[i]);
+          snprintf(buff, sizeof(buff), "%s", qPrintable(paths[i][1]));
           char *p = strrchr(buff, '@');
           if (!p) p = buff;
           p = strchr(p, '/');
@@ -1260,6 +1301,16 @@ void MainWindow::serverStart()
         snprintf(stas[0].name, sizeof(stas[0].name), "%s", rtksvr->name[0]);
         snprintf(stas[1].name, sizeof(stas[1].name), "%s", rtksvr->name[1]);
         readdcb(optDialog->fileOptions.dcb, &rtksvr->nav, stas);
+    }
+
+    // Read ocean tide loading parameters.
+    if (rtksvr->rtk.opt.mode > PMODE_SINGLE && strlen(optDialog->fileOptions.blq) > 0) {
+      if (*optDialog->processingOptions.name[0])
+        readblq(qPrintable(optDialog->fileOptions.blq), optDialog->processingOptions.name[0], rtksvr->rtk.opt.odisp[0]);
+      if (PMODE_DGPS <= rtksvr->rtk.opt.mode && rtksvr->rtk.opt.mode <= PMODE_FIXED) {
+        if (*optDialog->processingOptions.name[1])
+          readblq(qPrintable(optDialog->fileOptions.blq), optDialog->processingOptions.name[1], rtksvr->rtk.opt.odisp[1]);
+      }
     }
 
     // Read the elevation mask patterns.
@@ -2589,6 +2640,9 @@ void MainWindow::loadOptions()
             commandsTcp[i][j].replace("@@", "\r\n");
         }
 
+    for (i = 0; i < MAXINFILES; i++)
+        inputFiles[i] = settings.value(QString("input/file%1").arg(i), "").toString();
+
     optDialog->loadOptions(settings);
 
     inputTimeTag = settings.value("setting/intimetag", 0).toInt();
@@ -2685,6 +2739,8 @@ void MainWindow::saveOptions()
             settings.setValue(QString("tcpip/cmd_%1_%2").arg(i).arg(j), commandsTcp[i][j]);
             settings.setValue(QString("tcpip/cmdena_%1_%2").arg(i).arg(j), commandEnableTcp[i][j]);
         }
+    for (i = 0; i < MAXINFILES; i++)
+        settings.setValue(QString("input/file%1").arg(i), inputFiles[i]);
     settings.setValue("setting/intimetag", inputTimeTag);
     settings.setValue("setting/intimespeed", inputTimeSpeed);
     settings.setValue("setting/intimestart", inputTimeStart);

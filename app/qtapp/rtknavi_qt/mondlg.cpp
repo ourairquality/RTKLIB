@@ -393,7 +393,7 @@ void MonitorDialog::setRtk()
     int width[] = {500, 500};
 
     ui->tWConsole->setColumnCount(2);
-    ui->tWConsole->setRowCount(51 + NFREQ + ANTNFREQ * 2);
+    ui->tWConsole->setRowCount(54 + NFREQ + ANTNFREQ * 2);
     ui->tWConsole->setHorizontalHeaderLabels(header);
 
     for (int i = 0; (i < ui->tWConsole->columnCount()) && (i < 2); i++)
@@ -414,12 +414,12 @@ void MonitorDialog::showRtk()
     const QString mode[] = {tr("Single"), tr("DGPS"), tr("Kinematic"), tr("Static"), tr("Static-Start"), tr("Moving-Base"),
                             tr("Fixed"), tr("PPP-Kinematic"), tr("PPP-Static"), tr("PPP-Fixed")};
     const QString freq[] = {tr("-"), tr("1"), tr("2"), tr("3"), tr("4"), tr("5"), tr("6")};
-    double *del, *off, rt[3] = {0}, dop[4] = {0};
+    double *del, rt[3] = {0}, dop[4] = {0};
     double azel[MAXSAT * 2], pos[3], vel[3], rr[3] = {0}, enu[3] = {0};
     int row, j, k, cycle, state, rtkstat, nsat0, nsat1, prcout, nave;
-    int cputime, nb[3] = {0}, ne;
+    int cputime, nb[3] = {0};
     unsigned int nmsg[3][10] = {{0}};
-    char tstr[40], id[8], s1[40] = "-", s2[40] = "-", s3[40] = "-";
+    char tstr[40], id[8];
     char file[1024] = "";
     const QString ionoopt[] = {tr("OFF"), tr("Broadcast"), tr("SBAS"), tr("Dual-Frequency"), tr("Estimate STEC"), tr("IONEX TEC"), tr("QZSS LEX")};
     const QString tropopt[] = {tr("OFF"), tr("Saastamoinen"), tr("SBAS"), tr("Estimate ZTD"), tr("Estimate ZTD+Grad")};
@@ -457,13 +457,32 @@ void MonitorDialog::showRtk()
         rt[0] = floor(runtime / 3600.0); runtime -= rt[0] * 3600.0;
         rt[1] = floor(runtime / 60.0); rt[2] = runtime - rt[1] * 60.0;
 	}
-    if ((ne = rtksvr->nav.ne) > 0) {
-        time2str(rtksvr->nav.peph[0].time, s1, 0);
-        time2str(rtksvr->nav.peph[ne - 1].time, s2, 0);
-        time2str(rtksvr->ftime[2], s3, 0);
-	}
+    int ne = rtksvr->nav.ne;
+    gtime_t etime0, etime1, ftime;
+    if (ne > 0) {
+      etime0 = rtksvr->nav.peph[0].time;
+      etime1 = rtksvr->nav.peph[ne - 1].time;
+      ftime = rtksvr->ftime[2];
+    }
     strncpy(file, rtksvr->files[2], 1023);
+    int ppos[MAXSAT];
+    int nppos = pephpos_avail(rtk->sol.time, &rtksvr->nav, ppos);
 
+    int nc = rtksvr->nav.nc;
+    gtime_t ctime0, ctime1;
+    if (nc > 0) {
+      ctime0 = rtksvr->nav.pclk[0].time;
+      ctime1 = rtksvr->nav.pclk[nc - 1].time;
+    }
+    int pclk[MAXSAT];
+    int npclk = pephclk_avail(rtk->sol.time, &rtksvr->nav, pclk);
+
+    int nerp = rtksvr->nav.erp.n;
+    double mjd0 = 0, mjd1 = 0;
+    if (nerp > 0) {
+      mjd0 = rtksvr->nav.erp.data[0].mjd;
+      mjd1 = rtksvr->nav.erp.data[nerp - 1].mjd;
+    }
     rtksvrunlock(rtksvr); // unlock
 
     for (j = k = 0; j < MAXSAT; j++) {
@@ -483,7 +502,7 @@ void MonitorDialog::showRtk()
     if (rtk->opt.navsys & SYS_IRN) navsys = navsys + tr("NavIC ");
     if (rtk->opt.navsys & SYS_SBS) navsys = navsys + tr("SBAS ");
 
-    if (ui->tWConsole->rowCount() < 51 + NFREQ + ANTNFREQ * 2) {
+    if (ui->tWConsole->rowCount() < 54 + NFREQ + ANTNFREQ * 2) {
       free(rtk);
       return;
     }
@@ -701,14 +720,36 @@ void MonitorDialog::showRtk()
     ui->tWConsole->item(row,   0)->setText(tr("Antenna Delta E/N/U Base Station"));
     ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1 m, %2 m, %3 m").arg(del[0], 0, 'f', 4).arg(del[1], 0, 'f', 4).arg(del[2], 0, 'f', 4));
 
-    ui->tWConsole->item(row,   0)->setText(tr("Precise Ephemeris Time/# of Epoch"));
-    ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1-%2 (%3)").arg(s1, s2).arg(ne));
+    char s1[40] = "-", s2[40] = "-", s3[40] = "-";
+    if (ne > 0) {
+      time2str(etime0, s1, 0);
+      time2str(etime1, s2, 0);
+      time2str(ftime, s3, 0);
+    }
+    ui->tWConsole->item(row,   0)->setText(tr("Precise Ephemeris Time/# of Epoch Available"));
+    ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1-%2 (%3 / %4)").arg(s1, s2).arg(nppos).arg(ne));
 
     ui->tWConsole->item(row,   0)->setText(tr("Precise Ephemeris Download Time"));
     ui->tWConsole->item(row++, 1)->setText(s3);
 
     ui->tWConsole->item(row,   0)->setText(tr("Precise Ephemeris Download File"));
     ui->tWConsole->item(row++, 1)->setText(file);
+
+    char sc1[40] = "-", sc2[40] = "-";
+    if (nc > 0) {
+      time2str(ctime0, sc1, 0);
+      time2str(ctime1, sc2, 0);
+    }
+    ui->tWConsole->item(row,   0)->setText(tr("Precise Clock Time/# of Epoch Available"));
+    ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1-%2 (%3 / %4)").arg(sc1, sc2).arg(npclk).arg(nc));
+
+    ui->tWConsole->item(row,   0)->setText(tr("ERP MJD/# of Epoch"));
+    ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1-%2 (%3)").arg(mjd0, 0, 'f', 2).arg(mjd1, 0, 'f', 2).arg(nerp));
+
+    const double ep[] = {2000, 1, 1, 12, 0, 0};
+    double mjd = 51544.5 + timediff(gpst2utc(rtk->sol.time), epoch2time(ep)) / 86400.0;
+    ui->tWConsole->item(row,   0)->setText(tr("Current MJD"));
+    ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%3").arg(mjd, 0, 'f', 2));
     free(rtk);
 }
 //---------------------------------------------------------------------------
@@ -719,18 +760,18 @@ void MonitorDialog::setSat()
         tr("SAT"), tr("Status"), tr("Azimuth (deg)"), tr("Elevation (deg)"), tr("LG (m)"), tr("PHW (cyc)"),
         tr("P1-P2 (m)"), tr("P1-C1 (m)"), tr("P2-C2(m)")
 	};
-    int width[] = {46, 60, 125, 130, 90, 90, 90, 90, 90}, nfreq;
+    int width[] = {46, 60, 90, 90, 90, 90, 90, 90, 90, 90, 90}, nfreq;
 
     rtksvrlock(rtksvr);
     nfreq = rtksvr->rtk.opt.nf > NFREQ ? NFREQ : rtksvr->rtk.opt.nf;
     rtksvrunlock(rtksvr);
 
-    ui->tWConsole->setColumnCount(9 + nfreq * 9);
+    ui->tWConsole->setColumnCount(11 + nfreq * 8);
     ui->tWConsole->setRowCount(0);
     header.clear();
 
     j = 0;
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < 6; i++) {
         ui->tWConsole->setColumnWidth(j++, width[i] * fontScale / 96);
         header << label[i];
 	}
@@ -766,7 +807,7 @@ void MonitorDialog::setSat()
         ui->tWConsole->setColumnWidth(j++, 70 * fontScale / 96);
         header << tr("Reject%1").arg(i+1);
 	}
-    for (i = 4; i < 9; i++) {
+    for (i = 6; i < 11; i++) {
         ui->tWConsole->setColumnWidth(j++, width[i] * fontScale / 96);
         header << label[i];
 	}
