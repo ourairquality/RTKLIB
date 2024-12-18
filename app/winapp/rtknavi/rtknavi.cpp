@@ -49,6 +49,7 @@ USEFORM("rcvoptdlg.cpp", RcvOptDialog);
 USEFORM("markdlg.cpp", MarkDialog);
 USEFORM("logstrdlg.cpp", LogStrDialog);
 USEFORM("instrdlg.cpp", InputStrDialog);
+USEFORM("infiledlg.cpp", InputFileDialog);
 USEFORM("mondlg.cpp", MonitorDialog);
 USEFORM("outstrdlg.cpp", OutputStrDialog);
 USEFORM("naviopt.cpp", OptDialog);
@@ -78,6 +79,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
          Application->CreateForm(__classid(TOutputStrDialog), &OutputStrDialog);
          Application->CreateForm(__classid(TLogStrDialog), &LogStrDialog);
          Application->CreateForm(__classid(TInputStrDialog), &InputStrDialog);
+         Application->CreateForm(__classid(TInputFileDialog), &InputFileDialog);
          Application->CreateForm(__classid(TRcvOptDialog), &RcvOptDialog);
          Application->CreateForm(__classid(TMarkDialog), &MarkDialog);
          Application->CreateForm(__classid(TFreqDialog), &FreqDialog);

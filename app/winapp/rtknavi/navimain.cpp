@@ -35,6 +35,7 @@
 
 #include "rtklib.h"
 #include "instrdlg.h"
+#include "infiledlg.h"
 #include "outstrdlg.h"
 #include "logstrdlg.h"
 #include "mondlg.h"
@@ -518,6 +519,7 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     OptDialog->GeoidDataFileF=GeoidDataFileF;
     OptDialog->DCBFileF   =DCBFileF;
     OptDialog->EOPFileF   =EOPFileF;
+    OptDialog->BLQFileF   =BLQFileF;
     OptDialog->ElmaskFileF=ElmaskFileF;
     OptDialog->LocalDirectory=LocalDirectory;
     
@@ -572,6 +574,7 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     GeoidDataFileF=OptDialog->GeoidDataFileF;
     DCBFileF   =OptDialog->DCBFileF;
     EOPFileF   =OptDialog->EOPFileF;
+    BLQFileF   =OptDialog->BLQFileF;
     ElmaskFileF=OptDialog->ElmaskFileF;
     LocalDirectory=OptDialog->LocalDirectory;
     
@@ -687,6 +690,31 @@ void __fastcall TMainForm::BtnInputStrClick(TObject *Sender)
     NmeaPos[2] =InputStrDialog->NmeaPos[2];
     ResetCmd   =InputStrDialog->ResetCmd;
     MaxBL      =InputStrDialog->MaxBL;
+}
+// callback on button-input-files -----------------------------------------
+void __fastcall TMainForm::BtnInputFilesClick(TObject *Sender)
+{
+    trace(3,"BtnInputFilesClick\n");
+
+    for (int i = 0; i < MAXINFILES; i++)
+      InputFileDialog->Paths[i] = InputFiles[i];
+
+    if (InputFileDialog->ShowModal() != mrOk) return;
+
+    for (int i = 0; i < MAXINFILES; i++)
+      InputFiles[i] = InputFileDialog->Paths[i];
+
+    if (BtnStart->Enabled) return;
+
+    rtksvrlock(&rtksvr);
+    for (int i = 0; i < MAXINFILES; i++) rtksvr.infiles[i][0] = '\0';
+    int ninfiles = 0;
+    for (int i = 0; i < MAXINFILES; i++) {
+      if (InputFiles[i] == "") continue;
+      snprintf(rtksvr.infiles[ninfiles++], sizeof(rtksvr.infiles[0]), "%s", InputFiles[i].c_str());
+    }
+    rtksvr.ninfiles = ninfiles;
+    rtksvrunlock(&rtksvr);
 }
 // confirm overwrite --------------------------------------------------------
 int __fastcall TMainForm::ConfOverwrite(const char *path)
@@ -1150,6 +1178,18 @@ void __fastcall TMainForm::SvrStart(void)
         tracelevel(SolOpt.trace);
     }
 
+    for (int i = 0; i < MAXINFILES; i++) rtksvr.infiles[i][0] = '\0';
+    int ninfiles = 0;
+    for (int i = 0; i < MAXINFILES; i++) {
+      if (InputFiles[i] == "") continue;
+      snprintf(rtksvr.infiles[ninfiles++], sizeof(rtksvr.infiles[0]), "%s", InputFiles[i].c_str());
+    }
+    if (EOPFileF != "" && ninfiles < MAXINFILES) {
+      trace(3, "add to input files eopfile='%s'\n", EOPFileF.c_str());
+      snprintf(rtksvr.infiles[ninfiles++], sizeof(rtksvr.infiles[0]), "%s", EOPFileF.c_str());
+    }
+    rtksvr.ninfiles = ninfiles;
+
     for (int i = 0; i < 3; i++) PrcOpt.ru[i] = 0;
     if (RovPosTypeF <= 2) { // LLH,XYZ
         PrcOpt.rovpos = RovPosTypeF < 2 ? POSOPT_POS_LLH : POSOPT_POS_XYZ;
@@ -1331,6 +1371,14 @@ void __fastcall TMainForm::SvrStart(void)
       snprintf(stas[1].name, sizeof(stas[1].name), "%s", rtksvr.name[1]);
       readdcb(DCBFileF.c_str(),&rtksvr.nav,stas);
     }
+    // Read ocean tide loading parameters.
+    if (BLQFileF!="") {
+      trace(3,"blqfile='%s'\n",BLQFileF.c_str());
+      if (RovName!="")
+        readblq(BLQFileF.c_str(), RovName.c_str(), rtksvr.rtk.opt.odisp[0]);
+      if (PMODE_DGPS <= rtksvr.rtk.opt.mode && rtksvr.rtk.opt.mode <= PMODE_FIXED && RefName!="")
+        readblq(BLQFileF.c_str(), RefName.c_str(), rtksvr.rtk.opt.odisp[1]);
+    }
     // Read the elevation mask patterns.
     if (ElmaskFileF!="") {
       trace(3,"elmaskfile='%s'\n",ElmaskFileF.c_str());
@@ -1396,6 +1444,7 @@ void __fastcall TMainForm::SvrStart(void)
     BtnOpt      ->Enabled=false;
     BtnExit     ->Enabled=false;
     BtnInputStr ->Enabled=false;
+    BtnInputFiles->Enabled=true;
     MenuStart   ->Enabled=false;
     MenuExit    ->Enabled=false;
     ScbSol      ->Enabled=false;
@@ -1432,6 +1481,7 @@ void __fastcall TMainForm::SvrStop(void)
     BtnStart    ->Enabled=true;
     BtnOpt      ->Enabled=true;
     BtnExit     ->Enabled=true;
+    BtnInputFiles->Enabled=true;
     BtnInputStr ->Enabled=true;
     MenuStart   ->Enabled=true;
     MenuExit    ->Enabled=true;
@@ -2540,6 +2590,8 @@ void __fastcall TMainForm::LoadOpt(void)
             if ((p=strstr(p,"@@"))) strncpy(p,"\r\n",2); else break;
         }
     }
+    for (int i = 0; i < MAXINFILES; i++)
+      InputFiles[i] = ini->ReadString("input", s.sprintf("file%d", i), "");
     PrcOpt.mode     =ini->ReadInteger("prcopt", "mode",            2);
     PrcOpt.nf       =ini->ReadInteger("prcopt", "nf",          NFREQ);
     PrcOpt.elmin    =ini->ReadFloat  ("prcopt", "elmin",    15.0*D2R);
@@ -2650,6 +2702,7 @@ void __fastcall TMainForm::LoadOpt(void)
     GeoidDataFileF  =ini->ReadString ("setting","geoiddatafile",  "");
     DCBFileF        =ini->ReadString ("setting","dcbfile",        "");
     EOPFileF        =ini->ReadString ("setting","eopfile",        "");
+    BLQFileF        =ini->ReadString ("setting","blqfile",        "");
     ElmaskFileF     =ini->ReadString ("setting","elmaskfile",     "");
     LocalDirectory  =ini->ReadString ("setting","localdirectory","C:\\Temp");
     
@@ -2810,6 +2863,8 @@ void __fastcall TMainForm::SaveOpt(void)
         ini->WriteString ("tcpip",s.sprintf("cmd_%d_%d"   ,i,j),CmdsTcp  [i][j]);
         ini->WriteInteger("tcpip",s.sprintf("cmdena_%d_%d",i,j),CmdEnaTcp[i][j]);
     }
+    for (int i = 0; i < MAXINFILES; i++)
+      ini->WriteString("input", s.sprintf("file%d", i), InputFiles[i]);
     ini->WriteInteger("prcopt", "mode",       PrcOpt.mode        );
     ini->WriteInteger("prcopt", "nf",         PrcOpt.nf          );
     ini->WriteFloat  ("prcopt", "elmin",      PrcOpt.elmin       );
@@ -2916,6 +2971,7 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteString ("setting","geoiddatafile",GeoidDataFileF   );
     ini->WriteString ("setting","dcbfile",    DCBFileF           );
     ini->WriteString ("setting","eopfile",    EOPFileF           );
+    ini->WriteString ("setting","blqfile",    BLQFileF           );
     ini->WriteString ("setting","elmaskfile", ElmaskFileF        );
     ini->WriteString ("setting","localdirectory",LocalDirectory  );
     
