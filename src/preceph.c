@@ -685,7 +685,7 @@ extern int pephpos_avail(gtime_t time, const nav_t *nav, int avail[MAXSAT]) {
 }
 
 /* satellite clock by precise clock ------------------------------------------*/
-static int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts,
+extern int pephclk(gtime_t time, int sat, const nav_t *nav, double *dts,
                    double *varc)
 {
     double t[2],c[2],std;
