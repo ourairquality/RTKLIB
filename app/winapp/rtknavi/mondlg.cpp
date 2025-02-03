@@ -435,8 +435,9 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	for (j=k=0;j<MAXSAT;j++) {
 		if (rtk->opt.mode==PMODE_SINGLE&&!rtk->ssat[j].vs) continue;
 		if (rtk->opt.mode!=PMODE_SINGLE&&!rtk->ssat[j].vsat[0]) continue;
-		azel[  k*2]=rtk->ssat[j].azel[0];
-		azel[1+k*2]=rtk->ssat[j].azel[1];
+                // For the DOP use the rover azel.
+		azel[  k*2]=rtk->ssat[j].azel[0][0];
+		azel[1+k*2]=rtk->ssat[j].azel[0][1];
 		k++;
 	}
 	dops(k,azel,0.0,dop);
@@ -724,21 +725,38 @@ void __fastcall TMonitorDialog::SetSat(void)
 {
 	int i,j=0;
 	AnsiString s,label[]={
-		"SAT","Status","Azimuth (deg)","Elevation (deg)","LG (m)","PHW(cyc)",
-		"P1-P2(m)","P1-C1(m)","P2-C2(m)"
+		"SAT","Status","Azimuth","Elevation",
+                "R.Azim","R.Elev","B.Azim","B.Elev",
+                "LG (m)","PHW(cyc)","P1-P2(m)","P1-C1(m)","P2-C2(m)"
 	};
-	int width[]={25,30,45,45,60,40,40,40,40},nfreq;
+	int width[]={25,30,45,45,45,45,45,45,60,40,40,40,40},nfreq;
 	
 	rtksvrlock(&rtksvr);
 	nfreq=rtksvr.rtk.opt.nf;
+        int pmode = rtksvr.rtk.opt.mode;
 	rtksvrunlock(&rtksvr);
 	
-	Tbl->ColCount=9+nfreq*8;
+        int rel = pmode >= PMODE_DGPS && pmode <= PMODE_FIXED;
+
+	Tbl->ColCount=9+(rel?2:0)+nfreq*8;
 	Tbl->RowCount=2;
-	for (i=0;i<4;i++) {
+	for (i=0;i<2;i++) {
 		Tbl->ColWidths [j]=width[i]*FontScale/96;
 		Tbl->Cells[j  ][0]=label[i];
 		Tbl->Cells[j++][1]="";
+	}
+        if (rel) {
+          for (i=4;i<8;i++) {
+		Tbl->ColWidths [j]=width[i]*FontScale/96;
+		Tbl->Cells[j  ][0]=label[i];
+		Tbl->Cells[j++][1]="";
+          }
+        } else {
+          for (i=2;i<4;i++) {
+		Tbl->ColWidths [j]=width[i]*FontScale/96;
+		Tbl->Cells[j  ][0]=label[i];
+		Tbl->Cells[j++][1]="";
+          }
 	}
 	for (i=0;i<nfreq;i++) {
 		Tbl->ColWidths [j]=30*FontScale/96;
@@ -780,7 +798,7 @@ void __fastcall TMonitorDialog::SetSat(void)
 		Tbl->Cells[j  ][0]=s.sprintf("Reject%d",i+1);
 		Tbl->Cells[j++][1]="";
 	}
-	for (i=4;i<9;i++) {
+	for (i=8;i<13;i++) {
 		Tbl->ColWidths [j]=width[i]*FontScale/96;
 		Tbl->Cells[j  ][0]=label[i];
 		Tbl->Cells[j++][1]="";
@@ -794,7 +812,7 @@ void __fastcall TMonitorDialog::ShowSat(void)
 	int i,j,k,n,fix,prn,pmode,nfreq,sys=sys_tbl[SelSys->ItemIndex];
 	int vsat[MAXSAT]={0};
 	char id[8];
-	double az,el,cbias[MAXSAT][2];
+	double cbias[MAXSAT][2];
 	
         rtk_t *rtk = static_cast<rtk_t *>(malloc(sizeof(rtk_t)));
         if (rtk == NULL) return;
@@ -810,6 +828,8 @@ void __fastcall TMonitorDialog::ShowSat(void)
 	nfreq=rtksvr.rtk.opt.nf;
 	rtksvrunlock(&rtksvr);
 	
+        int rel = pmode >= PMODE_DGPS && pmode <= PMODE_FIXED;
+
 	Label->Caption="";
 	
 	for (i=0;i<MAXSAT;i++) {
@@ -838,10 +858,18 @@ void __fastcall TMonitorDialog::ShowSat(void)
 		satno2id(i+1,id);
 		Tbl->Cells[j++][n]=id;
 		Tbl->Cells[j++][n]=ssat->vs?"OK":"-";
-		az=ssat->azel[0]*R2D; if (az<0.0) az+=360.0;
-		el=ssat->azel[1]*R2D;
-		Tbl->Cells[j++][n]=s.sprintf("%.1f",az);
-		Tbl->Cells[j++][n]=s.sprintf("%.1f",el);
+                double az_rover = ssat->azel[0][0] * R2D;
+                double el_rover = ssat->azel[0][1] * R2D;
+                if (az_rover < 0.0) az_rover += 360.0;
+		Tbl->Cells[j++][n]=s.sprintf("%.1f",az_rover);
+		Tbl->Cells[j++][n]=s.sprintf("%.1f",el_rover);
+                if (rel) {
+                  double az_base = ssat->azel[1][0] * R2D;
+                  double el_base = ssat->azel[1][1] * R2D;
+                  if (az_base < 0.0) az_base += 360.0;
+                  Tbl->Cells[j++][n]=s.sprintf("%.1f",az_base);
+                  Tbl->Cells[j++][n]=s.sprintf("%.1f",el_base);
+                }
 		for (k=0;k<nfreq;k++) {
 			Tbl->Cells[j++][n]=ssat->vsat[k]?"OK":"-";
 		}
