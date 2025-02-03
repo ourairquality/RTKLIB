@@ -1228,7 +1228,7 @@ typedef struct {        /* RINEX options type */
 typedef struct {        /* satellite status type */
     uint8_t sys;        /* navigation system */
     uint8_t vs;         /* valid satellite flag single */
-    double azel[2];     /* azimuth/elevation angles {az,el} (rad) */
+    double azel[2][2];  /* Azimuth/elevation angles {az,el} (rad) for rover and base. */
     double resp[NFREQ]; /* residuals of pseudorange (m) */
     double resc[NFREQ]; /* residuals of carrier-phase (m) */
     double icbias[NFREQ];  /* glonass IC bias (cycles) */

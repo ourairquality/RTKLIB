@@ -1251,8 +1251,10 @@ extern int rtksvrostat(rtksvr_t *svr, int rcv, gtime_t *time, int *sat,
     }
     for (i=0;i<ns;i++) {
         sat [i]=svr->obs[rcv][0].data[i].sat;
-        az  [i]=svr->rtk.ssat[sat[i]-1].azel[0];
-        el  [i]=svr->rtk.ssat[sat[i]-1].azel[1];
+        // No corrections azel data so use the base.
+        int base = rcv <= 1 ? rcv : 1;
+        az  [i]=svr->rtk.ssat[sat[i]-1].azel[base][0];
+        el  [i]=svr->rtk.ssat[sat[i]-1].azel[base][1];
         for (j=0;j<NFREQ;j++) {
             snr[i][j]=(int)(svr->obs[rcv][0].data[i].SNR[j]+0.5);
         }

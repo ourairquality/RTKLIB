@@ -180,8 +180,8 @@ extern int pppoutstat(rtk_t *rtk, char *buff)
             if (rtk->x[j]==0.0) continue;
             satno2id(i+1,id);
             p+=sprintf(p,"$ION,%d,%.3f,%d,%s,%.1f,%.1f,%.4f,%.4f\n",week,tow,
-                       rtk->sol.stat,id,rtk->ssat[i].azel[0]*R2D,
-                       rtk->ssat[i].azel[1]*R2D,x[j],STD(rtk,j));
+                       rtk->sol.stat,id,rtk->ssat[i].azel[0][0]*R2D,
+                       rtk->ssat[i].azel[0][1]*R2D,x[j],STD(rtk,j));
         }
     }
 #ifdef OUTSTAT_AMB
@@ -770,14 +770,14 @@ static void udiono_ppp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
             /* use pseudorange difference adjusted by freq for initial estimate */
             ion=(obs[i].P[0]-obs[i].P[f2])/(SQR(FREQL1/freq1)-SQR(FREQL1/freq2));
             ecef2pos(rtk->sol.rr,pos);
-            azel=rtk->ssat[sat-1].azel;
+            azel=rtk->ssat[sat-1].azel[0];
             /* adjust delay estimate by path length */
             ion/=ionmapf(pos,azel,ME_WGS84,HION,1);
             initx(rtk,ion,VAR_IONO,j);
             trace(4,"ion init: sat=%d ion=%.4f\n",sat,ion);
         }
         else {
-            sinel=sin(MAX(rtk->ssat[sat-1].azel[1],5.0*D2R));
+            sinel=sin(MAX(rtk->ssat[sat-1].azel[0][1],5.0*D2R));
             /* update variance of delay state */
             rtk->P[j+j*rtk->nx]+=SQR(rtk->opt.prn[1]/sinel)*fabs(rtk->tt);
         }
@@ -831,7 +831,7 @@ static void udbias_ppp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
         for (i=k=0;i<n&&i<MAXOBS;i++) {
             sat=obs[i].sat;
             j=IB(sat,f,&rtk->opt);
-            corr_meas(obs+i,nav,rtk->ssat[sat-1].azel,&rtk->opt,0,0,0.0,
+            corr_meas(obs+i,nav,rtk->ssat[sat-1].azel[0],&rtk->opt,0,0,0.0,
                       0.0,L,P,&Lc,&Pc);
 
             bias[i]=0.0;
