@@ -139,7 +139,7 @@ static const char *usage[]={
     "  -t level   debug trace level (0:off,1-5:on)",
     "  --daemon   detach from the console",
     "  --version  print the version and exit",
-    "  SP3, RINEX CLK, and ERP files many be supplied, the default maximum is 4 files."
+    "  SP3, RINEX CLK, ERP and OBX files many be supplied, the default maximum is 4 files."
 };
 static const char *helptxt[]={
     "start                 : start rtk server",
@@ -1158,6 +1158,15 @@ static void prprecdata(vt_t *vt) {
   int pclk[MAXSAT];
   int npclk = pephclk_avail(time, &svr.nav, pclk);
 
+  int natt = svr.nav.natt;
+  gtime_t atime0, atime1;
+  if (natt > 0) {
+    atime0 = svr.nav.patt[0].time;
+    atime1 = svr.nav.patt[natt - 1].time;
+  }
+  int patt[MAXSAT];
+  int npatt = patt_avail(time, &svr.nav, patt);
+
   int nerp = svr.nav.erp.n;
   double mjd0 = 0, mjd1 = 0;
   if (nerp > 0) {
@@ -1212,6 +1221,36 @@ static void prprecdata(vt_t *vt) {
     for (int i = 0; i < MAXSAT; i++) {
       if (pclk[i]) {
         int sys = satsys(i + 1, NULL);
+        char id[8];
+        satno2id(i + 1, id);
+        if (sys != last_sys && !line_start) {
+          vt_printf(vt, "\n");
+          line_start = 1;
+        }
+        vt_printf(vt, "%s%s", line_start ? "" : " ", id);
+        line_start = 0;
+        last_sys = sys;
+      }
+    }
+    vt_printf(vt, "\n");
+  }
+
+  vt_printf(vt, "\n%sPrecise attitude%s\n", ESC_BOLD, ESC_RESET);
+  vt_printf(vt, "%-16s: %d\n", "number of epochs", ne);
+  if (natt > 0) {
+    char tstr1[40] = "", tstr2[40] = "", tstr3[40] = "";
+    time2str(atime0, tstr1, 0);
+    time2str(atime1, tstr2, 0);
+    time2str(time, tstr3, 0);
+    vt_printf(vt, "%-16s: %s\n", "first epoch", tstr1);
+    vt_printf(vt, "%-16s: %s\n", "last epoch", tstr2);
+    vt_printf(vt, "%-16s: %s\n", "current time", tstr3);
+    vt_printf(vt, "%-16s: %d\n", "available sats", npatt);
+    int last_sys = SYS_GPS;
+    int line_start = 1;
+    for (int i = 0; i < MAXSAT; i++) {
+      if (patt[i]) {
+        int sys = satsyst(i + 1, time, NULL);
         char id[8];
         satno2id(i + 1, id);
         if (sys != last_sys && !line_start) {
@@ -2043,7 +2082,7 @@ static void daemonise(void)
 *     -t level   debug trace level (0:off,1-5:on)
 *     --daemon   detach from the console
 *     --version  prints the version and exits
-*     SP3, RINEX CLK, and ERP files many be supplied.
+*     SP3, RINEX CLK, ERP and OBX files many be supplied.
 *
 * command
 *     start

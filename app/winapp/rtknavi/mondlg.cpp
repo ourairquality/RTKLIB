@@ -425,6 +425,15 @@ void __fastcall TMonitorDialog::ShowRtk(void)
         int pclk[MAXSAT];
         int npclk = pephclk_avail(rtk->sol.time, &rtksvr.nav, pclk);
 
+        int natt = rtksvr.nav.natt;
+        gtime_t atime0, atime1;
+        if (natt > 0) {
+          atime0 = rtksvr.nav.patt[0].time;
+          atime1 = rtksvr.nav.patt[natt - 1].time;
+        }
+        int patt[MAXSAT];
+        int npatt = patt_avail(rtk->sol.time, &rtksvr.nav, patt);
+
         int nerp = rtksvr.nav.erp.n;
         double mjd0 = 0, mjd1 = 0;
         if (nerp > 0) {
@@ -457,8 +466,8 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	if (rtk->opt.navsys&SYS_SBS) navsys=navsys+"SBAS ";
 	
 	Label->Caption="";
-	Tbl->RowCount = 57 + NFREQ + ANTNFREQ * 2;
-	
+	Tbl->RowCount = 58 + NFREQ + ANTNFREQ * 2;
+
 	i=1;
 	Tbl->Cells[0][i  ]="RTKLIB Version";
 	Tbl->Cells[1][i++]=s.sprintf("%s %s",VER_RTKLIB,PATCH_LEVEL);
@@ -687,6 +696,14 @@ void __fastcall TMonitorDialog::ShowRtk(void)
         }
 	Tbl->Cells[0][i  ]="Precise Clock Time/# of Epoch Available";
 	Tbl->Cells[1][i++]=s.sprintf("%s-%s (%d / %d)", sc1, sc2, npclk, nc);
+
+        char sa1[40] = "-", sa2[40] = "-";
+        if (natt > 0) {
+          time2str(atime0, sa1, 0);
+          time2str(atime1, sa2, 0);
+        }
+	Tbl->Cells[0][i  ]="Precise Attitude/# of Epoch Available";
+	Tbl->Cells[1][i++]=s.sprintf("%s-%s (%d / %d)", sa1, sa2, npatt, natt);
 
         Tbl->Cells[0][i  ]="ERP MJD/# of Epoch";
 	Tbl->Cells[1][i++]=s.sprintf("%.2f-%.2fs (%d)", mjd0, mjd1, nerp);

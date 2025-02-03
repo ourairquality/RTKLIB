@@ -757,6 +757,12 @@ typedef struct {        /* precise clock type */
     float  std[MAXSAT][1]; /* satellite clock std (s) */
 } pclk_t;
 
+typedef struct {         // Precise attitude.
+    gtime_t time;        // Time (GPST)
+    int index;           // File index for multiple files.
+    double q[MAXSAT][4]; // w,x,y,z
+} patt_t;
+
 typedef struct {        /* SBAS ephemeris type */
     int sat;            /* satellite number */
     gtime_t t0;         /* reference epoch time (GPST) */
@@ -912,6 +918,7 @@ typedef struct {        /* navigation data type */
     int ns,nsmax;       /* number of sbas ephemeris */
     int ne,nemax;       /* number of precise ephemeris */
     int nc,ncmax;       /* number of precise clock */
+    int natt,nattmax;   // Number of precise attitude.
     int na,namax;       /* number of almanac data */
     int nt,ntmax;       /* number of tec grid data */
     eph_t *eph;         /* GPS/QZS/GAL/BDS/IRN ephemeris */
@@ -919,6 +926,7 @@ typedef struct {        /* navigation data type */
     seph_t *seph;       /* SBAS ephemeris */
     peph_t *peph;       /* precise ephemeris */
     pclk_t *pclk;       /* precise clock */
+    patt_t *patt;       // Precise attitude.
     alm_t *alm;         /* almanac data */
     tec_t *tec;         /* tec grid data */
     erp_t  erp;         /* earth rotation parameters */
@@ -1836,8 +1844,10 @@ EXPORT void seph2pos(gtime_t time, const seph_t *seph, double *rs, double *dts,
                      double *var);
 EXPORT int  peph2pos(gtime_t time, int sat, const nav_t *nav, int opt,
                      double *rs, double *dts, double *var);
+EXPORT int pephatt(gtime_t time, int sat, const nav_t *nav, double *ex, double *ey, double *ez);
 EXPORT int pephpos_avail(gtime_t time, const nav_t *nav, int avail[MAXSAT]);
 EXPORT int pephclk_avail(gtime_t time, const nav_t *nav, int avail[MAXSAT]);
+EXPORT int patt_avail(gtime_t time, const nav_t *nav, int avail[MAXSAT]);
 EXPORT void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
                       double *dant);
 EXPORT int  satpos(gtime_t time, gtime_t teph, int sat, int ephopt,
@@ -1848,6 +1858,7 @@ EXPORT void satposs(gtime_t time, const obsd_t *obs, int n, const nav_t *nav,
 EXPORT void setseleph(int sys, int sel);
 EXPORT int  getseleph(int sys);
 EXPORT void readsp3(const char *file, nav_t *nav, int opt);
+EXPORT void readpatt(const char *file, nav_t *nav, int opt);
 EXPORT int  readsap(const char *file, const gtime_t time, const satsvns_t *satsvns, nav_t *nav);
 EXPORT int  readdcb(const char *file, nav_t *nav, const sta_t *sta);
 EXPORT double code2bias(const nav_t *nav, int sys, int sat, int code, int mode);

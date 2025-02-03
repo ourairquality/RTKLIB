@@ -395,7 +395,7 @@ void MonitorDialog::setRtk()
     int width[] = {500, 640};
 
     ui->tWConsole->setColumnCount(2);
-    ui->tWConsole->setRowCount(56 + NFREQ + ANTNFREQ * 2);
+    ui->tWConsole->setRowCount(57 + NFREQ + ANTNFREQ * 2);
     ui->tWConsole->setHorizontalHeaderLabels(header);
 
     for (int i = 0; (i < ui->tWConsole->columnCount()) && (i < 2); i++)
@@ -479,6 +479,15 @@ void MonitorDialog::showRtk()
     int pclk[MAXSAT];
     int npclk = pephclk_avail(rtk->sol.time, &rtksvr->nav, pclk);
 
+    int natt = rtksvr->nav.natt;
+    gtime_t atime0, atime1;
+    if (natt > 0) {
+      atime0 = rtksvr->nav.patt[0].time;
+      atime1 = rtksvr->nav.patt[natt - 1].time;
+    }
+    int patt[MAXSAT];
+    int npatt = patt_avail(rtk->sol.time, &rtksvr->nav, patt);
+
     int nerp = rtksvr->nav.erp.n;
     double mjd0 = 0, mjd1 = 0;
     if (nerp > 0) {
@@ -510,7 +519,7 @@ void MonitorDialog::showRtk()
     if (rtk->opt.navsys & SYS_IRN) navsys = navsys + tr("NavIC ");
     if (rtk->opt.navsys & SYS_SBS) navsys = navsys + tr("SBAS ");
 
-    if (ui->tWConsole->rowCount() < 56 + NFREQ + ANTNFREQ * 2) {
+    if (ui->tWConsole->rowCount() < 57 + NFREQ + ANTNFREQ * 2) {
       free(rtk);
       return;
     }
@@ -761,6 +770,14 @@ void MonitorDialog::showRtk()
     }
     ui->tWConsole->item(row,   0)->setText(tr("Precise Clock Time/# of Epoch Available"));
     ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1-%2 (%3 / %4)").arg(sc1, sc2).arg(npclk).arg(nc));
+
+    char sa1[40] = "-", sa2[40] = "-";
+    if (natt > 0) {
+      time2str(atime0, sa1, 0);
+      time2str(atime1, sa2, 0);
+    }
+    ui->tWConsole->item(row,   0)->setText(tr("Precise Attitude/# of Epoch Available"));
+    ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1-%2 (%3 / %4)").arg(sa1, sa2).arg(npatt).arg(natt));
 
     ui->tWConsole->item(row,   0)->setText(tr("ERP MJD/# of Epoch"));
     ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1-%2 (%3)").arg(mjd0, 0, 'f', 2).arg(mjd1, 0, 'f', 2).arg(nerp));
