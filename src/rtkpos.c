@@ -278,9 +278,14 @@ extern int rtkoutstat(rtk_t *rtk, int level, char *buff)
                 satno2id(i+1,id);
                 int j=II(i+1,&rtk->opt);
                 xa[0]=j<rtk->na?rtk->xa[j]:0.0;
+                double az = ssat->azel[0][0] * R2D, el = ssat->azel[0][1]*R2D;
+                if (rtk->opt.mode >= PMODE_DGPS) {
+                  // Use the average azimuth and minimum elevation for now.
+                  az = (az + ssat->azel[1][0] * R2D) / 2;
+                  el = MIN(el, ssat->azel[1][1] * R2D);
+                }
                 p+=sprintf(p,"$ION,%d,%.3f,%d,%s,%.1f,%.1f,%.4f,%.4f\n",week,tow,
-                           rtk->sol.stat,id,ssat->azel[0]*R2D,ssat->azel[1]*R2D,
-                           rtk->x[j],xa[0]);
+                           rtk->sol.stat,id,az,el,rtk->x[j],xa[0]);
             }
         }
         /* Tropospheric parameters */
@@ -312,8 +317,15 @@ extern int rtkoutstat(rtk_t *rtk, int level, char *buff)
         satno2id(i+1,id);
         for (int j=0;j<nfreq;j++) {
             int k=IB(i+1,j,&rtk->opt);
+            // Use the average azimuth and minimum elevation for now.
+            double az = ssat->azel[0][0] * R2D, el = ssat->azel[0][1]*R2D;
+            if (rtk->opt.mode >= PMODE_DGPS && rtk->opt.mode < PMODE_PPP_KINEMA) {
+              // Use the average azimuth and minimum elevation for now.
+              az = (az + ssat->azel[1][0] * R2D) / 2;
+              el = MIN(el, ssat->azel[1][1] * R2D);
+            }
             p+=sprintf(p,"$SAT,%d,%.3f,%s,%d,%.1f,%.1f,%.4f,%.4f,%d,%.2f,%d,%d,%d,%u,%u,%u,%.2f,%.6f,%.5f\n",
-                       week,tow,id,j+1,ssat->azel[0]*R2D,ssat->azel[1]*R2D,
+                       week,tow,id,j+1,az,el,
                        ssat->resp[j],ssat->resc[j],ssat->vsat[j],ssat->snr_rover[j],
                        ssat->fix[j],ssat->slip[j]&(LLI_SLIP|LLI_HALFC),ssat->lock[j],ssat->outc[j],
                        ssat->slipc[j],ssat->rejc[j],k<rtk->nx?rtk->x[k]:0,
@@ -401,7 +413,8 @@ static double gfobs(const obsd_t *obs, int i, int j, int k, const nav_t *nav)
 }
 
 /* Single-differenced measurement error variance -----------------------------*/
-static double varerr(int sat, int sys, double el, double snr_rover, double snr_base,
+static double varerr(int sat, int sys, double el_rover, double el_base,
+                     double snr_rover, double snr_base,
                      double bl, double dt, int f, const prcopt_t *opt, const obsd_t *obs)
 {
     (void)sat;
@@ -466,16 +479,19 @@ static double varerr(int sat, int sys, double el, double snr_rover, double snr_b
     /* The pntpos varerr function limits the elevation.
        #define VAR_MIN_EL in radians to be consistent. */
 #ifdef VAR_MIN_EL
-    if (el<VAR_MIN_EL) el=VAR_MIN_EL;
+    if (el_rover < VAR_MIN_EL) el_rover = VAR_MIN_EL;
+    if (el_base < VAR_MIN_EL) el_base = VAR_MIN_EL;
 #endif
     double b=opt->err[2];
     /* The pntpos varerr function scales the elevation variance by 1/sin(el)
        Undefine VAR_SQR_SINEL to be consistent. */
 #define VAR_SQR_SINEL
 #ifdef VAR_SQR_SINEL
-    var+=SQR(b/sin(el));
+    var += SQR(b / sin(el_rover));
+    var += SQR(b / sin(el_base));
 #else
-    var+=SQR(b)/sin(el);
+    var += SQR(b) / sin(el_rover);
+    var += SQR(b) / sin(el_base);
 #endif
 
     /* Scale the above terms */
@@ -668,10 +684,11 @@ static void udion(rtk_t *rtk, double tt, double bl, const int *sat, int ns)
             initx(rtk,1E-6,SQR(rtk->opt.std[1]*bl/1E4),j);
         }
         else {
-            /* elevation dependent factor of process noise */
-            el=rtk->ssat[sat[i]-1].azel[1];
-            fact=cos(el);
-            rtk->P[j+j*rtk->nx]+=SQR(rtk->opt.prn[1]*bl/1E4*fact)*fabs(tt);
+          // Elevation dependent factor of process noise, rover and base.
+          double ufact=cos(rtk->ssat[sat[i]-1].azel[0][1]);
+          rtk->P[j+j*rtk->nx]+=SQR(rtk->opt.prn[1]*bl/1E4*ufact)*fabs(tt);
+          double rfact=cos(rtk->ssat[sat[i]-1].azel[1][1]);
+          rtk->P[j+j*rtk->nx]+=SQR(rtk->opt.prn[1]*bl/1E4*rfact)*fabs(tt);
         }
     }
 }
@@ -1079,7 +1096,7 @@ static void udstate(rtk_t *rtk, const obsd_t *obs, const int *sat,
         I   opt  = options
         O   y[(0:1)+i*2] = zero diff residuals {phase,code} (m)
         O   e    = line of sight unit vectors to sats, from phase center
-        O   azel = [az, el] to sats, from phase center, from phase centers, per sat. */
+        O   azel = [az, el] to sats, from phase centers, per sat. */
 static int zdres(int base, const obsd_t *obs, int n, const double *rs, const double *dts,
                  const double *var, const int *svh, const nav_t *nav, const double *rr,
                  const prcopt_t *opt, double *y, double *e, double *azel, double *freq) {
@@ -1581,11 +1598,11 @@ static int ddres(rtk_t *rtk, const obsd_t *obs, double dt, const double *x,
                 }
 
                 /* Single-differenced measurement error variances (m) */
-                Ri[nv] = varerr(sat[i], sysi, azel[1+iu[i]*2],
+                Ri[nv] = varerr(sat[i], sysi, azel[1+iu[i]*2], azel[1+ir[i]*2],
                                 rtk->ssat[sat[i]-1].snr_rover[frq],
                                 rtk->ssat[sat[i]-1].snr_base[frq],
                                 bl,dt,f,opt,&obs[iu[i]]);
-                Rj[nv] = varerr(sat[j], sysj, azel[1+iu[j]*2],
+                Rj[nv] = varerr(sat[j], sysj, azel[1+iu[j]*2], azel[1+ir[j]*2],
                                 rtk->ssat[sat[j]-1].snr_rover[frq],
                                 rtk->ssat[sat[j]-1].snr_base[frq],
                                 bl,dt,f,opt,&obs[iu[j]]);
@@ -1733,7 +1750,9 @@ static int ddidx(rtk_t *rtk, int *ix, int gps, int glo, int sbs) {
         }
         /* Set sat to use for fixing ambiguity if meets criteria */
         if (rtk->ssat[sat1].lock[f] >= 0 && !(rtk->ssat[sat1].slip[f] & LLI_HALFC) &&
-            rtk->ssat[sat1].azel[1] >= rtk->opt.elmaskar && !nofix) {
+            rtk->ssat[sat1].azel[0][1] >= rtk->opt.elmaskar &&
+            rtk->ssat[sat1].azel[1][1] >= rtk->opt.elmaskar &&
+            !nofix) {
           rtk->ssat[sat1].fix[f] = 2; /* Fix */
           /* Break out of loop if find good sat */
           break;
@@ -1750,7 +1769,10 @@ static int ddidx(rtk_t *rtk, int *ix, int gps, int glo, int sbs) {
         }
         if (sbs == 0 && satsys(sat2 + 1, NULL) == SYS_SBS) continue;
         if (rtk->ssat[sat2].lock[f] >= 0 && !(rtk->ssat[sat2].slip[f] & LLI_HALFC) &&
-            rtk->ssat[sat2].vsat[f] && rtk->ssat[sat2].azel[1] >= rtk->opt.elmaskar && !nofix) {
+            rtk->ssat[sat2].vsat[f] &&
+            rtk->ssat[sat2].azel[0][1] >= rtk->opt.elmaskar &&
+            rtk->ssat[sat2].azel[1][1] >= rtk->opt.elmaskar &&
+            !nofix) {
           /* Set D coeffs to subtract sat2 from sat1 */
           ix[nb * 2] = IB(sat1 + 1, f, &rtk->opt);     /* State index of ref bias */
           ix[nb * 2 + 1] = IB(sat2 + 1, f, &rtk->opt); /* State index of target bias */
@@ -1806,7 +1828,8 @@ static void holdamb(rtk_t *rtk, const double *xa)
         int n=0;
         for (int i=0;i<MAXSAT;i++) {
             if (!test_sys(rtk->ssat[i].sys,m)||rtk->ssat[i].fix[f]!=2||
-                rtk->ssat[i].azel[1]<rtk->opt.elmaskhold) {
+                rtk->ssat[i].azel[0][1]<rtk->opt.elmaskhold ||
+                rtk->ssat[i].azel[1][1]<rtk->opt.elmaskhold) {
                 continue;
             }
             n++;
@@ -1839,7 +1862,8 @@ static void holdamb(rtk_t *rtk, const double *xa)
         int n=0;
         for (int i=0;i<MAXSAT;i++) {
             if (!test_sys(rtk->ssat[i].sys,m)||rtk->ssat[i].fix[f]!=2||
-                rtk->ssat[i].azel[1]<rtk->opt.elmaskhold) {
+                rtk->ssat[i].azel[0][1] < rtk->opt.elmaskhold ||
+                rtk->ssat[i].azel[1][1] < rtk->opt.elmaskhold) {
                 continue;
             }
             index[n++]=IB(i+1,f,&rtk->opt);
@@ -2096,7 +2120,8 @@ static int manage_amb_LAMBDA(rtk_t *rtk, double *bias, double *xa, const int *sa
       for (; i < ns; i++) {
         for (int f = 0; f < nf; f++) {
           if (rtk->ssat[sat[i] - 1].vsat[f] && rtk->ssat[sat[i] - 1].lock[f] >= 0 &&
-              rtk->ssat[sat[i] - 1].azel[1] >= rtk->opt.elmin) {
+              rtk->ssat[sat[i] - 1].azel[0][1] >= rtk->opt.elmin &&
+              rtk->ssat[sat[i] - 1].azel[1][1] >= rtk->opt.elmin) {
             excsat = sat[i];
             break;
           }
@@ -2270,6 +2295,16 @@ static int relpos(rtk_t *rtk, const obsd_t *obs, int nu, int nr,
         free(rs); free(dts); free(var); free(y); free(e); free(azel); free(freq);
         return 0;
     }
+
+    // Save the current epoch base satellite azimuth and elevation.
+    // The rover satellite azimuth and elevation are either from pntpos()
+    // above or from the last epoch.
+    for (int i = 0; i < ns; i++) {
+      int idx = sat[i] - 1;
+      rtk->ssat[idx].azel[1][0] = azel[ir[i] * 2];
+      rtk->ssat[idx].azel[1][1] = azel[ir[i] * 2 + 1];
+    }
+
     /* Update kalman filter states (pos,vel,acc,ionosp, troposp, sat phase biases) */
     double *x=rtk->x;
     trace(4,"before udstate: x="); tracemat(4,x,1,NR(opt),13,4);
@@ -2509,6 +2544,12 @@ static int relpos(rtk_t *rtk, const obsd_t *obs, int nu, int nr,
         rtk->nfix=0;
     }
     trace(3,"sol_rr= ");tracemat(3,rtk->sol.rr,1,6,15,3);
+    // Save the satellite azimuth and elevation for the rover receiver.
+    for (int i = 0; i < ns; i++) {
+      int idx = sat[i] - 1;
+      rtk->ssat[idx].azel[0][0] = azel[iu[i] * 2];
+      rtk->ssat[idx].azel[0][1] = azel[iu[i] * 2 + 1];
+    }
     /* Save phase measurements */
     for (int i=0;i<n;i++) for (int j=0;j<nf;j++) {
         if (obs[i].L[j]==0.0) continue;
@@ -2612,9 +2653,8 @@ extern void rtkfree(rtk_t *rtk)
 *            rtk->Pa[]      O   fixed covariance after AR
 *            rtk->ssat[s]   IO  satellite {s+1} status
 *                .sys       O   system (SYS_???)
-*                .az   [r]  O   azimuth angle   (rad) (r=0:rover,1:base)
-*                .el   [r]  O   elevation angle (rad) (r=0:rover,1:base)
 *                .vs   [r]  O   data valid single     (r=0:rover,1:base)
+*                .azel[r][] O   azimuth and elevation angle (rad) (r=0:rover,1:base)
 *                .resp [f]  O   freq(f+1) pseudorange residual (m)
 *                .resc [f]  O   freq(f+1) carrier-phase residual (m)
 *                .vsat [f]  O   freq(f+1) data valid (0:invalid,1:valid)

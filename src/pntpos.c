@@ -839,12 +839,12 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
     if (ssat) {
         for (i=0;i<MAXSAT;i++) {
             ssat[i].vs=0;
-            ssat[i].azel[0]=ssat[i].azel[1]=0.0;
+            ssat[i].azel[base][0]=ssat[i].azel[base][1]=0.0;
             ssat[i].resp[0]=ssat[i].resc[0]=0.0;
         }
         for (i=0;i<n;i++) {
-            ssat[obs[i].sat-1].azel[0]=azel_[  i*2];
-            ssat[obs[i].sat-1].azel[1]=azel_[1+i*2];
+            ssat[obs[i].sat-1].azel[base][0]=azel_[  i*2];
+            ssat[obs[i].sat-1].azel[base][1]=azel_[1+i*2];
             if (!vsat[i]) continue;
             ssat[obs[i].sat-1].vs=1;
             ssat[obs[i].sat-1].resp[0]=resp[i];
