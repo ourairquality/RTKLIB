@@ -682,6 +682,7 @@ static void readpreceph(const char **infile, int n, const prcopt_t *prcopt,
 
     nav->ne=nav->nemax=0;
     nav->nc=nav->ncmax=0;
+    nav->natt=nav->nattmax=0;
     sbs->n =sbs->nmax =0;
 
     /* read precise ephemeris files */
@@ -693,6 +694,11 @@ static void readpreceph(const char **infile, int n, const prcopt_t *prcopt,
     for (i=0;i<n;i++) {
         if (strstr(infile[i],"%r")||strstr(infile[i],"%b")) continue;
         readrnxc(infile[i],nav);
+    }
+    // Read precise attitude files */
+    for (i=0;i<n;i++) {
+      if (strstr(infile[i],"%r")||strstr(infile[i],"%b")) continue;
+      readpatt(infile[i],nav,0);
     }
     /* read sbas message files */
     for (i=0;i<n;i++) {
@@ -721,6 +727,7 @@ static void freepreceph(nav_t *nav, sbs_t *sbs)
 
     free(nav->peph); nav->peph=NULL; nav->ne=nav->nemax=0;
     free(nav->pclk); nav->pclk=NULL; nav->nc=nav->ncmax=0;
+    free(nav->patt); nav->patt=NULL; nav->natt=nav->nattmax=0;
     free(sbs->msgs); sbs->msgs=NULL; sbs->n =sbs->nmax =0;
     for (i=0;i<nav->nt;i++) {
         free(nav->tec[i].data);

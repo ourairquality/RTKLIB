@@ -351,6 +351,241 @@ extern void readsp3(const char *file, nav_t *nav, int opt)
     /* combine precise ephemeris */
     if (nav->ne>0) combpeph(nav,opt);
 }
+
+/* Add precise attitude -----------------------------------------------------*/
+static int addpatt(nav_t *nav, const patt_t *patt) {
+  if (nav->natt >= nav->nattmax) {
+    nav->nattmax += nav->nattmax < 4 ? 1 : nav->nattmax / 4;
+    patt_t *nav_patt = (patt_t *)realloc(nav->patt, sizeof(patt_t) * nav->nattmax);
+    if (!nav_patt) {
+      trace(1, "readpatt malloc error n=%d\n", nav->nattmax);
+      free(nav->patt);
+      nav->patt = NULL;
+      nav->natt = nav->nattmax = 0;
+      return 0;
+    }
+    nav->patt = nav_patt;
+  }
+  nav->patt[nav->natt++] = *patt;
+  return 1;
+}
+/* Read Orbex file ---------------------------------------------------------*/
+static int readattb(FILE *fp, int index, nav_t *nav) {
+  trace(3, "readattb:\n");
+
+  char buff[1024];
+  if (fgets(buff, sizeof(buff), fp) == NULL) {
+    trace(3, "readattb: empty file\n");
+    // Empty file
+    return 0;
+  }
+
+  if (strncmp(buff, "%=ORBEX", 7) != 0) {
+    trace(3, "readattb: unexpected header\n");
+    return 0;
+  }
+
+  double ver = str2num(buff, 8, 5);
+  trace(3, "orbex version: %lf\n", ver);
+
+  if (fgets(buff, sizeof(buff), fp) == NULL) {
+    trace(3, "readattb: unexpected header\n");
+    // Empty file
+    return 0;
+  }
+
+  if (strncmp(buff, "%%", 2) != 0) {
+    trace(3, "readattb: unexpected header\n");
+    return 0;
+  }
+
+  int state = 1;
+  char tsys[21] = "", frame_type[21] = "";
+  gtime_t time;
+  patt_t patt;
+  memset(&patt, 0, sizeof(patt));
+  int pattp = 0;
+  while (fgets(buff, sizeof(buff), fp)) {
+    if (strncmp(buff, "+FILE/DESCRIPTION", 17) == 0) {
+      if (state != 1) trace(3, "readattb: unexpected '%s'\n", buff);
+      state = 2;
+      continue;
+    }
+    if (strncmp(buff, "-FILE/DESCRIPTION", 17) == 0) {
+      if (state != 2) trace(3, "readattb: unexpected '%s'\n", buff);
+      state = 1;
+      continue;
+    }
+    if (strncmp(buff, "+SATELLITE/ID_AND_DESCRIPTION", 29) == 0) {
+      if (state != 1) trace(3, "readattb: unexpected '%s'\n", buff);
+      state = 3;
+      continue;
+    }
+    if (strncmp(buff, "-SATELLITE/ID_AND_DESCRIPTION", 29) == 0) {
+      if (state != 3) trace(3, "readattb: unexpected '%s'\n", buff);
+      state = 1;
+      continue;
+    }
+    if (strncmp(buff, "+EPHEMERIS/DATA", 15) == 0) {
+      if (state != 1) trace(3, "readattb: unexpected '%s'\n", buff);
+      state = 4;
+      continue;
+    }
+    if (strncmp(buff, "-EPHEMERIS/DATA", 15) == 0) {
+      if (state != 4) trace(3, "readattb: unexpected '%s'\n", buff);
+      state = 1;
+      continue;
+    }
+    if (strncmp(buff, "%END_ORBEX", 10) == 0) {
+      if (state != 1) trace(3, "readattb: unexpected '%s'\n", buff);
+      break;
+    }
+    if (state == 2) {
+      if (strncmp(buff, " TIME_SYSTEM", 12) == 0) {
+        setstr(tsys, buff + 21, 20);
+        continue;
+      }
+      if (strncmp(buff, " FRAME_TYPE", 11) == 0) {
+        setstr(frame_type, buff + 21, 20);
+        continue;
+      }
+    }
+    if (state == 4) {
+      // Ephemeris / data.
+      if (buff[0] == '#' && buff[1] == '#') {
+        // Flush the patt data.
+        if (pattp && !addpatt(nav, &patt)) return 0;
+        memset(&patt, 0, sizeof(patt));
+        // Epoch
+        if (str2time(buff, 3, 32, &time)) {
+          trace(3, "Unexpected Orbex epoch time '%s'\n", buff);
+          return 0;
+        }
+        if (!strcmp(tsys, "UTC")) time = utc2gpst(time); /* utc->gpst */
+        int nsat = (int)str2num(buff, 36, 3);
+        patt.time = time;
+        patt.index = index;
+        pattp = 1;
+        continue;
+      }
+      if (strncmp(buff, " ATT", 4) == 0) {
+        if (!pattp) {
+          trace(3, "Unexpected Orbex ATT record before epoch time '%s'\n", buff);
+          continue;
+        }
+        int sys = buff[5] == ' ' ? SYS_GPS : code2sys(buff[5]);
+        int prn = (int)str2num(buff, 6, 2);
+        if (sys == SYS_SBS)
+          prn += 100;
+        else if (sys == SYS_QZS)
+          prn += 192; /* extension to sp3-c */
+
+        int sat = satno(sys, prn);
+        if (!sat) continue;
+
+        int nrec = (int)str2num(buff, 22, 1);
+        if (nrec != 4) {
+          trace(3, "Unexpected Orbex ATT number of records %d\n", nrec);
+          continue;
+        }
+
+        double q[4];
+        if (sscanf(buff + 24, "%lf %lf %lf %lf", &q[0], &q[1], &q[2], &q[3]) < 4) {
+          trace(3, "Unexpected Orbex ATT record '%s'\n", buff);
+          continue;
+        }
+
+        // Check that the quaternion is in roughly unit normal form.
+        double r = sqrt(SQR(q[0]) + SQR(q[1]) + SQR(q[2]) + SQR(q[3]));
+        if (fabs(r - 1) > 1e-6) {
+          trace(2, "Expected Orbex quaternion to be unit norm '%s'\n", buff);
+          continue;
+        }
+        // Normalize precisely.
+        for (int i = 0; i < 4; i++) q[i] /= r;
+
+        for (int i = 0; i < 4; i++) patt.q[sat - 1][i] = q[i];
+      }
+    }
+  }
+  // Final flush of patt data.
+  if (pattp && !addpatt(nav, &patt)) return 0;
+
+  return 1;
+}
+/* Compare precise attitudes -------------------------------------------------*/
+static int cmppatt(const void *p1, const void *p2) {
+  patt_t *q1 = (patt_t *)p1, *q2 = (patt_t *)p2;
+  double tt = timediff(q1->time, q2->time);
+  return tt < -1E-9 ? -1 : (tt > 1E-9 ? 1 : q1->index - q2->index);
+}
+/* Combine precise attitudes --------------------------------------------------*/
+static void combpatt(nav_t *nav, int opt) {
+  int i, j, k, m;
+
+  trace(3, "combpatt: natt=%d\n", nav->natt);
+
+  qsort(nav->patt, nav->natt, sizeof(patt_t), cmppatt);
+
+  if (opt & 4) return;
+
+  for (i = 0, j = 1; j < nav->natt; j++) {
+    if (fabs(timediff(nav->patt[i].time, nav->patt[j].time)) < 1E-9) {
+      for (k = 0; k < MAXSAT; k++) {
+        // Copy the j index att if non-zero.
+        if (nav->patt[j].q[k][0] != 0 || nav->patt[i].q[j][1] != 0 || nav->patt[i].q[k][2] != 0 ||
+            nav->patt[j].q[k][3] != 0)
+          for (m = 0; m < 4; m++) nav->patt[i].q[k][m] = nav->patt[j].q[k][m];
+      }
+    } else if (++i < j)
+      nav->patt[i] = nav->patt[j];
+  }
+  nav->natt = i + 1;
+
+  trace(4, "combpatt: natt=%d\n", nav->natt);
+}
+/* Read Orbex precise attitude file--------------------------------------------
+ * Read Orbex precise attitude files
+ * Args   : char   *file       I   Orbex precise attitude file
+ *                                 (wild-card * is expanded)
+ *          nav_t  *nav        IO  navigation data
+ *          int    opt         I   options (0: combined, 4: not combined)
+ * Return : none
+ *-----------------------------------------------------------------------------*/
+extern void readpatt(const char *file, nav_t *nav, int opt) {
+  trace(3, "readpatt: file=%s\n", file);
+
+  char *efiles[MAXEXFILE];
+  for (int i = 0; i < MAXEXFILE; i++) {
+    if (!(efiles[i] = (char *)malloc(1024))) {
+      for (i--; i >= 0; i--) free(efiles[i]);
+      return;
+    }
+  }
+  // Expand wild card in file path.
+  int n = expath(file, efiles, MAXEXFILE);
+
+  int succ = 0;
+  for (int i = 0, j = 0; i < n; i++) {
+    char *ext = strrchr(efiles[i], '.');
+    if (!ext) continue;
+
+    if (!strstr(ext, ".obx") && !strstr(ext, ".OBX")) continue;
+
+    FILE *fp = fopen(efiles[i], "r");
+    if (!fp) {
+      trace(2, "Orbex file open error %s\n", efiles[i]);
+      continue;
+    }
+    if (readattb(fp, j++, nav)) succ = 1;
+    fclose(fp);
+  }
+  for (int i = 0; i < MAXEXFILE; i++) free(efiles[i]);
+
+  // Combine precise attitude.
+  if (succ && nav->natt > 0) combpatt(nav, opt);
+}
+
 /* read satellite antenna parameters -------------------------------------------
 * read satellite antenna parameters
 * args   : char   *file       I   antenna parameter file
@@ -798,6 +1033,147 @@ extern int pephclk_avail(gtime_t time, const nav_t *nav, int avail[MAXSAT]) {
     } else if (t1 >= 0.0) {
       if (c1 == 0.0) continue;
     } else if (c0 == 0.0 || c1 == 0.0) continue;
+    avail[k] = 1;
+    n++;
+  }
+  return n;
+}
+
+/* Satellite attitude by precise attitude ------------------------------------*/
+extern int pephatt(gtime_t time, int sat, const nav_t *nav, double *ex, double *ey, double *ez) {
+  char tstr[40];
+  trace(4, "pephatt : time=%s sat=%2d\n", time2str(time, tstr, 3), sat);
+
+  if (nav->natt < 2 || timediff(time, nav->patt[0].time) < -MAXDTE ||
+      timediff(time, nav->patt[nav->natt - 1].time) > MAXDTE) {
+    trace(3, "no prec attitude %s sat=%2d\n", time2str(time, tstr, 0), sat);
+    return 0;
+  }
+  // Binary search.
+  int i = 0;
+  for (int j = nav->natt - 1; i < j;) {
+    int k = (i + j) / 2;
+    if (timediff(nav->patt[k].time, time) < 0.0)
+      i = k + 1;
+    else
+      j = k;
+  }
+  int index = i <= 0 ? 0 : i - 1;
+
+  // Spherical linear interpolation, between two epochs.
+  double t[2], q[2][4];
+  t[0] = timediff(time, nav->patt[index].time);
+  t[1] = timediff(time, nav->patt[index + 1].time);
+  double dt = timediff(nav->patt[index + 1].time, nav->patt[index].time);
+  for (int j = 0; j < 4; j++) {
+    q[0][j] = nav->patt[index].q[sat - 1][j];
+    q[1][j] = nav->patt[index + 1].q[sat - 1][j];
+  }
+
+  double frac = t[0] / dt;
+  if (frac < -0.0001 || frac > 1.0001) {
+    trace(3, "Precise attitude slerp time out of range.\n");
+    return 0;
+  }
+
+  if (t[0] > 6.0 * 60 * 60 || t[1] < -6.0 * 60 * 60) {
+    // Limit to 6 hours, 180 deg of orbit.
+    trace(3, "Precise attitude slerp time out of range.\n");
+    return 0;
+  }
+
+  double qt[4];
+  double k0, k1;
+  if (frac <= 0.0001 || frac >= 0.9999) {
+    // If close to the time span limits then use linear interpolation - the
+    // slerp computation would be out of range. This also handles frac being a
+    // little over 1.0 or under 0.0.
+    k0 = 1.0 - frac;
+    k1 = frac;
+  } else {
+    double cosa = q[0][0] * q[1][0] + q[0][1] * q[1][1] + q[0][2] * q[1][2] + q[0][3] * q[1][3];
+    // Change the sign of one quaternion if necessary to take the shortest
+    // path in this case.
+    if (cosa < 0) {
+      for (int j = 0; j < 4; j++) q[1][j] = -q[1][j];
+      cosa = -cosa;
+    }
+    if (cosa > 0.9999) {
+      k0 = 1.0 - frac;
+      k1 = frac;
+    } else {
+      double sina = sqrt(1.0 - cosa * cosa);
+      double a = atan2(sina, cosa);
+      k0 = sin((1.0 - frac) * a) / sina;
+      k1 = sin(frac * a) / sina;
+    }
+  }
+  for (int j = 0; j < 4; j++) qt[j] = q[0][j] * k0 + q[1][j] * k1;
+
+  // Convert the quaternion to a rotation matrix, ex, ey, ez.
+  double q00 = qt[0] * qt[0];
+  double q11 = qt[1] * qt[1];
+  double q22 = qt[2] * qt[2];
+  double q33 = qt[3] * qt[3];
+  double q01 = qt[0] * qt[1];
+  double q02 = qt[0] * qt[2];
+  double q03 = qt[0] * qt[3];
+  double q12 = qt[1] * qt[2];
+  double q13 = qt[1] * qt[3];
+  double q23 = qt[2] * qt[3];
+  ex[0] = q00 + q11 - q22 - q33;
+  ex[1] = 2.0 * (q12 - q03);
+  ex[2] = 2.0 * (q13 + q02);
+  ey[0] = 2.0 * (q12 + q03);
+  ey[1] = q00 - q11 + q22 - q33;
+  ey[2] = 2.0 * (q23 - q01);
+  ez[0] = 2.0 * (q13 - q02);
+  ez[1] = 2.0 * (q23 + q01);
+  ez[2] = q00 - q11 - q22 + q33;
+
+  return 1;
+}
+// Available precise attitude, for monitoring.
+//
+// The logic parallels patt, to return true for each satellite with
+// enought data to compute the precise attitude.
+//
+// Returns the number of satellites with available precise attitude.
+//
+extern int patt_avail(gtime_t time, const nav_t *nav, int avail[MAXSAT]) {
+  for (int i = 0; i < MAXSAT; i++) avail[i] = 0;
+
+  if (nav->natt < 2 || timediff(time, nav->patt[0].time) < -MAXDTE ||
+      timediff(time, nav->patt[nav->natt - 1].time) > MAXDTE) {
+    // trace(3,"no prec attitude %s sat=%2d\n",time2str(time,tstr,0),sat);
+    return 0;
+  }
+
+  // Binary search.
+  int i = 0;
+  for (int j = nav->natt - 1; i < j;) {
+    int k = (i + j) / 2;
+    if (timediff(nav->patt[k].time, time) < 0.0)
+      i = k + 1;
+    else
+      j = k;
+  }
+  int index = i <= 0 ? 0 : i - 1;
+
+  // Linear interpolation for clock.
+  double t0 = timediff(time, nav->patt[index].time);
+  double t1 = timediff(time, nav->patt[index + 1].time);
+
+  int n = 0;
+  for (int k = 0; k < MAXSAT; k++) {
+    double w0 = nav->patt[index].q[k][0];
+    double w1 = nav->patt[index + 1].q[k][0];
+    if (t0 <= 0.0) {
+      if (w0 == 0.0) continue;
+    } else if (t1 >= 0.0) {
+      if (w1 == 0.0) continue;
+    } else if (w0 == 0.0 || w1 == 0.0)
+      continue;
     avail[k] = 1;
     n++;
   }

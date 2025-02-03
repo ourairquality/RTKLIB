@@ -583,6 +583,12 @@ static void read_infiles(rtksvr_t *svr) {
           tracet(1, "ERP file read error: %s\n", efiles[j]);
         continue;
       }
+
+      if (!strcmp(ext, ".obx") || !strcmp(ext, ".OBX")) {
+        // Read precise attitude data.
+        readpatt(efiles[j], nav, 0);
+        continue;
+      }
     }
   }
 
@@ -602,6 +608,13 @@ static void read_infiles(rtksvr_t *svr) {
     svr->nav.nc = nav->nc;
     svr->nav.ncmax = nav->ncmax;
     svr->nav.pclk = nav->pclk;
+  }
+  if (nav->natt > 0) {
+    // Update precise attitude.
+    if (svr->nav.patt) free(svr->nav.patt);
+    svr->nav.natt = nav->natt;
+    svr->nav.nattmax = nav->nattmax;
+    svr->nav.patt = nav->patt;
   }
   if (nav->erp.n > 0) {
     // Update ERP data.
@@ -978,6 +991,7 @@ extern void rtksvrfree(rtksvr_t *svr)
     free(svr->nav.seph);
     free(svr->nav.peph);
     free(svr->nav.pclk);
+    free(svr->nav.patt);
     free(svr->nav.erp.data);
     for (i=0;i<RTKSVRNIN;i++) for (j=0;j<MAXOBSBUF;j++) {
         free(svr->obs[i][j].data);
