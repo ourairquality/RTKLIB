@@ -488,8 +488,9 @@ void MonitorDialog::showRtk()
     for (j = k = 0; j < MAXSAT; j++) {
         if (rtk->opt.mode == PMODE_SINGLE && !rtk->ssat[j].vs) continue;
         if (rtk->opt.mode != PMODE_SINGLE && !rtk->ssat[j].vsat[0]) continue;
-        azel[k * 2] = rtk->ssat[j].azel[0];
-        azel[k * 2 + 1] = rtk->ssat[j].azel[1];
+        // For the DOP use the rover azel.
+        azel[k * 2] = rtk->ssat[j].azel[0][0];
+        azel[k * 2 + 1] = rtk->ssat[j].azel[0][1];
 		k++;
 	}
     dops(k, azel, 0.0, dop);
@@ -763,24 +764,39 @@ void MonitorDialog::setSat()
 {
     int i, j = 0;
     const QString label[] = {
-        tr("SAT"), tr("Status"), tr("Azimuth (deg)"), tr("Elevation (deg)"), tr("LG (m)"), tr("PHW (cyc)"),
-        tr("P1-P2 (m)"), tr("P1-C1 (m)"), tr("P2-C2(m)")
+        tr("SAT"), tr("Status"), tr("Azim"), tr("Elev"),
+        tr("R.Azim"), tr("R.Elev"), tr("B.Azim"), tr("B.Elev"),
+        tr("LG (m)"), tr("PHW (cyc)"), tr("P1-P2 (m)"), tr("P1-C1 (m)"), tr("P2-C2(m)")
 	};
-    int width[] = {46, 60, 90, 90, 90, 90, 90, 90, 90, 90, 90}, nfreq;
+    int width[] = {48, 60, 72, 72, 72, 72, 72, 72, 90, 90, 90, 90, 90}, nfreq;
 
     rtksvrlock(rtksvr);
     nfreq = rtksvr->rtk.opt.nf > NFREQ ? NFREQ : rtksvr->rtk.opt.nf;
+    int pmode = rtksvr->rtk.opt.mode;
     rtksvrunlock(rtksvr);
 
-    ui->tWConsole->setColumnCount(11 + nfreq * 8);
+    int rel = pmode >= PMODE_DGPS && pmode <= PMODE_FIXED;
+
+    ui->tWConsole->setColumnCount(9 + (rel ? 2 : 0) + nfreq * 8);
     ui->tWConsole->setRowCount(0);
     header.clear();
 
     j = 0;
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < 2; i++) {
         ui->tWConsole->setColumnWidth(j++, width[i] * fontScale / 96);
         header << label[i];
 	}
+    if (rel) {
+      for (i = 4; i < 8; i++) {
+        ui->tWConsole->setColumnWidth(j++, width[i] * fontScale / 96);
+        header << label[i];
+      }
+    } else {
+      for (i = 2; i < 4; i++) {
+        ui->tWConsole->setColumnWidth(j++, width[i] * fontScale / 96);
+        header << label[i];
+      }
+    }
     for (i = 0; i < nfreq; i++) {
         ui->tWConsole->setColumnWidth(j++, 38 * fontScale / 96);
         header << tr("F%1").arg(i+1);
@@ -813,7 +829,7 @@ void MonitorDialog::setSat()
         ui->tWConsole->setColumnWidth(j++, 70 * fontScale / 96);
         header << tr("Reject%1").arg(i+1);
 	}
-    for (i = 6; i < 11; i++) {
+    for (i = 8; i < 13; i++) {
         ui->tWConsole->setColumnWidth(j++, width[i] * fontScale / 96);
         header << label[i];
 	}
@@ -828,7 +844,7 @@ void MonitorDialog::showSat()
     int i, j, k, n, nsat, fix, nfreq, sys = sys_tbl[ui->cBSelectNavigationSystems->currentIndex()];
     int vsat[MAXSAT] = {0};
 	char id[8];
-    double az, el, cbias[MAXSAT][2];
+    double cbias[MAXSAT][2];
 
     rtk_t *rtk = static_cast<rtk_t *>(malloc(sizeof(rtk_t)));
     if (rtk == NULL) return;
@@ -867,6 +883,9 @@ void MonitorDialog::showSat()
                 ui->tWConsole->setItem(row, col, new QTableWidgetItem());
     }
 
+    int pmode = rtk->opt.mode;
+    int rel = pmode >= PMODE_DGPS && pmode <= PMODE_FIXED;
+
     for (i = 0, n = 0; i < MAXSAT; i++) {
         if (!(satsys(i + 1, NULL) & sys)) continue;
         j = 0;
@@ -875,10 +894,18 @@ void MonitorDialog::showSat()
         satno2id(i + 1, id);
         ui->tWConsole->item(n, j++)->setText(id);
         ui->tWConsole->item(n, j++)->setText(ssat->vs ? tr("OK") : tr("-"));
-        az = ssat->azel[0] * R2D; if (az < 0.0) az += 360.0;
-        el = ssat->azel[1] * R2D;
-        ui->tWConsole->item(n, j++)->setText(QString::number(az, 'f', 1));
-        ui->tWConsole->item(n, j++)->setText(QString::number(el, 'f', 1));
+        double az_rover = ssat->azel[0][0] * R2D;
+        double el_rover = ssat->azel[0][1] * R2D;
+        if (az_rover < 0.0) az_rover += 360.0;
+        ui->tWConsole->item(n, j++)->setText(QString::number(az_rover, 'f', 1));
+        ui->tWConsole->item(n, j++)->setText(QString::number(el_rover, 'f', 1));
+        if (rel) {
+          double az_base = ssat->azel[1][0] * R2D;
+          double el_base = ssat->azel[1][1] * R2D;
+          if (az_base < 0.0) az_base += 360.0;
+          ui->tWConsole->item(n, j++)->setText(QString::number(az_base, 'f', 1));
+          ui->tWConsole->item(n, j++)->setText(QString::number(el_base, 'f', 1));
+        }
         for (k = 0; k < nfreq; k++)
             ui->tWConsole->item(n, j++)->setText(ssat->vsat[k] ? tr("OK") : tr("-"));
         for (k = 0; k < nfreq; k++) {
