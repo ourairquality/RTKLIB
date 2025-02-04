@@ -1233,8 +1233,8 @@ typedef struct {        /* satellite status type */
     double resc[NFREQ]; /* residuals of carrier-phase (m) */
     double icbias[NFREQ];  /* glonass IC bias (cycles) */
     uint8_t vsat[NFREQ]; /* valid satellite flag */
-    float snr_rover [NFREQ]; /* rover signal strength (dBHz) */
-    float snr_base  [NFREQ]; /* base signal strength (dBHz) */
+    float snr_rover[NFREQ]; // Rover signal strength (dBHz) (per freq or LC).
+    float snr_base[NFREQ];  // Base signal strength (dBHz) (per freq or LC).
     uint8_t fix [NFREQ]; /* ambiguity fix flag (1:float,2:fix,3:hold) */
     int code[NFREQ][2];  // Current code per frequency index for the base and rover.
     uint8_t slip[NFREQ]; /* cycle-slip flag */

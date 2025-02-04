@@ -48,11 +48,9 @@
 # define MAX_GDOP   30          /* max gdop for valid solution  */
 
 /* Pseudorange measurement error variance ------------------------------------*/
-static double varerr(int sat, int sys, double el, const prcopt_t *opt, const obsd_t *obs)
+static double varerr(int sat, int sys, double el, int frq, const prcopt_t *opt, const obsd_t *obs)
 {
     (void)sat;
-    int frq=0; /* TODO */
-
     /* Firstly establish some factors that will scale the variance */
 
     /* System error factor */
@@ -104,6 +102,11 @@ static double varerr(int sat, int sys, double el, const prcopt_t *opt, const obs
     if (d>0.0) {
         /* #define VAR_SNR_NO_MAX to not have the SNR curve relative to the maximum SNR */
         float snr = obs->SNR[0];
+        // For an IFLC use the minimum SNR as an input to varerr().
+        if (opt->ionoopt == IONOOPT_IFLC) {
+          int f2 = seliflc(opt->nf, sys);
+          if (obs->SNR[f2] < snr) snr = obs->SNR[f2];
+        }
 #ifndef VAR_SNR_NO_MAX
         double snr_max=opt->err[5];
         var+=SQR(d)*pow(10,0.1*MAX(snr_max-snr,0));
@@ -347,7 +350,7 @@ extern int tropcorr(gtime_t time, const nav_t *nav, const double *pos,
 static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
                    const double *dts, const double *vare, const int *svh,
                    const nav_t *nav, const double *x, const prcopt_t *opt, int base,
-                   const ssat_t *ssat, double *v, double *H, double *var,
+                   double *v, double *H, double *var,
                    double *azel, int *vsat, double *resp, int *ns)
 {
     double rr[3];
@@ -392,8 +395,9 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         if (freq==0.0) continue;
 
         double freq2 = 0.0, C1 = 0.0, C2 = 0.0; // Also needed for PCV
+        int f2 = 0;
         if (opt->ionoopt==IONOOPT_IFLC) {
-          int f2 = seliflc(opt->nf, sys);
+          f2 = seliflc(opt->nf, sys);
           freq2 = sat2freq(sat, obs[i].code[f2], nav);
           if (freq2 == 0.0) continue;
           // Iono-free LC
@@ -490,9 +494,9 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
 
         vsat[i]=1; resp[i]=v[nv]; (*ns)++;
         
-        /* variance of pseudorange error */
-        var[nv]=vare[i]+vmeas+vion+vtrp;
-        var[nv++]+=varerr(sat,sys,azel[1+i*2],opt,&obs[i]);
+        // Variance of pseudorange error.
+        var[nv] = vare[i] + vmeas + vion + vtrp;
+        var[nv++] += varerr(sat, sys, azel[1 + i * 2], 0, opt, &obs[i]);
         trace(4,"base=%d sat=%2d azel=%5.1f %4.1f res=%7.3f sig=%5.3f\n", base, obs[i].sat,
               azel[i*2]*R2D,azel[1+i*2]*R2D,resp[i],sqrt(var[nv-1]));
     }
@@ -538,7 +542,7 @@ static int valsol(const double *azel, const int *vsat, int n,
 /* estimate receiver position ------------------------------------------------*/
 static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                   const double *vare, const int *svh, const nav_t *nav,
-                  const prcopt_t *opt, int base, const ssat_t *ssat, sol_t *sol, double *azel,
+                  const prcopt_t *opt, int base, sol_t *sol, double *azel,
                   int *vsat, double *resp, char *msg)
 {
     double x[NX]={0},dx[NX],Q[NX*NX],*v,*H,*var,sig;
@@ -553,7 +557,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     for (i=0;i<MAXITR;i++) {
 
         /* pseudorange residuals (m) */
-        nv=rescode(i,obs,n,rs,dts,vare,svh,nav,x,opt,base,ssat,v,H,var,azel,vsat,resp,
+        nv=rescode(i,obs,n,rs,dts,vare,svh,nav,x,opt,base,v,H,var,azel,vsat,resp,
                    &ns);
         
         if (nv<NX) {
@@ -609,7 +613,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
 /* RAIM FDE (failure detection and exclusion) -------------------------------*/
 static int raim_fde(const obsd_t *obs, int n, const double *rs,
                     const double *dts, const double *vare, const int *svh,
-                    const nav_t *nav, const prcopt_t *opt, int base, const ssat_t *ssat,
+                    const nav_t *nav, const prcopt_t *opt, int base,
                     sol_t *sol, double *azel, int *vsat, double *resp, char *msg)
 {
     obsd_t *obs_e;
@@ -636,7 +640,7 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
             svh_e[k++]=svh[j];
         }
         /* estimate receiver position without a satellite */
-        if (!estpos(obs_e,n-1,rs_e,dts_e,vare_e,svh_e,nav,opt,base,ssat,&sol_e,azel_e,
+        if (!estpos(obs_e,n-1,rs_e,dts_e,vare_e,svh_e,nav,opt,base,&sol_e,azel_e,
                     vsat_e,resp_e,msg_e)) {
             trace(3,"raim_fde: exsat=%2d (%s)\n",obs[i].sat,msg);
             continue;
@@ -788,7 +792,7 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
 {
     prcopt_t opt_=*opt;
     double *rs,*dts,*var,*azel_,*resp;
-    int i,stat,vsat[MAXOBS]={0},svh[MAXOBS];
+    int stat,vsat[MAXOBS]={0},svh[MAXOBS];
 
     char tstr[40];
     trace(3,"pntpos  : tobs=%s n=%d base=%d\n",time2str(obs[0].time,tstr,3),n,base);
@@ -806,12 +810,27 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
     rs=mat(6,n); dts=mat(2,n); var=mat(1,n); azel_=zeros(2,n); resp=mat(1,n);
     
     if (ssat) {
-        for (i=0;i<MAXSAT;i++) {
-            ssat[i].snr_rover[0]=0;
-            ssat[i].snr_base[0]=0;
+        for (int i = 0; i < MAXSAT; i++) {
+          for (int j = 0; j < NFREQ; j++) {
+            if (base)
+              ssat[i].snr_base[j] = 0;
+            else
+              ssat[i].snr_rover[j] = 0;
+          }
         }
-        for (i=0;i<n;i++)
-            ssat[obs[i].sat-1].snr_rover[0]=obs[i].SNR[0];
+        for (int i = 0; i < n; i++) {
+          double snr = obs[i].SNR[0];
+          if (opt->ionoopt == IONOOPT_IFLC) {
+            // Use the minimum SNR.
+            int sys = satsys(obs[i].sat, NULL);
+            int f2 = seliflc(opt->nf, sys);
+            if (obs[i].SNR[f2] < snr) snr = obs[i].SNR[f2];
+          }
+          if (base)
+            ssat[obs[i].sat - 1].snr_base[0] = snr;
+          else
+            ssat[obs[i].sat - 1].snr_rover[0] = snr;
+        }
     }
     
     if (opt_.mode!=PMODE_SINGLE) { /* for precise positioning */
@@ -823,26 +842,27 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
     satposs(sol->time,obs,n,nav,opt_.sateph,rs,dts,var,svh);
     
     /* estimate receiver position and time with pseudorange */
-    stat=estpos(obs,n,rs,dts,var,svh,nav,&opt_,base,ssat,sol,azel_,vsat,resp,msg);
+    stat=estpos(obs,n,rs,dts,var,svh,nav,&opt_,base,sol,azel_,vsat,resp,msg);
     
     /* RAIM FDE */
     if (!stat&&n>=6&&opt->posopt[4]) {
-        stat=raim_fde(obs,n,rs,dts,var,svh,nav,&opt_,base,ssat,sol,azel_,vsat,resp,msg);
+        stat=raim_fde(obs,n,rs,dts,var,svh,nav,&opt_,base,sol,azel_,vsat,resp,msg);
     }
     /* estimate receiver velocity with Doppler */
     if (stat) {
         estvel(obs,n,rs,dts,nav,&opt_,sol,azel_,vsat);
     }
     if (azel) {
-        for (i=0;i<n*2;i++) azel[i]=azel_[i];
+        for (int i=0;i<n*2;i++) azel[i]=azel_[i];
     }
     if (ssat) {
-        for (i=0;i<MAXSAT;i++) {
+        for (int i=0;i<MAXSAT;i++) {
             ssat[i].vs=0;
             ssat[i].azel[base][0]=ssat[i].azel[base][1]=0.0;
-            ssat[i].resp[0]=ssat[i].resc[0]=0.0;
+            for (int j = 0; j < NFREQ; j++)
+              ssat[i].resp[j]=ssat[i].resc[j]=0.0;
         }
-        for (i=0;i<n;i++) {
+        for (int i=0;i<n;i++) {
             ssat[obs[i].sat-1].azel[base][0]=azel_[  i*2];
             ssat[obs[i].sat-1].azel[base][1]=azel_[1+i*2];
             if (!vsat[i]) continue;
