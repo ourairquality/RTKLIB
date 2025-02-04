@@ -664,20 +664,17 @@ static void udpos(rtk_t *rtk, double tt)
 /* temporal update of ionospheric parameters ---------------------------------*/
 static void udion(rtk_t *rtk, double tt, double bl, const int *sat, int ns)
 {
-    double el,fact;
-    int i,j;
-
     trace(3,"udion   : tt=%.3f bl=%.0f ns=%d\n",tt,bl,ns);
 
     /* reset ionospheric delays for sats with long outages */
-    for (i=1;i<=MAXSAT;i++) {
-        j=II(i,&rtk->opt);
+    for (int i=1;i<=MAXSAT;i++) {
+        int j=II(i,&rtk->opt);
         if (rtk->x[j]!=0.0&&
             rtk->ssat[i-1].outc[0]>GAP_RESION&&rtk->ssat[i-1].outc[1]>GAP_RESION)
             rtk->x[j]=0.0;
     }
-    for (i=0;i<ns;i++) {
-        j=II(sat[i],&rtk->opt);
+    for (int i=0;i<ns;i++) {
+        int j=II(sat[i],&rtk->opt);
 
         if (rtk->x[j]==0.0) {
             /* initialize ionospheric delay state */
@@ -2249,8 +2246,8 @@ static int relpos(rtk_t *rtk, const obsd_t *obs, int nu, int nr,
         rtk->ssat[i].sys=satsys(i+1,NULL); /* gnss system */
         for (int j=0;j<NFREQ;j++) {
             rtk->ssat[i].vsat[j]=0;  /* Valid satellite */
-                rtk->ssat[i].snr_rover[j]=0;
-                rtk->ssat[i].snr_base[j] =0;
+            rtk->ssat[i].snr_rover[j]=0;
+            rtk->ssat[i].snr_base[j] =0;
         }
     }
     /* Compute satellite positions, velocities and clocks for base and rover */
@@ -2305,17 +2302,28 @@ static int relpos(rtk_t *rtk, const obsd_t *obs, int nu, int nr,
       rtk->ssat[idx].azel[1][1] = azel[ir[i] * 2 + 1];
     }
 
+    /* SNR of base and rover receiver. Used in ddres() for varerr() input. */
+    for (int i = 0; i < ns; i++) {
+      if (opt->ionoopt == IONOOPT_IFLC) {
+        // Use the minimum SNR.
+        int sys = satsys(sat[i] - 1, NULL);
+        int f2 = seliflc(opt->nf, sys);
+        rtk->ssat[sat[i] - 1].snr_rover[0] = MIN(obs[iu[i]].SNR[0], obs[iu[i]].SNR[f2]);
+        rtk->ssat[sat[i] - 1].snr_base[0] = MIN(obs[ir[i]].SNR[0], obs[ir[i]].SNR[f2]);
+      } else {
+        for (int j = 0; j < opt->nf; j++) {
+          /* SNR of base and rover receiver */
+          rtk->ssat[sat[i] - 1].snr_rover[j] = obs[iu[i]].SNR[j];
+          rtk->ssat[sat[i] - 1].snr_base[j] = obs[ir[i]].SNR[j];
+        }
+      }
+    }
+
     /* Update kalman filter states (pos,vel,acc,ionosp, troposp, sat phase biases) */
     double *x=rtk->x;
     trace(4,"before udstate: x="); tracemat(4,x,1,NR(opt),13,4);
     udstate(rtk,obs,sat,iu,ir,ns,nav);
     trace(4,"after udstate x="); tracemat(4,x,1,NR(opt),13,4);
-
-    for (int i=0;i<ns;i++) for (int j=0;j<nf;j++) {
-        /* SNR of base and rover receiver */
-        rtk->ssat[sat[i]-1].snr_rover[j]=obs[iu[i]].SNR[j];
-        rtk->ssat[sat[i]-1].snr_base[j] =obs[ir[i]].SNR[j];
-    }
 
     /* Backup rtk->x to xp, in case of rollback */
     int nx=rtk->nx;
