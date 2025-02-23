@@ -1,4 +1,4 @@
-/* ../src/st1l1.f -- translated by f2c (version 20090411).
+/* st1l1.f -- translated by f2c (version 20200916).
    You must link the resulting object file with libf2c:
 	on Microsoft Windows system, link with libf2c.lib;
 	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
@@ -27,10 +27,9 @@
     double sqrt(doublereal);
 
     /* Local variables */
-    static doublereal costwola, sintwola, l1, de, dn, rsta, rmon, rsun;
+    doublereal costwola, sintwola, l1, de, dn, rsta, rmon, rsun;
     extern doublereal norm8_(doublereal *);
-    static doublereal cosla, demon, sinla, dnmon, desun, dnsun, cosphi, 
-	    sinphi;
+    doublereal cosla, demon, sinla, dnmon, desun, dnsun, cosphi, sinphi;
 
 /* + */
 /*  - - - - - - - - - - - */

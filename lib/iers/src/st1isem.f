@@ -8,13 +8,13 @@
 *  Reference Systems Service (IERS) Conventions software collection.
 *
 *  This subroutine gives the out-of-phase corrections induced by
-*  mantle anelasticity in the semi-diurnal band. 
+*  mantle anelasticity in the semi-diurnal band.
 *
 *  In general, Class 1, 2, and 3 models represent physical effects that
 *  act on geodetic parameters while canonical models provide lower-level
 *  representations or basic computations that are used by Class 1, 2, or
 *  3 models.
-* 
+*
 *  Status: Class 1
 *
 *     Class 1 models are those recommended to be used a priori in the
@@ -31,8 +31,8 @@
 *     XSTA          d(3)   Geocentric position of the IGS station (Note 1)
 *     XSUN          d(3)   Geocentric position of the Sun (Note 2)
 *     XMON          d(3)   Geocentric position of the Moon (Note 2)
-*     FAC2SUN       d      Degree 2 TGP factor for the Sun (Note 3)      
-*     FAC2MON       d      Degree 2 TGP factor for the Moon (Note 3) 
+*     FAC2SUN       d      Degree 2 TGP factor for the Sun (Note 3)
+*     FAC2MON       d      Degree 2 TGP factor for the Moon (Note 3)
 *
 *  Returned:
 *     XCORSTA       d(3)   Out of phase station corrections for
@@ -41,27 +41,27 @@
 *  Notes:
 *
 *  1) The IGS station is in ITRF co-rotating frame.  All coordinates are
-*     expressed in meters. 
-*  
+*     expressed in meters.
+*
 *  2) The position is in Earth Centered Earth Fixed (ECEF) frame.  All
 *     coordinates are expressed in meters.
 *
 *  3) The expressions are computed in the main program.  TGP is the tide
-*     generated potential.  The units are inverse meters. 
+*     generated potential.  The units are inverse meters.
 *
 *  Test case:
 *     given input: XSTA(1) = 4075578.385D0 meters
 *                  XSTA(2) =  931852.890D0 meters
-*                  XSTA(3) = 4801570.154D0 meters   
+*                  XSTA(3) = 4801570.154D0 meters
 *                  XSUN(1) = 137859926952.015D0 meters
 *                  XSUN(2) = 54228127881.4350D0 meters
 *                  XSUN(3) = 23509422341.6960D0 meters
 *                  XMON(1) = -179996231.920342D0 meters
 *                  XMON(2) = -312468450.131567D0 meters
 *                  XMON(3) = -169288918.592160D0 meters
-*                  FAC2SUN =  0.163271964478954D0 1/meters     
-*                  FAC2MON =  0.321989090026845D0 1/meters    
-*                  
+*                  FAC2SUN =  0.163271964478954D0 1/meters
+*                  FAC2MON =  0.321989090026845D0 1/meters
+*
 *     expected output:  XCORSTA(1) = -0.2801334805106874015D-03 meters
 *                       XCORSTA(2) =  0.2939522229284325029D-04 meters
 *                       XCORSTA(3) = -0.6051677912316721561D-04 meters
@@ -76,7 +76,7 @@
 *
 *  Revisions:
 *  1996 March    23 V. Dehant      Original code
-*  2009 July     31 B.E. Stetzler  Initial standardization of code 
+*  2009 July     31 B.E. Stetzler  Initial standardization of code
 *  2009 July     31 B.E. Stetzler  Provided a test case
 *-----------------------------------------------------------------------
 
@@ -85,49 +85,49 @@
      .                 COSLA, RMON, RSUN, DRSUN, DRMON, DNSUN, DNMON,
      .                 DESUN, DEMON, DR, DN, DE, XSTA, XSUN, XMON,
      .                 XCORSTA, DHI, DLI, FAC2SUN, FAC2MON, SINTWOLA
-      DIMENSION XSTA(3),XSUN(3),XMON(3),XCORSTA(3)  
-      DATA DHI/-0.0022D0/,DLI/-0.0007D0/  
+      DIMENSION XSTA(3),XSUN(3),XMON(3),XCORSTA(3)
+      DATA DHI/-0.0022D0/,DLI/-0.0007D0/
 
 * Compute the normalized position vector of the IGS station.
       RSTA = NORM8(XSTA)
-      SINPHI = XSTA(3)/RSTA  
+      SINPHI = XSTA(3)/RSTA
       COSPHI = DSQRT(XSTA(1)*XSTA(1)+XSTA(2)*XSTA(2))/RSTA
-      SINLA=XSTA(2)/COSPHI/RSTA  
-      COSLA=XSTA(1)/COSPHI/RSTA  
-      COSTWOLA=COSLA*COSLA-SINLA*SINLA 
-      SINTWOLA=2D0*COSLA*SINLA  
+      SINLA=XSTA(2)/COSPHI/RSTA
+      COSLA=XSTA(1)/COSPHI/RSTA
+      COSTWOLA=COSLA*COSLA-SINLA*SINLA
+      SINTWOLA=2D0*COSLA*SINLA
 * Compute the normalized position vector of the Moon.
       RMON=NORM8(XMON)
 * Compute the normalized position vector of the Sun.
       RSUN=NORM8(XSUN)
 
-      DRSUN=-3D0/4D0*DHI*COSPHI**2*FAC2SUN*((XSUN(1)**2-XSUN(2)**2)*  
+      DRSUN=-3D0/4D0*DHI*COSPHI**2*FAC2SUN*((XSUN(1)**2-XSUN(2)**2)*
      . SINTWOLA-2D0*XSUN(1)*XSUN(2)*COSTWOLA)/RSUN**2
 
-      DRMON=-3D0/4D0*DHI*COSPHI**2*FAC2MON*((XMON(1)**2-XMON(2)**2)*  
+      DRMON=-3D0/4D0*DHI*COSPHI**2*FAC2MON*((XMON(1)**2-XMON(2)**2)*
      . SINTWOLA-2D0*XMON(1)*XMON(2)*COSTWOLA)/RMON**2
 
-      DNSUN=3D0/2D0*DLI*SINPHI*COSPHI*FAC2SUN*((XSUN(1)**2-XSUN(2)**2)* 
+      DNSUN=3D0/2D0*DLI*SINPHI*COSPHI*FAC2SUN*((XSUN(1)**2-XSUN(2)**2)*
      . SINTWOLA-2D0*XSUN(1)*XSUN(2)*COSTWOLA)/RSUN**2
 
-      DNMON=3D0/2D0*DLI*SINPHI*COSPHI*FAC2MON*((XMON(1)**2-XMON(2)**2)* 
+      DNMON=3D0/2D0*DLI*SINPHI*COSPHI*FAC2MON*((XMON(1)**2-XMON(2)**2)*
      . SINTWOLA-2D0*XMON(1)*XMON(2)*COSTWOLA)/RMON**2
 
-      DESUN=-3D0/2D0*DLI*COSPHI*FAC2SUN*((XSUN(1)**2-XSUN(2)**2)*  
+      DESUN=-3D0/2D0*DLI*COSPHI*FAC2SUN*((XSUN(1)**2-XSUN(2)**2)*
      . COSTWOLA+2D0*XSUN(1)*XSUN(2)*SINTWOLA)/RSUN**2
 
-      DEMON=-3D0/2D0*DLI*COSPHI*FAC2MON*((XMON(1)**2-XMON(2)**2)*  
+      DEMON=-3D0/2D0*DLI*COSPHI*FAC2MON*((XMON(1)**2-XMON(2)**2)*
      . COSTWOLA+2D0*XMON(1)*XMON(2)*SINTWOLA)/RMON**2
 
-      DR=DRSUN+DRMON 
-      DN=DNSUN+DNMON  
-      DE=DESUN+DEMON 
+      DR=DRSUN+DRMON
+      DN=DNSUN+DNMON
+      DE=DESUN+DEMON
 
-      XCORSTA(1)=DR*COSLA*COSPHI-DE*SINLA-DN*SINPHI*COSLA  
-      XCORSTA(2)=DR*SINLA*COSPHI+DE*COSLA-DN*SINPHI*SINLA  
-      XCORSTA(3)=DR*SINPHI+DN*COSPHI  
+      XCORSTA(1)=DR*COSLA*COSPHI-DE*SINLA-DN*SINPHI*COSLA
+      XCORSTA(2)=DR*SINLA*COSPHI+DE*COSLA-DN*SINPHI*SINLA
+      XCORSTA(3)=DR*SINPHI+DN*COSPHI
 
-      RETURN 
+      RETURN
 
 *  Finished.
 
@@ -167,14 +167,14 @@
 *
 *     c) The name(s) of all modified routine(s) that you distribute
 *        shall be changed.
-* 
+*
 *     d) The origin of the IERS Conventions components of your derived
 *        work must not be misrepresented; you must not claim that you
 *        wrote the original Software.
 *
 *     e) The source code must be included for all routine(s) that you
 *        distribute.  This notice must be reproduced intact in any
-*        source distribution. 
+*        source distribution.
 *
 *  4. In any published work produced by the user and which includes
 *     results achieved by using the Software, you shall acknowledge
@@ -212,5 +212,5 @@
 *
 *
 *-----------------------------------------------------------------------
-      END  
+      END
 

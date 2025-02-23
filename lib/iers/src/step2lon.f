@@ -1,4 +1,4 @@
-      SUBROUTINE STEP2LON (XSTA,T,XCORSTA)  
+      SUBROUTINE STEP2LON (XSTA,T,XCORSTA)
 *+
 *  - - - - - - - - - - -
 *   S T E P 2 L O N
@@ -8,13 +8,13 @@
 *  Reference Systems Service (IERS) Conventions software collection.
 *
 *  This subroutine gives the in-phase and out-of-phase corrections
-*  induced by mantle anelasticity in the long period band. 
+*  induced by mantle anelasticity in the long period band.
 *
 *  In general, Class 1, 2, and 3 models represent physical effects that
 *  act on geodetic parameters while canonical models provide lower-level
 *  representations or basic computations that are used by Class 1, 2, or
 *  3 models.
-* 
+*
 *  Status: Class 1
 *
 *     Class 1 models are those recommended to be used a priori in the
@@ -38,16 +38,16 @@
 *  Notes:
 *
 *  1) The IGS station is in ITRF co-rotating frame.  All coordinates are
-*     expressed in meters. 
-*  
+*     expressed in meters.
+*
 *  2) All coordinates are expressed in meters.
 *
 *  Test case:
 *     given input: XSTA(1) = 4075578.385D0 meters
 *                  XSTA(2) =  931852.890D0 meters
-*                  XSTA(3) = 4801570.154D0 meters 
+*                  XSTA(3) = 4801570.154D0 meters
 *                  T       = 0.1059411362080767D0 Julian centuries
-*                  
+*
 *     expected output:  XCORSTA(1) = -0.9780962849562107762D-04 meters
 *                       XCORSTA(2) = -0.2236349699932734273D-04 meters
 *                       XCORSTA(3) =  0.3561945821351565926D-03 meters
@@ -64,24 +64,24 @@
 *  1996 March    23 V. Dehant      Original code
 *  2009 August   07 B.E. Stetzler  Initial standardization of code
 *                                  and found unnecessary variables tau
-*                                  and fhr 
+*                                  and fhr
 *  2009 August   07 B.E. Stetzler  Provided a test case
-*  2009 August   07 B.E. Stetzler  Capitalized all variables for 
+*  2009 August   07 B.E. Stetzler  Capitalized all variables for
 *                                  Fortran 77 compatibility
-*  2010 October  20 B.E. Stetzler  Input T corrected to be number of 
+*  2010 October  20 B.E. Stetzler  Input T corrected to be number of
 *                                  centuries since J2000
 *-----------------------------------------------------------------------
 
       IMPLICIT NONE
       INTEGER I, J
-      DOUBLE PRECISION XSTA(3), XCORSTA(3), DATDI(9,5), DEG2RAD, 
+      DOUBLE PRECISION XSTA(3), XCORSTA(3), DATDI(9,5), DEG2RAD,
      .                 T, S, PR, H, P, ZNS, PS, RSTA, SINPHI,
      .                 COSPHI, COSLA, SINLA, THETAF, DR, DN, DE,
      .                 DR_TOT, DN_TOT
       DOUBLE PRECISION D2PI
       PARAMETER ( D2PI = 6.283185307179586476925287D0 )
 
-      DATA ((DATDI(I,J),I=1,9),J=1,5)/  
+      DATA ((DATDI(I,J),I=1,9),J=1,5)/
      .   0, 0, 0, 1, 0,   0.47D0, 0.23D0, 0.16D0, 0.07D0,
      .   0, 2, 0, 0, 0,  -0.20D0,-0.12D0,-0.11D0,-0.05D0,
      .   1, 0,-1, 0, 0,  -0.11D0,-0.08D0,-0.09D0,-0.04D0,
@@ -94,33 +94,33 @@
 *  Compute the phase angles in degrees.
       S = 218.31664563D0
      .  + (481267.88194D0
-     .  + (-0.0014663889D0 
-     .  + (0.00000185139D0)*T)*T)*T 
+     .  + (-0.0014663889D0
+     .  + (0.00000185139D0)*T)*T)*T
 
       PR = (1.396971278D0
      .   + (0.000308889D0
      .   + (0.000000021D0
-     .   + (0.000000007D0)*T)*T)*T)*T 
+     .   + (0.000000007D0)*T)*T)*T)*T
 
-      S = S + PR 
+      S = S + PR
 
       H = 280.46645D0
      .  + (36000.7697489D0
-     .  + (0.00030322222D0 
+     .  + (0.00030322222D0
      .  + (0.000000020D0
-     .  + (-0.00000000654D0)*T)*T)*T)*T  
+     .  + (-0.00000000654D0)*T)*T)*T)*T
 
       P = 83.35324312D0
      .  + (4069.01363525D0
      .  + (-0.01032172222D0
      .  + (-0.0000124991D0
-     .  + (0.00000005263D0)*T)*T)*T)*T  
+     .  + (0.00000005263D0)*T)*T)*T)*T
 
       ZNS = 234.95544499D0
      .    + (1934.13626197D0
      .    + (-0.00207561111D0
      .    + (-0.00000213944D0
-     .    + (0.00000001650D0)*T)*T)*T)*T 
+     .    + (0.00000001650D0)*T)*T)*T)*T
 
       PS = 282.93734098D0
      .   + (1.71945766667D0
@@ -128,9 +128,9 @@
      .   + (-0.00000001778D0
      .   + (-0.00000000334D0)*T)*T)*T)*T
 
-      RSTA=DSQRT(XSTA(1)**2+XSTA(2)**2+XSTA(3)**2)  
-      SINPHI=XSTA(3)/RSTA  
-      COSPHI=DSQRT(XSTA(1)**2+XSTA(2)**2)/RSTA  
+      RSTA=DSQRT(XSTA(1)**2+XSTA(2)**2+XSTA(3)**2)
+      SINPHI=XSTA(3)/RSTA
+      COSPHI=DSQRT(XSTA(1)**2+XSTA(2)**2)/RSTA
 
       COSLA=XSTA(1)/COSPHI/RSTA
       SINLA=XSTA(2)/COSPHI/RSTA
@@ -146,7 +146,7 @@
       DR_TOT = 0D0
       DN_TOT = 0D0
 
-      DO 99 I=1,3  
+      DO 99 I=1,3
       XCORSTA(I)=0D0
 99    CONTINUE
       DO 98 J=1,5
@@ -159,20 +159,20 @@
       DN=DATDI(7,J)*(COSPHI*SINPHI*2D0)*COS(THETAF)+
      .     DATDI(9,J)*(COSPHI*SINPHI*2D0)*SIN(THETAF)
 
-      DE = 0D0 
+      DE = 0D0
       DR_TOT = DR_TOT+DR
       DN_TOT = DN_TOT+DN
 
-      XCORSTA(1)=XCORSTA(1)+DR*COSLA*COSPHI-DE*SINLA  
-     . -DN*SINPHI*COSLA  
-      XCORSTA(2)=XCORSTA(2)+DR*SINLA*COSPHI+DE*COSLA  
-     . -DN*SINPHI*SINLA  
-      XCORSTA(3)=XCORSTA(3)+DR*SINPHI+DN*COSPHI  
-98    CONTINUE   
+      XCORSTA(1)=XCORSTA(1)+DR*COSLA*COSPHI-DE*SINLA
+     . -DN*SINPHI*COSLA
+      XCORSTA(2)=XCORSTA(2)+DR*SINLA*COSPHI+DE*COSLA
+     . -DN*SINPHI*SINLA
+      XCORSTA(3)=XCORSTA(3)+DR*SINPHI+DN*COSPHI
+98    CONTINUE
 
       DO 97 I=1,3
       XCORSTA(I)=XCORSTA(I)/1000D0
-97    CONTINUE  
+97    CONTINUE
       RETURN
 
 *  Finished.
@@ -213,14 +213,14 @@
 *
 *     c) The name(s) of all modified routine(s) that you distribute
 *        shall be changed.
-* 
+*
 *     d) The origin of the IERS Conventions components of your derived
 *        work must not be misrepresented; you must not claim that you
 *        wrote the original Software.
 *
 *     e) The source code must be included for all routine(s) that you
 *        distribute.  This notice must be reproduced intact in any
-*        source distribution. 
+*        source distribution.
 *
 *  4. In any published work produced by the user and which includes
 *     results achieved by using the Software, you shall acknowledge
@@ -258,4 +258,4 @@
 *
 *
 *-----------------------------------------------------------------------
-      END  
+      END

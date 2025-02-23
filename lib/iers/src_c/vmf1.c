@@ -1,4 +1,4 @@
-/* ../src/vmf1.f -- translated by f2c (version 20090411).
+/* vmf1.f -- translated by f2c (version 20200916).
    You must link the resulting object file with libf2c:
 	on Microsoft Windows system, link with libf2c.lib;
 	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
@@ -20,8 +20,8 @@
     double cos(doublereal), sin(doublereal);
 
     /* Local variables */
-    static doublereal bh, ch, bw, cw, c0h, c10h, c11h, phh, doy, beta, sine, 
-	    gamma, topcon;
+    doublereal bh, ch, bw, cw, c0h, c10h, c11h, phh, doy, beta, sine, gamma, 
+	    topcon;
 
 /* + */
 /*  - - - - - - - - - */
@@ -31,7 +31,7 @@
 /*  This routine is part of the International Earth Rotation and */
 /*  Reference Systems Service (IERS) Conventions software collection. */
 
-/*  This subroutine determines the Vienna Mapping Function 1 (VMF1) (Boehm et al, 2006). */
+/*  This subroutine determines the Vienna Mapping Function 1 (VMF1). */
 /*  This is the site dependent version. */
 
 /*  In general, Class 1, 2, and 3 models represent physical effects that */
@@ -64,21 +64,20 @@
 
 /*  Notes: */
 
-/*  1) The coefficients can be obtained from the primary website */
-/*     http://ggosatm.hg.tuwien.ac.at/DELAY/ or the back-up website */
-/*     http://www.hg.tuwien.ac.at/~ecmwf1/. */
+/*  1) The coefficients can be obtained from the website */
+/*     http://ggosatm.hg.tuwien.ac.at/DELAY/SITE/ */
 
 /*  2) The mapping functions are dimensionless scale factors. */
 
 /*  Test case: */
-/*     given input: AH   = 0.00125711D0 */
-/*                  AW   = 0.00058801D0 */
+/*     given input: AH   = 0.00127683D0 */
+/*                  AW   = 0.00060955D0 */
 /*                  DMJD = 55055D0 */
 /*                  DLAT = 0.6708665767D0 radians (NRAO, Green Bank, WV) */
 /*                  ZD   = 1.278564131D0 radians */
 
-/*     expected output: VMF1H = 3.425054275537719128D0 */
-/*                      VMF1W = 3.449100942061193553D0 */
+/*     expected output: VMF1H = 3.424342122738070593D0 */
+/*                      VMF1W = 3.448299714692572238D0 */
 
 /*  References: */
 
@@ -87,6 +86,10 @@
 /*     interferometry from European Centre for Medium-Range Weather */
 /*     Forecasts operational analysis data," J. Geophy. Res., Vol. 111, */
 /*     B02406, doi:10.1029/2005JB003629 */
+
+/*     Please mind that the coefficients in this paper are wrong. */
+/*     The corrected version of the paper can be found at: */
+/*     http://ggosatm.hg.tuwien.ac.at/DOCS/PAPERS/2006Boehm_etal_VMF1.pdf */
 
 /*     Petit, G. and Luzum, B. (eds.), IERS Conventions (2010), */
 /*     IERS Technical Note No. 36, BKG (2010) */
@@ -100,6 +103,11 @@
 /*                                    compatibility */
 /*  2010 September 08 B.E. Stetzler   Provided new primary website to obtain */
 /*                                    VMF coefficients */
+/*  2011 July   21  J. Boehm          Changed latitude to ellipsoidal latitude */
+/*  2012 January 11 B.E. Stetzler Updated website in notes, removed reference */
+/*                                to old website, and added note in references */
+/*  2012 January 12 B.E. Stetzler Corrected test case input and output */
+/*                                mentioned in the header */
 /* ----------------------------------------------------------------------- */
 /* +--------------------------------------------------------------------- */
 /*     Reference day is 28 January 1980 */

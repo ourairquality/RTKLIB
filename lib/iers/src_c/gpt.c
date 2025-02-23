@@ -1,4 +1,4 @@
-/* ../src/gpt.f -- translated by f2c (version 20090411).
+/* gpt.f -- translated by f2c (version 20200916).
    You must link the resulting object file with libf2c:
 	on Microsoft Windows system, link with libf2c.lib;
 	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
@@ -116,11 +116,11 @@ static doublereal c_b2 = 5.225;
 	    );
 
     /* Local variables */
-    static integer i__, m, n;
-    static doublereal v[100]	/* was [10][10] */, w[100]	/* was [10][
-	    10] */, x, y, z__, apa, ata, apm, atm, doy;
-    static integer mmax, nmax;
-    static doublereal hort, temp0, pres0;
+    integer i__, m, n;
+    doublereal v[100]	/* was [10][10] */, w[100]	/* was [10][10] */, x,
+	     y, z__, apa, ata, apm, atm, doy;
+    integer mmax, nmax;
+    doublereal hort, temp0, pres0;
 
 /* + */
 /*  - - - - - - - - - */
@@ -170,9 +170,9 @@ static doublereal c_b2 = 5.225;
 /*                  DLAT = 0.6708665767D0 radians (NRAO, Green Bank, WV) */
 /*                  DLON = -1.393397187D0 radians */
 /*                  DHGT = 812.546 meters */
-/*     expected output: PRES = 919.1930225603726967D0 hPa */
-/*                      TEMP = 28.94460920276309679D0 degrees Celsius */
-/*                      UNDU = -42.78796423912972813D0 meters */
+/*     expected output: PRES = 918.0710638757363995D0 hPa */
+/*                      TEMP = 19.31914181012882992D0 degrees Celsius */
+/*                      UNDU = -42.19185643717770517D0 meters */
 
 /*  References: */
 
@@ -193,6 +193,8 @@ static doublereal c_b2 = 5.225;
 /*  2009 July  29 B.E. Stetzler Capitalized all variables for FORTRAN 77 */
 /*                              compatibility and corrected test case */
 /*                              latitude and longitude coordinates */
+/*  2011 October 18 B.E. Stetzler Corrected test case output mentioned */
+/*                                in the header */
 /* ----------------------------------------------------------------------- */
 /*     Reference day is 28 January 1980 */
 /*     This is taken from Niell (1996) to be consistent (See References) */

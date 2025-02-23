@@ -13,7 +13,7 @@
 *  act on geodetic parameters while canonical models provide lower-level
 *  representations or basic computations that are used by Class 1, 2, or
 *  3 models.
-* 
+*
 *  Status: Canonical model
 *
 *     Class 1 models are those recommended to be used a priori in the
@@ -27,7 +27,7 @@
 *     Class 1, 2, or 3 model.
 *
 *  Returned:
-*     V            d(3)      vector V 
+*     V            d(3)      vector V
 *
 *  Called:
 *     None
@@ -36,7 +36,7 @@
 *     given input: V(1) = 2D0
 *                  V(2) = 2D0
 *                  V(3) = 3D0
-*     
+*
 *     expected output: V = 0D0
 *
 *  References:
@@ -50,7 +50,7 @@
 *  Revisions:
 *  2009 July 29 B.E.Stetzler Initial standardization of subroutine,
 *                            provided a test case, and capitalized
-*                            all variables for FORTRAN 77 compatibility  
+*                            all variables for FORTRAN 77 compatibility
 *-----------------------------------------------------------------------
 
       IMPLICIT NONE
@@ -65,7 +65,7 @@
       RETURN
 
 * Finished.
-  
+
 *+----------------------------------------------------------------------
 *
 *  Copyright (C) 2008
@@ -102,14 +102,14 @@
 *
 *     c) The name(s) of all modified routine(s) that you distribute
 *        shall be changed.
-* 
+*
 *     d) The origin of the IERS Conventions components of your derived
 *        work must not be misrepresented; you must not claim that you
 *        wrote the original Software.
 *
 *     e) The source code must be included for all routine(s) that you
 *        distribute.  This notice must be reproduced intact in any
-*        source distribution. 
+*        source distribution.
 *
 *  4. In any published work produced by the user and which includes
 *     results achieved by using the Software, you shall acknowledge

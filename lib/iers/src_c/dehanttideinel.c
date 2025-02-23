@@ -1,4 +1,4 @@
-/* ../src/dehanttideinel.f -- translated by f2c (version 20090411).
+/* dehanttideinel.f -- translated by f2c (version 20200916).
    You must link the resulting object file with libf2c:
 	on Microsoft Windows system, link with libf2c.lib;
 	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
@@ -30,34 +30,33 @@
     double sqrt(doublereal);
 
     /* Local variables */
-    static doublereal mass_ratio_moon__;
+    doublereal mass_ratio_moon__;
     extern /* Subroutine */ int step2diu_(doublereal *, doublereal *, 
 	    doublereal *, doublereal *), step2lon_(doublereal *, doublereal *,
 	     doublereal *);
-    static integer i__;
+    integer i__;
     extern /* Subroutine */ int zero_vec8__(doublereal *);
-    static doublereal t, h2, l2, re;
-    extern /* Subroutine */ int dat_(integer *, integer *, integer *, 
+    doublereal t, h2, l2;
+    extern /* Subroutine */ int iau_cal2jd__(integer *, integer *, integer *, 
 	    doublereal *, doublereal *, integer *);
-    static doublereal scm, scs, dtt, jjm0, jjm1;
+    doublereal re, scm, scs, dtt, jjm0, jjm1, fhrd;
     extern /* Subroutine */ int st1l1_(doublereal *, doublereal *, doublereal 
 	    *, doublereal *, doublereal *, doublereal *);
-    static doublereal rsta, rmon, rsun, p2mon, p3mon, x2mon, x3mon, p2sun, 
-	    p3sun, x2sun, x3sun, scmon;
+    doublereal rsta, rmon, rsun, p2mon, p3mon, x2mon, x3mon, p2sun, p3sun, 
+	    x2sun, x3sun, scmon;
     extern /* Subroutine */ int sprod_(doublereal *, doublereal *, doublereal 
 	    *, doublereal *, doublereal *);
-    static doublereal scsun;
-    extern /* Subroutine */ int cal2jd_(integer *, integer *, integer *, 
-	    doublereal *, doublereal *, integer *);
-    static doublereal cosphi;
-    static integer statut;
-    static doublereal fac2mon, fac3mon, fac2sun, fac3sun;
+    doublereal scsun, cosphi;
+    integer statut;
+    doublereal fac2mon, fac3mon, fac2sun, fac3sun;
     extern /* Subroutine */ int st1idiu_(doublereal *, doublereal *, 
 	    doublereal *, doublereal *, doublereal *, doublereal *);
-    static doublereal mass_ratio_sun__;
+    doublereal mass_ratio_sun__;
     extern /* Subroutine */ int st1isem_(doublereal *, doublereal *, 
-	    doublereal *, doublereal *, doublereal *, doublereal *);
-    static doublereal xcorsta[3];
+	    doublereal *, doublereal *, doublereal *, doublereal *), 
+	    iau_dat__(integer *, integer *, integer *, doublereal *, 
+	    doublereal *, integer *);
+    doublereal xcorsta[3];
 
 /* + */
 /*  - - - - - - - - - - - - - - - */
@@ -67,7 +66,7 @@
 /*  This routine is part of the International Earth Rotation and */
 /*  Reference Systems Service (IERS) Conventions software collection. */
 
-/*  This subroutine computes the tidal corrections of station displacements */
+/*  This subroutine computes the station tidal displacement */
 /*  caused by lunar and solar gravitational attraction (see References). */
 /*  The computations are calculated by the following steps: */
 
@@ -105,7 +104,7 @@
 /*     YR            i      Year (Note 3) */
 /*     MONTH         i      Month (Note 3) */
 /*     DAY           i      Day of Month (Note 3) */
-/*     FHR           d      Hour in the day (Note 4) */
+/*     FHR           d      Hour in the day (Notes 3 and 4) */
 
 /*  Returned: */
 /*     DXTIDE        d(3)   Displacement vector (Note 5) */
@@ -121,7 +120,7 @@
 /*  3) The values are expressed in Coordinated Universal Time (UTC). */
 
 /*  4) The fractional hours in the day is computed as the hour + minutes/60.0 */
-/*     + sec/3600.0.  The unit is expressed in Universal Time (UT). */
+/*     + sec/3600.0. */
 
 /*  5) The displacement vector is in the geocentric ITRF.  All components are */
 /*     expressed in meters. */
@@ -152,11 +151,68 @@
 /*                  YR      = 2009 */
 /*                  MONTH   = 4 */
 /*                  DAY     = 13 */
-/*                  FHR     = 0.00D0 seconds */
+/*                  FHR     = 0.00D0 hour */
 
 /*     expected output:  DXTIDE(1) = 0.7700420357108125891D-01 meters */
 /*                       DXTIDE(2) = 0.6304056321824967613D-01 meters */
 /*                       DXTIDE(3) = 0.5516568152597246810D-01 meters */
+
+/*  Test case: */
+/*     given input: XSTA(1) =  1112189.660D0 meters */
+/*                  XSTA(2) = -4842955.026D0 meters */
+/*                  XSTA(3) =  3985352.284D0 meters */
+/*                  XSUN(1) = -54537460436.2357D0 meters */
+/*                  XSUN(2) =  130244288385.279D0 meters */
+/*                  XSUN(3) =  56463429031.5996D0 meters */
+/*                  XMON(1) =  300396716.912D0 meters */
+/*                  XMON(2) =  243238281.451D0 meters */
+/*                  XMON(3) =  120548075.939D0 meters */
+/*                  YR      = 2012 */
+/*                  MONTH   = 7 */
+/*                  DAY     = 13 */
+/*                  FHR     = 0.00D0 hour */
+
+/*     expected output:  DXTIDE(1) = -0.2036831479592075833D-01 meters */
+/*                       DXTIDE(2) =  0.5658254776225972449D-01 meters */
+/*                       DXTIDE(3) = -0.7597679676871742227D-01 meters */
+
+/*  Test case: */
+/*     given input: XSTA(1) =  1112200.5696D0 meters */
+/*                  XSTA(2) = -4842957.8511D0 meters */
+/*                  XSTA(3) =  3985345.9122D0 meters */
+/*                  XSUN(1) =  100210282451.6279D0 meters */
+/*                  XSUN(2) =  103055630398.3160D0 meters */
+/*                  XSUN(3) =  56855096480.4475D0 meters */
+/*                  XMON(1) =  369817604.4348D0 meters */
+/*                  XMON(2) =  1897917.5258D0 meters */
+/*                  XMON(3) =  120804980.8284D0 meters */
+/*                  YR      = 2015 */
+/*                  MONTH   = 7 */
+/*                  DAY     = 15 */
+/*                  FHR     = 0.00D0 hour */
+
+/*     expected output:  DXTIDE(1) = .00509570869172363845D0 meters */
+/*                       DXTIDE(2) = .0828663025983528700D0 meters */
+/*                       DXTIDE(3) = -.0636634925404189617D0 meters */
+
+/*  Test case: */
+/*      given input: XSTA(1) = 1112152.8166D0 meters */
+/*                   XSTA(2) = -4842857.5435D0 meters */
+/*                   XSTA(3) = 3985496.1783D0 meters */
+/*                   XSUN(1) = 8382471154.1312895D0 meters */
+/*                   XSUN(2) = 10512408445.356153D0 meters */
+/*                   XSUN(3) = -5360583240.3763866D0 meters */
+/*                   XMON(1) = 380934092.93550891D0 meters */
+/*                   XMON(2) = 2871428.1904491195D0 meters */
+/*                   XMON(3) = 79015680.553570181D0 meters */
+/*                   YR      = 2017 */
+/*                   MONTH   = 1 */
+/*                   DAY     = 15 */
+/*                   FHR     = 0.00D0 hour */
+
+/*      expected output:  DXTIDE(1) =  .0050957086917236384D0 meters */
+/*                        DXTIDE(2) =  .082866302598352870D0 meters */
+/*                        DXTIDE(3) = -.063663492540418962D0 meters */
 
 /*  References: */
 
@@ -200,6 +256,9 @@
 /*                                  STEP2DIU */
 /*  2009 February 19 G. Petit       Update routine iau_DAT for 2009.0 leap */
 /*                                  second */
+/*  2009 April    09 G. Petit       FHR is now passed to iau_DAT as fraction */
+/*                                  of day, as expected (bug noted by */
+/*                                  T. Springer) */
 /*  2009 August   06 B.E. Stetzler  Initial standardization of code */
 /*  2009 August   07 B.E. Stetzler  Updated MASS_RATIO_SUN, */
 /*                                  MASS_RATIO_MOON and RE to CBEs and */
@@ -208,6 +267,16 @@
 /*                                  77 compatibility */
 /*  2009 September 01 B.E. Stetzler Removed 'iau_' from redistributed SOFA */
 /*                                  subroutines */
+/*  2012 March    13 B.E. Stetzler  Update routine DAT for 2012.5 leap */
+/*                                  second and provided another test case */
+/*                                  (USNO, Washington, DC USA) */
+/*  2013 May      17 B.E. Stetzler  Fixed bug re-introduced in update */
+/*                                  26 March 2012 which divided FHR by */
+/*                                  24 twice (noted by D. Ferguson) */
+/*  2015 April    24 M.A. Davis     Include updated routine DAT for 2015.5 leap */
+/*                                  second. Created additional test case */
+/*  2016 December 19 M.A. Davis     Updated routine DAT for 2017.0 leap */
+/*                                  second, and added new test case. */
 /* ----------------------------------------------------------------------- */
 /* ---------------------------------------------------------------------- */
 /* NOMINAL SECOND DEGREE AND THIRD DEGREE LOVE NUMBERS AND SHIDA NUMBERS */
@@ -323,12 +392,14 @@
 
 /*   1) CALL THE SUBROUTINE COMPUTING THE JULIAN DATE */
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-    cal2jd_(yr, month, day, &jjm0, &jjm1, &statut);
-    t = (jjm0 - 2451545. + jjm1 + *fhr / 24.) / 36525.;
+    iau_cal2jd__(yr, month, day, &jjm0, &jjm1, &statut);
+    fhrd = *fhr / 24.;
+/*     17 May 2013 Corrected bug as noted in header */
+    t = (jjm0 - 2451545. + jjm1 + fhrd) / 36525.;
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*   2) CALL THE SUBROUTINE COMPUTING THE CORRECTION OF UTC TIME */
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-    dat_(yr, month, day, fhr, &dtt, &statut);
+    iau_dat__(yr, month, day, &fhrd, &dtt, &statut);
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
     dtt += 32.184;
 /*     CONVERSION OF T IN TT TIME */

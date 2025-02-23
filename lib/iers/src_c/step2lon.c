@@ -1,4 +1,4 @@
-/* ../src/step2lon.f -- translated by f2c (version 20090411).
+/* step2lon.f -- translated by f2c (version 20200916).
    You must link the resulting object file with libf2c:
 	on Microsoft Windows system, link with libf2c.lib;
 	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
@@ -34,10 +34,10 @@ static doublereal c_b2 = 360.;
 	    doublereal), sin(doublereal);
 
     /* Local variables */
-    static doublereal h__;
-    static integer i__, j;
-    static doublereal p, s, de, dn, dr, pr, ps, zns, rsta, cosla, sinla, 
-	    thetaf, cosphi, dn_tot__, sinphi, dr_tot__, deg2rad;
+    doublereal h__;
+    integer i__, j;
+    doublereal p, s, de, dn, dr, pr, ps, zns, rsta, cosla, sinla, thetaf, 
+	    cosphi, dn_tot__, sinphi, dr_tot__, deg2rad;
 
 /* + */
 /*  - - - - - - - - - - - */

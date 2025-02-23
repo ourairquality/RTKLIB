@@ -1,4 +1,4 @@
-/* ../src/st1idiu.f -- translated by f2c (version 20090411).
+/* st1idiu.f -- translated by f2c (version 20200916).
    You must link the resulting object file with libf2c:
 	on Microsoft Windows system, link with libf2c.lib;
 	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
@@ -27,10 +27,10 @@
     double sqrt(doublereal);
 
     /* Local variables */
-    static doublereal de, dn, dr, rsta, rmon, rsun;
+    doublereal de, dn, dr, rsta, rmon, rsun;
     extern doublereal norm8_(doublereal *);
-    static doublereal cosla, demon, sinla, dnmon, desun, drmon, dnsun, drsun, 
-	    cosphi, sinphi, cos2phi;
+    doublereal cosla, demon, sinla, dnmon, desun, drmon, dnsun, drsun, cosphi,
+	     sinphi, cos2phi;
 
 /* + */
 /*  - - - - - - - - - - - */

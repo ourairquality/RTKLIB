@@ -1,4 +1,4 @@
-/* ../src/gmf.f -- translated by f2c (version 20090411).
+/* gmf.f -- translated by f2c (version 20200916).
    You must link the resulting object file with libf2c:
 	on Microsoft Windows system, link with libf2c.lib;
 	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
@@ -96,13 +96,13 @@ static integer c__2 = 2;
     double pow_di(doublereal *, integer *), sqrt(doublereal), cos(doublereal);
 
     /* Local variables */
-    static integer i__, j, k, m, n;
-    static doublereal p[100]	/* was [10][10] */, t, ah, bh, ch, ap[55], bp[
-	    55], aw, bw, cw;
-    static integer ir;
-    static doublereal c0h, aha, c10h, c11h, ahm, awa, phh, awm, doy, sum1, 
-	    dfac[20], beta, a_ht__, b_ht__, c_ht__, sine, ht_corr_coef__, 
-	    gamma, hs_km__, topcon, ht_corr__;
+    integer i__, j, k, m, n;
+    doublereal p[100]	/* was [10][10] */, t, ah, bh, ch, ap[55], bp[55], aw,
+	     bw, cw;
+    integer ir;
+    doublereal c0h, aha, c10h, c11h, ahm, awa, phh, awm, doy, sum1, dfac[20], 
+	    beta, a_ht__, b_ht__, c_ht__, sine, ht_corr_coef__, gamma, 
+	    hs_km__, topcon, ht_corr__;
 
 /* + */
 /*  - - - - - - - - - */

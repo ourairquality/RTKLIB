@@ -8,12 +8,12 @@
 *  Reference Systems Service (IERS) Conventions software collection.
 *
 *  This function normalizes a given three dimensional vector A.
-* 
+*
 *  In general, Class 1, 2, and 3 models represent physical effects that
 *  act on geodetic parameters while canonical models provide lower-level
 *  representations or basic computations that are used by Class 1, 2, or
 *  3 models.
-* 
+*
 *  Status: Canonical model
 *
 *     Class 1 models are those recommended to be used a priori in the
@@ -49,9 +49,9 @@
 *
 *  Revisions:
 *  2009 July 29 B.E. Stetzler Initial standardization of function
-*                             and provided a test case 
+*                             and provided a test case
 *-----------------------------------------------------------------------
-      
+
       IMPLICIT NONE
 
       DOUBLE PRECISION A(3)
@@ -61,7 +61,7 @@
       RETURN
 
 * Finished.
-  
+
 *+----------------------------------------------------------------------
 *
 *  Copyright (C) 2008
@@ -98,14 +98,14 @@
 *
 *     c) The name(s) of all modified routine(s) that you distribute
 *        shall be changed.
-* 
+*
 *     d) The origin of the IERS Conventions components of your derived
 *        work must not be misrepresented; you must not claim that you
 *        wrote the original Software.
 *
 *     e) The source code must be included for all routine(s) that you
 *        distribute.  This notice must be reproduced intact in any
-*        source distribution. 
+*        source distribution.
 *
 *  4. In any published work produced by the user and which includes
 *     results achieved by using the Software, you shall acknowledge
