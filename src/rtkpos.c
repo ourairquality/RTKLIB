@@ -569,6 +569,7 @@ static void udpos(rtk_t *rtk, double tt)
     free(ix); free(F); free(P); free(FP); free(x); free(xp);
 }
 /* temporal update of ionospheric parameters ---------------------------------*/
+// Note this is not called for IONOOPT_IFLC so need not handle that case.
 static void udion(rtk_t *rtk, double tt, double bl, const int *sat, int ns)
 {
     double el,fact;
@@ -665,7 +666,7 @@ static void detslp_code(rtk_t *rtk, const obsd_t *obs, int i, int rcv) {
       rtk->ssat[sat - 1].code[f][rcv - 1] = code;
       // Skip flagging a slip and emitting a message when initializing.
       if (ccode != CODE_NONE) {
-        rtk->ssat[sat - 1].slip[f] |= LLI_SLIP;
+        rtk->ssat[sat - 1].fslip[f] |= LLI_SLIP;
         errmsg(rtk, "slip detected, code change (sat=%3d rcv=%d F=%d code=%2d %2s to %2d %2s)\n", sat,
                rcv, f, ccode, code2obs(ccode), code, code2obs(code));
       }
@@ -687,8 +688,8 @@ static void detslp_ll(rtk_t *rtk, const obsd_t *obs, int i, int rcv)
             continue;
         }
         /* restore previous LLI */
-        if (rcv==1) LLI=getbitu(&rtk->ssat[sat-1].slip[f],0,2); /* rover */
-        else        LLI=getbitu(&rtk->ssat[sat-1].slip[f],2,2); /* base  */
+        if (rcv==1) LLI=getbitu(&rtk->ssat[sat-1].fslip[f],0,2); /* rover */
+        else        LLI=getbitu(&rtk->ssat[sat-1].fslip[f],2,2); /* base  */
 
         /* detect slip by cycle slip flag in LLI */
         if (rtk->tt>=0.0) { /* forward */
@@ -713,11 +714,11 @@ static void detslp_ll(rtk_t *rtk, const obsd_t *obs, int i, int rcv)
             slip|=LLI_SLIP;
         }
         /* save current LLI */
-        if (rcv==1) setbitu(&rtk->ssat[sat-1].slip[f],0,2,obs[i].LLI[f]);
-        else        setbitu(&rtk->ssat[sat-1].slip[f],2,2,obs[i].LLI[f]);
+        if (rcv==1) setbitu(&rtk->ssat[sat-1].fslip[f],0,2,obs[i].LLI[f]);
+        else        setbitu(&rtk->ssat[sat-1].fslip[f],2,2,obs[i].LLI[f]);
 
         /* save slip and half-cycle valid flag */
-        rtk->ssat[sat-1].slip[f]|=(uint8_t)slip;
+        rtk->ssat[sat-1].fslip[f]|=(uint8_t)slip;
         rtk->ssat[sat-1].half[f]=(obs[i].LLI[f]&LLI_HALFC)?0:1;
     }
 }
@@ -725,29 +726,36 @@ static void detslp_ll(rtk_t *rtk, const obsd_t *obs, int i, int rcv)
 static void detslp_gf(rtk_t *rtk, const obsd_t *obs, int i, int j,
                            const nav_t *nav)
 {
-    int k,sat=obs[i].sat;
-    double gf0,gf1;
-
     trace(4,"detslp_gf: i=%d j=%d\n",i,j);
 
-    /* skip check if slip already detected or check disabled*/
+    // Skip check if slip already detected or check disabled.
     if (rtk->opt.thresslip==0) return;
-    for (k=0;k<rtk->opt.nf;k++)
-        if (rtk->ssat[sat-1].slip[k]&LLI_SLIP) return;
 
-    for (k=1;k<rtk->opt.nf;k++) {
-        /* calc SD geomotry free LC of phase between freq0 and freqk */
-        if ((gf1=gfobs(obs,i,j,k,nav))==0.0) continue;
+    int sat = obs[i].sat, ref_slip = 0, ref_lock = 0;
+    for (int k = 1; k < rtk->opt.nf; k++) {
+        // Calc SD geometry free LC of phase between freq0 and freqk.
+        double gf1 = gfobs(obs, i, j, k, nav);
+        if (gf1 == 0.0) continue;
 
-        gf0=rtk->ssat[sat-1].gf[k-1];    /* retrieve previous gf */
-        rtk->ssat[sat-1].gf[k-1]=gf1;    /* save current gf for next epoch */
+        double gf0 = rtk->ssat[sat - 1].gf[k - 1];    // Retrieve previous gf.
+        rtk->ssat[sat-1].gf[k - 1] = gf1;    // Save current gf for next epoch.
 
-        if (gf0!=0.0&&fabs(gf1-gf0)>rtk->opt.thresslip) {
-            rtk->ssat[sat-1].slip[0]|=LLI_SLIP;
-            rtk->ssat[sat-1].slip[k]|=LLI_SLIP;
-            errmsg(rtk,"slip detected GF jump (sat=%2d L1-L%d dGF=%.3f)\n",
-                sat,k+1,gf0-gf1);
+        if (gf0 != 0.0 && fabs(gf1 - gf0) > rtk->opt.thresslip) {
+            ref_slip++;
+            rtk->ssat[sat - 1].fslip[k] |= LLI_SLIP;
+            errmsg(rtk, "slip detected GF jump (sat=%2d L%d-L%d dGF=%.3f), slip for L%d\n",
+                   sat, 1, k + 1, gf0 - gf1, k + 1);
+        } else {
+          ref_lock++;
         }
+    }
+    // If the reference signal was in a pair with a slip, and not in a pair
+    // without a slip, then record a slip for the reference. This is intended
+    // to prevent unnecessary slips being flagged for the reference where only
+    // some of the other signals are of poor quality.
+    if (ref_slip > 0 && ref_lock == 0) {
+      rtk->ssat[sat-1].fslip[0] |= LLI_SLIP;
+      errmsg(rtk, "slip detected GF jump ref_slip=%d ref_lock=%d slip for L%d\n", ref_slip, ref_lock, 1);
     }
 }
 /* detect cycle slip by doppler and phase difference -------------------------*/
@@ -795,7 +803,7 @@ static void detslp_dop(rtk_t *rtk, const obsd_t *obs, const int *ix, int ns,
         for (f=0;f<nf;f++) {
             if (dopdif[i][f]==0.00) continue;
             if (fabs(dopdif[i][f]-mean_dop)>rtk->opt.thresdop) {
-                rtk->ssat[sat-1].slip[f]|=LLI_SLIP;
+                rtk->ssat[sat-1].fslip[f]|=LLI_SLIP;
                 errmsg(rtk,"slip detected doppler (sat=%2d rcv=%d dL%d=%.3f off=%.3f tt=%.2f)\n",
                    sat,rcv,f+1,dopdif[i][f]-mean_dop,mean_dop,tt[i][f]);
             }
@@ -825,14 +833,16 @@ static void udbias(rtk_t *rtk, double tt, const obsd_t *obs, const int *sat,
 
     /* Clear cycle slips */
     for (int i=0;i<ns;i++) {
-        for (int k=0;k<rtk->opt.nf;k++) rtk->ssat[sat[i]-1].slip[k]&=0xFC;
+      for (int k=0;k<rtk->opt.nf;k++) {
+        rtk->ssat[sat[i]-1].fslip[k] &= 0xFC;
+        rtk->ssat[sat[i]-1].slip[k] = 0;
+      }
     }
 
     /* Detect cycle slip by doppler and phase difference */
     detslp_dop(rtk,obs,iu,ns,1,nav);
     detslp_dop(rtk,obs,ir,ns,2,nav);
 
-    int nf=NF(&rtk->opt);
     for (int i=0;i<ns;i++) {
         // Detect cycle slip by code change.
         detslp_code(rtk, obs, iu[i], 1);
@@ -846,11 +856,24 @@ static void udbias(rtk_t *rtk, double tt, const obsd_t *obs, const int *sat,
         detslp_gf(rtk,obs,iu[i],ir[i],nav);
 
         /* Update half-cycle valid flag */
-        for (int k=0;k<nf;k++) {
+        for (int k=0;k<rtk->opt.nf;k++) {
             rtk->ssat[sat[i]-1].half[k]=
                 !((obs[iu[i]].LLI[k]&LLI_HALFC)||(obs[ir[i]].LLI[k]&LLI_HALFC));
         }
+
+        // From frequency index slip flags. For the IFLC there is only
+        // one effective index used in the slip[] array.
+        rtk->ssat[sat[i] - 1].slip[0] = rtk->ssat[sat[i] - 1].fslip[0];
+        if (rtk->opt.ionoopt==IONOOPT_IFLC) {
+          // Combined IFLC state.
+          int f2 = seliflc(rtk->opt.nf, rtk->ssat[sat[i] - 1].sys);
+          rtk->ssat[sat[i] - 1].slip[0] |= rtk->ssat[sat[i] - 1].fslip[f2];
+          continue;
+        }
+        for (int k = 1; k < rtk->opt.nf; k++)
+          rtk->ssat[sat[i] - 1].slip[k] = rtk->ssat[sat[i] - 1].fslip[k];
     }
+    int nf=NF(&rtk->opt);
     for (int k=0;k<nf;k++) {
         /* Reset phase-bias if instantaneous AR or expire obs outage counter */
         for (int i=1;i<=MAXSAT;i++) {
@@ -878,10 +901,6 @@ static void udbias(rtk_t *rtk, double tt, const obsd_t *obs, const int *sat,
             rtk->P[j+j*rtk->nx]+=rtk->opt.prn[0]*rtk->opt.prn[0]*fabs(tt);
             int slip=rtk->ssat[sat[i]-1].slip[k];
             int rejc=rtk->ssat[sat[i]-1].rejc[k];
-            if (rtk->opt.ionoopt==IONOOPT_IFLC) {
-                int f2=seliflc(rtk->opt.nf,rtk->ssat[sat[i]-1].sys);
-                slip|=rtk->ssat[sat[i]-1].slip[f2];
-            }
             if (rtk->opt.modear==ARMODE_INST||(!(slip&LLI_SLIP)&&rejc<2)) continue;
             /* Reset phase-bias state if detecting cycle slip or outlier */
             rtk->x[j]=0.0;

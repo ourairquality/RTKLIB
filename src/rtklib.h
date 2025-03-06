@@ -1177,29 +1177,33 @@ typedef struct {        /* RINEX options type */
     int nobs[RNX_NUMSYS]; /* number of obs types {GPS,GLO,GAL,QZS,SBS,CMP,IRN} */
 } rnxopt_t;
 
-typedef struct {        /* satellite status type */
-    uint8_t sys;        /* navigation system */
-    uint8_t vs;         /* valid satellite flag single */
-    double azel[2];     /* azimuth/elevation angles {az,el} (rad) */
-    double resp[NFREQ]; /* residuals of pseudorange (m) */
-    double resc[NFREQ]; /* residuals of carrier-phase (m) */
-    double icbias[NFREQ];  /* glonass IC bias (cycles) */
-    uint8_t vsat[NFREQ]; /* valid satellite flag */
-    float snr_rover [NFREQ]; /* rover signal strength (dBHz) */
-    float snr_base  [NFREQ]; /* base signal strength (dBHz) */
-    uint8_t fix [NFREQ]; /* ambiguity fix flag (1:float,2:fix,3:hold) */
-    int code[NFREQ][2];  // Current code per frequency index for the base and rover.
-    uint8_t slip[NFREQ]; /* cycle-slip flag */
-    uint8_t half[NFREQ]; /* half-cycle valid flag */
-    int lock [NFREQ];   /* lock counter of phase */
-    uint32_t outc [NFREQ]; /* obs outage counter of phase */
-    uint32_t slipc[NFREQ]; /* cycle-slip counter */
-    uint32_t rejc [NFREQ]; /* reject counter */
-    double gf[NFREQ-1]; /* geometry-free phase (m) */
-    double mw[NFREQ-1]; /* MW-LC (m) */
-    double phw;         /* phase windup (cycle) */
-    gtime_t pt[2][NFREQ]; /* previous carrier-phase time */
-    double  ph[2][NFREQ]; /* previous carrier-phase observable (cycle) */
+// Many of the elements are indexed by a frequency index. For some this is
+// either the signal frequency index or when using the IFLC only the first
+// index is used. For other cases this is always the signal frequency index.
+typedef struct {            // Satellite status type.
+    uint8_t sys;            // Navigation system.
+    uint8_t vs;             // Valid satellite flag single.
+    double azel[2];         // Azimuth/elevation angles {az,el} (rad).
+    double resp[NFREQ];     // Residuals of pseudorange (m) (freq or LC).
+    double resc[NFREQ];     // Residuals of carrier-phase (m) (freq or LC).
+    double icbias[NFREQ];   // GLONASS IC bias (cycles) (freq or LC).
+    uint8_t vsat[NFREQ];    // Valid satellite flag (freq or LC).
+    float snr_rover[NFREQ]; // Rover signal strength (dBHz) (freq or LC).
+    float snr_base[NFREQ];  // Base signal strength (dBHz) (freq or LC).
+    uint8_t fix [NFREQ];    // Ambiguity fix flag (1:float,2:fix,3:hold) (freq or LC)
+    int code[NFREQ][2];     // Current code per frequency index for the base and rover (freq only).
+    uint8_t fslip[NFREQ];   // Cycle-slip flag (freq only).
+    uint8_t slip[NFREQ];    // Cycle-slip flag (freq or LC).
+    uint8_t half[NFREQ];    // Half-cycle valid flag (freq only).
+    int lock [NFREQ];       // Lock counter of phase (freq or LC).
+    uint32_t outc [NFREQ];  // Obs outage counter of phase (freq or LC).
+    uint32_t slipc[NFREQ];  // Cycle-slip counter (freq or LC).
+    uint32_t rejc [NFREQ];  // Reject counter (freq or LC).
+    double gf[NFREQ-1];     // Geometry-free phase (m) (freq only).
+    double mw[NFREQ-1];     // MW-LC (m) (freq only).
+    double phw;             // Phase windup (cycle).
+    gtime_t pt[2][NFREQ];   // Previous carrier-phase time (freq only).
+    double  ph[2][NFREQ];   // Previous carrier-phase observable (cycle) (freq only).
 } ssat_t;
 
 typedef struct {        /* ambiguity control type */
