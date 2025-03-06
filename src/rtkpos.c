@@ -572,19 +572,20 @@ static inline void initx(rtk_t *rtk, double xi, double var, int i)
     rtk->P[i+i*rtk->nx]=var;
 }
 /* select common satellites between rover and reference station --------------*/
-static int selsat(const obsd_t *obs, double *azel, int nu, int nr,
+static int selsat(const obsd_t *obs, const double *azel, int nu, int nr,
                   const prcopt_t *opt, int *sat, int *iu, int *ir)
 {
-    int i,j,k=0;
-
     trace(3,"selsat  : nu=%d nr=%d\n",nu,nr);
 
-    for (i=0,j=nu;i<nu&&j<nu+nr;i++,j++) {
+    int k=0;
+    for (int i=0,j=nu;i<nu&&j<nu+nr;i++,j++) {
         if      (obs[i].sat<obs[j].sat) j--;
         else if (obs[i].sat>obs[j].sat) i--;
-        else if (azel[1+j*2]>=opt->elmin) { /* elevation at base station */
-            sat[k]=obs[i].sat; iu[k]=i; ir[k++]=j;
-            trace(4,"(%2d) sat=%3d iu=%2d ir=%2d\n",k-1,obs[i].sat,i,j);
+        else if (azel[1+j*2]>=opt->elmin) {
+          // This function is called before the rover satellite elevations are
+          // computed, so it tests only the base satellite elevations.
+          sat[k]=obs[i].sat; iu[k]=i; ir[k++]=j;
+          trace(4,"(%2d) sat=%3d iu=%2d ir=%2d\n",k-1,obs[i].sat,i,j);
         }
     }
     return k;
