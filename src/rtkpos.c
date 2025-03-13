@@ -1146,22 +1146,22 @@ static int zdres(int base, const obsd_t *obs, int n, const double *rs, const dou
 
   int nf = NF(opt);
 
-  /* Init residuals to zero */
+  // Init residuals to zero.
   for (int i = 0; i < n * nf * 2; i++) y[i] = 0.0;
 
   if (norm(rr, 3) <= RE_WGS84 / 2) return 0; // No receiver position.
 
-  /* rr_ = local copy of rcvr pos */
+  // rr_ = local copy of rcvr pos.
   double rr_[3];
   for (int i = 0; i < 3; i++) rr_[i] = rr[i];
 
-  /* Adjust rcvr pos for earth tide correction */
+  // Adjust rcvr pos for earth tide correction.
   if (opt->tidecorr) {
     double disp[3];
     tidedisp(gpst2utc(obs[0].time), rr_, opt->tidecorr, &nav->erp, opt->odisp[base], disp);
     for (int i = 0; i < 3; i++) rr_[i] += disp[i];
   }
-  /* Translate rcvr pos from ECEF to geodetic */
+  // Translate rcvr pos from ECEF to geodetic.
   double pos[3];
   ecef2pos(rr_, pos);
 
@@ -1169,119 +1169,53 @@ static int zdres(int base, const obsd_t *obs, int n, const double *rs, const dou
   for (int i = 0; i < n; i++) {
     int sat = obs[i].sat;
 
-    if (opt->ionoopt == IONOOPT_IFLC) { /* Iono-free linear combination */
-      int sys = satsyst(sat, obs[i].time, NULL);
-      int code1 = obs[i].code[0];
-      double freq1 = sat2freq(sat, code1, nav);
-      int f2 = seliflc(opt->nf, sys);
-      int code2 = obs[i].code[f2];
-      double freq2 = sat2freq(sat, code2, nav);
-
-      if (freq1 == 0.0 || freq2 == 0.0) continue;
-      double C1 = SQR(freq1) / (SQR(freq1) - SQR(freq2));
-      double C2 = -SQR(freq2) / (SQR(freq1) - SQR(freq2));
-
-      // Receiver antenna phase center offset.
-      double pco[3]; // ENU
-      double pco1[3], pco2[3];
-      antpco(opt->pcvr + base, freq1, pco1);
-      antpco(opt->pcvr + base, freq2, pco2);
-      for (int j = 0; j < 3; j++) pco[j] = C1 * pco1[j] + C2 * pco2[j];
-
-      // Add in the antenna delta, which includes the offset from the marker
-      // to the antenna reference point plus eccentricities.
-      for (int j = 0; j < 3; j++) pco[j] += opt->antdel[base][j];
-      double dr[3];
-      enu2ecef(pos, pco, dr);
-      double rpc[3];
-      for (int j = 0; j < 3; j++) rpc[j] = rr_[j] + dr[j];
-      // Recalculate the position, now for the phase center.
-      double rpc_pos[3];
-      ecef2pos(rpc, rpc_pos);
-
-      // Compute geometric-range and azimuth/elevation angle
-      double r = geodist(rs + i * 6, rpc, e + i * 3);
-      if (r <= 0.0) continue;
-      if (satazel(rpc_pos, e + i * 3, azel + i * 2) < opt->elmin) continue;
-
-      // Check elevation mask.
-      if (testelmask(azel + i * 2, &opt->elmask[base])) continue;
-
-      // Check SNR mask
-      if (testsnr(base, 0, azel[1 + i * 2], obs[i].SNR[0], &opt->snrmask) ||
-          testsnr(base, f2, azel[1 + i * 2], obs[i].SNR[f2], &opt->snrmask))
-        continue;
-
-      // Excluded satellite?
-      if (satexclude(sat, obs[i].time, var[i], svh[i], opt)) continue;
-
-      // Adjust range for satellite clock-bias.
-      r += -CLIGHT * dts[i * 2];
-
-      // Adjust range for troposphere delay model.
-      double dtrp = 0.0;
-      if (opt->tropopt <= TROPOPT_SAAS) {
-        dtrp = tropmodel(obs[i].time, rpc_pos, azel + i * 2, REL_HUMI);
-      } else if (opt->tropopt == TROPOPT_SBAS) {
-        double vart;
-        dtrp = sbstropcorr(obs[i].time, rpc_pos, azel + i * 2, &vart);
-      } else if (opt->tropopt >= TROPOPT_EST) {
-        // Hydrostatic only.
-        dtrp = tropmodel(obs[i].time, rpc_pos, azel + i * 2, 0.0);
-      }
-
-      // Calc receiver antenna phase center variation, from the phase center
-      double dant_if = 0.0;
-      if (opt->posopt[1]) {
-        double dant1 = antpcv(opt->pcvr + base, azel + i * 2, freq1);
-        double dant2 = antpcv(opt->pcvr + base, azel + i * 2, freq2);
-        dant_if = C1 * dant1 + C2 * dant2;
-      }
-
-      if (obs[i].L[0] != 0.0 && obs[i].L[f2] != 0.0)
-        y[0 + i * nf * 2] = C1 * obs[i].L[0] * CLIGHT / freq1 + C2 * obs[i].L[f2] * CLIGHT / freq2 - (r + dant_if + dtrp);
-      if (obs[i].P[0] != 0.0 && obs[i].P[f2] != 0.0)
-        y[0 + nf + i * nf * 2] = C1 * obs[i].P[0] + C2 * obs[i].P[f2] - (r + dant_if + dtrp);
-      freq[i * nf] = 1.0;
-      trace(4, "zdres: sat=%d L=%.6f P=%.6f r=%.6f c*dts=%.6f dtrp=%.6f dant=%.6lf\n", sat, obs[i].L[0], obs[i].P[0], r, CLIGHT * dts[i * 2], dtrp, dant_if);
-    }
-    else {
-      for (int f = 0; f < nf; f++) {
+    // Calculate results for all frequencies, even in the case of an IFLC result.
+    double freqf[NFREQ], ef[NFREQ * 3], yf[NFREQ * 2];
+    for (int f = 0; f < opt->nf; f++) {
+        ef[f * 3] = ef[1 + f * 3] = ef[2 + f * 3] = 0;
+        yf[f] = yf[f + opt->nf] = 0;
         int code = obs[i].code[f];
         double frq = sat2freq(sat, code, nav);
-        freq[f + i * nf] = frq;
+        freqf[f] = frq;
         if (frq == 0.0) continue;
+
         // Receiver antenna phase center offset.
-        double pco[3];
-        antpco(opt->pcvr + base, frq, pco);
+        double antpcor[3]; // ENU
+        antpco(opt->pcvr + base, frq, antpcor);
 
         // Add in the antenna delta, which includes the offset from the marker
         // to the antenna reference point plus eccentricities.
-        for (int j = 0; j < 3; j++) pco[j] += opt->antdel[base][j];
-        double dr[3];
-        enu2ecef(pos, pco, dr);
-        double rpc[3];
-        for (int j = 0; j < 3; j++) rpc[j] = rr_[j] + dr[j];
+        double pcor[3]; // ENU
+        for (int j = 0; j < 3; j++) pcor[j] = antpcor[j] + opt->antdel[base][j];
+        double dantr[3];  // XYZ
+        enu2ecef(pos, pcor, dantr);
+
+        double rpc[3]; // XYZ
+        for (int j = 0; j < 3; j++) rpc[j] = rr_[j] + dantr[j];
         // Recalculate the position, now for the phase center.
-        double rpc_pos[3];
+        double rpc_pos[3]; // lat,lon,h
         ecef2pos(rpc, rpc_pos);
 
-        // Compute geometric-range and azimuth/elevation angle
-        double r = geodist(rs + i * 6, rpc, e + f * 3 + i * nf * 3);
+        // Compute geometric-range and azimuth/elevation angle.
+        double r = geodist(rs + i * 6, rpc, ef + f * 3);
         if (r <= 0.0) continue;
-        if (satazel(rpc_pos, e + f * 3 + i * nf * 3, azel + i * 2) < opt->elmin) continue;
+        satazel(rpc_pos, ef + f * 3, azel + i * 2);
+
+        // Check elevation.
+        if (azel[1 + i * 2] < opt->elmin) continue;
 
         // Check elevation mask.
         if (testelmask(azel + i * 2, &opt->elmask[base])) continue;
 
-        // Check SNR mask
+        // Check SNR mask.
         if (testsnr(base, f, azel[1 + i * 2], obs[i].SNR[f], &opt->snrmask)) continue;
 
         // Excluded satellite?
         if (satexclude(sat, obs[i].time, var[i], svh[i], opt)) continue;
 
-        // Adjust range for satellite clock-bias
-        r += -CLIGHT * dts[i * 2];
+        // Satellite clock-bias.
+        // Includes the first, and largest, relativistic effect.
+        double cdts = -CLIGHT * dts[i * 2];
 
         // Relativistic path range effect. Shapiro signal propagation delay.
         double rrs[3];
@@ -1312,14 +1246,49 @@ static int zdres(int base, const obsd_t *obs, int n, const double *rs, const dou
         double dant = 0.0;
         if (opt->posopt[1]) dant = antpcv(opt->pcvr + base, azel + i * 2, frq);
 
-        // Calc undifferenced phase/code residual for satellite
+        // Calc undifferenced phase/code residual for satellite.
         // Residuals = observable - estimated range
+        // Note the tide, receiver delta, and receiver and satellite PCOs have already
+        // been applied - the geometric distance 'r' is between the phase centers.
         if (obs[i].L[f] != 0.0)
-          y[f + i * nf * 2] = obs[i].L[f] * CLIGHT / frq - (r + CLIGHT * dtrel + dant + dtrp - C * dion);
+          yf[f] = obs[i].L[f] * CLIGHT / frq - (r + cdts + CLIGHT * dtrel + dant + dtrp - C * dion);
         if (obs[i].P[f] != 0.0)
-          y[f + nf + i * nf * 2] = obs[i].P[f] - (r + CLIGHT * dtrel + dant + dtrp + C * dion);
-        trace(4, "zdres: sat=%d f=%d frq=%.0f L=%.6f P=%.6f r=%.6f c*dts=%.6f c*dtrel=%.6f dtrp=%.6f dion=%.6f dant=%.6lf\n", sat, f, frq, obs[i].L[f], obs[i].P[f], r, CLIGHT * dts[i * 2], CLIGHT * dtrel, dtrp, C * dion, dant);
-      }
+          yf[f + opt->nf] = obs[i].P[f] - (r + cdts + CLIGHT * dtrel + dant + dtrp + C * dion);
+        trace(4, "zdres: sat=%d f=%d frq=%.0f L=%.6f P=%.6f r=%.6f c*dts=%.6f c*dtrel=%.6f dtrp=%.6f dion=%.6f dant=%.6lf\n", sat, f, frq, obs[i].L[f], obs[i].P[f], r, cdts, CLIGHT * dtrel, dtrp, C * dion, dant);
+    }
+
+    if (opt->ionoopt == IONOOPT_IFLC) { // Iono-free linear combination.
+      int sys = satsyst(sat, obs[i].time, NULL);
+      int f2 = seliflc(opt->nf, sys);
+      double freq1 = freqf[0], freq2 = freqf[f2];
+      if (freq1 == 0.0 || freq2 == 0.0) continue;
+      double C1 = SQR(freq1) / (SQR(freq1) - SQR(freq2));
+      double C2 = -SQR(freq2) / (SQR(freq1) - SQR(freq2));
+
+      // Check elevation mask.
+      if (testelmask(azel + i * 2, &opt->elmask[base])) continue;
+
+      // Check SNR mask
+      if (testsnr(base, 0, azel[1 + i * 2], obs[i].SNR[0], &opt->snrmask) ||
+          testsnr(base, f2, azel[1 + i * 2], obs[i].SNR[f2], &opt->snrmask))
+        continue;
+
+      if (obs[i].L[0] != 0.0 && obs[i].L[f2] != 0.0)
+        y[0 + i * nf * 2] = C1 * yf[0] + C2 * yf[f2];
+      if (obs[i].P[0] != 0.0 && obs[i].P[f2] != 0.0)
+        y[0 + nf + i * nf * 2] = C1 * yf[0 + opt->nf] + C2 * yf[f2 + opt->nf];
+      freq[i * nf] = 1.0;
+      // Use the first frequency for e[].
+      for (int j = 0; j < 3; j++)
+        e[j + i * 3] = C1 * ef[j + 0 * 3] + C2 * ef[j + f2 * 3];
+      continue;
+    }
+
+    for (int f = 0; f < nf; f++) {
+      freq[f + i * nf] = freqf[f];
+      for (int j = 0; j < 3; j++) e[j + f * 3 + i * nf * 3] = ef[j + f * 3];
+      y[f + i * nf * 2] = yf[f];
+      y[f + nf + i * nf * 2] = yf[f + opt->nf];
     }
   }
   trace(4, "rr_=%.3f %.3f %.3f\n", rr_[0], rr_[1], rr_[2]);
