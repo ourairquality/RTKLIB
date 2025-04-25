@@ -15,6 +15,8 @@ include(GNUInstallDirs)
 include(CTest)
 
 option(IERS_MODEL "Use Earth models from IERS" OFF)
+option(SUNPOS_SOFA "Use SOFA to compute the sun position" ON)
+option(MOONPOS_SOFA "Use SOFA to compute the moon position" ON)
 
 set(TEST_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/test/data)
 
