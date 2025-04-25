@@ -77,7 +77,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <BCC_Defines>WIN32;TRACE;ENAGLO;ENAGAL;ENAQZS;ENACMP;ENAIRN;NEXOBS=3;NFREQ=6;$(BCC_Defines)</BCC_Defines>
+        <BCC_Defines>WIN32;TRACE;ENAGLO;ENAGAL;ENAQZS;ENACMP;ENAIRN;NFREQ=6;NEXOBS=3;SUNPOS_SOFA;MOONPOS_SOFA;$(BCC_Defines)</BCC_Defines>
         <ILINK_LinkwithRegEx>false</ILINK_LinkwithRegEx>
         <ILINK_LinkwithMidas>false</ILINK_LinkwithMidas>
         <ILINK_LinkwithZLib>false</ILINK_LinkwithZLib>
