@@ -238,7 +238,7 @@ public:
 	AnsiString FieldSep,RovAnt,RefAnt,AntPcvFile,StaPosFile,PrecEphFile;
 	AnsiString NetRSCorrFile1,NetRSCorrFile2,SatClkCorrFile,GoogleEarthFile;
 	AnsiString GeoidDataFile,IonoFile,DCBFile,EOPFile,BLQFile;
-	AnsiString SbasCorrFile,SatPcvFile,ExSats;
+        AnsiString SbasCorrFile,SatPcvFile,SatMetaFile,ExSats;
 	AnsiString RovList,BaseList;
 	
 	void __fastcall ViewFile(AnsiString file);

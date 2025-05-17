@@ -130,6 +130,8 @@ __published:
 	TSpeedButton *BtnSatPcvView;
 	TEdit *AntPcvFile;
 	TButton *BtnAntPcvFile;
+	TEdit *SatMetaFile;
+	TButton *BtnSatMetaFile;
 	TButton *BtnIonoFile;
 	TEdit *IonoFile;
 	TEdit *SatPcvFile;
@@ -245,6 +247,8 @@ __published:
 	void __fastcall RovAntPcvClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnAntPcvFileClick(TObject *Sender);
+	void __fastcall BtnSatMetaFileClick(TObject *Sender);
+	void __fastcall BtnSatMetaViewClick(TObject *Sender);
 	void __fastcall BtnIonoFileClick(TObject *Sender);
 	void __fastcall BtnAntPcvViewClick(TObject *Sender);
 	void __fastcall AmbResChange(TObject *Sender);

@@ -138,7 +138,7 @@ void utest5(void)
     nav_t nav={0};
     int i,stat;
 
-    stat=readsap(file,time,&nav);
+    stat=readsap(file,time,NULL,&nav);
     assert(stat);
 
     for (i=0;i<MAXSAT;i++) {
@@ -176,7 +176,7 @@ void utest6(void)
     readsp3(file4,&nav,0);
     readrnxc(file5,&nav);
 */
-    readsap(file3,time,&nav);
+    readsap(file3,time,NULL,&nav);
 
 /*
     sat=satno(SYS_GLO,21);

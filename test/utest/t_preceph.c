@@ -69,19 +69,19 @@ void utest2(void)
     int i,stat;
 
     printf("file=%s\n",file1);
-    stat=readpcv(file1,&pcvs);
+    stat=readpcv(file1,0,&pcvs);
         assert(!stat);
-    stat=readpcv(file2,&pcvs);
+    stat=readpcv(file2,0,&pcvs);
         assert(stat);
 
     time=epoch2time(ep1);
     for (i=0;i<MAXSAT;i++) {
-        if (!(pcv=searchpcv(i+1,"",time,&pcvs))) continue;
+        if (!(pcv=searchpcv(i+1,"",time,NULL,&pcvs))) continue;
         printf("PRN%02d : %7.4f %7.4f %7.4f\n",i+1,pcv->off[0][0],pcv->off[0][1],pcv->off[0][2]);
     }
     time=epoch2time(ep2);
     for (i=0;i<MAXSAT;i++) {
-        if (!(pcv=searchpcv(i+1,"",time,&pcvs))) continue;
+        if (!(pcv=searchpcv(i+1,"",time,NULL,&pcvs))) continue;
         printf("PRN%02d : %7.4f %7.4f %7.4f\n",i+1,pcv->off[0][0],pcv->off[0][1],pcv->off[0][2]);
     }
 
@@ -175,12 +175,12 @@ void utest5(void)
         assert(nav.ne>0);
     readrnxc(file2,&nav);
         assert(nav.nc>0);
-    stat=readpcv(file3,&pcvs);
+        stat=readpcv(file3,0,&pcvs);
         assert(stat);
     readrnx(file4,1,"",NULL,&nav,NULL);
         assert(nav.n>0);
     for (i=0;i<MAXSAT;i++) {
-        if (!(pcv=searchpcv(i+1,"",time,&pcvs))) continue;
+        if (!(pcv=searchpcv(i+1,"",time,NULL,&pcvs))) continue;
         nav.pcvs[i]=*pcv;
     }
     fp=fopen("testpeph2.out","w");
