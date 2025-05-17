@@ -266,7 +266,7 @@ public:
 	TFont *PanelFont,*PosFont;
 	int OutputGeoidF,BaselineC;
 	int RovPosTypeF,RefPosTypeF,RovAntPcvF,RefAntPcvF;
-	AnsiString RovAntF,RefAntF,SatPcvFileF,AntPcvFileF;
+        AnsiString RovAntF,RefAntF,SatPcvFileF,AntPcvFileF,SatMetaFileF;
 	double RovAntDel[3],RefAntDel[3],RovPos[3],RefPos[3],NmeaPos[3];
 	double Baseline[2];
 	AnsiString History[10],MntpHist[10];

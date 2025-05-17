@@ -511,6 +511,7 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     
     OptDialog->SatPcvFileF=SatPcvFileF;
     OptDialog->AntPcvFileF=AntPcvFileF;
+    OptDialog->SatMetaFileF=SatMetaFileF;
     OptDialog->StaPosFileF=StaPosFileF;
     OptDialog->GeoidDataFileF=GeoidDataFileF;
     OptDialog->DCBFileF   =DCBFileF;
@@ -559,6 +560,7 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     
     SatPcvFileF=OptDialog->SatPcvFileF;
     AntPcvFileF=OptDialog->AntPcvFileF;
+    SatMetaFileF=OptDialog->SatMetaFileF;
     StaPosFileF=OptDialog->StaPosFileF;
     GeoidDataFileF=OptDialog->GeoidDataFileF;
     DCBFileF   =OptDialog->DCBFileF;
@@ -1174,7 +1176,7 @@ void __fastcall TMainForm::SvrStart(void)
             PrcOpt.exsats[sat-1]=ex;
         }
     }
-    if ((RovAntPcvF||RefAntPcvF)&&AntPcvFileF!=""&&!readpcv(AntPcvFileF.c_str(),&rtksvr.pcvsr)) {
+    if ((RovAntPcvF||RefAntPcvF)&&AntPcvFileF!=""&&!readpcv(AntPcvFileF.c_str(),2,&rtksvr.pcvsr)) {
         if (SolOpt.trace>0) traceclose();
         Message->Caption=s.sprintf("rcv ant file read error %s",AntPcvFileF.c_str());
         Message->Hint=Message->Caption;
@@ -1186,9 +1188,9 @@ void __fastcall TMainForm::SvrStart(void)
     if (RovAntPcvF) strcpy(PrcOpt.anttype[0], RovAntF.c_str());
     if (RovAntPcvF && RovAntF != "" && RovAntF != "*") {
         type=RovAntF.c_str();
-        pcv_t *pcv=searchpcv(0,type,time,&rtksvr.pcvsr);
+        pcv_t *pcv=searchpcv(0,type,time,NULL,&rtksvr.pcvsr);
         if (pcv) {
-            PrcOpt.pcvr[0]=*pcv;
+            copy_pcv(&PrcOpt.pcvr[0], pcv);
         }
         else {
             Message->Caption=s.sprintf("no antenna pcv %s",type);
@@ -1200,9 +1202,9 @@ void __fastcall TMainForm::SvrStart(void)
     if (RefAntPcvF) strcpy(PrcOpt.anttype[1], RefAntF.c_str());
     if (RefAntPcvF && RefAntF != "" && RefAntF != "*") {
         type=RefAntF.c_str();
-        pcv_t *pcv=searchpcv(0,type,time,&rtksvr.pcvsr);
+        pcv_t *pcv=searchpcv(0,type,time,NULL,&rtksvr.pcvsr);
         if (pcv) {
-            PrcOpt.pcvr[1]=*pcv;
+            copy_pcv(&PrcOpt.pcvr[1], pcv);
         }
         else {
             Message->Caption=s.sprintf("no antenna pcv %s",type);
@@ -1211,19 +1213,26 @@ void __fastcall TMainForm::SvrStart(void)
     }
 
     if (PrcOpt.sateph==EPHOPT_PREC||PrcOpt.sateph==EPHOPT_SSRCOM||PrcOpt.mode>=PMODE_PPP_KINEMA) {
-        if (SatPcvFileF!=""&&!readpcv(SatPcvFileF.c_str(),&pcvs)) {
+        satsvns_t satsvns = {0};
+        if (SatMetaFileF!=""&&!readsinex(SatMetaFileF.c_str(),&satsvns)) {
+            Message->Caption=s.sprintf("Satellite meta data file read error %s",SatMetaFileF.c_str());
+            Message->Hint=Message->Caption;
+        }
+        if (SatPcvFileF!=""&&!readpcv(SatPcvFileF.c_str(),1,&pcvs)) {
             if (SolOpt.trace>0) traceclose();
             free_pcvs(&rtksvr.pcvsr);
+            for (int i = 0; i < 2; i++) free_pcv(&PrcOpt.pcvr[i]);
             Message->Caption=s.sprintf("sat ant file read error %s",SatPcvFileF.c_str());
             Message->Hint=Message->Caption;
             return;
         }
         for (i=0;i<MAXSAT;i++) {
-            pcv_t *pcv=searchpcv(i+1,"",time,&pcvs);
+            pcv_t *pcv=searchpcv(i+1,"",time,&satsvns,&pcvs);
             if (!pcv) continue;
-            rtksvr.nav.pcvs[i]=*pcv;
+            copy_pcv(&rtksvr.nav.pcvs[i],pcv);
         }
         free_pcvs(&pcvs);
+        free(satsvns.satsvn);
     }
     if (BaselineC) {
         PrcOpt.baseline[0]=Baseline[0];
@@ -1268,6 +1277,8 @@ void __fastcall TMainForm::SvrStart(void)
       if (strs[i]==STR_FILE&&!ConfOverwrite(paths[i])) {
         if (SolOpt.trace>0) traceclose();
         free_pcvs(&rtksvr.pcvsr);
+        for (int i = 0; i < 2; i++) free_pcv(&PrcOpt.pcvr[i]);
+        for (int i = 0; i < MAXSAT; i++) free_pcv(&rtksvr.nav.pcvs[i]);
         return;
       }
     }
@@ -1302,6 +1313,8 @@ void __fastcall TMainForm::SvrStart(void)
         trace(2,"rtksvrstart error %s\n",errmsg);
         if (SolOpt.trace>0) traceclose();
         free_pcvs(&rtksvr.pcvsr);
+        for (int i = 0; i < 2; i++) free_pcv(&PrcOpt.pcvr[i]);
+        for (int i = 0; i < MAXSAT; i++) free_pcv(&rtksvr.nav.pcvs[i]);
         return;
     }
     PSol=PSolS=PSolE=0;
@@ -1346,6 +1359,8 @@ void __fastcall TMainForm::SvrStop(void)
     rtksvrstop(&rtksvr,(const char **)cmds);
     
     free_pcvs(&rtksvr.pcvsr);
+    for (int i = 0; i < 2; i++) free_pcv(&PrcOpt.pcvr[i]);
+    for (int i = 0; i < MAXSAT; i++) free_pcv(&rtksvr.nav.pcvs[i]);
 
     BtnStart    ->Visible=true;
     BtnStart    ->Enabled=true;
@@ -2562,6 +2577,7 @@ void __fastcall TMainForm::LoadOpt(void)
     RefAntF         =ini->ReadString ("setting","refant",         "");
     SatPcvFileF     =ini->ReadString ("setting","satpcvfile",     "");
     AntPcvFileF     =ini->ReadString ("setting","antpcvfile",     "");
+    SatMetaFileF    =ini->ReadString ("setting","satmetafile",    "");
     StaPosFileF     =ini->ReadString ("setting","staposfile",     "");
     GeoidDataFileF  =ini->ReadString ("setting","geoiddatafile",  "");
     DCBFileF        =ini->ReadString ("setting","dcbfile",        "");
@@ -2824,6 +2840,7 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteString ("setting","refant",     RefAntF            );
     ini->WriteString ("setting","satpcvfile", SatPcvFileF        );
     ini->WriteString ("setting","antpcvfile", AntPcvFileF        );
+    ini->WriteString ("setting","satmetafile",SatMetaFileF       );
     ini->WriteString ("setting","staposfile", StaPosFileF        );
     ini->WriteString ("setting","geoiddatafile",GeoidDataFileF   );
     ini->WriteString ("setting","dcbfile",    DCBFileF           );

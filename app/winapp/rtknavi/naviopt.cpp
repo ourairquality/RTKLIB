@@ -263,6 +263,22 @@ void __fastcall TOptDialog::BtnAntPcvFileClick(TObject *Sender)
 	AntPcvFile->Text=OpenDialog->FileName;
 }
 //---------------------------------------------------------------------------
+void __fastcall TOptDialog::BtnSatMetaViewClick(TObject *Sender)
+{
+	if (SatMetaFile->Text=="") return;
+	TTextViewer *viewer=new TTextViewer(Application);
+	viewer->Show();
+	viewer->Read(SatMetaFile->Text);
+}
+//---------------------------------------------------------------------------
+void __fastcall TOptDialog::BtnSatMetaFileClick(TObject *Sender)
+{
+	OpenDialog->Title="Satellite Meta Data SINEX File";
+	OpenDialog->FilterIndex=8;
+	if (!OpenDialog->Execute()) return;
+	SatMetaFile->Text=OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
 void __fastcall TOptDialog::BtnGeoidDataFileClick(TObject *Sender)
 {
 	OpenDialog->Title="Geoid Data File";
@@ -530,6 +546,7 @@ void __fastcall TOptDialog::GetOpt(void)
 	
 	SatPcvFile	 ->Text     =SatPcvFileF;
 	AntPcvFile	 ->Text     =AntPcvFileF;
+	SatMetaFile	 ->Text     =SatMetaFileF;
 	StaPosFile	 ->Text     =StaPosFileF;
 	GeoidDataFile->Text     =GeoidDataFileF;
 	DCBFile      ->Text     =DCBFileF;
@@ -680,6 +697,7 @@ void __fastcall TOptDialog::SetOpt(void)
 	
 	SatPcvFileF      =SatPcvFile  ->Text;
 	AntPcvFileF      =AntPcvFile  ->Text;
+	SatMetaFileF     =SatMetaFile ->Text;
 	StaPosFileF      =StaPosFile  ->Text;
 	GeoidDataFileF   =GeoidDataFile->Text;
 	DCBFileF         =DCBFile     ->Text;
@@ -884,6 +902,7 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	
 	SatPcvFile ->Text			=filopt.satantp;
 	AntPcvFile ->Text			=filopt.rcvantp;
+	SatMetaFile ->Text			=filopt.satmeta;
 	StaPosFile ->Text			=filopt.stapos;
 	GeoidDataFile->Text			=filopt.geoid;
 	DCBFile    ->Text			=filopt.dcb;
@@ -905,6 +924,7 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 	AnsiString RovAnt_Text=RovAnt->Text,RefAnt_Text=RefAnt->Text;
 	AnsiString SatPcvFile_Text=SatPcvFile->Text;
 	AnsiString AntPcvFile_Text=AntPcvFile->Text;
+	AnsiString SatMetaFile_Text=SatMetaFile->Text;
 	AnsiString StaPosFile_Text=StaPosFile->Text;
 	AnsiString GeoidDataFile_Text=GeoidDataFile->Text;
 	AnsiString DCBFile_Text=DCBFile->Text;
@@ -1129,6 +1149,7 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 
 	strcpy(filopt.satantp,SatPcvFile_Text.c_str());
 	strcpy(filopt.rcvantp,AntPcvFile_Text.c_str());
+	strcpy(filopt.satmeta,SatMetaFile_Text.c_str());
 	strcpy(filopt.stapos, StaPosFile_Text.c_str());
 	strcpy(filopt.geoid,  GeoidDataFile_Text.c_str());
 	strcpy(filopt.dcb,    DCBFile_Text.c_str());
@@ -1300,9 +1321,9 @@ void __fastcall TOptDialog::ReadAntList(void)
 	list->Add("");
 	list->Add("*");
 	
-	if (readpcv(AntPcvFile_Text.c_str(),&pcvs)) {
+        if (readpcv(AntPcvFile_Text.c_str(),2,&pcvs)) {
           for (int i=0;i<pcvs.n;i++) {
-            if (pcvs.pcv[i].sat) continue;
+            if (pcvs.pcv[i].sat||pcvs.pcv[i].svn) continue;
             if ((p=strchr(pcvs.pcv[i].type,' '))) *p='\0';
             if (i>0&&!strcmp(pcvs.pcv[i].type,pcvs.pcv[i-1].type)) continue;
             list->Add(pcvs.pcv[i].type);

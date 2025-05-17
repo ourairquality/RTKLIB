@@ -280,12 +280,12 @@ static void update_antpos(rtksvr_t *svr, int index) {
     if (sta->antdes[0] != '\0' && strcmp(svr->rtk.opt.pcvr[index].type, sta->antdes) != 0) {
       // Antenna type is to be set from the RTCM stream, and does not match
       // the current pcv_t type, so search for this pcv.
-      pcv_t *pcv = searchpcv(0, sta->antdes, utc2gpst(timeget()), &svr->pcvsr);
+      pcv_t *pcv = searchpcv(0, sta->antdes, utc2gpst(timeget()), NULL, &svr->pcvsr);
       if (!pcv) {
         tracet(2, "antenna index=%d no '%s'\n", index, sta->antdes);
       } else {
         tracet(2, "updated antenna index=%d to '%s'\n", index, sta->antdes);
-        svr->rtk.opt.pcvr[index] = *pcv;
+        copy_pcv(&svr->rtk.opt.pcvr[index], pcv);
       }
     }
     // Update the delta from the marker position to the antenna ARP, taking

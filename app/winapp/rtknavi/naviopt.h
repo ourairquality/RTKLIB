@@ -126,6 +126,9 @@ __published:
 	TSpeedButton *BtnSatPcvView;
 	TEdit *AntPcvFile;
 	TButton *BtnAntPcvFile;
+	TEdit *SatMetaFile;
+	TButton *BtnSatMetaFile;
+	TSpeedButton *BtnSatMetaView;
 	TButton *BtnDCBFile;
 	TEdit *DCBFile;
 	TEdit *SatPcvFile;
@@ -248,10 +251,14 @@ __published:
 	TEdit *MeasErr8;
 	TEdit *MeasErr5;
 	TLabel *Label53;
+	TLabel *Label54;
+	TLabel *Label55;
 	void __fastcall BtnOkClick(TObject *Sender);
 	void __fastcall RovAntPcvClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnAntPcvFileClick(TObject *Sender);
+	void __fastcall BtnSatMetaFileClick(TObject *Sender);
+	void __fastcall BtnSatMetaViewClick(TObject *Sender);
 	void __fastcall BtnDCBFileClick(TObject *Sender);
 	void __fastcall BtnDCBViewClick(TObject *Sender);
 	void __fastcall BtnAntPcvViewClick(TObject *Sender);
@@ -310,7 +317,7 @@ public:
 	int RovPosTypeF,RefPosTypeF,RovAntPcvF,RefAntPcvF,BaselineC;
 	int MoniPort,FileSwapMargin,PanelStack;
 	AnsiString ExSats,LocalDirectory;
-	AnsiString RovAntF,RefAntF,SatPcvFileF,AntPcvFileF,StaPosFileF;
+        AnsiString RovAntF,RefAntF,SatPcvFileF,AntPcvFileF,SatMetaFileF,StaPosFileF;
         AnsiString GeoidDataFileF,DCBFileF,EOPFileF,BLQFileF;
 	AnsiString ProxyAddr;
 	double RovAntDel[3],RefAntDel[3],RovPos[3],RefPos[3];

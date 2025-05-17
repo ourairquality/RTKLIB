@@ -426,7 +426,7 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	if (rtk->opt.navsys&SYS_SBS) navsys=navsys+"SBAS ";
 	
 	Label->Caption="";
-	Tbl->RowCount=57+NFREQ*2;
+	Tbl->RowCount = 57 + ANTNFREQ * 2;
 	
 	i=1;
 	Tbl->Cells[0][i  ]="RTKLIB Version";
@@ -629,26 +629,28 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	Tbl->Cells[0][i  ]="Antenna Type Rover";
 	Tbl->Cells[1][i++]=rtk->opt.pcvr[0].type;
 	
-	for (j=0;j<NFREQ;j++) {
-	    off=rtk->opt.pcvr[0].off[j];
-	    Tbl->Cells[0][i  ]=s.sprintf("Ant Phase Center L%d E/N/U (m) Rover",j+1);
-	    Tbl->Cells[1][i++]=s.sprintf("%.3f, %.3f, %.3f",off[0],off[1],off[2]);
+        for (j = 0; j < ANTNFREQ; j++) {
+          double pco[3];
+          antpco(&rtk->opt.pcvr[0], antcode2freq(j), pco);
+          Tbl->Cells[0][i  ]=s.sprintf("Ant Phase Center Ant %s E/N/U (m) Rover",antcode2id(j));
+          Tbl->Cells[1][i++]=s.sprintf("%.4f, %.4f, %.4f",pco[0],pco[1],pco[2]);
 	}
 	del=rtk->opt.antdel[0];
 	Tbl->Cells[0][i  ]="Ant Delta E/N/U (m) Rover";
-	Tbl->Cells[1][i++]=s.sprintf("%.3f, %.3f, %.3f",del[0],del[1],del[2]);
+	Tbl->Cells[1][i++]=s.sprintf("%.4f, %.4f, %.4f",del[0],del[1],del[2]);
 	
 	Tbl->Cells[0][i  ]="Antenna Type Base Station";
 	Tbl->Cells[1][i++]=rtk->opt.pcvr[1].type;
 	
-	for (j=0;j<NFREQ;j++) {
-	    off=rtk->opt.pcvr[1].off[0];
-    	Tbl->Cells[0][i  ]=s.sprintf("Ant Phase Center L%d E/N/U (m) Base Station",j+1);
-	    Tbl->Cells[1][i++]=s.sprintf("%.3f, %.3f, %.3f",off[0],off[1],off[2]);
+        for (j = 0; j < ANTNFREQ; j++) {
+          double pco[3];
+          antpco(&rtk->opt.pcvr[1], antcode2freq(j), pco);
+          Tbl->Cells[0][i  ]=s.sprintf("Ant Phase Center Ant @d E/N/U (m) Base Station",antcode2id(j));
+          Tbl->Cells[1][i++]=s.sprintf("%.4f, %.4f, %.4f",pco[0],pco[1],pco[2]);
 	}
 	del=rtk->opt.antdel[1];
 	Tbl->Cells[0][i  ]="Ant Delta E/N/U (m) Base Station";
-	Tbl->Cells[1][i++]=s.sprintf("%.3f, %.3f, %.3f",del[0],del[1],del[2]);
+	Tbl->Cells[1][i++]=s.sprintf("%.4f, %.4f, %.4f",del[0],del[1],del[2]);
 	
 	Tbl->Cells[0][i  ]="Precise Ephemeris Time/# of Epoch";
 	Tbl->Cells[1][i++]=s.sprintf("%s-%s (%d)",s1,s2,ne);

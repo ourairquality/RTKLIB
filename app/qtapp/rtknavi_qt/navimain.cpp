@@ -1121,6 +1121,7 @@ void MainWindow::serverStart()
     char errmsg[20148];
     gtime_t time = timeget();
     pcvs_t pcvs;
+
     trace(3, "serverStart\n");
 
     memset(&pcvs, 0, sizeof(pcvs_t));
@@ -1133,7 +1134,7 @@ void MainWindow::serverStart()
     }
 
     if (optDialog->fileOptions.rcvantp[0] != '\0' &&
-        !readpcv(optDialog->fileOptions.rcvantp, &rtksvr->pcvsr)) {
+        !readpcv(optDialog->fileOptions.rcvantp, 2, &rtksvr->pcvsr)) {
         if (optDialog->solutionOptions.trace > 0) traceclose();
         ui->lblMessage->setText(tr("Receiver antenna file read error: %1").arg(optDialog->fileOptions.rcvantp));
         return;
@@ -1142,19 +1143,25 @@ void MainWindow::serverStart()
     if (optDialog->processingOptions.sateph == EPHOPT_PREC ||
         optDialog->processingOptions.sateph == EPHOPT_SSRCOM ||
         optDialog->processingOptions.mode >= PMODE_PPP_KINEMA) {
+        satsvns_t satsvns = {0};
+        if (optDialog->fileOptions.satmeta[0] != '\0' &&
+            !readsinex(optDialog->fileOptions.satmeta, &satsvns))
+            ui->lblMessage->setText(tr("Satellite meta data sinex file read error: %1").arg(optDialog->fileOptions.satmeta));
+
         if (optDialog->fileOptions.satantp[0] != '\0' &&
-            !readpcv(optDialog->fileOptions.satantp, &pcvs)) {
+            !readpcv(optDialog->fileOptions.satantp, 1, &pcvs)) {
             if (optDialog->solutionOptions.trace > 0) traceclose();
             free_pcvs(&rtksvr->pcvsr);
             ui->lblMessage->setText(tr("Satellite antenna file read error: %1").arg(optDialog->fileOptions.satantp));
             return;
         }
         for (i = 0; i < MAXSAT; i++) {
-            pcv_t *pcv = searchpcv(i + 1, "", time, &pcvs);
+            pcv_t *pcv = searchpcv(i + 1, "", time, &satsvns, &pcvs);
             if (!pcv) continue;
-            rtksvr->nav.pcvs[i] = *pcv;
+            copy_pcv(&rtksvr->nav.pcvs[i], pcv);
         }
         free_pcvs(&pcvs);
+        free(satsvns.satsvn);
     }
 
     for (i = 0; i < 3; i++) streamTypes[i] = streamEnabled[i] ? itype[streamType[i]] : STR_NONE;  // input stream
@@ -1204,6 +1211,7 @@ void MainWindow::serverStart()
         if (streamTypes[i] == STR_FILE && !confirmOverwrite(serverPaths[i])) {
             if (optDialog->solutionOptions.trace > 0) traceclose();
             free_pcvs(&rtksvr->pcvsr);
+            for (int i = 0; i < MAXSAT; i++) free_pcv(&rtksvr->nav.pcvs[i]);
             for (j = 0; j < MAXSTRRTK; j++) delete[] serverPaths[j];
             for (j = 0; j < 3; j++) delete[] rcvopts[j];
             for (j = 0; j < 3; j++)
@@ -1241,6 +1249,7 @@ void MainWindow::serverStart()
         trace(2, "rtksvrstart error %s\n", errmsg);
         if (optDialog->solutionOptions.trace > 0) traceclose();
         free_pcvs(&rtksvr->pcvsr);
+        for (int i = 0; i < MAXSAT; i++) free_pcv(&rtksvr->nav.pcvs[i]);
         for (i = 0; i < MAXSTRRTK; i++) delete[] serverPaths[i];
         for (i = 0; i < 3; i++) delete[] rcvopts[i];
         for (i = 0; i < 3; i++)
@@ -1309,6 +1318,7 @@ void MainWindow::serverStop()
     rtksvrstop(rtksvr, (const char **)cmds);
 
     free_pcvs(&rtksvr->pcvsr);
+    for (int i = 0; i < MAXSAT; i++) free_pcv(&rtksvr->nav.pcvs[i]);
 
     for (i = 0; i < 3; i++) delete[] cmds[i];
 
