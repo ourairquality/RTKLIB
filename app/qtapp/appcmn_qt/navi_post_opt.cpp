@@ -148,6 +148,7 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     fileOptions.geoid[0] = '\0';
     fileOptions.iono[0] = '\0';
     fileOptions.rcvantp[0] = '\0';
+    fileOptions.satmeta[0] = '\0';
     fileOptions.satantp[0] = '\0';
     fileOptions.solstat[0] = '\0';
     fileOptions.stapos[0] = '\0';
@@ -201,6 +202,7 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     fileModel->setRootPath("");
     ui->lEStationPositionFile->setCompleter(new QCompleter(fileModel, this));
     ui->lEAntennaPcvFile->setCompleter(new QCompleter(fileModel, this));
+    ui->lESatelliteMetaFile->setCompleter(new QCompleter(fileModel, this));
     ui->lESatellitePcvFile->setCompleter(new QCompleter(fileModel, this));
     ui->lEDCBFile->setCompleter(new QCompleter(fileModel, this));
     ui->lEGeoidDataFile->setCompleter(new QCompleter(fileModel, this));
@@ -223,7 +225,14 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     acStationPositionFileView->setToolTip(tr("View File"));
     acStationPositionFileView->setEnabled(false);
 
-    // satllite PCV line edit actions
+    // Satellite meta data line edit actions
+    QAction *acSatelliteMetaFileSelect = ui->lESatelliteMetaFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acSatelliteMetaFileSelect->setToolTip(tr("Select File"));
+    QAction *acSatelliteMetaFileView = ui->lESatelliteMetaFile->addAction(QIcon(":/buttons/doc"), QLineEdit::TrailingPosition);
+    acSatelliteMetaFileView->setToolTip(tr("View File"));
+    acSatelliteMetaFileView->setEnabled(false);
+
+    // satellite PCV line edit actions
     QAction *acSatellitePcvFileSelect = ui->lESatellitePcvFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
     acSatellitePcvFileSelect->setToolTip(tr("Select File"));
     QAction *acSatellitePcvFileView = ui->lESatellitePcvFile->addAction(QIcon(":/buttons/doc"), QLineEdit::TrailingPosition);
@@ -274,6 +283,8 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &OptDialog::reject);
     connect(ui->btnLoad, &QPushButton::clicked, this, &OptDialog::loadSettings);
     connect(ui->btnSave, &QPushButton::clicked, this, &OptDialog::saveSettings);
+    connect(acSatelliteMetaFileSelect, &QAction::triggered, this, &OptDialog::selectSatelliteMetaFile);
+    connect(acSatelliteMetaFileView, &QAction::triggered, this, &OptDialog::viewSatelliteMetaFile);
     connect(acAntennaPcvFileSelect, &QAction::triggered, this, &OptDialog::selectAntennaPcvFile);
     connect(acAntennaPcvFileView, &QAction::triggered, this, &OptDialog::viewAntennaPcvFile);
     connect(ui->lEAntennaPcvFile, &QLineEdit::textChanged, this, [acAntennaPcvFileView, this]()
@@ -509,6 +520,23 @@ void OptDialog::selectReferencePosition()
     setPosition(ui->cBReferencePositionType->currentIndex(), edit, p);
 }
 //---------------------------------------------------------------------------
+void OptDialog::viewSatelliteMetaFile()
+{
+    if (ui->lESatelliteMetaFile->text().isEmpty()) return;
+
+    textViewer->read(ui->lESatelliteMetaFile->text());
+
+    textViewer->show();
+}
+//---------------------------------------------------------------------------
+void OptDialog::selectSatelliteMetaFile()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Satellite Meta Data Sinex File"), ui->lESatelliteMetaFile->text(), tr("Sinex File (*.snx);All (*.*)"));
+
+    if (!filename.isEmpty())
+        ui->lESatelliteMetaFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
 void OptDialog::viewSatellitePcvFile()
 {
     if (ui->lESatellitePcvFile->text().isEmpty()) return;
@@ -662,6 +690,7 @@ void OptDialog::updateOptions()
     memset(&pcv0, 0, sizeof(pcv_t));
 
     // file options
+    strncpy(fileOptions.satmeta, qPrintable(ui->lESatelliteMetaFile->text()), MAXSTRPATH-1);
     strncpy(fileOptions.satantp, qPrintable(ui->lESatellitePcvFile->text()), MAXSTRPATH-1);
     strncpy(fileOptions.rcvantp, qPrintable(ui->lEAntennaPcvFile->text()), MAXSTRPATH-1);
     strncpy(fileOptions.stapos, qPrintable(ui->lEStationPositionFile->text()), MAXSTRPATH-1);
@@ -803,23 +832,23 @@ void OptDialog::updateOptions()
 
     processingOptions.pcvr[0] = processingOptions.pcvr[1] = pcv0; // initialize antenna PCV
     if ((ui->cBRoverAntennaPcv->isChecked() || ui->cBReferenceAntennaPcv->isChecked()) &&
-        fileOptions.rcvantp[0] != '\0' && !readpcv(fileOptions.rcvantp, &pcvr)) {
+        fileOptions.rcvantp[0] != '\0' && !readpcv(fileOptions.rcvantp, 2, &pcvr)) {
         QMessageBox::warning(this, tr("Error"), tr("Antenna file read error: \"%1\"").arg(fileOptions.rcvantp));
         return;
     }
     if (ui->cBRoverAntennaPcv->isChecked() && processingOptions.anttype[0] != QLatin1String("") &&
         processingOptions.anttype[0] != QStringLiteral("*")) {
-        pcv_t *pcv = searchpcv(0, processingOptions.anttype[0], time, &pcvr);
+        pcv_t *pcv = searchpcv(0, processingOptions.anttype[0], time, NULL, &pcvr);
         if (pcv)
-            processingOptions.pcvr[0] = *pcv;
+            copy_pcv(&processingOptions.pcvr[0], pcv);
         else
             QMessageBox::warning(this, tr("Error"), tr("No rover antenna PCV: \"%1\"").arg(processingOptions.anttype[0]));
     }
     if (ui->cBReferenceAntennaPcv->isChecked() && processingOptions.anttype[1] != QLatin1String("") &&
         processingOptions.anttype[1] != QStringLiteral("*")) {
-        pcv_t *pcv = searchpcv(0, processingOptions.anttype[1], time, &pcvr);
+        pcv_t *pcv = searchpcv(0, processingOptions.anttype[1], time, NULL, &pcvr);
         if (pcv)
-            processingOptions.pcvr[1] = *pcv;
+            copy_pcv(&processingOptions.pcvr[1], pcv);
         else
             QMessageBox::warning(this, tr("Error"), tr("No reference station antenna PCV: \"%1\"").arg(processingOptions.anttype[1]));
     }
@@ -1046,6 +1075,7 @@ void OptDialog::updateUi(const prcopt_t &prcopt, const solopt_t &solopt, const f
     ui->sBMaxSolutionStd->setValue(solopt.maxsolstd);
 
     // file options
+    ui->lESatelliteMetaFile->setText(filopt.satmeta);
     ui->lESatellitePcvFile->setText(filopt.satantp);
     ui->lEAntennaPcvFile->setText(filopt.rcvantp);
     ui->lEStationPositionFile->setText(filopt.stapos);
@@ -1252,6 +1282,7 @@ void OptDialog::save(const QString &file)
     strncpy(solOpts.sep, qPrintable(ui->lEFieldSeperator->text()), 63);
     solOpts.maxsolstd = ui->sBMaxSolutionStd->value();
 
+    strncpy(filopt.satmeta, qPrintable(ui->lESatelliteMetaFile->text()), MAXSTRPATH-1);
     strncpy(filopt.satantp, qPrintable(ui->lESatellitePcvFile->text()), MAXSTRPATH-1);
     strncpy(filopt.rcvantp, qPrintable(ui->lEAntennaPcvFile->text()), MAXSTRPATH-1);
     strncpy(filopt.stapos, qPrintable(ui->lEStationPositionFile->text()), MAXSTRPATH-1);
@@ -1429,6 +1460,7 @@ void OptDialog::saveOptions(QSettings &settings)
     settings.setValue("prcopt/outsingle", processingOptions.outsingle);
     settings.setValue("solopt/maxsolstd", ui->sBMaxSolutionStd->value());
 
+    settings.setValue("setting/satmetafile", ui->lESatelliteMetaFile->text());
     settings.setValue("setting/satpcvfile", ui->lESatellitePcvFile->text());
     settings.setValue("setting/antpcvfile", ui->lEAntennaPcvFile->text());
     settings.setValue("setting/staposfile", ui->lEStationPositionFile->text());
@@ -1577,6 +1609,7 @@ void OptDialog::loadOptions(QSettings &settings)
     ui->sBBaselineLen->setValue(settings.value("prcopt/baseline1", 0.0).toDouble());
     ui->sBBaselineSig->setValue(settings.value("prcopt/baseline2", 0.0).toDouble());
 
+    ui->lESatelliteMetaFile->setText(settings.value("setting/satmetafile", "").toString());
     ui->lESatellitePcvFile->setText(settings.value("setting/satpcvfile", "").toString());
     ui->lEAntennaPcvFile->setText(settings.value("setting/antpcvfile", "").toString());
     readAntennaList();
@@ -1984,9 +2017,9 @@ void OptDialog::readAntennaList()
     ui->cBRoverAntenna->addItem(""); ui->cBReferenceAntenna->addItem("");
     ui->cBRoverAntenna->addItem("*"); ui->cBReferenceAntenna->addItem("*");
 
-    if (readpcv(qPrintable(ui->lEAntennaPcvFile->text()), &pcvs)) {
+    if (readpcv(qPrintable(ui->lEAntennaPcvFile->text()), 2, &pcvs)) {
       for (int i = 0; i < pcvs.n; i++) {
-        if (pcvs.pcv[i].sat) continue;
+        if (pcvs.pcv[i].sat || pcvs.pcv[i].svn) continue;
         if ((p = strchr(pcvs.pcv[i].type, ' '))) *p = '\0';
         if (i > 0 && !strcmp(pcvs.pcv[i].type, pcvs.pcv[i - 1].type)) continue;
         ui->cBRoverAntenna->addItem(pcvs.pcv[i].type);
