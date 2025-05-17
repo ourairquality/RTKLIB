@@ -1112,6 +1112,7 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt,
     // file options
     strcpy(filopt.satantp,SatPcvFile.c_str());
     strcpy(filopt.rcvantp,AntPcvFile.c_str());
+    strcpy(filopt.satmeta,SatMetaFile.c_str());
     strcpy(filopt.stapos, StaPosFile.c_str());
     strcpy(filopt.geoid,  GeoidDataFile.c_str());
     strcpy(filopt.iono,   IonoFile.c_str());
@@ -1488,6 +1489,7 @@ void __fastcall TMainForm::LoadOpt(void)
     SbasCorrFile       =ini->ReadString ("opt","sbascorrfile",  "");
     PrecEphFile        =ini->ReadString ("opt","precephfile",   "");
     SatPcvFile         =ini->ReadString ("opt","satpcvfile",    "");
+    SatMetaFile        =ini->ReadString ("opt","satmetafile",   "");
     StaPosFile         =ini->ReadString ("opt","staposfile",    "");
     GeoidDataFile      =ini->ReadString ("opt","geoiddatafile", "");
     IonoFile           =ini->ReadString ("opt","ionofile",      "");
@@ -1731,6 +1733,7 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteString ("opt","sbascorrfile",SbasCorrFile);
     ini->WriteString ("opt","precephfile", PrecEphFile );
     ini->WriteString ("opt","satpcvfile",  SatPcvFile  );
+    ini->WriteString ("opt","satmetafile", SatMetaFile );
     ini->WriteString ("opt","staposfile",  StaPosFile  );
     ini->WriteString ("opt","geoiddatafile",GeoidDataFile);
     ini->WriteString ("opt","ionofile",    IonoFile    );

@@ -406,50 +406,58 @@ static double mwmeas(const obsd_t *obs, const nav_t *nav)
            (freq1*obs->P[0]+freq2*obs->P[1])/(freq1+freq2);
 }
 /* antenna corrected measurements --------------------------------------------*/
-static void corr_meas(const obsd_t *obs, const nav_t *nav, const double *azel,
-                      const prcopt_t *opt, const double *dantr,
-                      const double *dants, double phw, double *L, double *P,
-                      double *Lc, double *Pc)
-{
-    double freq[NFREQ]={0},C1,C2;
-    int i,ix=0,frq2,sys=satsys(obs->sat,NULL);
+static void corr_meas(const obsd_t *obs, const nav_t *nav, const double *azel, const prcopt_t *opt,
+                      int dantrp, int dantsp, double nadir, double phw, double *L, double *P,
+                      double *Lc, double *Pc) {
+  double freq[NFREQ] = {0};
+  int sys = satsys(obs->sat, NULL);
 
-    for (i=0;i<opt->nf;i++) {
-        L[i]=P[i]=0.0;
-        /* skip if low SNR or missing observations */
-        freq[i]=sat2freq(obs->sat,obs->code[i],nav);
-        if (freq[i]==0.0||obs->L[i]==0.0||obs->P[i]==0.0) continue;
-        if (testsnr(0,0,azel[1],obs->SNR[i],&opt->snrmask)) continue;
+  for (int i = 0; i < opt->nf; i++) {
+    L[i] = P[i] = 0.0;
+    /* Skip if low SNR or missing observations */
+    int code = obs->code[i];
+    freq[i] = sat2freq(obs->sat, code, nav);
+    if (freq[i] == 0.0 || obs->L[i] == 0.0 || obs->P[i] == 0.0) continue;
+    if (testsnr(0, 0, azel[1], obs->SNR[i], &opt->snrmask)) continue;
 
-        /* antenna phase center and phase windup correction */
-        L[i]=obs->L[i]*CLIGHT/freq[i]-dants[i]-dantr[i]-phw*CLIGHT/freq[i];
-        P[i]=obs->P[i]               -dants[i]-dantr[i];
-        double P_nobias = P[i];
-        if (opt->sateph==EPHOPT_SSRAPC||opt->sateph==EPHOPT_SSRCOM) {
-            /* select SSR code correction based on code */
-            if (sys==SYS_GPS)
-                ix=(i==0?CODE_L1W-1:CODE_L2W-1);
-            else if (sys==SYS_GLO)
-                ix=(i==0?CODE_L1P-1:CODE_L2P-1);
-            else if (sys==SYS_GAL)
-                ix=(i==0?CODE_L1X-1:CODE_L7X-1);
-            /* apply SSR correction */
-            P[i]+=(nav->ssr[obs->sat-1].cbias[obs->code[i]-1]-nav->ssr[obs->sat-1].cbias[ix]);
-        }
-        else {   /* apply code bias corrections from file */
-            P[i]-=code2bias(nav,sys,obs->sat,obs->code[i],0); /* differential bias*/
-        }
-        trace(4,"sys=%d sat=%d frq=%d, P: %.3f->%.3f, dt=%.3f\n",sys,obs->sat,i,P_nobias,P[i],(P[i]-P_nobias)/(1E-9*CLIGHT));
+    /* Satellite and receiver antenna model */
+    double dantr = 0.0, dants = 0.0;
+    if (dantsp) {
+      const pcv_t *pcv = nav->pcvs + obs->sat - 1;
+      dants = antmodel_s(pcv, nadir, freq[i]);
     }
-    /* choose freqs for iono-free LC */
-    *Lc=*Pc=0.0;
-    frq2=seliflc(opt->nf,satsys(obs->sat,NULL));
-    if (freq[0]==0.0||freq[frq2]==0.0) return;
-    C1= SQR(freq[0])/(SQR(freq[0])-SQR(freq[frq2]));
-    C2=-SQR(freq[frq2])/(SQR(freq[0])-SQR(freq[frq2]));
+    if (dantrp) dantr = antmodel(opt->pcvr, opt->antdel[0], azel, opt->posopt[1], freq[i]);
 
-    if (L[0]!=0.0&&L[frq2]!=0.0) *Lc=C1*L[0]+C2*L[frq2];
-    if (P[0]!=0.0&&P[frq2]!=0.0) *Pc=C1*P[0]+C2*P[frq2];
+    /* Antenna phase center and phase windup correction */
+    L[i] = obs->L[i] * CLIGHT / freq[i] - dants - dantr - phw * CLIGHT / freq[i];
+    P[i] = obs->P[i] - dants - dantr;
+
+    double P_nobias = P[i];
+    if (opt->sateph == EPHOPT_SSRAPC || opt->sateph == EPHOPT_SSRCOM) {
+      /* Select SSR code correction based on code */
+      int ix = 0;
+      if (sys == SYS_GPS)
+        ix = (i == 0 ? CODE_L1W - 1 : CODE_L2W - 1);
+      else if (sys == SYS_GLO)
+        ix = (i == 0 ? CODE_L1P - 1 : CODE_L2P - 1);
+      else if (sys == SYS_GAL)
+        ix = (i == 0 ? CODE_L1X - 1 : CODE_L7X - 1);
+      /* Apply SSR correction */
+      P[i] += (nav->ssr[obs->sat - 1].cbias[code - 1] - nav->ssr[obs->sat - 1].cbias[ix]);
+    } else { /* Apply code bias corrections from file */
+      P[i] -= code2bias(nav, sys, obs->sat, obs->code[i], 0); /* Differential bias */
+    }
+    trace(4,"sys=%d sat=%d frq=%d, P: %.3f->%.3f, dt=%.3f\n", sys, obs->sat, i, P_nobias, P[i], (P[i] - P_nobias) / (1E-9 * CLIGHT));
+  }
+  /* Choose freqs for iono-free LC */
+  *Lc = *Pc = 0.0;
+  int frq2 = seliflc(opt->nf, satsys(obs->sat, NULL));
+  if (freq[0] == 0.0 || freq[frq2] == 0.0) return;
+  double C1 = SQR(freq[0]) / (SQR(freq[0]) - SQR(freq[frq2]));
+  double C2 = -SQR(freq[frq2]) / (SQR(freq[0]) - SQR(freq[frq2]));
+
+  if (L[0] != 0.0 && L[frq2] != 0.0) *Lc = C1 * L[0] + C2 * L[frq2];
+  if (P[0] != 0.0 && P[frq2] != 0.0) *Pc = C1 * P[0] + C2 * P[frq2];
 }
 /* detect cycle slip by LLI --------------------------------------------------*/
 static void detslp_ll(rtk_t *rtk, const obsd_t *obs, int n)
@@ -717,7 +725,7 @@ static void uddcb_ppp(rtk_t *rtk)
 static void udbias_ppp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
 {
     double L[NFREQ],P[NFREQ],Lc,Pc,bias[MAXOBS],offset=0.0;
-    double freq1,freq2,ion,dantr[NFREQ]={0},dants[NFREQ]={0};
+    double freq1,freq2,ion;
     int i,j,k,f,sat,slip[MAXOBS]={0},clk_jump=0;
 
     trace(3,"udbias  : n=%d\n",n);
@@ -750,7 +758,7 @@ static void udbias_ppp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
         for (i=k=0;i<n&&i<MAXOBS;i++) {
             sat=obs[i].sat;
             j=IB(sat,f,&rtk->opt);
-            corr_meas(obs+i,nav,rtk->ssat[sat-1].azel,&rtk->opt,dantr,dants,
+            corr_meas(obs+i,nav,rtk->ssat[sat-1].azel,&rtk->opt,0,0,0.0,
                       0.0,L,P,&Lc,&Pc);
 
             bias[i]=0.0;
@@ -828,24 +836,23 @@ static void udstate_ppp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     /* temporal update of phase-bias */
     udbias_ppp(rtk,obs,n,nav);
 }
-/* satellite antenna phase center variation ----------------------------------*/
-static void satantpcv(const double *rs, const double *rr, const pcv_t *pcv,
-                      double *dant)
-{
-    double ru[3],rz[3],eu[3],ez[3],nadir,cosa;
-    int i;
+/* Satellite antenna phase center variation setup ----------------------------*/
+static int satantpcv(const double *rs, const double *rr, double *nadir) {
+  double ru[3], rz[3];
+  for (int i = 0; i < 3; i++) {
+    ru[i] = rr[i] - rs[i];
+    rz[i] = -rs[i];
+  }
+  double eu[3], ez[3];
+  if (!normv3(ru, eu) || !normv3(rz, ez)) {
+    *nadir = 0.0;
+    return 0;
+  }
 
-    for (i=0;i<3;i++) {
-        ru[i]=rr[i]-rs[i];
-        rz[i]=-rs[i];
-    }
-    if (!normv3(ru,eu)||!normv3(rz,ez)) return;
-
-    cosa=dot3(eu,ez);
-    cosa=cosa<-1.0?-1.0:(cosa>1.0?1.0:cosa);
-    nadir=acos(cosa);
-
-    antmodel_s(pcv,nadir,dant);
+  double cosa = dot3(eu, ez);
+  cosa = cosa < -1.0 ? -1.0 : (cosa > 1.0 ? 1.0 : cosa);
+  *nadir = acos(cosa);
+  return 1;
 }
 /* precise tropospheric model ------------------------------------------------*/
 static double trop_model_prec(gtime_t time, const double *pos,
@@ -944,7 +951,6 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
     prcopt_t *opt=&rtk->opt;
     double y,r,cdtr,bias,rr[3],pos[3],e[3],dtdx[3],L[NFREQ],P[NFREQ],Lc,Pc;
     double var[MAXOBS*2*NFREQ],dtrp=0.0,dion=0.0,vart=0.0,vari=0.0,dcb,freq;
-    double dantr[NFREQ]={0},dants[NFREQ]={0};
     double ve[MAXOBS*2*NFREQ]={0},vmax=0;
     char str[40];
     int ne=0,obsi[MAXOBS*2*NFREQ]={0},frqi[MAXOBS*2*NFREQ],maxobs,maxfrq,rej;
@@ -977,8 +983,9 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
             continue;
         }
         /* Satellite and receiver antenna model */
-        if (opt->posopt[0]) satantpcv(rs+i*6,rr,nav->pcvs+sat-1,dants);
-        antmodel(opt->pcvr,opt->antdel[0],azel+i*2,opt->posopt[1],dantr);
+        double nadir = 0.0;
+        int dantsp = 0;
+        if (opt->posopt[0]) dantsp = satantpcv(rs + i * 6, rr, &nadir);
 
         /* Phase windup model */
         if (!model_phw(rtk->sol.time,sat,nav->pcvs[sat-1].type,
@@ -986,7 +993,7 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
             continue;
         }
         /* Corrected phase and code measurements */
-        corr_meas(obs+i,nav,azel+i*2,&rtk->opt,dantr,dants,
+        corr_meas(obs+i,nav,azel+i*2,&rtk->opt,1,dantsp,nadir,
                   rtk->ssat[sat-1].phw,L,P,&Lc,&Pc);
 
         /* Stack phase and code residuals {L1,P1,L2,P2,...} */

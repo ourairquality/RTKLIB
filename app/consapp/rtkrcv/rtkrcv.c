@@ -385,43 +385,47 @@ static int readcmd(const char *file, char *cmd, int type)
 }
 /* Read antenna file ---------------------------------------------------------*/
 static void readant(vt_t *vt, prcopt_t *opt, nav_t *nav, pcvs_t *pcvsr) {
-  trace(3,"readant:\n");
-    
+  trace(3, "readant:\n");
+
   const pcv_t pcv0 = {0};
   opt->pcvr[0] = opt->pcvr[1] = pcv0;
 
   if (*filopt.rcvantp) {
     gtime_t time = timeget();
-    if (readpcv(filopt.rcvantp, pcvsr)) {
+    if (readpcv(filopt.rcvantp, 2, pcvsr)) {
       for (int i = 0; i < 2; i++) {
         if (!*opt->anttype[i] || !strcmp(opt->anttype[i], "*")) continue;
-        pcv_t *pcv = searchpcv(0, opt->anttype[i], time, pcvsr);
+        pcv_t *pcv = searchpcv(0, opt->anttype[i], time, NULL, pcvsr);
         if (!pcv) {
           vt_printf(vt, "no antenna %s in %s", opt->anttype[i], filopt.rcvantp);
           continue;
-         }
-        opt->pcvr[i] = *pcv;
+        }
+        copy_pcv(&opt->pcvr[i], pcv);
       }
     } else
       vt_printf(vt, "antenna file open error %s", filopt.rcvantp);
   }
 
   if (*filopt.satantp) {
+    satsvns_t satsvns = {0};
+    if (*filopt.satmeta && !readsinex(filopt.satmeta, &satsvns))
+      vt_printf(vt, "error : reading sat meta sinex %s", filopt.satmeta);
+
     pcvs_t pcvs = {0};
-    if (readpcv(filopt.satantp, &pcvs)) {
+    if (readpcv(filopt.satantp, 1, &pcvs)) {
       gtime_t time = timeget();
 #ifdef TRACE
       int found[MAXSAT] = {0}, missing = 0;
 #endif
       for (int i = 0; i < MAXSAT; i++) {
-        pcv_t *pcv = searchpcv(i + 1, "", time, &pcvs);
+        pcv_t *pcv = searchpcv(i + 1, "", time, &satsvns, &pcvs);
         if (!pcv) {
 #ifdef TRACE
           missing++;
 #endif
           continue;
         }
-        nav->pcvs[i]=*pcv;
+        copy_pcv(&nav->pcvs[i], pcv);
 #ifdef TRACE
         found[i] = 1;
 #endif
@@ -445,6 +449,7 @@ static void readant(vt_t *vt, prcopt_t *opt, nav_t *nav, pcvs_t *pcvsr) {
 #endif
     } else
       vt_printf(vt, "antenna file open error %s", filopt.satantp);
+    free(satsvns.satsvn);
   }
 }
 /* start rtk server ----------------------------------------------------------*/
@@ -533,7 +538,9 @@ static int startsvr(vt_t *vt)
                      solopt,&moni,errmsg)) {
         trace(2,"rtk server start error (%s)\n",errmsg);
         vt_printf(vt,"rtk server start error (%s)\n",errmsg);
+        for (int i = 0; i < 2; i++) free_pcv(&prcopt.pcvr[i]);
         free_pcvs(&svr.pcvsr);
+        for (int i = 0; i < MAXSAT; i++) free_pcv(&svr.nav.pcvs[i]);
         return 0;
     }
     return 1;
@@ -569,7 +576,9 @@ static void stopsvr(vt_t *vt)
 #endif
     if (solopt[0].geoid>0) closegeoid();
 
+    for (int i = 0; i < 2; i++) free_pcv(&prcopt.pcvr[i]);
     free_pcvs(&svr.pcvsr);
+    for (int i = 0; i < MAXSAT; i++) free_pcv(&svr.nav.pcvs[i]);
 
     vt_printf(vt,"stop rtk server\n");
 }
