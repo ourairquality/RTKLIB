@@ -1581,10 +1581,10 @@ object OptDialog: TOptDialog
         TabOrder = 2
       end
       object BtnStaPosView: TSpeedButton
-        Left = 355
-        Top = 236
+        Left = 356
+        Top = 238
         Width = 21
-        Height = 21
+        Height = 17
         Flat = True
         Glyph.Data = {
           3E020000424D3E0200000000000036000000280000000D0000000D0000000100
@@ -1610,7 +1610,7 @@ object OptDialog: TOptDialog
       end
       object BtnStaPosFile: TButton
         Left = 378
-        Top = 235
+        Top = 237
         Width = 21
         Height = 21
         Caption = '...'
@@ -1636,7 +1636,7 @@ object OptDialog: TOptDialog
       end
       object BtnSatPcvView: TSpeedButton
         Left = 355
-        Top = -2
+        Top = 1
         Width = 21
         Height = 17
         Flat = True
@@ -1664,7 +1664,7 @@ object OptDialog: TOptDialog
       end
       object BtnAntPcvView: TSpeedButton
         Left = 381
-        Top = -2
+        Top = 1
         Width = 21
         Height = 17
         Flat = True
@@ -1734,21 +1734,49 @@ object OptDialog: TOptDialog
         TabOrder = 3
         OnClick = BtnAntPcvFileClick
       end
-      object Label48: TLabel
+      object Label55: TLabel
         Left = 6
         Top = 58
         Width = 72
         Height = 13
-        Caption = 'Geoid Data File'
+        Caption = 'Satellite Meta Data File'
       end
-      object GeoidDataFile: TEdit
+      object BtnSatMetaView: TSpeedButton
+        Left = 381
+        Top = 57
+        Width = 21
+        Height = 17
+        Flat = True
+        Glyph.Data = {
+          3E020000424D3E0200000000000036000000280000000D0000000D0000000100
+          1800000000000802000000000000000000000000000000000000FFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFF00FFFFFF00000000000000000000000000000000000000
+          0000000000000000000000000000FFFFFF00FFFFFF000000FFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000
+          FFFFFF808080808080808080808080808080FFFFFFFFFFFFFFFFFF000000FFFF
+          FF00FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFF000000FFFFFF00FFFFFF000000FFFFFF808080808080808080FFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000FFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFF00FFFFFF000000
+          FFFFFF808080808080808080808080808080808080808080FFFFFF000000FFFF
+          FF00FFFFFF000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFF000000FFFFFF00FFFFFF00000000000000000000000000000000000000
+          0000000000000000000000000000FFFFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FF00}
+        OnClick = BtnSatMetaViewClick
+      end
+      object SatMetaFile: TEdit
         Left = 2
         Top = 72
         Width = 378
         Height = 21
         TabOrder = 4
       end
-      object BtnGeoidDataFile: TButton
+      object BtnSatMetaFile: TButton
         Left = 381
         Top = 72
         Width = 21
@@ -1761,18 +1789,47 @@ object OptDialog: TOptDialog
         Font.Style = []
         ParentFont = False
         TabOrder = 5
+        OnClick = BtnSatMetaFileClick
+      end
+      object Label48: TLabel
+        Left = 6
+        Top = 93
+        Width = 72
+        Height = 13
+        Caption = 'Geoid Data File'
+      end
+      object GeoidDataFile: TEdit
+        Left = 2
+        Top = 107
+        Width = 378
+        Height = 21
+        TabOrder = 6
+      end
+      object BtnGeoidDataFile: TButton
+        Left = 381
+        Top = 107
+        Width = 21
+        Height = 21
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 7
         OnClick = BtnGeoidDataFileClick
       end
       object Label1: TLabel
         Left = 6
-        Top = 93
+        Top = 128
         Width = 65
         Height = 13
         Caption = 'DCB Data File'
       end
       object BtnDCBView: TSpeedButton
         Left = 381
-        Top = 91
+        Top = 127
         Width = 21
         Height = 17
         Flat = True
@@ -1800,14 +1857,14 @@ object OptDialog: TOptDialog
       end
       object DCBFile: TEdit
         Left = 2
-        Top = 107
+        Top = 142
         Width = 378
         Height = 21
-        TabOrder = 6
+        TabOrder = 8
       end
       object BtnDCBFile: TButton
         Left = 381
-        Top = 107
+        Top = 142
         Width = 21
         Height = 21
         Caption = '...'
@@ -1817,19 +1874,19 @@ object OptDialog: TOptDialog
         Font.Name = 'Tahoma'
         Font.Style = []
         ParentFont = False
-        TabOrder = 7
+        TabOrder = 9
         OnClick = BtnDCBFileClick
       end
       object Label23: TLabel
         Left = 6
-        Top = 128
+        Top = 163
         Width = 65
         Height = 13
         Caption = 'EOP Data File'
       end
       object BtnEOPView: TSpeedButton
         Left = 381
-        Top = 125
+        Top = 162
         Width = 21
         Height = 17
         Flat = True
@@ -1857,14 +1914,14 @@ object OptDialog: TOptDialog
       end
       object EOPFile: TEdit
         Left = 2
-        Top = 142
+        Top = 177
         Width = 378
         Height = 21
-        TabOrder = 8
+        TabOrder = 10
       end
       object BtnEOPFile: TButton
         Left = 381
-        Top = 142
+        Top = 177
         Width = 21
         Height = 21
         Caption = '...'
@@ -1874,19 +1931,19 @@ object OptDialog: TOptDialog
         Font.Name = 'Tahoma'
         Font.Style = []
         ParentFont = False
-        TabOrder = 9
+        TabOrder = 11
         OnClick = BtnEOPFileClick
       end
       object Label34: TLabel
         Left = 6
-        Top = 163
+        Top = 198
         Width = 130
         Height = 13
         Caption = 'Ocean Tide Loading BLQ File'
       end
       object BtnBLQFileView: TSpeedButton
         Left = 381
-        Top = 160
+        Top = 197
         Width = 21
         Height = 17
         Flat = True
@@ -1914,43 +1971,14 @@ object OptDialog: TOptDialog
       end
       object BLQFile: TEdit
         Left = 2
-        Top = 177
-        Width = 378
-        Height = 21
-        TabOrder = 10
-      end
-      object BtnBLQFile: TButton
-        Left = 381
-        Top = 177
-        Width = 21
-        Height = 21
-        Caption = '...'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 11
-        OnClick = BtnBLQFileClick
-      end
-      object Label31: TLabel
-        Left = 6
-        Top = 197
-        Width = 121
-        Height = 13
-        Caption = 'FTP/HTTP Local Directory'
-      end
-      object LocalDir: TEdit
-        Left = 2
-        Top = 211
+        Top = 212
         Width = 378
         Height = 21
         TabOrder = 12
       end
-      object BtnLocalDir: TButton
+      object BtnBLQFile: TButton
         Left = 381
-        Top = 211
+        Top = 212
         Width = 21
         Height = 21
         Caption = '...'
@@ -1961,6 +1989,35 @@ object OptDialog: TOptDialog
         Font.Style = []
         ParentFont = False
         TabOrder = 13
+        OnClick = BtnBLQFileClick
+      end
+      object Label31: TLabel
+        Left = 6
+        Top = 233
+        Width = 121
+        Height = 13
+        Caption = 'FTP/HTTP Local Directory'
+      end
+      object LocalDir: TEdit
+        Left = 2
+        Top = 247
+        Width = 378
+        Height = 21
+        TabOrder = 14
+      end
+      object BtnLocalDir: TButton
+        Left = 381
+        Top = 247
+        Width = 21
+        Height = 21
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 15
         OnClick = BtnLocalDirClick
       end
     end
@@ -2216,9 +2273,9 @@ object OptDialog: TOptDialog
   object OpenDialog: TOpenDialog
     Filter = 
       'All (*.*)|*.*|PCV File (*.pcv,*.atx)|*.pcv;*.atx|Position File (' +
-      '*.pos,*.snx)|*.pos;*.snx|Options File (*.conf)|*.conf|DCB Data '  +
-      'File (*.dcb)|*.dcb|EOP Data File (*.eop,*.erp)|*.eop;*.erp|OTL '  +
-      'BLQ File (*.blq)|*.blq'
+      '*.pos,*.snx)|*.pos;*.snx|Options File (*.conf)|*.conf|DCB Data F' +
+      'ile (*.dcb)|*.dcb|EOP Data File (*.eop,*.erp)|*.eop;*.erp|OTL BL' +
+      'Q File (*.blq)|*.blq|Satellite Meta Data (*.snx)|*.snx'
     Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     Title = 'Load File'
     Left = 164
