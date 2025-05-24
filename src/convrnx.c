@@ -1182,7 +1182,12 @@ static void save_slips(strfile_t *str, obsd_t *data, int n)
           if (sat == 0) continue;
           int code = data[i].code[j];
           if (code == CODE_NONE) continue;
-          if (data[i].LLI[j]&LLI_SLIP) str->slips[sat-1][code]=1;
+          if (data[i].LLI[j] & LLI_SLIP) {
+            str->slips[sat - 1][code] = 1;
+            // Clear the LLI slip flag if the value is invalid, deferring
+            // its output to the next valid value.
+            if (data[i].L[j] == 0.0) data[i].LLI[j] &= ~LLI_SLIP;
+          }
     }
 }
 /* restore cycle slips -------------------------------------------------------*/
