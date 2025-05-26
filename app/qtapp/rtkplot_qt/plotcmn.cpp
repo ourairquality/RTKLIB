@@ -72,11 +72,11 @@ double Plot::timePosition(gtime_t time)
     double tow;
     int week;
 
-    if (plotOptDialog->getTimeFormat() <= 1)             // www/ssss or gpst
+    if (plotOptDialog->getTimeFormat() <= 1)             // www/ssss or GPST
         tow = time2gpst(time, &week);
-    else if (plotOptDialog->getTimeFormat() == 2)        // utc
+    else if (plotOptDialog->getTimeFormat() == 2)        // UTC
         tow = time2gpst(gpst2utc(time), &week);
-    else                                                 // jst
+    else                                                 // JST
         tow = time2gpst(timeadd(gpst2utc(time), 9 * 3600.0), &week);
 
     return tow + (week - startWeek) * 86400.0 * 7;
@@ -505,11 +505,11 @@ QString Plot::timeString(gtime_t time, int n, int tsys)
     if (plotOptDialog->getTimeFormat() == 0) { // www/ssss
         tow = time2gpst(time, &week);
         tstr = QStringLiteral("%1/%2s").arg(week, 4).arg(tow, (n > 0 ? 6 : 5) + n, 'f', n);
-    } else if (plotOptDialog->getTimeFormat() == 1) { // gpst
+    } else if (plotOptDialog->getTimeFormat() == 1) { // GPST
         time2str(time, temp, n);
         tstr = temp;
         label = " GPST";
-    } else if (plotOptDialog->getTimeFormat() == 2) { // utc
+    } else if (plotOptDialog->getTimeFormat() == 2) { // UTC
         time2str(gpst2utc(time), temp, n);
         tstr = temp;
         label = " UTC";
