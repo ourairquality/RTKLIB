@@ -497,8 +497,8 @@ static int decode_bdsephb(raw_t* raw)
 {
     eph_t eph = { 0 };
     uint8_t* p = raw->buff + HLEN;
-    double ura;
-    int prn, sat, toc;
+    double ura, toc;
+    int prn, sat;
 
     if (raw->len < HLEN + 232) {
         trace(2, "unicore bdsephb length error: len=%d\n", raw->len);
