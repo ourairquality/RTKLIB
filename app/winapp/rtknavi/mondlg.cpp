@@ -450,7 +450,7 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	if (rtk->opt.navsys&SYS_SBS) navsys=navsys+"SBAS ";
 	
 	Label->Caption="";
-	Tbl->RowCount = 62 + ANTNFREQ * 2;
+	Tbl->RowCount = 63 + ANTNFREQ * 2;
 	
 	i=1;
 	Tbl->Cells[0][i  ]="RTKLIB Version";
@@ -516,8 +516,13 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 				  rtk->opt.snrmask.mask[5][3],rtk->opt.snrmask.mask[5][4],rtk->opt.snrmask.mask[5][5],
 				  rtk->opt.snrmask.mask[5][6],rtk->opt.snrmask.mask[5][7],rtk->opt.snrmask.mask[5][8]);
 
-	Tbl->Cells[0][i  ]="Rec Dynamic/Earth Tides Correction";
-	Tbl->Cells[1][i++]=s.sprintf("%s, %s",rtk->opt.dynamics?"ON":"OFF",rtk->opt.tidecorr?"ON":"OFF");
+	Tbl->Cells[0][i  ]="Rec Dynamics";
+	Tbl->Cells[1][i++]=s.sprintf("%s",rtk->opt.dynamics?"ON":"OFF");
+
+	Tbl->Cells[0][i  ]="Earth Tides Correction";
+        const char *tideopts[]={"OFF","Solid Earth","Ocean Loading","Solid Earth + Ocean Loading","Solid Pole",
+          "Solid Earth + Solid Pole","Ocean Loading + Sold Pole","Solid Earth + Ocean Loading + Solid Pole"};
+        Tbl->Cells[1][i++]=s.sprintf("%s", tideopts[rtk->opt.tidecorr & 7]);
 	
 	Tbl->Cells[0][i  ]="Ionosphere/Troposphere Model";
 	Tbl->Cells[1][i++]=s.sprintf("%s, %s",ionoopt[rtk->opt.ionoopt],tropopt[rtk->opt.tropopt]);
