@@ -393,7 +393,7 @@ void MonitorDialog::setRtk()
     int width[] = {500, 500};
 
     ui->tWConsole->setColumnCount(2);
-    ui->tWConsole->setRowCount(54 + NFREQ + ANTNFREQ * 2);
+    ui->tWConsole->setRowCount(55 + NFREQ + ANTNFREQ * 2);
     ui->tWConsole->setHorizontalHeaderLabels(header);
 
     for (int i = 0; (i < ui->tWConsole->columnCount()) && (i < 2); i++)
@@ -502,7 +502,7 @@ void MonitorDialog::showRtk()
     if (rtk->opt.navsys & SYS_IRN) navsys = navsys + tr("NavIC ");
     if (rtk->opt.navsys & SYS_SBS) navsys = navsys + tr("SBAS ");
 
-    if (ui->tWConsole->rowCount() < 54 + NFREQ + ANTNFREQ * 2) {
+    if (ui->tWConsole->rowCount() < 55 + NFREQ + ANTNFREQ * 2) {
       free(rtk);
       return;
     }
@@ -543,8 +543,14 @@ void MonitorDialog::showRtk()
                                                    .arg(rtk->opt.snrmask.mask[i][8], 0));
     }
 
-    ui->tWConsole->item(row,   0)->setText(tr("Rec Dynamic/Earth Tides Correction"));
-    ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1, %2").arg(rtk->opt.dynamics ? tr("ON") : tr("OFF"), rtk->opt.tidecorr ? tr("ON") : tr("OFF")));
+    ui->tWConsole->item(row,   0)->setText(tr("Rec Dynamics"));
+    ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1").arg(rtk->opt.dynamics ? tr("ON") : tr("OFF")));
+
+    ui->tWConsole->item(row,   0)->setText(tr("Earth Tides Correction"));
+    const char *tideopts[]={"OFF","Solid Earth","Ocean Loading","Solid Earth + Ocean Loading",
+      "Solid Pole","Solid Earth + Solid Pole","Ocean Loading + Sold Pole",
+      "Solid Earth + Ocean Loading + Solid Pole"};
+    ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1").arg(tideopts[rtk->opt.tidecorr & 7]));
 
     ui->tWConsole->item(row,   0)->setText(tr("Ionosphere/Troposphere Model"));
     ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1, %2").arg(ionoopt[rtk->opt.ionoopt < 0 || rtk->opt.ionoopt > 6 ? 0 : rtk->opt.ionoopt],
