@@ -1682,7 +1682,7 @@ void __fastcall TMainForm::DrawPlot(TImage *plot, int type, int freq)
     trace(4,"DrawPlot\n");
     
     for (i=0;i<NFREQ;i++) {
-        fstr[i+1]=s1.sprintf("L%d",i+1);
+        fstr[i+1]=s1.sprintf("F%d",i+1);
     }
     fstr[i+1]=" SYS";
     
@@ -2536,6 +2536,8 @@ void __fastcall TMainForm::LoadOpt(void)
     PrcOpt.eratio[1]=ini->ReadFloat  ("prcopt", "eratio1",     300.0);
     PrcOpt.eratio[2]=ini->ReadFloat  ("prcopt", "eratio2",     300.0);
     PrcOpt.eratio[3]=ini->ReadFloat  ("prcopt", "eratio3",     300.0);
+    PrcOpt.eratio[4]=ini->ReadFloat  ("prcopt", "eratio4",     300.0);
+    PrcOpt.eratio[5]=ini->ReadFloat  ("prcopt", "eratio5",     300.0);
     PrcOpt.err[1]   =ini->ReadFloat  ("prcopt", "err1",        0.003);
     PrcOpt.err[2]   =ini->ReadFloat  ("prcopt", "err2",        0.003);
     PrcOpt.err[3]   =ini->ReadFloat  ("prcopt", "err3",          0.0);
@@ -2806,6 +2808,8 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteFloat  ("prcopt", "eratio1",    PrcOpt.eratio[1]   );
     ini->WriteFloat  ("prcopt", "eratio2",    PrcOpt.eratio[2]   );
     ini->WriteFloat  ("prcopt", "eratio3",    PrcOpt.eratio[3]   );
+    ini->WriteFloat  ("prcopt", "eratio4",    PrcOpt.eratio[4]   );
+    ini->WriteFloat  ("prcopt", "eratio5",    PrcOpt.eratio[5]   );
     ini->WriteFloat  ("prcopt", "err1",       PrcOpt.err[1]      );
     ini->WriteFloat  ("prcopt", "err2",       PrcOpt.err[2]      );
     ini->WriteFloat  ("prcopt", "err3",       PrcOpt.err[3]      );
