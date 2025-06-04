@@ -1026,8 +1026,9 @@ void __fastcall TPlot::GenObsSlip(int *LLI)
                 }
             }
             else {
-                if (sscanf(obstype,"L%1d",&k)==1) {
-                    j=k>2?k-3:k-1;  /* L1,L2,L5,L6 ... */
+                if (sscanf(obstype,"F%1d",&k)==1) {
+                    if (k<1 || k>NFREQ+NEXOBS) continue;
+                    j=k-1; /* F1,F2,F3,... */
                 }
                 else {
                     for (j=0;j<NFREQ+NEXOBS;j++) {
@@ -1051,8 +1052,9 @@ void __fastcall TPlot::GenObsSlip(int *LLI)
                 }
             }
             else {
-                if (sscanf(obstype,"L%1d",&k)==1) {
-                    j=k>2?k-3:k-1;  /* L1,L2,L5,L6 ... */
+                if (sscanf(obstype,"F%1d",&k)==1) {
+                    if (k<1 || k>NFREQ+NEXOBS) continue;
+                    j=k-1; /* F1,F2,F3,... */
                 }
                 else {
                     for (j=0;j<NFREQ+NEXOBS;j++) {
@@ -1358,8 +1360,8 @@ void __fastcall TPlot::DrawSky(int level)
                     else ustr+=ss.sprintf("%d",obs->LLI[j]);
                 }
             }
-            else if (sscanf(obstype,"L%1d",&freq)==1) {
-                freq-=freq>2?2:0;  /* L1,L2,L5,L6 ... */
+            else if (sscanf(obstype,"F%1d",&freq)==1) {
+                if (freq<1 || freq>NFREQ+NEXOBS) continue; /* F1,F2,F3,... */
                 if (!obs->code[freq-1]) continue;
                 ustr+=ss.sprintf("%3s  %s %s %s  ",code2obs(obs->code[freq-1]),
                               obs->P[freq-1]==0.0?"-":"C",obs->L[freq-1]==0.0?"-":"L",
@@ -1946,8 +1948,9 @@ void __fastcall TPlot::DrawSnr(int level)
                     obsd_t *obs=Obs.data+j;
                     int k,freq;
                     if (obs->sat!=sat) continue;
-                    if (sscanf(obstype,"L%1d",&freq)==1) {
-                        k=freq>2?freq-3:freq-1;
+                    if (sscanf(obstype,"F%1d",&freq)==1) {
+                        if (freq<1 || freq>NFREQ+NEXOBS) continue;
+                        k=freq-1; /* F1,F2,F3,... */
                     }
                     else {
                         for (k=0;k<NFREQ+NEXOBS;k++) {
@@ -2103,8 +2106,9 @@ void __fastcall TPlot::DrawSnrE(int level)
                 
                 if (obs->sat!=sat||El[j]<=0.0) continue;
                 
-                if (sscanf(obstype,"L%1d",&freq)==1) {
-                    k=freq>2?freq-3:freq-1;  /* L1,L2,L5,L6 ... */
+                if (sscanf(obstype,"F%1d",&freq)==1) {
+                    if (freq<1 || freq>NFREQ+NEXOBS) continue;
+                    k=freq-1; /* F1,F2,F3,... */
                 }
                 else {
                     for (k=0;k<NFREQ+NEXOBS;k++) {
@@ -2235,8 +2239,9 @@ void __fastcall TPlot::DrawMpS(int level)
 
             if (obs->sat!=sat||El[i]<=0.0) continue;
             
-            if (sscanf(obstype,"L%1d",&freq)==1) {
-                j=freq>2?freq-3:freq-1;  /* L1,L2,L5,L6 ... */
+            if (sscanf(obstype,"F%1d",&freq)==1) {
+                if (freq<1 || freq>NFREQ+NEXOBS) continue;
+                j=freq-1; /* F1,F2,F3,... */
             }
             else {
                 for (j=0;j<NFREQ+NEXOBS;j++) {
@@ -2266,8 +2271,9 @@ void __fastcall TPlot::DrawMpS(int level)
             
             if (SatMask[obs->sat-1]||!SatSel[obs->sat-1]||El[i]<=0.0) continue;
             
-            if (sscanf(obstype,"L%1d",&freq)==1) {
-                j=freq>2?freq-3:freq-1;  /* L1,L2,L5,L6 ... */
+            if (sscanf(obstype,"F%1d",&freq)==1) {
+                if (freq<1 || freq>NFREQ+NEXOBS) continue;
+                j=freq-1; /* F1,F2,F3,... */
             }
             else {
                 for (j=0;j<NFREQ+NEXOBS;j++) {

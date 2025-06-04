@@ -1679,7 +1679,7 @@ void MainWindow::drawSolutionPlot(QLabel *plot, int type, int freq)
     trace(4, "drawSolutionPlot\n");
 
     for (i = 0; i < NFREQ; i++)
-        fstr[i + 1] = QStringLiteral("L%1").arg(i + 1);
+        fstr[i + 1] = QStringLiteral("F%1").arg(i + 1);
     fstr[i + 1] = " SYS";
 
     ns[0] = rtksvrostat(rtksvr, 0, &time, sat[0], az[0], el[0], snr[0], vsat[0]);

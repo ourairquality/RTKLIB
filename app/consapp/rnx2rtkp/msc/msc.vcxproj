@@ -82,7 +82,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\..\..\src;%(AdditionalIncludeDirectories);..\</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;WIN_STATIC;TRACE;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;ENAGLO;ENAQZS;ENAGAL;ENACMP;ENAIRN;NFREQ=4;NEXOBS=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN_STATIC;TRACE;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;ENAGLO;ENAQZS;ENAGAL;ENACMP;ENAIRN;NFREQ=6;NEXOBS=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -109,7 +109,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\..\..\src;%(AdditionalIncludeDirectories);..\</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;WIN_STATIC;TRACE;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;ENAGLO;ENAQZS;ENAGAL;ENACMP;ENAIRN;NFREQ=4;NEXOBS=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN_STATIC;TRACE;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;ENAGLO;ENAQZS;ENAGAL;ENACMP;ENAIRN;NFREQ=6;NEXOBS=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -134,7 +134,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\..\..\src;%(AdditionalIncludeDirectories);..\</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;WIN_STATIC;TRACE;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;ENAGLO;ENAQZS;ENAGAL;ENACMP;ENAIRN;NFREQ=4;NEXOBS=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN_STATIC;TRACE;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;ENAGLO;ENAQZS;ENAGAL;ENACMP;ENAIRN;NFREQ=6;NEXOBS=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -158,7 +158,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\..\..\src;%(AdditionalIncludeDirectories);..\</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;WIN_STATIC;TRACE;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;ENAGLO;ENAQZS;ENAGAL;ENACMP;ENAIRN;NFREQ=4;NEXOBS=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN_STATIC;TRACE;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;ENAGLO;ENAQZS;ENAGAL;ENACMP;ENAIRN;NFREQ=6;NEXOBS=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>

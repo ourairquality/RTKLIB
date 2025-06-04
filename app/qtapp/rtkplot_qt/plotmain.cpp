@@ -198,11 +198,12 @@ Plot::Plot(QWidget *parent) : QMainWindow(parent), ui(new Ui::Plot)
     strinit(stream + 1);
 
     ui->cBFrequencyType->clear();
-    ui->cBFrequencyType->addItem(QStringLiteral("L1/E1/B1"));
-    if (NFREQ >= 2) ui->cBFrequencyType->addItem(QStringLiteral("L2/E5b/B2b"));
-    if (NFREQ >= 3) ui->cBFrequencyType->addItem(QStringLiteral("L5/E5a/B2a"));
-    if (NFREQ >= 4) ui->cBFrequencyType->addItem(QStringLiteral("L6/E6/B3"));
-    if (NFREQ >= 5) ui->cBFrequencyType->addItem(QStringLiteral("E5a+b/B2a+b"));
+    ui->cBFrequencyType->addItem(QStringLiteral("F1"));
+    if (NFREQ >= 2) ui->cBFrequencyType->addItem(QStringLiteral("F2"));
+    if (NFREQ >= 3) ui->cBFrequencyType->addItem(QStringLiteral("F3"));
+    if (NFREQ >= 4) ui->cBFrequencyType->addItem(QStringLiteral("F4"));
+    if (NFREQ >= 5) ui->cBFrequencyType->addItem(QStringLiteral("F5"));
+    if (NFREQ >= 6) ui->cBFrequencyType->addItem(QStringLiteral("F6"));
     ui->cBFrequencyType->setCurrentIndex(0);
 
     tleData.n = tleData.nmax = 0;
@@ -1351,6 +1352,7 @@ void Plot::satelliteListChanged()
     trace(3, "satelliteListChanged\n");
 
     updateSatelliteSelection();
+    updateObservationType();
     updatePlot();
     updateEnable();
 }
