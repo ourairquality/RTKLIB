@@ -446,8 +446,10 @@ static char *decode_soltime(char *buff, const solopt_t *opt, gtime_t *time)
         if (p) return p+sep_len;
         else return NULL;
     }
-    /* yyyy/mm/dd hh:mm:ss or yyyy mm dd hh:mm:ss */
-    if (sscanf(buff,"%lf/%lf/%lf %lf:%lf:%lf",v,v+1,v+2,v+3,v+4,v+5)>=6) {
+    // yyyy/mm/dd hh:mm:ss or yyyy mm dd hh:mm:ss or yyyy-mm-ddThh:mm:ss
+    if (sscanf(buff,"%lf/%lf/%lf %lf:%lf:%lf",v,v+1,v+2,v+3,v+4,v+5)>=6 ||
+        sscanf(buff,"%lf %lf %lf %lf:%lf:%lf",v,v+1,v+2,v+3,v+4,v+5)>=6 ||
+        sscanf(buff,"%lf-%lf-%lfT%lf:%lf:%lf",v,v+1,v+2,v+3,v+4,v+5)>=6) {
         if (v[0]<100.0) {
             v[0]+=v[0]<80.0?2000.0:1900.0;
         }
@@ -464,14 +466,21 @@ static char *decode_soltime(char *buff, const solopt_t *opt, gtime_t *time)
         if (p) return p+sep_len;
         else return NULL;
     }
-    else { /* wwww ssss */
+    else { /* wwww ssss or Mjd Sod */
         for (p=buff,n=0;n<2;p=q+sep_len) {
             q=strstr(p,sep);
             if (!q) return NULL;
             *q='\0';
             if (sscanf(p,"%lf",v+n)==1) n++;
         }
-        if (n>=2&&0.0<=v[0]&&v[0]<=3000.0&&0.0<=v[1]&&v[1]<604800.0) {
+        if (opt->times == TIMES_MJDSOD) {
+          if (n >= 2 && 51544.5 <= v[0] && v[0] <= 51544.5 + 36500.0 &&
+              0.0 <= v[1] && v[1] < 86401.0) {
+            const double ep[]={2000,1,1,12,0,0};
+            *time = timeadd(timeadd(epoch2time(ep), (v[0] - 51544.5) * 86400.0), v[1]);
+            return p;
+          }
+        } else if (n>=2&&0.0<=v[0]&&v[0]<=3000.0&&0.0<=v[1]&&v[1]<604800.0) {
             *time=gpst2time((int)v[0],v[1]);
             return p;
         }
@@ -692,6 +701,44 @@ static int decode_solgsi(char *buff, const solopt_t *opt, sol_t *sol)
     sol->stat=SOLQ_FIX;
     return 1;
 }
+/* Decode PRIDE-PPPAT kin solution -------------------------------------------*/
+static int decode_solpride(char *buff, const solopt_t *opt, sol_t *sol)
+{
+    trace(4,"decode_solpride:\n");
+
+    if (buff[0] == '\0') return 0;
+
+    sol->stat = buff[0] == '*' ? SOLQ_PPP : SOLQ_FIX; // TODO SOLQ_PPPAR
+    double val[MAXFIELD];
+    int n = tonum(buff + 1, " ", val);
+    if (n < 3) return 0;
+    int i = 0;
+    for (int j = 0; j < 3; j++) sol->rr[j] = val[i++]; // xyz
+    if (i + 4 < n) sol->ns = val[i + 3];
+    return 1;
+}
+/* Decode PRIDE-GINAN pos solution -------------------------------------------*/
+static int decode_solginan(char *buff, const solopt_t *opt, sol_t *sol)
+{
+    trace(4,"decode_solginan:\n");
+
+    double val[MAXFIELD];
+    int n = tonum(buff, " ", val);
+    if (n < 4) return 0;
+
+    int i = 1; // Skip the decimal GPST year.
+    for (int j = 0; j < 3; j++) sol->rr[j] = val[i++]; // xyz
+    if (i + 3 < n) {
+      double P[9] = {0};
+      P[0] = SQR(val[i]); i++; // sdx
+      P[4] = SQR(val[i]); i++; // sdy
+      P[8] = SQR(val[i]); i++; // sdz
+      covtosol(P, sol);
+    }
+    sol->ns = 10;
+    sol->stat = SOLQ_PPP;
+    return 1;
+}
 /* decode solution position --------------------------------------------------*/
 static int decode_solpos(char *buff, const solopt_t *opt, sol_t *sol)
 {
@@ -712,6 +759,8 @@ static int decode_solpos(char *buff, const solopt_t *opt, sol_t *sol)
         case SOLF_LLH : return decode_solllh(p,opt,sol);
         case SOLF_ENU : return decode_solenu(p,opt,sol);
         case SOLF_GSIF: return decode_solgsi(p,opt,sol);
+        case SOLF_PRIDE: return decode_solpride(p,opt,sol);
+        case SOLF_GINAN: return decode_solginan(p,opt,sol);
     }
     return 0;
 }
@@ -771,12 +820,28 @@ static void decode_solopt(char *buff, solopt_t *opt)
     
     trace(4,"decode_solhead: buff=%s\n",buff);
     
+    if (strstr(buff,"* Mjd       Sod               X             Y             Z")) {
+        opt->times=TIMES_MJDSOD;
+        opt->posf=SOLF_PRIDE;
+        opt->degf=0;
+        strcpy(opt->sep," ");
+        return;
+    }
+
+    if (strstr(buff,"*YYYY-MM-DDTHH:MM:SS.SSS YYYY.YYYYYYYYY        X             Y              Z      ")) {
+        opt->times=TIMES_GPST;
+        opt->posf=SOLF_GINAN;
+        opt->degf=0;
+        strcpy(opt->sep," ");
+        return;
+    }
+
     if (strncmp(buff,COMMENTH,1)&&strncmp(buff,"+",1)) return;
     
-    if      (strstr(buff,"GPST")) opt->times=TIMES_GPST;
+    if      (strstr(buff,"GPST") || strstr(buff,"GPS Time")) opt->times=TIMES_GPST;
     else if (strstr(buff,"UTC" )) opt->times=TIMES_UTC;
     else if (strstr(buff,"JST" )) opt->times=TIMES_JST;
-    
+
     if ((p=strstr(buff,"x-ecef(m)"))) {
         opt->posf=SOLF_XYZ;
         opt->degf=0;
@@ -1791,7 +1856,8 @@ extern int outsolheads(uint8_t *buff, const solopt_t *opt)
     
     trace(3,"outsolheads:\n");
     
-    if (opt->posf==SOLF_NMEA||opt->posf==SOLF_STAT||opt->posf==SOLF_GSIF) {
+    if (opt->posf==SOLF_NMEA||opt->posf==SOLF_STAT||opt->posf==SOLF_GSIF||
+        opt->posf==SOLF_PRIDE||opt->posf==SOLF_GINAN) {
         return 0;
     }
     if (opt->outhead) {

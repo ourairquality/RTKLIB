@@ -417,6 +417,8 @@ extern "C" {
 #define SOLF_NMEA   3                   /* solution format: NMEA-183 */
 #define SOLF_STAT   4                   /* solution format: solution status */
 #define SOLF_GSIF   5                   /* solution format: GSI F1/F2 */
+#define SOLF_PRIDE  6                   /* solution format: PRIDE-PPPAR kin */
+#define SOLF_GINAN  7                   /* solution format: GINAN pos */
 
 #define SOLQ_NONE   0                   /* solution status: no solution */
 #define SOLQ_FIX    1                   /* solution status: fix */
@@ -438,6 +440,7 @@ extern "C" {
 #define TIMES_GPST  0                   /* time system: gps time */
 #define TIMES_UTC   1                   /* time system: utc */
 #define TIMES_JST   2                   /* time system: jst */
+#define TIMES_MJDSOD 3                  /* time system: mjd sod */
 
 #define IONOOPT_OFF 0                   /* ionosphere option: correction off */
 #define IONOOPT_BRDC 1                  /* ionosphere option: broadcast model */
