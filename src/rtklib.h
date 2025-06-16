@@ -71,7 +71,7 @@ extern "C" {
 
 /* constants -----------------------------------------------------------------*/
 
-#define VER_RTKLIB  "EX"             /* library version */
+#define VER_RTKLIB  "EXoaq"          /* library version */
 
 #define PATCH_LEVEL "2.5.0"               /* patch level */
 
