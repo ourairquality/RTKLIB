@@ -96,7 +96,7 @@ typedef struct {                /* stream file type */
 
 /* global variables ----------------------------------------------------------*/
 static const int navsys[RNX_NUMSYS]={     /* system codes */
-    SYS_GPS,SYS_GLO,SYS_GAL,SYS_QZS,SYS_SBS,SYS_CMP,SYS_IRN
+    SYS_GPS,SYS_GLO,SYS_GAL,SYS_QZS,SYS_SBS,SYS_BDS,SYS_IRN
 };
 
 // Supported obs-type by RINEX version.
@@ -152,7 +152,7 @@ static void convcode(int rnxver, int sys, char *type)
     else if (rnxver>=212&&sys==SYS_GLO&&!strcmp(type+1,"2C")) { /* L2C/A */
         strcpy(type+1,"D");
     }
-    else if (sys==SYS_CMP&&(!strcmp(type+1,"2I")||!strcmp(type+1,"2Q")||
+    else if (sys==SYS_BDS&&(!strcmp(type+1,"2I")||!strcmp(type+1,"2Q")||
              !strcmp(type+1,"2X"))) { /* B1_2 */
         strcpy(type+1,"2");
     }
@@ -385,19 +385,57 @@ static void unsetopt_file(rnxopt_t *opt)
     }
 }
 /* sort obs-types ------------------------------------------------------------*/
-static void sort_obstype(uint8_t *codes, uint8_t *types, int n, int sys)
+static void sort_obstype(uint8_t *codes, uint8_t *types, int n, int sys, rnxopt_t *opt)
 {
-    uint8_t tmp;
-    int i,j,idx1,idx2,pri1,pri2;
-    
-    for (i=0;i<n-1;i++) for (j=i+1;j<n;j++) {
-       idx1=code2idx(navsys[sys],codes[i]);
-       idx2=code2idx(navsys[sys],codes[j]);
-       pri1=getcodepri(navsys[sys],codes[i],"");
-       pri2=getcodepri(navsys[sys],codes[j],"");
-       if (idx1<idx2||(idx1==idx2&&pri1>=pri2)) continue;
-       tmp=codes[i]; codes[i]=codes[j]; codes[j]=tmp;
-       tmp=types[i]; types[i]=types[j]; types[j]=tmp;
+    // This sorting is rather arbitrary, just for presentation, and uses the
+    // RTKLIB default frequency index order and the default code
+    // priorites. BDS needs extra work here as it is split into BDS-2 and
+    // BDS-3 in RTKLIB with separate frequency index assignments and code
+    // priorities that need to be combined here for RINEX.
+    int sysa = navsys[sys], sysb = 0;
+    if (sysa == SYS_BDS) {
+      sysa = SYS_BDS2 & opt->navsys;
+      sysb = SYS_BDS3 & opt->navsys;
+    }
+
+    for (int i = 0; i < n - 1; i++) {
+      for (int j = i + 1; j < n; j++) {
+        int code1 = codes[i];
+        int idx1 = -1, pri1 = 0;
+        if (sysa) {
+          idx1 = code2idx(sysa, code1);
+          pri1 = getcodepri(sysa, code1, "");
+        }
+        if (sysb) {
+          int idx1b = code2idx(sysb, code1);
+          int pri1b = getcodepri(sysb, code1, "");
+          if (idx1 < 0 || idx1b < idx1) {
+            idx1 = idx1b;
+            pri1 = pri1b;
+          } else if (idx1b == idx1 && pri1b > pri1) {
+            pri1 = pri1b;
+          }
+        }
+        int code2 = codes[j];
+        int idx2 = -1, pri2 = 0;
+        if (sysa) {
+          idx2 = code2idx(sysa, code2);
+          pri2 = getcodepri(sysa, code2, "");
+        }
+        if (sysb) {
+          int idx2b = code2idx(sysb, code2);
+          int pri2b = getcodepri(sysb, code2, "");
+          if (idx2 < 0 || idx2b < idx2) {
+            idx2 = idx2b;
+            pri2 = pri2b;
+          } else if (idx2b == idx2 && pri2b > pri2) {
+            pri2 = pri2b;
+          }
+        }
+        if ((idx1 >= 0 && idx1 < idx2) || (idx1 == idx2 && pri1 >= pri2)) continue;
+        codes[i] = code2; codes[j] = code1;
+        int tmp = types[i]; types[i] = types[j]; types[j] = tmp;
+      }
     }
 }
 /* set obs-types in RINEX options --------------------------------------------*/
@@ -407,21 +445,32 @@ static void setopt_obstype(const uint8_t *codes, const uint8_t *types, int sys,
     const char type_str[]="CLDS";
     const char *id;
     char type[16],ver;
-    int i,j,k,idx;
+    int i,j,k;
     
     trace(3,"setopt_obstype: sys=%d\n",sys);
     
     opt->nobs[sys]=0;
     
-    if (!(navsys[sys]&opt->navsys)) return;
+    if ((navsys[sys] & opt->navsys) == 0) return;
     
     for (i=0;codes[i];i++) {
-        if (!(id=code2obs(codes[i]))||(idx=code2idx(navsys[sys],codes[i]))<0) {
+        if (!(id = code2obs(codes[i]))) continue;
+        if (opt->mask[sys][codes[i] - 1] == '0') continue;
+
+        // For RNX_SYS_CMP test the frequency index mapping for both
+        // SYS_BDS2 to SYS_BDS3 as it may vary.
+        if (sys == RNX_SYS_CMP) {
+          int idx2 = code2idx(SYS_BDS2, codes[i]);
+          int idx3 = code2idx(SYS_BDS3, codes[i]);
+          if ((idx2 < 0 || (opt->freqtype & (1 << idx2)) == 0) &&
+              (idx3 < 0 || (opt->freqtype & (1 << idx3)) == 0)) {
             continue;
+          }
+        } else {
+          int idx = code2idx(navsys[sys], codes[i]);
+          if (idx < 0 || (opt->freqtype & (1 << idx)) == 0) continue;
         }
-        if (!(opt->freqtype&(1<<idx))||opt->mask[sys][codes[i]-1]=='0') {
-            continue;
-        }
+
         if (opt->rnxver>=400) {
             ver=ver4code[sys][codes[i]-1];
             if (ver<'0'||ver>'0'+opt->rnxver-400) {
@@ -508,7 +557,7 @@ static void setopt_phshift(rnxopt_t *opt)
                 opt->shift[i][j]=-0.25; /* -1/4 cyc */
             }
         }
-        else if (navsys[i]==SYS_CMP) {
+        else if (navsys[i]==SYS_BDS) {
             if (code==CODE_L2P||code==CODE_L7Q||code==CODE_L6Q) {
                 opt->shift[i][j]=-0.25; /* -1/4 cyc */
             }
@@ -949,7 +998,7 @@ static int scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str,
                 (opt->te.time == 0 || timediff(str->time, opt->te) < 600)) {
               for (int i = 0; i < str->obs->n; i++) {
                 int sys = satsys(str->obs->data[i].sat, NULL);
-                if (!(sys & opt->navsys)) continue;
+                if ((sys & opt->navsys) == 0) continue;
                 update_ltspan(str, str->obs->data + i);
               }
             }
@@ -960,9 +1009,9 @@ static int scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str,
             if (type==1) { /* observation data */
                 for (i=0;i<str->obs->n;i++) {
                     sys=satsys(str->obs->data[i].sat,NULL);
-                    if (!(sys&opt->navsys)) continue;
+                    if ((sys & opt->navsys) == 0) continue;
                     /* Mapping from SYS_ to RNX_SYS_ */
-                    for (l=0;l<RNX_NUMSYS;l++) if (navsys[l]==sys) break;
+                    for (l=0;l<RNX_NUMSYS;l++) if (navsys[l] & sys) break;
                     if (l>=RNX_NUMSYS) continue;
                     
                     /* update obs-types */
@@ -1018,7 +1067,7 @@ static int scan_file(char **files, int nf, rnxopt_t *opt, strfile_t *str,
     }
     /* sort and set obs-types in RINEX options */
     for (i=0;i<RNX_NUMSYS;i++) {
-        sort_obstype(codes[i],types[i],n[i],i);
+        sort_obstype(codes[i],types[i],n[i],i,opt);
         setopt_obstype(codes[i],types[i],i,opt);
         
         for (j=0;j<n[i];j++) {
@@ -1312,13 +1361,14 @@ static void convnav(FILE **ofp, rnxopt_t *opt, strfile_t *str, int *n)
     sat=str->ephsat;
     set=str->ephset;
     sys=satsys(sat,&prn);
-    if (!(sys&opt->navsys)||opt->exsats[sat-1]) return;
+    if ((sys & opt->navsys) == 0 || opt->exsats[sat-1]) return;
     
     switch (sys) {
         case SYS_GLO: dtoe=MAXDTOE_GLO; break;
         case SYS_GAL: dtoe=MAXDTOE_GAL; break;
         case SYS_QZS: dtoe=MAXDTOE_QZS; break;
-        case SYS_CMP: dtoe=MAXDTOE_CMP; break;
+        case SYS_BDS2:
+        case SYS_BDS3: dtoe=MAXDTOE_CMP; break;
         case SYS_IRN: dtoe=MAXDTOE_IRN; break;
         case SYS_SBS: dtoe=MAXDTOE_SBS; break;
         default     : dtoe=MAXDTOE    ; break;
@@ -1373,7 +1423,7 @@ static void convnav(FILE **ofp, rnxopt_t *opt, strfile_t *str, int *n)
             n[5]++;
         }
     }
-    else if (sys==SYS_CMP) {
+    else if (sys == SYS_BDS2 || sys == SYS_BDS3) {
         if (ofp[1]&&!sep_nav) {
             outrnxnavb(ofp[1],opt,str->nav->eph+sat-1+MAXSAT*set);
             n[1]++;
@@ -1680,14 +1730,16 @@ extern int convrnx(int format, rnxopt_t *opt, const char *file, char **ofile)
           ofile[6],ofile[7],ofile[8]);
     
     showmsg("");
-    
+
+    init_code2idx(opt_.sigdef);
+
     /* disable systems according to RINEX version */
     if      (opt->rnxver<=210) opt_.navsys&=sys_GRS;
     else if (opt->rnxver<=211) opt_.navsys&=sys_GRS|SYS_GAL;
-    else if (opt->rnxver<=212) opt_.navsys&=sys_GRS|SYS_GAL|SYS_CMP;
+    else if (opt->rnxver<=212) opt_.navsys&=sys_GRS|SYS_GAL|SYS_BDS;
     else if (opt->rnxver<=300) opt_.navsys&=sys_GRS|SYS_GAL;
-    else if (opt->rnxver<=301) opt_.navsys&=sys_GRS|SYS_GAL|SYS_CMP;
-    else if (opt->rnxver<=302) opt_.navsys&=sys_GRS|SYS_GAL|SYS_CMP|SYS_QZS;
+    else if (opt->rnxver<=301) opt_.navsys&=sys_GRS|SYS_GAL|SYS_BDS;
+    else if (opt->rnxver<=302) opt_.navsys&=sys_GRS|SYS_GAL|SYS_BDS|SYS_QZS;
     
     /* disable frequency according to RINEX version */
     if (opt->rnxver<=210) opt_.freqtype&=0x3;

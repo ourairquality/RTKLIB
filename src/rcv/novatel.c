@@ -239,7 +239,7 @@ static int sig2code(int sys, int sigtype)
             case 27: return CODE_L6L; /* L6P    (OEM7) */
         }
     }
-    else if (sys==SYS_CMP) {
+    else if (sys & SYS_BDS) {
         switch (sigtype) {
             case  0: return CODE_L2I; /* B1I with D1 (OEM6) */
             case  1: return CODE_L7I; /* B2I with D1 (OEM6) */
@@ -296,7 +296,7 @@ static int sig2code(int sys, int sigtype)
 static int decode_track_stat(uint32_t stat, int *sys, int *code, int *track,
                              int *plock, int *clock, int *parity, int *halfc)
 {
-    int satsys,sigtype,idx=-1;
+    int satsys,sigtype;
     
     *code=CODE_NONE;
     *track =stat&0x1F;
@@ -312,18 +312,18 @@ static int decode_track_stat(uint32_t stat, int *sys, int *code, int *track,
         case 1: *sys=SYS_GLO; break;
         case 2: *sys=SYS_SBS; break;
         case 3: *sys=SYS_GAL; break; /* OEM6 */
-        case 4: *sys=SYS_CMP; break; /* OEM6 F/W 6.400 */
+        case 4: *sys=SYS_BDS; break; /* OEM6 F/W 6.400 */
         case 5: *sys=SYS_QZS; break; /* OEM6 */
         case 6: *sys=SYS_IRN; break; /* OEM7 */
         default:
             trace(2,"oem4 unknown system: sys=%d\n",satsys);
             return -1;
     }
-    if (!(*code=sig2code(*sys,sigtype))||(idx=code2idx(*sys,*code))<0) {
+    if (!(*code=sig2code(*sys,sigtype))) {
         trace(2,"oem4 signal type error: sys=%d sigtype=%d\n",*sys,sigtype);
         return -1;
     }
-    return idx;
+    return 0;
 }
 /* Decode RANGECMPB ----------------------------------------------------------*/
 static int decode_rangecmpb(raw_t *raw) {
@@ -355,6 +355,12 @@ static int decode_rangecmpb(raw_t *raw) {
       sys = SYS_QZS;
       prn += 10;
       code = CODE_L1Z; /* QZS L1S */
+    }
+    if (sys & SYS_BDS) {
+      if (MINPRNBDS2 <= prn && prn <= MAXPRNBDS2)
+        sys = SYS_BDS2;
+      if (MINPRNBDS3 <= prn && prn <= MAXPRNBDS3)
+        sys = SYS_BDS3;
     }
     int sat = satno(sys, prn);
     if (!sat) {
@@ -924,7 +930,7 @@ static int decode_bdsephemerisb(raw_t *raw)
     eph.cic   =R8(p);   p+=8;
     eph.cis   =R8(p);
     
-    if (!(sat=satno(SYS_CMP,prn))) {
+    if (!(sat=satno(SYS_BDS, prn))) {
         trace(2,"oemv bdsephemeris satellite error: prn=%d\n",prn);
         return -1;
     }

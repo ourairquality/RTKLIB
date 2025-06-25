@@ -25,7 +25,7 @@ __fastcall TOptDialog::TOptDialog(TComponent* Owner)
     : TForm(Owner)
 {
     AnsiString label,s;
-    int nglo=MAXPRNGLO,ngal=MAXPRNGAL,nqzs=MAXPRNQZS,ncmp=MAXPRNCMP;
+    int nglo=MAXPRNGLO,ngal=MAXPRNGAL,nqzs=MAXPRNQZS,nbds2=MAXPRNBDS2,nbds3=MAXPRNBDS3;
     int nirn=MAXPRNIRN;
     
     Freq->Items->Clear();
@@ -37,8 +37,9 @@ __fastcall TOptDialog::TOptDialog(TComponent* Owner)
     if (nglo<=0) NavSys2->Enabled=false;
     if (ngal<=0) NavSys3->Enabled=false;
     if (nqzs<=0) NavSys4->Enabled=false;
-    if (ncmp<=0) NavSys6->Enabled=false;
-    if (nirn<=0) NavSys7->Enabled=false;
+    if (nbds2<=0) NavSys6->Enabled=false;
+    if (nbds3<=0) NavSys7->Enabled=false;
+    if (nirn<=0) NavSys8->Enabled=false;
     UpdateEnable();
 }
 //---------------------------------------------------------------------------
@@ -373,6 +374,7 @@ void __fastcall TOptDialog::GetOpt(void)
 	AnsiString s;
 	PosMode		 ->ItemIndex	=MainForm->PosMode;
 	Freq		 ->ItemIndex	=MainForm->Freq;
+	SigDef		 ->Text		=MainForm->SigDef;
 	Solution	 ->ItemIndex	=MainForm->Solution;
 	ElMask		 ->Text			=s.sprintf("%.0f",MainForm->ElMask);
 	SnrMask						=MainForm->SnrMask;
@@ -387,8 +389,9 @@ void __fastcall TOptDialog::GetOpt(void)
 	NavSys3	     ->Checked		=MainForm->NavSys&SYS_GAL;
 	NavSys4	     ->Checked		=MainForm->NavSys&SYS_QZS;
 	NavSys5	     ->Checked		=MainForm->NavSys&SYS_SBS;
-	NavSys6	     ->Checked		=MainForm->NavSys&SYS_CMP;
-	NavSys7	     ->Checked		=MainForm->NavSys&SYS_IRN;
+	NavSys6	     ->Checked		=MainForm->NavSys&SYS_BDS2;
+	NavSys7	     ->Checked		=MainForm->NavSys&SYS_BDS3;
+	NavSys8	     ->Checked		=MainForm->NavSys&SYS_IRN;
 	PosOpt1	     ->Checked		=MainForm->PosOpt[0];
 	PosOpt2	     ->Checked		=MainForm->PosOpt[1];
 	PosOpt3	     ->Checked		=MainForm->PosOpt[2];
@@ -512,6 +515,7 @@ void __fastcall TOptDialog::SetOpt(void)
 	
 	MainForm->PosMode		=PosMode	->ItemIndex;
 	MainForm->Freq			=Freq		->ItemIndex;
+	MainForm->SigDef		=SigDef		->Text;
 	MainForm->Solution		=Solution   ->ItemIndex;
 	MainForm->ElMask		=str2dbl(ElMask	->Text);
 	MainForm->SnrMask		=SnrMask;
@@ -527,8 +531,9 @@ void __fastcall TOptDialog::SetOpt(void)
 	if (NavSys3->Checked) MainForm->NavSys|=SYS_GAL;
 	if (NavSys4->Checked) MainForm->NavSys|=SYS_QZS;
 	if (NavSys5->Checked) MainForm->NavSys|=SYS_SBS;
-	if (NavSys6->Checked) MainForm->NavSys|=SYS_CMP;
-	if (NavSys7->Checked) MainForm->NavSys|=SYS_IRN;
+	if (NavSys6->Checked) MainForm->NavSys|=SYS_BDS2;
+	if (NavSys7->Checked) MainForm->NavSys|=SYS_BDS3;
+	if (NavSys8->Checked) MainForm->NavSys|=SYS_IRN;
 	MainForm->PosOpt[0]	  	=PosOpt1	->Checked;
 	MainForm->PosOpt[1]	  	=PosOpt2	->Checked;
 	MainForm->PosOpt[2]	  	=PosOpt3	->Checked;
@@ -662,6 +667,7 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	
 	PosMode		 ->ItemIndex	=prcopt.mode;
 	Freq		 ->ItemIndex	=prcopt.nf>NFREQ-1?NFREQ-1:prcopt.nf-1;
+	SigDef		 ->Text         =prcopt.sigdef;
 	Solution	 ->ItemIndex	=prcopt.soltype;
 	ElMask		 ->Text			=s.sprintf("%.0f",prcopt.elmin*R2D);
 	SnrMask						=prcopt.snrmask;
@@ -682,8 +688,9 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	NavSys3	     ->Checked		=prcopt.navsys&SYS_GAL;
 	NavSys4	     ->Checked		=prcopt.navsys&SYS_QZS;
 	NavSys5	     ->Checked		=prcopt.navsys&SYS_SBS;
-	NavSys6	     ->Checked		=prcopt.navsys&SYS_CMP;
-	NavSys7	     ->Checked		=prcopt.navsys&SYS_IRN;
+	NavSys6	     ->Checked		=prcopt.navsys&SYS_BDS2;
+	NavSys7	     ->Checked		=prcopt.navsys&SYS_BDS3;
+	NavSys8	     ->Checked		=prcopt.navsys&SYS_IRN;
 	PosOpt1	     ->Checked		=prcopt.posopt[0];
 	PosOpt2	     ->Checked		=prcopt.posopt[1];
 	PosOpt3	     ->Checked		=prcopt.posopt[2];
@@ -818,6 +825,7 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 int ppp=PosMode->ItemIndex>=PMODE_PPP_KINEMA;
 
 	AnsiString ExSats_Text=ExSats->Text,FieldSep_Text=FieldSep->Text;
+	AnsiString SigDef_Text=SigDef->Text;
 	AnsiString RovAnt_Text=RovAnt->Text,RefAnt_Text=RefAnt->Text;
 	AnsiString RovNameE_Text=RovNameE->Text,RefNameE_Text=RefNameE->Text;
 	AnsiString SatPcvFile_Text=SatPcvFile->Text;
@@ -842,6 +850,7 @@ int ppp=PosMode->ItemIndex>=PMODE_PPP_KINEMA;
 	
 	prcopt.mode		=PosMode	 ->ItemIndex;
 	prcopt.nf		=Freq		 ->ItemIndex+1;
+	strcpy(prcopt.sigdef, SigDef_Text.c_str());
 	prcopt.soltype	=Solution	 ->ItemIndex;
 	prcopt.elmin	=str2dbl(ElMask	->Text)*D2R;
 	prcopt.snrmask	=SnrMask;
@@ -863,8 +872,9 @@ int ppp=PosMode->ItemIndex>=PMODE_PPP_KINEMA;
 					  (NavSys3->Checked?SYS_GAL:0)|
 					  (NavSys4->Checked?SYS_QZS:0)|
 					  (NavSys5->Checked?SYS_SBS:0)|
-					  (NavSys6->Checked?SYS_CMP:0)|
-					  (NavSys7->Checked?SYS_IRN:0);
+					  (NavSys6->Checked?SYS_BDS2:0)|
+					  (NavSys7->Checked?SYS_BDS3:0)|
+					  (NavSys8->Checked?SYS_IRN:0);
 	prcopt.posopt[0]=PosOpt1	->Checked;
 	prcopt.posopt[1]=PosOpt2	->Checked;
 	prcopt.posopt[2]=PosOpt3	->Checked;
@@ -1017,7 +1027,7 @@ void __fastcall TOptDialog::UpdateEnable(void)
 
 	AmbRes         ->Enabled=ar;
 	GloAmbRes      ->Enabled=ar&&AmbRes->ItemIndex>0&&NavSys2->Checked;
-	BdsAmbRes      ->Enabled=ar&&AmbRes->ItemIndex>0&&NavSys6->Checked;
+	BdsAmbRes      ->Enabled=ar&&AmbRes->ItemIndex>0&&(NavSys6->Checked||NavSys7->Checked);
 	ValidThresAR   ->Enabled=ar&&AmbRes->ItemIndex>=1&&AmbRes->ItemIndex<4;
     ValidThresARMin->Enabled=ar&&AmbRes->ItemIndex>=1&&AmbRes->ItemIndex<4;
     ValidThresARMax->Enabled=ar&&AmbRes->ItemIndex>=1&&AmbRes->ItemIndex<4;
@@ -1205,6 +1215,8 @@ void __fastcall TOptDialog::NavSys6Click(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TOptDialog::BtnFreqClick(TObject *Sender)
 {
+        AnsiString SigDef_Text = SigDef->Text;
+        init_code2idx(SigDef_Text.c_str());
     FreqDialog->ShowModal();
 }
 //---------------------------------------------------------------------------

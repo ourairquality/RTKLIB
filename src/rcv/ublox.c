@@ -167,7 +167,7 @@ static int ubx_sys(int gnssid)
         case 0: return SYS_GPS;
         case 1: return SYS_SBS;
         case 2: return SYS_GAL;
-        case 3: return SYS_CMP;
+        case 3: return SYS_BDS;
         case 5: return SYS_QZS;
         case 6: return SYS_GLO;
         case 7: return SYS_IRN;
@@ -207,7 +207,7 @@ static int ubx_sig(int sys, int sigid)
         if (sigid==8) return CODE_L5I; /* L5I */
         if (sigid==9) return CODE_L5Q; /* L5Q */
     }
-    else if (sys == SYS_CMP) {
+    else if (sys & SYS_BDS) {
         if (sigid==0) return CODE_L2I; /* B1I D1 */
         if (sigid==1) return CODE_L2I; /* B1I D2 */
         if (sigid == 2) return CODE_L7I; /* B2I D1 */
@@ -260,7 +260,7 @@ static int ubx_sig_combined(int sys, int sigid)
         if (sigid==8) return CODE_L5X; /* L5I */
         if (sigid==9) return CODE_L5X; /* L5Q */
     }
-    else if (sys == SYS_CMP) {
+    else if (sys & SYS_BDS) {
         if (sigid==0) return CODE_L2I; /* B1I D1 */
         if (sigid==1) return CODE_L2I; /* B1I D2 */
         if (sigid == 2) return CODE_L7I; /* B2I D1 */
@@ -469,6 +469,7 @@ static int decode_rxmrawx(raw_t *raw)
             trace(2,"ubx rxmrawx sat number error: sys=%2d prn=%2d\n",sys,prn);
             continue;
         }
+        sys = satsys(sat, NULL); // For BDS2 vs BDS3.
         if (sys==SYS_GLO&&!raw->nav.glo_fcn[prn-1]) {
             raw->nav.glo_fcn[prn-1]=frqid-7+8;
         }
@@ -486,7 +487,7 @@ static int decode_rxmrawx(raw_t *raw)
                 code=ubx_sig_combined(sys,sigid);
         }
         else {
-            mcode=(sys==SYS_CMP)?CODE_L2I:((sys==SYS_GAL)?CODE_L1X:CODE_L1C);
+            mcode=(sys&SYS_BDS)?CODE_L2I:((sys==SYS_GAL)?CODE_L1X:CODE_L1C);
             code=mcode;
         }
         /* signal index in obs data */
@@ -500,7 +501,7 @@ static int decode_rxmrawx(raw_t *raw)
             L-=L!=0.0?toff*code2freq(sys,code,frqid-7):0.0;
         }
         /* half-cycle shift correction for BDS GEO */
-        if (sys==SYS_CMP&&(prn<=5||prn>=59)&&L!=0.0) {
+        if ((sys&SYS_BDS)&&(prn<=5||prn>=59)&&L!=0.0) {
             L+=0.5;
         }
         if (sys==SYS_SBS)
@@ -662,9 +663,10 @@ static int decode_trkmeas(raw_t *raw)
             trace(2,"ubx trkmeas sat number error: sys=%2d prn=%2d\n",sys,prn);
             continue;
         }
+        sys = satsys(sat, NULL); // For BDS2 vs BDS3.
         /* transmission time */
         ts=I8(p+24)*P2_32/1000.0;
-        if      (sys==SYS_CMP) ts+=14.0;             /* bdt  -> gpst */
+        if      (sys & SYS_BDS) ts+=14.0; /* bdt  -> gpst */
         else if (sys==SYS_GLO) ts-=10800.0+utc_gpst; /* glot -> gpst */
         
         /* signal travel time */
@@ -680,7 +682,7 @@ static int decode_trkmeas(raw_t *raw)
         adr  =I8(p+32)*P2_32+(flag&0x40?0.5:0.0);
         dop  =I4(p+40)*P2_10*10.0;
 
-        int code=sys==SYS_CMP?CODE_L2I:CODE_L1C;
+        int code=(sys&SYS_BDS)?CODE_L2I:CODE_L1C;
 
         /* set slip flag */
         int slip = 0;
@@ -833,7 +835,7 @@ static int decode_trkd5(raw_t *raw)
         raw->obs.data[n].L[0]=-adr;
         raw->obs.data[n].D[0]=(float)dop;
         raw->obs.data[n].SNR[0]=snr;
-        raw->obs.data[n].code[0]=sys==SYS_CMP?CODE_L2I:CODE_L1C;
+        raw->obs.data[n].code[0]=(sys&SYS_BDS)?CODE_L2I:CODE_L1C;
         raw->obs.data[n].LLI[0]=slip?LLI_SLIP:0;
         
         for (j=1;j<NFREQ+NEXOBS;j++) {
@@ -1238,7 +1240,7 @@ static int decode_rxmsfrbx(raw_t *raw)
             return decode_fnav(raw, sat, 8);
           }
           return decode_inav(raw, sat, 8);
-        case SYS_CMP:
+        case SYS_BDS:
           if (U1(p + 2) == 6) {
             // Signal B1C, B-CNAV1.
             trace(3, "ubx rxmsfrbx BDS B-CNAV1 unsupported: sys=%d prn=%3d sigid=%d\n", U1(p), U1(p + 1), U1(p + 2));
@@ -1278,7 +1280,7 @@ static int decode_trksfrbx(raw_t *raw)
         case SYS_GPS: return decode_nav (raw,sat,13);
         case SYS_QZS: return decode_nav (raw,sat,13);
         case SYS_GAL: return decode_inav(raw,sat,13);
-        case SYS_CMP: return decode_cnav(raw,sat,13);
+        case SYS_BDS: return decode_cnav(raw,sat,13);
         case SYS_GLO: return decode_gnav(raw,sat,13,U1(p+4));
         case SYS_SBS: return decode_snav(raw,sat,13);
     }
