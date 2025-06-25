@@ -150,6 +150,7 @@ void Plot::readSolutionStat(const QStringList &files, int sel)
 
     readsolstatt((const char **)paths, n, ts, te, tint, solutionStat + sel);
 
+    updateSatelliteMask();
     updateSatelliteList();
 }
 // read observation data ----------------------------------------------------
@@ -465,8 +466,8 @@ void Plot::readMapData(const QString &file)
 
     ui->btnShowImage->setChecked(true);
 
-    updatePlot();
     updateOrigin();
+    updatePlot();
     updateEnable();
     showMessage("");
 }
@@ -1202,6 +1203,7 @@ void Plot::updateObservation(int nobs)
     }
     indexObservation[nObservation] = observation.n;
 
+    updateSatelliteMask();
     updateSatelliteList();
 
     readWaitEnd();

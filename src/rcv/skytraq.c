@@ -138,7 +138,7 @@ static int sky_sys(int gnssid)
         case 2: return SYS_GLO;
         case 3: return SYS_GAL;
         case 4: return SYS_QZS;
-        case 5: return SYS_CMP;
+        case 5: return SYS_BDS;
         case 6: return SYS_IRN;
     }
     return 0;
@@ -180,7 +180,7 @@ static int sky_sig(int sys, int signal_type) {
             default: return CODE_L1C;
         }
     }
-    else if (sys==SYS_CMP) { /* BeiDou */
+    else if (sys&SYS_BDS) { /* BeiDou */
         switch (signal_type) {
             case  1: return CODE_L1X;
             case  4: return CODE_L5X;
@@ -250,8 +250,8 @@ static int decode_stqraw(raw_t *raw)
         else if (MINPRNQZS<=prn&&prn<=MAXPRNQZS) {
             sys=SYS_QZS;
         }
-        else if (MINPRNCMP<=prn-200&&prn-200<=MAXPRNCMP) {
-            sys=SYS_CMP;
+        else if (MINPRNBDS<=prn-200&&prn-200<=MAXPRNBDS) {
+            sys=SYS_BDS;
             prn-=200;
         }
         else {
@@ -267,7 +267,7 @@ static int decode_stqraw(raw_t *raw)
         cp1=!(ind&4)?0.0:R8(p+10);
         cp1-=floor((cp1+1E9)/2E9)*2E9; /* -10^9 < cp1 < 10^9 */
         
-        int code = (sys & SYS_CMP) ? CODE_L2I : CODE_L1C;
+        int code = (sys & SYS_BDS) ? CODE_L2I : CODE_L1C;
         for (j=0;j<NFREQ+NEXOBS;j++) {
             raw->obs.data[n].L[j]=raw->obs.data[n].P[j]=0.0;
             raw->obs.data[n].D[j]=raw->obs.data[n].SNR[j]=0.0f;
@@ -664,7 +664,7 @@ static int decode_stqbds(raw_t *raw)
                 U1(p+1)-200,U1(p+2));
     }
     prn=U1(p+1)-200;
-    if (!(sat=satno(SYS_CMP,prn))) {
+    if (!(sat=satno(SYS_BDS,prn))) {
         trace(2,"stq bds subframe satellite number error: prn=%d\n",prn);
         return -1;
     }

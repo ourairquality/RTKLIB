@@ -140,6 +140,7 @@ void __fastcall TPlot::ReadSolStat(TStrings *files, int sel)
     
     readsolstatt((const char **)paths,n,ts,te,tint,SolStat+sel);
     
+    UpdateSatMask();
     UpdateSatList();
 }
 // read observation data ----------------------------------------------------
@@ -1221,6 +1222,7 @@ void __fastcall TPlot::UpdateObs(int nobs)
     }
     IndexObs[NObs]=Obs.n;
     
+    UpdateSatMask();
     UpdateSatList();
     
     ReadWaitEnd();

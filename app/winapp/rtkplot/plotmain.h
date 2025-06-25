@@ -561,7 +561,7 @@ public:
     AnsiString IniFile;
     AnsiString MapImageFile;
     AnsiString SkyImageFile;
-    AnsiString RnxOpts;
+    AnsiString RnxOpts, SigDef;
     tle_t TLEData;
     gis_t Gis;
 

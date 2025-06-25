@@ -390,125 +390,143 @@ void __fastcall TCodeOptDialog::BtnSetAllClick(TObject *Sender)
 	BtnSetAll->Caption=BtnSetAll->Caption=="Set All"?"Unset All":"Set All";
 }
 //---------------------------------------------------------------------------
+static int testsyscode(int sys, const char *code, int nsys, int freqtype)
+{
+  if ((nsys & sys) == 0) return 0;
+  int idx = code2idx(sys, obs2code(code));
+  return idx >= 0 && (freqtype & (1 << idx)) != 0;
+}
 void __fastcall TCodeOptDialog::UpdateEnable(void)
 {
-	G01->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L1);
-	G02->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L1);
-	G03->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L1);
-	G04->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L1);
-	G05->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L1);
-	G06->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L1);
-	G07->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L1);
-	G08->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L1);
-	G12->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L1);
-	G14->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L2);
-	G15->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L2);
-	G16->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L2);
-	G17->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L2);
-	G18->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L2);
-	G19->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L2);
-	G20->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L2);
-	G21->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L2);
-	G22->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L2);
-	G23->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L2);
-	G24->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L3);
-	G25->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L3);
-	G26->Enabled=(NavSys&SYS_GPS)&&(FreqType&FREQTYPE_L3);
-	R01->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L1);
-	R02->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L1);
-	R14->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L2);
-	R19->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L2);
-	R44->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L3);
-	R45->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L3);
-	R46->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L3);
-	R66->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L1); //
-	R67->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L1); //
-	R68->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L1); //
-	R30->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L2); //
-	R31->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L2); //
-	R33->Enabled=(NavSys&SYS_GLO)&&(FreqType&FREQTYPE_L2); //
-	E01->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L1);
-	E10->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L1);
-	E11->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L1);
-	E12->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L1);
-	E13->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L1);
-	E24->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L3);
-	E25->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L3);
-	E26->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L3);
-	E27->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L2);
-	E28->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L2);
-	E29->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L2);
-	E30->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L4);
-	E31->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L4);
-	E32->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L4);
-	E33->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L4);
-	E34->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L4);
-	E37->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L5);
-	E38->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L5);
-	E39->Enabled=(NavSys&SYS_GAL)&&(FreqType&FREQTYPE_L5);
-	J01->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L1);
-	J07->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L1);
-	J08->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L1);
-	J09->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L1);
-	J11->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L1);
-	J12->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L1);
-	J13->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L1);
-	J16->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L2);
-	J17->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L2);
-	J18->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L2);
-	J24->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L3);
-	J25->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L3);
-	J26->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L3);
-	J57->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L3); //
-	J58->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L3); //
-	J59->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L3); //
-	J60->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L4); //
-	J34->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L4); //
-	J35->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L4);
-	J36->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L4);
-	J33->Enabled=(NavSys&SYS_QZS)&&(FreqType&FREQTYPE_L4);
-	C40->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L1); //
-	C41->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L1); //
-	C18->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L1); //
-	C27->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L2);
-	C28->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L2);
-	C29->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L2);
-	C42->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L4);
-	C43->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L4);
-	C33->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L4);
-	C56->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L5); //
-	C02->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L5); //
-	C12->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L5); //
-	C07->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L5); //
-	C08->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L5); //
-	C13->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L5); //
-	C57->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L3); //
-	C58->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L3); //
-	C26->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L3); //
-	C61->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L2); //
-	C62->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L2); //
-	C63->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L2); //
-	C64->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L6); //
-	C65->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L6); //
-	C39->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L6); //
-	C69->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L4); //
-	C70->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L4); //
-	C34->Enabled=(NavSys&SYS_CMP)&&(FreqType&FREQTYPE_L4); //
-	I49->Enabled=(NavSys&SYS_IRN)&&(FreqType&FREQTYPE_L1);
-	I50->Enabled=(NavSys&SYS_IRN)&&(FreqType&FREQTYPE_L1);
-	I51->Enabled=(NavSys&SYS_IRN)&&(FreqType&FREQTYPE_L1);
-	I26->Enabled=(NavSys&SYS_IRN)&&(FreqType&FREQTYPE_L1);
-	I52->Enabled=(NavSys&SYS_IRN)&&(FreqType&FREQTYPE_L2);
-	I53->Enabled=(NavSys&SYS_IRN)&&(FreqType&FREQTYPE_L2);
-	I54->Enabled=(NavSys&SYS_IRN)&&(FreqType&FREQTYPE_L2);
-	I55->Enabled=(NavSys&SYS_IRN)&&(FreqType&FREQTYPE_L2);
-	I56->Enabled=(NavSys&SYS_IRN)&&(FreqType&FREQTYPE_L2);
-	I02->Enabled=(NavSys&SYS_IRN)&&(FreqType&FREQTYPE_L3);
-	I12->Enabled=(NavSys&SYS_IRN)&&(FreqType&FREQTYPE_L3);
-	S01->Enabled=(NavSys&SYS_SBS)&&(FreqType&FREQTYPE_L1);
-	S24->Enabled=(NavSys&SYS_SBS)&&(FreqType&FREQTYPE_L3);
-	S25->Enabled=(NavSys&SYS_SBS)&&(FreqType&FREQTYPE_L3);
-	S26->Enabled=(NavSys&SYS_SBS)&&(FreqType&FREQTYPE_L3);
+    G01->Enabled = testsyscode(SYS_GPS, "1C", NavSys, FreqType);
+    G02->Enabled = testsyscode(SYS_GPS, "1P", NavSys, FreqType);
+    G03->Enabled = testsyscode(SYS_GPS, "1W", NavSys, FreqType);
+    G04->Enabled = testsyscode(SYS_GPS, "1Y", NavSys, FreqType);
+    G05->Enabled = testsyscode(SYS_GPS, "1M", NavSys, FreqType);
+    G06->Enabled = testsyscode(SYS_GPS, "1N", NavSys, FreqType);
+    G07->Enabled = testsyscode(SYS_GPS, "1S", NavSys, FreqType);
+    G08->Enabled = testsyscode(SYS_GPS, "1L", NavSys, FreqType);
+    G12->Enabled = testsyscode(SYS_GPS, "1X", NavSys, FreqType);
+    G14->Enabled = testsyscode(SYS_GPS, "2C", NavSys, FreqType);
+    G15->Enabled = testsyscode(SYS_GPS, "2D", NavSys, FreqType);
+    G16->Enabled = testsyscode(SYS_GPS, "2S", NavSys, FreqType);
+    G17->Enabled = testsyscode(SYS_GPS, "2L", NavSys, FreqType);
+    G18->Enabled = testsyscode(SYS_GPS, "2X", NavSys, FreqType);
+    G19->Enabled = testsyscode(SYS_GPS, "2P", NavSys, FreqType);
+    G20->Enabled = testsyscode(SYS_GPS, "2W", NavSys, FreqType);
+    G21->Enabled = testsyscode(SYS_GPS, "2Y", NavSys, FreqType);
+    G22->Enabled = testsyscode(SYS_GPS, "2M", NavSys, FreqType);
+    G23->Enabled = testsyscode(SYS_GPS, "2N", NavSys, FreqType);
+    G24->Enabled = testsyscode(SYS_GPS, "5I", NavSys, FreqType);
+    G25->Enabled = testsyscode(SYS_GPS, "5Q", NavSys, FreqType);
+    G26->Enabled = testsyscode(SYS_GPS, "5X", NavSys, FreqType);
+
+    R01->Enabled = testsyscode(SYS_GLO, "1C", NavSys, FreqType);
+    R02->Enabled = testsyscode(SYS_GLO, "1P", NavSys, FreqType);
+    R14->Enabled = testsyscode(SYS_GLO, "2C", NavSys, FreqType);
+    R19->Enabled = testsyscode(SYS_GLO, "2P", NavSys, FreqType);
+    R30->Enabled = testsyscode(SYS_GLO, "6A", NavSys, FreqType);
+    R31->Enabled = testsyscode(SYS_GLO, "6B", NavSys, FreqType);
+    R33->Enabled = testsyscode(SYS_GLO, "6X", NavSys, FreqType);
+    R44->Enabled = testsyscode(SYS_GLO, "3I", NavSys, FreqType);
+    R45->Enabled = testsyscode(SYS_GLO, "3Q", NavSys, FreqType);
+    R46->Enabled = testsyscode(SYS_GLO, "3X", NavSys, FreqType);
+    R66->Enabled = testsyscode(SYS_GLO, "4A", NavSys, FreqType);
+    R67->Enabled = testsyscode(SYS_GLO, "4B", NavSys, FreqType);
+    R68->Enabled = testsyscode(SYS_GLO, "4X", NavSys, FreqType);
+
+    E01->Enabled = testsyscode(SYS_GAL, "1C", NavSys, FreqType);
+    E10->Enabled = testsyscode(SYS_GAL, "1A", NavSys, FreqType);
+    E11->Enabled = testsyscode(SYS_GAL, "1B", NavSys, FreqType);
+    E12->Enabled = testsyscode(SYS_GAL, "1X", NavSys, FreqType);
+    E13->Enabled = testsyscode(SYS_GAL, "1Z", NavSys, FreqType);
+    E24->Enabled = testsyscode(SYS_GAL, "5I", NavSys, FreqType);
+    E25->Enabled = testsyscode(SYS_GAL, "5Q", NavSys, FreqType);
+    E26->Enabled = testsyscode(SYS_GAL, "5X", NavSys, FreqType);
+    E27->Enabled = testsyscode(SYS_GAL, "7I", NavSys, FreqType);
+    E28->Enabled = testsyscode(SYS_GAL, "7Q", NavSys, FreqType);
+    E29->Enabled = testsyscode(SYS_GAL, "7X", NavSys, FreqType);
+    E30->Enabled = testsyscode(SYS_GAL, "6A", NavSys, FreqType);
+    E31->Enabled = testsyscode(SYS_GAL, "6B", NavSys, FreqType);
+    E32->Enabled = testsyscode(SYS_GAL, "6C", NavSys, FreqType);
+    E33->Enabled = testsyscode(SYS_GAL, "6X", NavSys, FreqType);
+    E34->Enabled = testsyscode(SYS_GAL, "6Z", NavSys, FreqType);
+    E37->Enabled = testsyscode(SYS_GAL, "8I", NavSys, FreqType);
+    E38->Enabled = testsyscode(SYS_GAL, "8Q", NavSys, FreqType);
+    E39->Enabled = testsyscode(SYS_GAL, "8X", NavSys, FreqType);
+
+    J01->Enabled = testsyscode(SYS_QZS, "1C", NavSys, FreqType);
+    J07->Enabled = testsyscode(SYS_QZS, "1S", NavSys, FreqType);
+    J08->Enabled = testsyscode(SYS_QZS, "1L", NavSys, FreqType);
+    J09->Enabled = testsyscode(SYS_QZS, "1E", NavSys, FreqType);
+    J11->Enabled = testsyscode(SYS_QZS, "1B", NavSys, FreqType);
+    J12->Enabled = testsyscode(SYS_QZS, "1X", NavSys, FreqType);
+    J13->Enabled = testsyscode(SYS_QZS, "1Z", NavSys, FreqType);
+    J16->Enabled = testsyscode(SYS_QZS, "2S", NavSys, FreqType);
+    J17->Enabled = testsyscode(SYS_QZS, "2L", NavSys, FreqType);
+    J18->Enabled = testsyscode(SYS_QZS, "2X", NavSys, FreqType);
+    J24->Enabled = testsyscode(SYS_QZS, "5I", NavSys, FreqType);
+    J25->Enabled = testsyscode(SYS_QZS, "5Q", NavSys, FreqType);
+    J26->Enabled = testsyscode(SYS_QZS, "5X", NavSys, FreqType);
+    J33->Enabled = testsyscode(SYS_QZS, "6X", NavSys, FreqType);
+    J34->Enabled = testsyscode(SYS_QZS, "6Z", NavSys, FreqType);
+    J35->Enabled = testsyscode(SYS_QZS, "6S", NavSys, FreqType);
+    J36->Enabled = testsyscode(SYS_QZS, "6L", NavSys, FreqType);
+    J57->Enabled = testsyscode(SYS_QZS, "5D", NavSys, FreqType);
+    J58->Enabled = testsyscode(SYS_QZS, "5P", NavSys, FreqType);
+    J59->Enabled = testsyscode(SYS_QZS, "5Z", NavSys, FreqType);
+    J60->Enabled = testsyscode(SYS_QZS, "6E", NavSys, FreqType);
+
+    S01->Enabled = testsyscode(SYS_SBS, "1C", NavSys, FreqType);
+    S24->Enabled = testsyscode(SYS_SBS, "5I", NavSys, FreqType);
+    S25->Enabled = testsyscode(SYS_SBS, "5Q", NavSys, FreqType);
+    S26->Enabled = testsyscode(SYS_SBS, "5X", NavSys, FreqType);
+
+    C02->Enabled = testsyscode(SYS_BDS3, "1P", NavSys, FreqType);
+    C07->Enabled = testsyscode(SYS_BDS3, "1S", NavSys, FreqType);
+    C08->Enabled = testsyscode(SYS_BDS3, "1L", NavSys, FreqType);
+    C12->Enabled = testsyscode(SYS_BDS3, "1X", NavSys, FreqType);
+    C13->Enabled = testsyscode(SYS_BDS3, "1Z", NavSys, FreqType);
+    C18->Enabled = testsyscode(SYS_BDS2, "2X", NavSys, FreqType) ||
+        testsyscode(SYS_BDS3, "2X", NavSys, FreqType);
+    C26->Enabled = testsyscode(SYS_BDS3, "5X", NavSys, FreqType);
+    C27->Enabled = testsyscode(SYS_BDS2, "7I", NavSys, FreqType);
+    C28->Enabled = testsyscode(SYS_BDS2, "7Q", NavSys, FreqType);
+    C29->Enabled = testsyscode(SYS_BDS2, "7X", NavSys, FreqType);
+    C33->Enabled = testsyscode(SYS_BDS2, "6X", NavSys, FreqType) ||
+        testsyscode(SYS_BDS3, "6X", NavSys, FreqType);
+    C39->Enabled = testsyscode(SYS_BDS3, "8X", NavSys, FreqType);
+    C40->Enabled = testsyscode(SYS_BDS2, "2I", NavSys, FreqType) ||
+        testsyscode(SYS_BDS3, "2I", NavSys, FreqType);
+    C41->Enabled = testsyscode(SYS_BDS2, "2Q", NavSys, FreqType) ||
+        testsyscode(SYS_BDS3, "2Q", NavSys, FreqType);
+    C42->Enabled = testsyscode(SYS_BDS2, "6I", NavSys, FreqType) ||
+        testsyscode(SYS_BDS3, "6I", NavSys, FreqType);
+    C43->Enabled = testsyscode(SYS_BDS2, "6Q", NavSys, FreqType) ||
+        testsyscode(SYS_BDS3, "6Q", NavSys, FreqType);
+    C56->Enabled = testsyscode(SYS_BDS3, "1D", NavSys, FreqType);
+    C57->Enabled = testsyscode(SYS_BDS3, "5D", NavSys, FreqType);
+    C58->Enabled = testsyscode(SYS_BDS3, "5P", NavSys, FreqType);
+    C61->Enabled = testsyscode(SYS_BDS3, "7D", NavSys, FreqType);
+    C62->Enabled = testsyscode(SYS_BDS3, "7P", NavSys, FreqType);
+    C63->Enabled = testsyscode(SYS_BDS3, "7Z", NavSys, FreqType);
+    C64->Enabled = testsyscode(SYS_BDS3, "8D", NavSys, FreqType);
+    C65->Enabled = testsyscode(SYS_BDS3, "8P", NavSys, FreqType);
+    C69->Enabled = testsyscode(SYS_BDS3, "6D", NavSys, FreqType);
+    C70->Enabled = testsyscode(SYS_BDS3, "6P", NavSys, FreqType);
+    C34->Enabled = testsyscode(SYS_BDS3, "6Z", NavSys, FreqType);
+
+    I26->Enabled = testsyscode(SYS_IRN, "5X", NavSys, FreqType);
+    I49->Enabled = testsyscode(SYS_IRN, "5A", NavSys, FreqType);
+    I50->Enabled = testsyscode(SYS_IRN, "5B", NavSys, FreqType);
+    I51->Enabled = testsyscode(SYS_IRN, "5C", NavSys, FreqType);
+    I52->Enabled = testsyscode(SYS_IRN, "9A", NavSys, FreqType);
+    I53->Enabled = testsyscode(SYS_IRN, "9B", NavSys, FreqType);
+    I54->Enabled = testsyscode(SYS_IRN, "9C", NavSys, FreqType);
+    I55->Enabled = testsyscode(SYS_IRN, "9X", NavSys, FreqType);
+    I56->Enabled = testsyscode(SYS_IRN, "1D", NavSys, FreqType);
+    I02->Enabled = testsyscode(SYS_IRN, "1P", NavSys, FreqType);
+    I12->Enabled = testsyscode(SYS_IRN, "1X", NavSys, FreqType);
 }
 //---------------------------------------------------------------------------
 

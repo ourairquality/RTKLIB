@@ -21,7 +21,7 @@
 
 
 static const int sys_tbl[] = {
-    SYS_ALL, SYS_GPS, SYS_GLO, SYS_GAL, SYS_QZS, SYS_CMP, SYS_IRN, SYS_SBS
+  SYS_ALL, SYS_GPS, SYS_GLO, SYS_GAL, SYS_QZS, SYS_BDS2, SYS_BDS3, SYS_IRN, SYS_SBS
 };
 
 //---------------------------------------------------------------------------
@@ -516,7 +516,8 @@ void MonitorDialog::showRtk()
     if (rtk->opt.navsys & SYS_GLO) navsys = navsys + tr("GLONASS ");
     if (rtk->opt.navsys & SYS_GAL) navsys = navsys + tr("Galileo ");
     if (rtk->opt.navsys & SYS_QZS) navsys = navsys + tr("QZSS ");
-    if (rtk->opt.navsys & SYS_CMP) navsys = navsys + tr("BDS ");
+    if (rtk->opt.navsys & SYS_BDS2) navsys = navsys + tr("BDS-2 ");
+    if (rtk->opt.navsys & SYS_BDS3) navsys = navsys + tr("BDS-3 ");
     if (rtk->opt.navsys & SYS_IRN) navsys = navsys + tr("NavIC ");
     if (rtk->opt.navsys & SYS_SBS) navsys = navsys + tr("SBAS ");
 
@@ -628,9 +629,9 @@ void MonitorDialog::showRtk()
     ui->tWConsole->item(row,   0)->setText(tr("Time of Receiver Clock Rover"));
     ui->tWConsole->item(row++, 1)->setText(rtk->sol.time.time ? tstr : "-");
 
-    ui->tWConsole->item(row,   0)->setText(tr("Time System Offset/Receiver Bias\n (GLO-GPS, GAL-GPS, BDS-GPS, IRN-GPS, QZS-GPS) (ns)"));
-    ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1, %2, %3, %4, %5").arg(rtk->sol.dtr[1] * 1E9, 0, 'f', 3).arg(rtk->sol.dtr[2] * 1E9, 0, 'f', 3)
-                                            .arg(rtk->sol.dtr[3] * 1E9, 0, 'f', 3).arg(rtk->sol.dtr[4] * 1E9, 0, 'f', 3).arg(rtk->sol.dtr[5] * 1E9, 0, 'f', 3));
+    ui->tWConsole->item(row,   0)->setText(tr("Time System Offset/Receiver Bias\n (GLO-GPS, GAL-GPS, BDS2-GPS, BDS3-GPS, IRN-GPS, QZS-GPS) (ns)"));
+    ui->tWConsole->item(row++, 1)->setText(QStringLiteral("%1, %2, %3, %4, %5, %6").arg(rtk->sol.dtr[1] * 1E9, 0, 'f', 3).arg(rtk->sol.dtr[2] * 1E9, 0, 'f', 3)
+                                            .arg(rtk->sol.dtr[3] * 1E9, 0, 'f', 3).arg(rtk->sol.dtr[4] * 1E9, 0, 'f', 3).arg(rtk->sol.dtr[5] * 1E9, 0, 'f', 3).arg(rtk->sol.dtr[6] * 1E9, 0, 'f', 3));
 
     ui->tWConsole->item(row,   0)->setText(tr("Solution Interval"));
     ui->tWConsole->item(row++, 1)->setText(QString::number(rtk->tt, 'f', 3) + " s");
@@ -879,8 +880,10 @@ void MonitorDialog::showSat()
     rtk_t *rtk = static_cast<rtk_t *>(malloc(sizeof(rtk_t)));
     if (rtk == NULL) return;
 
+    gtime_t time;
     rtksvrlock(rtksvr);
     *rtk = rtksvr->rtk;
+    time = rtksvr->rtk.sol.time;
 
     for (i = 0; i < MAXSAT; i++)
     {
@@ -901,7 +904,7 @@ void MonitorDialog::showSat()
     }
 
     for (i = 0, nsat = 0; i < MAXSAT; i++) {
-        if (!(satsys(i + 1, NULL) & sys)) continue;
+        if (!(satsyst(i + 1, time, NULL) & sys)) continue;
         if (ui->cBSelectSatellites->currentIndex() == 1 && !vsat[i]) continue;
         nsat++;
 	}
@@ -922,7 +925,7 @@ void MonitorDialog::showSat()
     int rel = pmode >= PMODE_DGPS && pmode <= PMODE_FIXED;
 
     for (i = 0, n = 0; i < MAXSAT; i++) {
-        if (!(satsys(i + 1, NULL) & sys)) continue;
+        if (!(satsyst(i + 1, time, NULL) & sys)) continue;
         j = 0;
         ssat = rtk->ssat + i;
         if (ui->cBSelectSatellites->currentIndex() == 1 && !vsat[i]) continue;
@@ -1193,11 +1196,11 @@ void MonitorDialog::showObservations()
 
     rtksvrlock(rtksvr);
     for (i = 0; i < rtksvr->obs[0][0].n && n < MAXOBS * 2; i++) {
-        if (!(satsys(rtksvr->obs[0][0].data[i].sat, NULL) & sys)) continue;
+        if (!(satsyst(rtksvr->obs[0][0].data[i].sat, rtksvr->obs[0][0].data[i].time, NULL) & sys)) continue;
         obs[n++] = rtksvr->obs[0][0].data[i];
     }
     for (i = 0; i < rtksvr->obs[1][0].n && n < MAXOBS * 2; i++) {
-        if (!(satsys(rtksvr->obs[1][0].data[i].sat, NULL) & sys)) continue;
+        if (!(satsyst(rtksvr->obs[1][0].data[i].sat, rtksvr->obs[1][0].data[i].time, NULL) & sys)) continue;
         obs[n++] = rtksvr->obs[1][0].data[i];
     }
     rtksvrunlock(rtksvr);
@@ -1263,7 +1266,7 @@ void MonitorDialog::setNavigationGPS()
         << tr("af0 (ns)") << tr("af1 (ns/s)") << tr("af2 (ns/s2)");
     if (sys == SYS_GAL)
         header	<< tr("BGD E1-E5a (ns)") << tr("BGD E1-E5b (ns)");
-    else if (sys == SYS_CMP)
+    else if (sys & SYS_BDS)
         header	<< tr("TGD B1I (ns)") << tr("TGD B2I/B2b (ns)") << tr("TGD B1Cp (ns)") << tr("TGD B2ap (ns)") << tr("ISC B1Cd (ns)") << tr("TGD B2ad (ns)");
     else
         header	<< tr("TGD (ns)");
@@ -1312,7 +1315,7 @@ void MonitorDialog::showNavigationsGPS()
     rtksvrunlock(rtksvr);
 
     for (k = 0, nsat = 0; k < MAXSAT; k++) {
-        int ssys = satsys(k + 1, &prn);
+        int ssys = satsyst(k + 1, time, &prn);
         if ((ssys & sys) == 0) continue;
         // Mask QZS LEX health.
         valid = eph[k].toe.time != 0 && fabs(timediff(time, eph[k].toe)) <= MAXDTOE &&
@@ -1333,7 +1336,7 @@ void MonitorDialog::showNavigationsGPS()
 
     for (k = 0, n = 0; k < MAXSAT; k++) {
         int j = 0;
-        int ssys = satsys(k + 1, &prn);
+        int ssys = satsyst(k + 1, time, &prn);
         if ((ssys & sys) == 0) continue;
         // Mask QZS LEX health.
         valid = eph[k].toe.time != 0 && fabs(timediff(time, eph[k].toe)) <= MAXDTOE &&
@@ -1374,9 +1377,9 @@ void MonitorDialog::showNavigationsGPS()
         ui->tWConsole->item(n, j++)->setText(QString::number(eph[k].f1 * 1E9, 'f', 4));
         ui->tWConsole->item(n, j++)->setText(QString::number(eph[k].f2 * 1E9, 'f', 4));
         ui->tWConsole->item(n, j++)->setText(QString::number(eph[k].tgd[0] * 1E9, 'f', 2));
-        if ((sys == SYS_GAL) || (sys == SYS_CMP))
+        if ((sys == SYS_GAL) || (sys & SYS_BDS))
             ui->tWConsole->item(n, j++)->setText(QString::number(eph[k].tgd[1] * 1E9, 'f', 2));
-        if (sys == SYS_CMP)
+        if (sys & SYS_BDS)
         {
             ui->tWConsole->item(n, j++)->setText(QString::number(eph[k].tgd[2] * 1E9, 'f', 2));
             ui->tWConsole->item(n, j++)->setText(QString::number(eph[k].tgd[3] * 1E9, 'f', 2));
@@ -2210,7 +2213,7 @@ void MonitorDialog::showRtcmSsr()
     rtksvrlock(rtksvr);
     time = rtksvr->rtk.sol.time;
     for (i = n = 0; i < MAXSAT; i++) {
-        if (!(satsys(i + 1, NULL) & sys)) continue;
+        if (!(satsyst(i + 1, time, NULL) & sys)) continue;
         if (inputStream == RTKSVRNIN)
           ssr[n] = rtksvr->nav.ssr[i];
         else

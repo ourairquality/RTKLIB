@@ -1704,7 +1704,7 @@ static int decode_type1042(rtcm_t *rtcm)
     eph_t eph={0};
     double toc,sqrtA,tt;
     char *msg;
-    int i=24+12,prn,sat,week,sys=SYS_CMP;
+    int i=24+12,prn,sat,week,sys=SYS_BDS;
     
     if (i+499<=rtcm->len*8) {
         prn       =getbitu(rtcm->buff,i, 6);              i+= 6;
@@ -1891,7 +1891,7 @@ static int decode_ssr1(rtcm_t *rtcm, int sys, int subtype)
         case SYS_GLO: np=5; ni= 8; nj= 0; offp=  0; break;
         case SYS_GAL: np=6; ni=10; nj= 0; offp=  0; break;
         case SYS_QZS: np=4; ni= 8; nj= 0; offp=192; break;
-        case SYS_CMP: np=6; ni=10; nj=8; offp=  0; break;
+        case SYS_BDS: np=6; ni=10; nj= 8; offp=  0; break;
         case SYS_SBS: np=6; ni= 9; nj=24; offp=120; break;
         default: return sync?0:10;
     }
@@ -1917,7 +1917,7 @@ static int decode_ssr1(rtcm_t *rtcm, int sys, int subtype)
         rtcm->ssr[sat-1].t0 [0]=rtcm->time;
         rtcm->ssr[sat-1].udi[0]=udint;
         rtcm->ssr[sat-1].iod[0]=iod;
-        if (sys==SYS_CMP && subtype==0) {
+        if (sys==SYS_BDS && subtype==0) {
             iode=iodcrc; /* BDS per-satellite SSR IOD */
         }
         rtcm->ssr[sat-1].iode=iode;     /* SBAS/BDS: toe/t0 modulo */
@@ -1949,7 +1949,7 @@ static int decode_ssr2(rtcm_t *rtcm, int sys, int subtype)
         case SYS_GLO: np=5; offp=  0; break;
         case SYS_GAL: np=6; offp=  0; break;
         case SYS_QZS: np=4; offp=192; break;
-        case SYS_CMP: np=6; offp=  0; break;
+        case SYS_BDS: np=6; offp=  0; break;
         case SYS_SBS: np=6; offp=120; break;
         default: return sync?0:10;
     }
@@ -1997,7 +1997,7 @@ static int decode_ssr3(rtcm_t *rtcm, int sys, int subtype)
           case SYS_GLO: np=6; offp=  0; sigs=ssr_igs_sig_glo; break;
           case SYS_GAL: np=6; offp=  0; sigs=ssr_igs_sig_gal; break;
           case SYS_QZS: np=6; offp=192; sigs=ssr_igs_sig_qzs; break;
-          case SYS_CMP: np=6; offp=  0; sigs=ssr_igs_sig_bds; break;
+          case SYS_BDS: np=6; offp=  0; sigs=ssr_igs_sig_bds; break;
           case SYS_SBS: np=6; offp=119; sigs=ssr_igs_sig_sbs; break;
           default: return sync?0:10;
         }
@@ -2007,7 +2007,7 @@ static int decode_ssr3(rtcm_t *rtcm, int sys, int subtype)
         case SYS_GLO: np=5; offp=  0; sigs=ssr_sig_glo; break;
         case SYS_GAL: np=6; offp=  0; sigs=ssr_sig_gal; break;
         case SYS_QZS: np=4; offp=192; sigs=ssr_sig_qzs; break;
-        case SYS_CMP: np=6; offp=  0; sigs=ssr_sig_bds; break;
+        case SYS_BDS: np=6; offp=  0; sigs=ssr_sig_bds; break;
         case SYS_SBS: np=6; offp=120; sigs=ssr_sig_sbs; break;
         default: return sync?0:10;
       }
@@ -2059,7 +2059,7 @@ static int decode_ssr4(rtcm_t *rtcm, int sys, int subtype)
         case SYS_GLO: np=5; ni= 8; nj= 0; offp=  0; break;
         case SYS_GAL: np=6; ni=10; nj= 0; offp=  0; break;
         case SYS_QZS: np=4; ni= 8; nj= 0; offp=192; break;
-        case SYS_CMP: np=6; ni=10; nj= 8; offp=  0; break;
+        case SYS_BDS: np=6; ni=10; nj= 8; offp=  0; break;
         case SYS_SBS: np=6; ni= 9; nj=24; offp=120; break;
         default: return sync?0:10;
     }
@@ -2089,7 +2089,7 @@ static int decode_ssr4(rtcm_t *rtcm, int sys, int subtype)
         rtcm->ssr[sat-1].t0 [0]=rtcm->ssr[sat-1].t0 [1]=rtcm->time;
         rtcm->ssr[sat-1].udi[0]=rtcm->ssr[sat-1].udi[1]=udint;
         rtcm->ssr[sat-1].iod[0]=rtcm->ssr[sat-1].iod[1]=iod;
-        if (sys==SYS_CMP && subtype==0) {
+        if (sys==SYS_BDS && subtype==0) {
             iode=iodcrc; /* BDS per-satellite SSR IOD */
         }
         rtcm->ssr[sat-1].iode=iode;
@@ -2122,7 +2122,7 @@ static int decode_ssr5(rtcm_t *rtcm, int sys, int subtype)
         case SYS_GLO: np=5; offp=  0; break;
         case SYS_GAL: np=6; offp=  0; break;
         case SYS_QZS: np=4; offp=192; break;
-        case SYS_CMP: np=6; offp=  0; break;
+        case SYS_BDS: np=6; offp=  0; break;
         case SYS_SBS: np=6; offp=120; break;
         default: return sync?0:10;
     }
@@ -2163,7 +2163,7 @@ static int decode_ssr6(rtcm_t *rtcm, int sys, int subtype)
         case SYS_GLO: np=5; offp=  0; break;
         case SYS_GAL: np=6; offp=  0; break;
         case SYS_QZS: np=4; offp=192; break;
-        case SYS_CMP: np=6; offp=  0; break;
+        case SYS_BDS: np=6; offp=  0; break;
         case SYS_SBS: np=6; offp=120; break;
         default: return sync?0:10;
     }
@@ -2247,7 +2247,7 @@ static int decode_ssr7(rtcm_t *rtcm, int sys, int subtype)
         case SYS_GLO: np=6; offp=  0; sigs=ssr_igs_sig_glo; break;
         case SYS_GAL: np=6; offp=  0; sigs=ssr_igs_sig_gal; break;
         case SYS_QZS: np=6; offp=192; sigs=ssr_igs_sig_qzs; break;
-        case SYS_CMP: np=6; offp=  0; sigs=ssr_igs_sig_bds; break;
+        case SYS_BDS: np=6; offp=  0; sigs=ssr_igs_sig_bds; break;
         case SYS_SBS: np=6; offp=119; sigs=ssr_igs_sig_sbs; break;
         default: return sync?0:10;
       }
@@ -2257,7 +2257,7 @@ static int decode_ssr7(rtcm_t *rtcm, int sys, int subtype)
         case SYS_GLO: np=5; offp=  0; sigs=ssr_sig_glo; break;
         case SYS_GAL: np=6; offp=  0; sigs=ssr_sig_gal; break;
         case SYS_QZS: np=4; offp=192; sigs=ssr_sig_qzs; break;
-        case SYS_CMP: np=6; offp=  0; sigs=ssr_sig_bds; break;
+        case SYS_BDS: np=6; offp=  0; sigs=ssr_sig_bds; break;
         case SYS_SBS: np=6; offp=120; sigs=ssr_sig_sbs; break;
         default: return sync?0:10;
       }
@@ -2374,14 +2374,14 @@ static void save_msm_obs(rtcm_t *rtcm, int sys, msm_h_t *h, const double *r,
     int i,j,k,type,prn,sat,fcn,index=0;
     
     type=getbitu(rtcm->buff,24,12);
-    
+
     switch (sys) {
         case SYS_GPS: msm_type=q=rtcm->msmtype[0]; break;
         case SYS_GLO: msm_type=q=rtcm->msmtype[1]; break;
         case SYS_GAL: msm_type=q=rtcm->msmtype[2]; break;
         case SYS_QZS: msm_type=q=rtcm->msmtype[3]; break;
         case SYS_SBS: msm_type=q=rtcm->msmtype[4]; break;
-        case SYS_CMP: msm_type=q=rtcm->msmtype[5]; break;
+        case SYS_BDS: msm_type=q=rtcm->msmtype[5]; break;
         case SYS_IRN: msm_type=q=rtcm->msmtype[6]; break;
     }
     /* id to signal */
@@ -2394,7 +2394,7 @@ static void save_msm_obs(rtcm_t *rtcm, int sys, msm_h_t *h, const double *r,
             case SYS_GAL: sig[i]=msm_sig_gal[h->sigs[i]-1]; break;
             case SYS_QZS: sig[i]=msm_sig_qzs[h->sigs[i]-1]; break;
             case SYS_SBS: sig[i]=msm_sig_sbs[h->sigs[i]-1]; break;
-            case SYS_CMP: sig[i]=msm_sig_bds[h->sigs[i]-1]; break;
+            case SYS_BDS: sig[i]=msm_sig_bds[h->sigs[i]-1]; break;
             case SYS_IRN: sig[i]=msm_sig_irn[h->sigs[i]-1]; break;
             default: sig[i]=""; break;
         }
@@ -2425,8 +2425,9 @@ static void save_msm_obs(rtcm_t *rtcm, int sys, msm_h_t *h, const double *r,
         else {
             trace(2,"rtcm3 %d satellite error: prn=%d\n",type,prn);
         }
+        int ssys = satsyst(sat, rtcm->obs.data[0].time, NULL); // For BDS2 vs BDS3.
         fcn=0;
-        if (sys==SYS_GLO) {
+        if (ssys==SYS_GLO) {
             fcn=-8; /* no glonass fcn info */
             if (ex&&ex[i]<=13) {
                 fcn=ex[i]-7;
@@ -2445,9 +2446,9 @@ static void save_msm_obs(rtcm_t *rtcm, int sys, msm_h_t *h, const double *r,
         for (k=0;k<h->nsig;k++) {
             if (!h->cellmask[k+i*h->nsig]) continue;
             if (code[k] == CODE_NONE) continue;
-            int freqidx = sigindex(rtcm->obs.data + index, sys, code[k], rtcm->opt);
+            int freqidx = sigindex(rtcm->obs.data + index, ssys, code[k], rtcm->opt);
             if (sat && index >= 0 && freqidx >= 0) {
-                freq=fcn<-7?0.0:code2freq(sys,code[k],fcn);
+                freq=fcn<-7?0.0:code2freq(ssys,code[k],fcn);
                 
                 /* pseudorange (m) */
                 if (r[i]!=0.0&&pr[j]>-1E12) {
@@ -2492,7 +2493,7 @@ static int decode_msm_head(rtcm_t *rtcm, int sys, int *sync, int *iod,
             tod   =getbitu(rtcm->buff,i,27)*0.001; i+=27;
             adjday_glot(rtcm,tod);
         }
-        else if (sys==SYS_CMP) {
+        else if (sys==SYS_BDS) {
             tow   =getbitu(rtcm->buff,i,30)*0.001; i+=30;
             tow+=14.0; /* BDT -> GPST */
             adjweek(rtcm,tow);
@@ -2918,13 +2919,13 @@ static int decode_type4076(rtcm_t *rtcm)
         case  85: return decode_ssr3(rtcm,SYS_QZS,subtype);
         case  86: return decode_ssr7(rtcm,SYS_QZS,subtype);
         case  87: return decode_ssr5(rtcm,SYS_QZS,subtype);
-        case 101: return decode_ssr1(rtcm,SYS_CMP,subtype);
-        case 102: return decode_ssr2(rtcm,SYS_CMP,subtype);
-        case 103: return decode_ssr4(rtcm,SYS_CMP,subtype);
-        case 104: return decode_ssr6(rtcm,SYS_CMP,subtype);
-        case 105: return decode_ssr3(rtcm,SYS_CMP,subtype);
-        case 106: return decode_ssr7(rtcm,SYS_CMP,subtype);
-        case 107: return decode_ssr5(rtcm,SYS_CMP,subtype);
+        case 101: return decode_ssr1(rtcm,SYS_BDS,subtype);
+        case 102: return decode_ssr2(rtcm,SYS_BDS,subtype);
+        case 103: return decode_ssr4(rtcm,SYS_BDS,subtype);
+        case 104: return decode_ssr6(rtcm,SYS_BDS,subtype);
+        case 105: return decode_ssr3(rtcm,SYS_BDS,subtype);
+        case 106: return decode_ssr7(rtcm,SYS_BDS,subtype);
+        case 107: return decode_ssr5(rtcm,SYS_BDS,subtype);
         case 121: return decode_ssr1(rtcm,SYS_SBS,subtype);
         case 122: return decode_ssr2(rtcm,SYS_SBS,subtype);
         case 123: return decode_ssr4(rtcm,SYS_SBS,subtype);
@@ -3039,13 +3040,13 @@ extern int decode_rtcm3(rtcm_t *rtcm)
         case 1115: ret=decode_msm5(rtcm,SYS_QZS); break;
         case 1116: ret=decode_msm6(rtcm,SYS_QZS); break;
         case 1117: ret=decode_msm7(rtcm,SYS_QZS); break;
-        case 1121: ret=decode_msm0(rtcm,SYS_CMP); break; /* not supported */
-        case 1122: ret=decode_msm0(rtcm,SYS_CMP); break; /* not supported */
-        case 1123: ret=decode_msm0(rtcm,SYS_CMP); break; /* not supported */
-        case 1124: ret=decode_msm4(rtcm,SYS_CMP); break;
-        case 1125: ret=decode_msm5(rtcm,SYS_CMP); break;
-        case 1126: ret=decode_msm6(rtcm,SYS_CMP); break;
-        case 1127: ret=decode_msm7(rtcm,SYS_CMP); break;
+        case 1121: ret=decode_msm0(rtcm,SYS_BDS); break; /* not supported */
+        case 1122: ret=decode_msm0(rtcm,SYS_BDS); break; /* not supported */
+        case 1123: ret=decode_msm0(rtcm,SYS_BDS); break; /* not supported */
+        case 1124: ret=decode_msm4(rtcm,SYS_BDS); break;
+        case 1125: ret=decode_msm5(rtcm,SYS_BDS); break;
+        case 1126: ret=decode_msm6(rtcm,SYS_BDS); break;
+        case 1127: ret=decode_msm7(rtcm,SYS_BDS); break;
         case 1131: ret=decode_msm0(rtcm,SYS_IRN); break; /* not supported */
         case 1132: ret=decode_msm0(rtcm,SYS_IRN); break; /* not supported */
         case 1133: ret=decode_msm0(rtcm,SYS_IRN); break; /* not supported */
@@ -3072,19 +3073,19 @@ extern int decode_rtcm3(rtcm_t *rtcm)
         case 1255: ret=decode_ssr4(rtcm,SYS_SBS,0); break; /* draft */
         case 1256: ret=decode_ssr5(rtcm,SYS_SBS,0); break; /* draft */
         case 1257: ret=decode_ssr6(rtcm,SYS_SBS,0); break; /* draft */
-        case 1258: ret=decode_ssr1(rtcm,SYS_CMP,0); break; /* draft */
-        case 1259: ret=decode_ssr2(rtcm,SYS_CMP,0); break; /* draft */
-        case 1260: ret=decode_ssr3(rtcm,SYS_CMP,0); break; /* draft */
-        case 1261: ret=decode_ssr4(rtcm,SYS_CMP,0); break; /* draft */
-        case 1262: ret=decode_ssr5(rtcm,SYS_CMP,0); break; /* draft */
-        case 1263: ret=decode_ssr6(rtcm,SYS_CMP,0); break; /* draft */
+        case 1258: ret=decode_ssr1(rtcm,SYS_BDS,0); break; /* draft */
+        case 1259: ret=decode_ssr2(rtcm,SYS_BDS,0); break; /* draft */
+        case 1260: ret=decode_ssr3(rtcm,SYS_BDS,0); break; /* draft */
+        case 1261: ret=decode_ssr4(rtcm,SYS_BDS,0); break; /* draft */
+        case 1262: ret=decode_ssr5(rtcm,SYS_BDS,0); break; /* draft */
+        case 1263: ret=decode_ssr6(rtcm,SYS_BDS,0); break; /* draft */
         case 1264: ret=decode_ssr8(rtcm,0);         break; /* draft */
         case 1265: ret=decode_ssr7(rtcm,SYS_GPS,0); break; /* draft */
         case 1266: ret=decode_ssr7(rtcm,SYS_GLO,0); break; /* draft */
         case 1267: ret=decode_ssr7(rtcm,SYS_GAL,0); break; /* draft */
         case 1268: ret=decode_ssr7(rtcm,SYS_QZS,0); break; /* draft */
         case 1269: ret=decode_ssr7(rtcm,SYS_SBS,0); break; /* draft */
-        case 1270: ret=decode_ssr7(rtcm,SYS_CMP,0); break; /* draft */
+        case 1270: ret=decode_ssr7(rtcm,SYS_BDS,0); break; /* draft */
         case 4073: ret=decode_type4073(rtcm); break;
         case 4076: ret=decode_type4076(rtcm); break;
     }

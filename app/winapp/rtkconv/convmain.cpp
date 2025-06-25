@@ -818,7 +818,7 @@ void __fastcall TMainWindow::UpdateEnable(void)
 	OutFileEna4    ->Enabled=sep_nav&&(NavSys&SYS_SBS);
 	OutFileEna5    ->Enabled=sep_nav&&(NavSys&SYS_QZS)&&RnxVer>=5;
 	OutFileEna6    ->Enabled=sep_nav&&(NavSys&SYS_GAL)&&RnxVer>=2;
-	OutFileEna7    ->Enabled=sep_nav&&(NavSys&SYS_CMP)&&RnxVer>=4;
+	OutFileEna7    ->Enabled=sep_nav&&(NavSys&SYS_BDS)&&RnxVer>=4;
 	OutFileEna8    ->Enabled=sep_nav&&(NavSys&SYS_IRN)&&RnxVer>=6;
 	OutFileEna9    ->Enabled=!rnx;
 	OutDir		   ->Enabled=OutDirEna	->Checked;

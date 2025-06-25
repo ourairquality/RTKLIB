@@ -161,6 +161,7 @@ __published:
 	TComboBox *TideCorr;
 	TEdit *FixCntHoldAmb;
 	TCheckBox *NavSys6;
+	TCheckBox *NavSys7;
 	TLabel *Label15;
 	TEdit *DCBFile;
 	TButton *BtnDCBFile;
@@ -211,13 +212,15 @@ __published:
 	TCheckBox *PosOpt2;
 	TCheckBox *PosOpt4;
 	TButton *BtnSnrMask;
+	TButton *BtnSigs;
+	TEdit *SigDef;
 	TCheckBox *PosOpt5;
 	TComboBox *SyncSol;
 	TComboBox *BdsAmbRes;
 	TCheckBox *PosOpt6;
 	TLabel *Label23;
 	TEdit *PPPOpts;
-	TCheckBox *NavSys7;
+	TCheckBox *NavSys8;
 	TComboBox *OutputSingle;
 	TEdit *MaxSolStd;
 	TComboBox *OutputVel;

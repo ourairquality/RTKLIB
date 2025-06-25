@@ -510,9 +510,9 @@ void Plot::showEvent(QShowEvent *event)
 
     updatePlotType(plotType >= PLOT_OBS ? PLOT_TRK : plotType);
 
+    updateOrigin();
     updateColor();
     updateSatelliteMask();
-    updateOrigin();
     updatePlotSizes();
 
     if (!path1.isEmpty() || !path2.isEmpty()) {
@@ -1025,9 +1025,9 @@ void Plot::showPlotOptionsDialog()
             updateObservation(nObservation);
     }
 
+    updateOrigin();
     updateColor();
     updatePlotSizes();
-    updateOrigin();
     updateStatusBarInformation();
     updateSatelliteMask();
     updateSatelliteList();
@@ -2269,8 +2269,13 @@ void Plot::updateSatelliteMask()
     // clear mask
     for (sat = 1; sat <= MAXSAT; sat++) satelliteMask[sat - 1] = 0;
 
+    gtime_t time = utc2gpst(timeget());
+    for (int i = 0; i < 2; i++)
+        if (solutionStat[i].n > 0) time = solutionStat[i].data[0].time;
+    if (observation.n > 0) time = observation.data[0].time;
+
     for (sat = 1; sat <= MAXSAT; sat++)
-        if (!(satsys(sat, &prn) & plotOptDialog->getNavSys())) satelliteMask[sat - 1] = 1;
+        if (!(satsyst(sat, time, &prn) & plotOptDialog->getNavSys())) satelliteMask[sat - 1] = 1;
 
     if (!plotOptDialog->getExcludedSatellites().isEmpty()) {
         foreach (QString sat, plotOptDialog->getExcludedSatellites().split(' ', Qt::SkipEmptyParts)) {
@@ -2297,13 +2302,20 @@ void Plot::updateSatelliteSelection()
     else if (satelliteList == "R") sys = SYS_GLO;
     else if (satelliteList == "E") sys = SYS_GAL;
     else if (satelliteList == "J") sys = SYS_QZS;
-    else if (satelliteList == "C") sys = SYS_CMP;
+    else if (satelliteList == "C2") sys = SYS_BDS2;
+    else if (satelliteList == "C3") sys = SYS_BDS3;
     else if (satelliteList == "I") sys = SYS_IRN;
     else if (satelliteList == "S") sys = SYS_SBS;
 
+    gtime_t time = utc2gpst(timeget());
+    for (int i = 0; i < 2; i++)
+      if (solutionStat[i].n > 0) time = solutionStat[i].data[0].time;
+    if (observation.n > 0)
+      time = observation.data[0].time;
+
     for (int i = 0; i < MAXSAT; i++) {
         satno2id(i + 1, id);
-        satelliteSelection[i] = (satelliteList == "ALL") || (satelliteList == id) || satsys(i + 1, NULL) == sys;
+        satelliteSelection[i] = (satelliteList == "ALL") || (satelliteList == id) || (satsyst(i + 1, time, NULL) & sys) != 0;
     }
 }
 // update enable/disable of widgets -----------------------------------------

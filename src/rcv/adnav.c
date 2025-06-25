@@ -176,7 +176,7 @@ static int anpp2sys(uint8_t anpp_sys) {
     case ANPP_SYS_GLO:
       return SYS_GLO;
     case ANPP_SYS_BDS:
-      return SYS_CMP;
+      return SYS_BDS;
     case ANPP_SYS_GAL:
       return SYS_GAL;
     case ANPP_SYS_SBS:

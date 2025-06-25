@@ -6,6 +6,7 @@
 #include "plotopt.h"
 #include "refdlg.h"
 #include "viewer.h"
+#include "freqdlg.h"
 #include "rtklib.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -83,8 +84,9 @@ void __fastcall TPlotOptDialog::FormShow(TObject *Sender)
     NavSys3->Checked=Plot->NavSys&SYS_GAL;
     NavSys4->Checked=Plot->NavSys&SYS_QZS;
     NavSys5->Checked=Plot->NavSys&SYS_SBS;
-    NavSys6->Checked=Plot->NavSys&SYS_CMP;
-    NavSys7->Checked=Plot->NavSys&SYS_IRN;
+    NavSys6->Checked=Plot->NavSys&SYS_BDS2;
+    NavSys7->Checked=Plot->NavSys&SYS_BDS3;
+    NavSys8->Checked=Plot->NavSys&SYS_IRN;
     AnimCycle->Text=s.sprintf("%d",Plot->AnimCycle);
     RefCycle ->Text=s.sprintf("%d",Plot->RefCycle );
     HideLowSat->ItemIndex=Plot->HideLowSat;
@@ -94,6 +96,7 @@ void __fastcall TPlotOptDialog::FormShow(TObject *Sender)
     ChkTimeSync->Checked=Plot->TimeSyncOut;
     EditTimeSync->Text=s.sprintf("%d",Plot->TimeSyncPort);
     RnxOpts->Text=Plot->RnxOpts;
+    SigDef->Text=Plot->SigDef;
     ShapeFile->Text=Plot->ShapeFile;
     TLEFile->Text=Plot->TLEFile;
     TLESatFile->Text=Plot->TLESatFile;
@@ -171,8 +174,9 @@ void __fastcall TPlotOptDialog::BtnOKClick(TObject *Sender)
                  (NavSys3->Checked?SYS_GAL:0)|
                  (NavSys4->Checked?SYS_QZS:0)|
                  (NavSys5->Checked?SYS_SBS:0)|
-                 (NavSys6->Checked?SYS_CMP:0)|
-                 (NavSys7->Checked?SYS_IRN:0);
+                 (NavSys6->Checked?SYS_BDS2:0)|
+                 (NavSys7->Checked?SYS_BDS3:0)|
+                 (NavSys8->Checked?SYS_IRN:0);
     Plot->AnimCycle=AnimCycle->Text.ToInt();
     Plot->RefCycle =RefCycle ->Text.ToInt();
     Plot->HideLowSat=HideLowSat->ItemIndex;
@@ -182,6 +186,7 @@ void __fastcall TPlotOptDialog::BtnOKClick(TObject *Sender)
     Plot->TimeSyncPort=EditTimeSync->Text.ToInt();
     Plot->ExSats=ExSats->Text;
     Plot->RnxOpts=RnxOpts->Text;
+    Plot->SigDef=SigDef->Text;
     Plot->ShapeFile=ShapeFile->Text;
     Plot->TLEFile=TLEFile->Text;
     Plot->TLESatFile=TLESatFile->Text;
@@ -337,6 +342,13 @@ void __fastcall TPlotOptDialog::BtnTLESatViewClick(TObject *Sender)
 void __fastcall TPlotOptDialog::ChkTimeSyncClick(TObject *Sender)
 {
     UpdateEnable();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPlotOptDialog::BtnSigsClick(TObject *Sender)
+{
+        AnsiString SigDef_Text = SigDef->Text;
+        init_code2idx(SigDef_Text.c_str());
+	FreqDialog->ShowModal();
 }
 //---------------------------------------------------------------------------
 

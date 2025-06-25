@@ -496,22 +496,29 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
+         <item row="0" column="3">
           <widget class="QCheckBox" name="cBNavSys5">
            <property name="text">
             <string>SBAS</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="2">
+         <item row="1" column="1">
           <widget class="QCheckBox" name="cBNavSys6">
            <property name="text">
-            <string>BDS</string>
+            <string>BDS-2</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QCheckBox" name="cBNavSys7">
+           <property name="text">
+            <string>BDS-3</string>
            </property>
           </widget>
          </item>
          <item row="1" column="3">
-          <widget class="QCheckBox" name="cBNavSys7">
+          <widget class="QCheckBox" name="cBNavSys8">
            <property name="text">
             <string>NavIC</string>
            </property>
@@ -677,7 +684,7 @@
         </property>
        </widget>
       </item>
-      <item row="20" column="4">
+      <item row="21" column="4">
        <widget class="QLabel" name="Label34">
         <property name="toolTip">
          <string/>
@@ -1274,7 +1281,7 @@
         </property>
        </widget>
       </item>
-      <item row="21" column="4">
+      <item row="22" column="4">
        <widget class="QLabel" name="Label35">
         <property name="toolTip">
          <string/>
@@ -1661,7 +1668,7 @@
         </item>
        </widget>
       </item>
-      <item row="19" column="4">
+      <item row="20" column="4">
        <widget class="QLabel" name="Label30">
         <property name="toolTip">
          <string/>
@@ -1687,6 +1694,33 @@
         </property>
        </widget>
       </item>
+      <item row="18" column="7" colspan="9">
+       <widget class="QLineEdit" name="lERinexOptions">
+        <property name="toolTip">
+         <string>Set RINEX read options.</string>
+        </property>
+       </widget>
+      </item>
+      <item row="19" column="4">
+       <widget class="QLabel" name="Label38">
+        <property name="toolTip">
+         <string/>
+        </property>
+        <property name="text">
+         <string>Signal Definitions</string>
+        </property>
+        <property name="buddy">
+         <cstring>lESigDef</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="19" column="7" colspan="9">
+       <widget class="QLineEdit" name="lESigDef">
+        <property name="toolTip">
+         <string>Set signal definitions.</string>
+        </property>
+       </widget>
+      </item>
       <item row="15" column="7">
        <widget class="QDoubleSpinBox" name="sBReferencePosition1">
         <property name="toolTip">
@@ -1706,28 +1740,21 @@
         </property>
        </widget>
       </item>
-      <item row="18" column="7" colspan="9">
-       <widget class="QLineEdit" name="lERinexOptions">
-        <property name="toolTip">
-         <string>Set RINEX read options.</string>
-        </property>
-       </widget>
-      </item>
-      <item row="20" column="7" colspan="9">
+      <item row="21" column="7" colspan="9">
        <widget class="QLineEdit" name="lETLEFile">
         <property name="toolTip">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify NORAD TLE satellite orbit element data file. The TLE data are used to compute satellite positions for the skyplot if the satellite ephemeris unavailable. Both of two line format or three line format of TLE data can be used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
       </item>
-      <item row="21" column="7" colspan="9">
+      <item row="22" column="7" colspan="9">
        <widget class="QLineEdit" name="lETLESatelliteFile">
         <property name="toolTip">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the satellite number file which is to connect GNSS satellite/PRN numbers and TLE satellite catalog numbers in NORAD TLE data file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
       </item>
-      <item row="19" column="7" colspan="9">
+      <item row="20" column="7" colspan="9">
        <widget class="QLineEdit" name="lEShapeFile">
         <property name="toolTip">
          <string/>
@@ -1810,6 +1837,7 @@
   <tabstop>lEShapeFile</tabstop>
   <tabstop>lETLEFile</tabstop>
   <tabstop>lETLESatelliteFile</tabstop>
+  <tabstop>lESigDef</tabstop>
   <tabstop>tBMColor1</tabstop>
   <tabstop>tBMColor2</tabstop>
   <tabstop>tBMColor3</tabstop>
