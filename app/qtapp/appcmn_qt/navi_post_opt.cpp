@@ -356,8 +356,11 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     connect(ui->cBNavSys4, &QCheckBox::clicked, this, &OptDialog::updateEnable);
     connect(ui->cBNavSys5, &QCheckBox::clicked, this, &OptDialog::updateEnable);
     connect(ui->cBNavSys6, &QCheckBox::clicked, this, &OptDialog::updateEnable);
+    connect(ui->cBNavSys7, &QCheckBox::clicked, this, &OptDialog::updateEnable);
     connect(ui->cBBaselineConstrain, &QCheckBox::clicked, this, &OptDialog::updateEnable);
     connect(ui->btnFrequencies, &QPushButton::clicked, this, &OptDialog::showFrequenciesDialog);
+    connect(ui->btnSigFreqs, &QPushButton::clicked, this, &OptDialog::showFrequenciesDialog);
+    connect(ui->btnSigFreqsPost, &QPushButton::clicked, this, &OptDialog::showFrequenciesDialog);
     connect(ui->cBReferenceAntenna, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &OptDialog::updateEnable);
     connect(ui->cBRoverAntenna, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &OptDialog::updateEnable);
     connect(ui->cBIonosphereOption, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &OptDialog::updateEnable);
@@ -386,8 +389,9 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     if (MAXPRNGLO <= 0) ui->cBNavSys2->setEnabled(false);
     if (MAXPRNGAL <= 0) ui->cBNavSys3->setEnabled(false);
     if (MAXPRNQZS <= 0) ui->cBNavSys4->setEnabled(false);
-    if (MAXPRNCMP <= 0) ui->cBNavSys6->setEnabled(false);
-    if (MAXPRNIRN <= 0) ui->cBNavSys7->setEnabled(false);
+    if (MAXPRNBDS2 <= 0) ui->cBNavSys6->setEnabled(false);
+    if (MAXPRNBDS3 <= 0) ui->cBNavSys7->setEnabled(false);
+    if (MAXPRNIRN <= 0) ui->cBNavSys8->setEnabled(false);
 }
 //---------------------------------------------------------------------------
 void OptDialog::showEvent(QShowEvent *event)
@@ -750,14 +754,17 @@ void OptDialog::updateOptions()
     processingOptions.mode = ui->cBPositionMode->currentIndex();
     processingOptions.soltype = ui->cBSolution->currentIndex();
     processingOptions.nf = ui->cBFrequencies->currentIndex() + 1 > NFREQ ? NFREQ : ui->cBFrequencies->currentIndex() + 1;
+    snprintf(processingOptions.sigdef, sizeof(processingOptions.sigdef), "%s",
+             qPrintable(options == NaviOptions ? ui->lESigDef->text() : ui->lESigDefPost->text()));
     processingOptions.navsys = 0;
     if (ui->cBNavSys1->isChecked()) processingOptions.navsys |= SYS_GPS;
     if (ui->cBNavSys2->isChecked()) processingOptions.navsys |= SYS_GLO;
     if (ui->cBNavSys3->isChecked()) processingOptions.navsys |= SYS_GAL;
     if (ui->cBNavSys4->isChecked()) processingOptions.navsys |= SYS_QZS;
     if (ui->cBNavSys5->isChecked()) processingOptions.navsys |= SYS_SBS;
-    if (ui->cBNavSys6->isChecked()) processingOptions.navsys |= SYS_CMP;
-    if (ui->cBNavSys7->isChecked()) processingOptions.navsys |= SYS_IRN;
+    if (ui->cBNavSys6->isChecked()) processingOptions.navsys |= SYS_BDS2;
+    if (ui->cBNavSys7->isChecked()) processingOptions.navsys |= SYS_BDS3;
+    if (ui->cBNavSys8->isChecked()) processingOptions.navsys |= SYS_IRN;
     processingOptions.elmin = ui->cBElevationMask->currentText().toDouble() * D2R;
     processingOptions.snrmask = snrmask;
     processingOptions.sateph = ui->cBSatelliteEphemeris->currentIndex();
@@ -991,13 +998,18 @@ void OptDialog::updateUi(const prcopt_t &prcopt, const solopt_t &solopt, const f
     ui->cBPositionMode->setCurrentIndex(prcopt.mode);
     ui->cBSolution->setCurrentIndex(prcopt.soltype);
     ui->cBFrequencies->setCurrentIndex(prcopt.nf > NFREQ - 1 ? NFREQ - 1 : prcopt.nf - 1);
+    if (options == NaviOptions)
+      ui->lESigDef->setText(prcopt.sigdef);
+    else
+      ui->lESigDefPost->setText(prcopt.sigdef);
     ui->cBNavSys1->setChecked(prcopt.navsys & SYS_GPS);
     ui->cBNavSys2->setChecked(prcopt.navsys & SYS_GLO);
     ui->cBNavSys3->setChecked(prcopt.navsys & SYS_GAL);
     ui->cBNavSys4->setChecked(prcopt.navsys & SYS_QZS);
     ui->cBNavSys5->setChecked(prcopt.navsys & SYS_SBS);
-    ui->cBNavSys6->setChecked(prcopt.navsys & SYS_CMP);
-    ui->cBNavSys7->setChecked(prcopt.navsys & SYS_IRN);
+    ui->cBNavSys6->setChecked(prcopt.navsys & SYS_BDS2);
+    ui->cBNavSys7->setChecked(prcopt.navsys & SYS_BDS3);
+    ui->cBNavSys8->setChecked(prcopt.navsys & SYS_IRN);
     ui->cBElevationMask->setCurrentIndex(ui->cBElevationMask->findText(QString::number(prcopt.elmin * R2D, 'f', 0)));
     snrmask = prcopt.snrmask;
     ui->cBSatelliteEphemeris->setCurrentIndex(prcopt.sateph);
@@ -1195,13 +1207,16 @@ void OptDialog::save(const QString &file)
     procOpts.mode = ui->cBPositionMode->currentIndex();
     procOpts.soltype = ui->cBSolution->currentIndex();
     procOpts.nf = ui->cBFrequencies->currentIndex() + 1 > NFREQ ? NFREQ : ui->cBFrequencies->currentIndex() + 1;
+    snprintf(procOpts.sigdef, sizeof(procOpts.sigdef), "%s",
+             qPrintable(options == NaviOptions ? ui->lESigDef->text() : ui->lESigDefPost->text()));
     procOpts.navsys = (ui->cBNavSys1->isChecked() ? SYS_GPS : 0) |
                       (ui->cBNavSys2->isChecked() ? SYS_GLO : 0) |
                       (ui->cBNavSys3->isChecked() ? SYS_GAL : 0) |
                       (ui->cBNavSys4->isChecked() ? SYS_QZS : 0) |
                       (ui->cBNavSys5->isChecked() ? SYS_SBS : 0) |
-                      (ui->cBNavSys6->isChecked() ? SYS_CMP : 0) |
-                      (ui->cBNavSys7->isChecked() ? SYS_IRN : 0);
+                      (ui->cBNavSys6->isChecked() ? SYS_BDS2 : 0) |
+                      (ui->cBNavSys7->isChecked() ? SYS_BDS3 : 0) |
+                      (ui->cBNavSys8->isChecked() ? SYS_IRN : 0);
     procOpts.elmin = ui->cBElevationMask->currentText().toDouble() * D2R;
     procOpts.snrmask = snrmask;
     procOpts.sateph = ui->cBSatelliteEphemeris->currentIndex();
@@ -1379,13 +1394,15 @@ void OptDialog::saveOptions(QSettings &settings)
     if (options == PostOptions)
         settings.setValue("prcopt/soltype", ui->cBSolution->currentIndex());
     settings.setValue("prcopt/nf", ui->cBFrequencies->currentIndex() + 1);
+    settings.setValue("prcopt/sigdef", options == NaviOptions ? ui->lESigDef->text() : ui->lESigDefPost->text());
     settings.setValue("prcopt/navsys", (ui->cBNavSys1->isChecked() ? SYS_GPS : 0) |
                                        (ui->cBNavSys2->isChecked() ? SYS_GLO : 0) |
                                        (ui->cBNavSys3->isChecked() ? SYS_GAL : 0) |
                                        (ui->cBNavSys4->isChecked() ? SYS_QZS : 0) |
                                        (ui->cBNavSys5->isChecked() ? SYS_SBS : 0) |
-                                       (ui->cBNavSys6->isChecked() ? SYS_CMP : 0) |
-                                       (ui->cBNavSys7->isChecked() ? SYS_IRN : 0));
+                                       (ui->cBNavSys6->isChecked() ? SYS_BDS2 : 0) |
+                                       (ui->cBNavSys7->isChecked() ? SYS_BDS3 : 0) |
+                                       (ui->cBNavSys8->isChecked() ? SYS_IRN : 0));
     settings.setValue("prcopt/elmin", ui->cBElevationMask->currentText().toDouble() * D2R);
     settings.setValue("prcopt/snrmask_ena1", snrmask.ena[0]);
     settings.setValue("prcopt/snrmask_ena2", snrmask.ena[1]);
@@ -1586,14 +1603,19 @@ void OptDialog::loadOptions(QSettings &settings)
     ui->cBPositionMode->setCurrentIndex(settings.value("prcopt/mode", 0).toInt());
     ui->cBSolution->setCurrentIndex(settings.value("prcopt/soltype", 0).toInt());
     ui->cBFrequencies->setCurrentIndex(settings.value("prcopt/nf", 2).toInt() > NFREQ - 1 ? NFREQ - 1 : settings.value("prcopt/nf", 2).toInt() - 1);
+    if (options == NaviOptions)
+      ui->lESigDef->setText(settings.value("prcopt/sigdef", "").toString());
+    else
+      ui->lESigDefPost->setText(settings.value("prcopt/sigdef", "").toString());
     int navsys = settings.value("prcopt/navsys", SYS_GPS).toInt();
     ui->cBNavSys1->setChecked(navsys & SYS_GPS);
     ui->cBNavSys2->setChecked(navsys & SYS_GLO);
     ui->cBNavSys3->setChecked(navsys & SYS_GAL);
     ui->cBNavSys4->setChecked(navsys & SYS_QZS);
     ui->cBNavSys5->setChecked(navsys & SYS_SBS);
-    ui->cBNavSys6->setChecked(navsys & SYS_CMP);
-    ui->cBNavSys7->setChecked(navsys & SYS_IRN);
+    ui->cBNavSys6->setChecked(navsys & SYS_BDS2);
+    ui->cBNavSys7->setChecked(navsys & SYS_BDS3);
+    ui->cBNavSys8->setChecked(navsys & SYS_IRN);
     ui->cBElevationMask->setCurrentIndex(ui->cBElevationMask->findText(QString::number(settings.value("prcopt/elmin", 15.0 * D2R).toFloat() * R2D, 'f', 0)));
     snrmask.ena[0] = settings.value("prcopt/snrmask_ena1", 0).toInt();
     snrmask.ena[1] = settings.value("prcopt/snrmask_ena2", 0).toInt();
@@ -1815,7 +1837,7 @@ void OptDialog::updateEnable()
 
     ui->cBAmbiguityResolution->setEnabled(ar);
     ui->cBAmbiguityResolutionGLO->setEnabled(ar && ui->cBAmbiguityResolution->currentIndex() > 0 && ui->cBNavSys2->isChecked());
-    ui->cBAmbiguityResolutionBDS->setEnabled(ar && ui->cBAmbiguityResolution->currentIndex() > 0 && ui->cBNavSys6->isChecked());
+    ui->cBAmbiguityResolutionBDS->setEnabled(ar && ui->cBAmbiguityResolution->currentIndex() > 0 && (ui->cBNavSys6->isChecked() || ui->cBNavSys7->isChecked()));
     ui->cBARFilter->setEnabled(ar || ppp);
     ui->sBOutageCountResetAmbiguity->setEnabled(ar || ppp);
     ui->sBLockCountFixAmbiguity->setEnabled(ar && ui->cBAmbiguityResolution->currentIndex() >= 1);
@@ -2107,6 +2129,8 @@ void OptDialog::showKeyDialog()
 //---------------------------------------------------------------------------
 void OptDialog::showFrequenciesDialog()
 {
+    init_code2idx(qPrintable(options == NaviOptions ? ui->lESigDef->text() : ui->lESigDefPost->text()));
+
     FreqDialog *freqDialog = new FreqDialog(this);
 
     freqDialog->exec();

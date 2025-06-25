@@ -33,9 +33,9 @@
 
 #define QZSDT /* enable GPS-QZS time offset estimation */
 #ifdef QZSDT
-#define NX          (4+5)       /* # of estimated parameters */
+#define NX          (4+6)       /* # of estimated parameters */
 #else
-#define NX          (4+4)       /* # of estimated parameters */
+#define NX          (4+5)       /* # of estimated parameters */
 #endif
 #define MAXITR      10          /* max number of iteration for point pos */
 #define ERR_ION     5.0         /* ionospheric delay Std (m) */
@@ -65,7 +65,8 @@ static double varerr(int sat, int sys, double el, int frq, const prcopt_t *opt, 
 #endif
         case SYS_SBS: sys_fact=EFACT_SBS; break;
         case SYS_QZS: sys_fact=EFACT_QZS; break;
-        case SYS_CMP: sys_fact=EFACT_CMP; break;
+        case SYS_BDS2: sys_fact=EFACT_BDS2; break;
+        case SYS_BDS3: sys_fact=EFACT_BDS3; break;
         case SYS_IRN: sys_fact=EFACT_IRN; break;
         default:      sys_fact=EFACT_GPS; break;
     }
@@ -218,7 +219,7 @@ static double prange(const obsd_t *obs, const nav_t *nav, const prcopt_t *opt,
             }
             return (P2-gamma*P1)/(1.0-gamma);
         }
-        else if (sys==SYS_CMP) { /* B1-B2 */
+        else if (sys == SYS_BDS2 || sys == SYS_BDS3) { /* B1-B2 */
             gamma=SQR(((obs->code[0]==CODE_L2I)?FREQ1_CMP:FREQL1)/FREQ2_CMP);
             if      (obs->code[0]==CODE_L2I) b1=gettgd(sat,nav,0); /* TGD_B1I */
             else if (obs->code[0]==CODE_L1P) b1=gettgd(sat,nav,2); /* TGD_B1Cp */
@@ -248,7 +249,7 @@ static double prange(const obsd_t *obs, const nav_t *nav, const prcopt_t *opt,
             else                    b1=gettgd(sat,nav,1); /* BGD_E1E5b */
             return P1-b1;
         }
-        else if (sys==SYS_CMP) { /* B1I/B1Cp/B1Cd */
+        else if (sys == SYS_BDS2 || sys == SYS_BDS3) { /* B1I/B1Cp/B1Cd */
             if      (obs->code[0]==CODE_L2I) b1=gettgd(sat,nav,0); /* TGD_B1I */
             else if (obs->code[0]==CODE_L1P) b1=gettgd(sat,nav,2); /* TGD_B1Cp */
             else b1=gettgd(sat,nav,2)+gettgd(sat,nav,4); /* TGD_B1Cp+ISC_B1Cd */
@@ -485,10 +486,11 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         /* time system offset and receiver bias correction */
         if      (sys==SYS_GLO) {v[nv]-=x[4]; H[4+nv*NX]=1.0; mask[1]=1;}
         else if (sys==SYS_GAL) {v[nv]-=x[5]; H[5+nv*NX]=1.0; mask[2]=1;}
-        else if (sys==SYS_CMP) {v[nv]-=x[6]; H[6+nv*NX]=1.0; mask[3]=1;}
-        else if (sys==SYS_IRN) {v[nv]-=x[7]; H[7+nv*NX]=1.0; mask[4]=1;}
+        else if (sys==SYS_BDS2) {v[nv]-=x[6]; H[6+nv*NX]=1.0; mask[3]=1;}
+        else if (sys==SYS_BDS3) {v[nv]-=x[7]; H[7+nv*NX]=1.0; mask[4]=1;}
+        else if (sys==SYS_IRN) {v[nv]-=x[8]; H[8+nv*NX]=1.0; mask[5]=1;}
 #ifdef QZSDT
-        else if (sys==SYS_QZS) {v[nv]-=x[8]; H[8+nv*NX]=1.0; mask[5]=1;}
+        else if (sys==SYS_QZS) {v[nv]-=x[9]; H[9+nv*NX]=1.0; mask[6]=1;}
 #endif
         else mask[0]=1;
 
@@ -584,10 +586,11 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
             sol->dtr[0]=x[3]/CLIGHT; /* receiver clock bias (s) */
             sol->dtr[1]=x[4]/CLIGHT; /* GLO-GPS time offset (s) */
             sol->dtr[2]=x[5]/CLIGHT; /* GAL-GPS time offset (s) */
-            sol->dtr[3]=x[6]/CLIGHT; /* BDS-GPS time offset (s) */
-            sol->dtr[4]=x[7]/CLIGHT; /* IRN-GPS time offset (s) */
+            sol->dtr[3]=x[6]/CLIGHT; /* BDS2-GPS time offset (s) */
+            sol->dtr[4]=x[7]/CLIGHT; /* BDS3-GPS time offset (s) */
+            sol->dtr[5]=x[8]/CLIGHT; /* IRN-GPS time offset (s) */
 #ifdef QZSDT
-            sol->dtr[5]=x[8]/CLIGHT; /* QZS-GPS time offset (s) */
+            sol->dtr[6]=x[9]/CLIGHT; /* QZS-GPS time offset (s) */
 #endif
             for (j=0;j<6;j++) sol->rr[j]=j<3?x[j]:0.0;
             for (j=0;j<3;j++) sol->qr[j]=(float)Q[j+j*NX];

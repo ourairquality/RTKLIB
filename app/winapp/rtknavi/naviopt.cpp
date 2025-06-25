@@ -95,7 +95,7 @@ __fastcall TOptDialog::TOptDialog(TComponent* Owner)
 {
 	AnsiString label,s;
 	int nglo=MAXPRNGLO,ngal=MAXPRNGAL,nqzs=MAXPRNQZS;
-	int ncmp=MAXPRNCMP,nirn=MAXPRNIRN;
+	int nbds2=MAXPRNBDS2,nbds3=MAXPRNBDS3,nirn=MAXPRNIRN;
 
 	PrcOpt=prcopt_default;
 	SolOpt=solopt_default;
@@ -111,8 +111,9 @@ __fastcall TOptDialog::TOptDialog(TComponent* Owner)
 	if (nglo<=0) NavSys2->Enabled=false;
 	if (ngal<=0) NavSys3->Enabled=false;
 	if (nqzs<=0) NavSys4->Enabled=false;
-	if (ncmp<=0) NavSys6->Enabled=false;
-	if (nirn<=0) NavSys7->Enabled=false;
+	if (nbds2<=0) NavSys6->Enabled=false;
+	if (nbds3<=0) NavSys7->Enabled=false;
+	if (nirn<=0) NavSys8->Enabled=false;
 	UpdateEnable();
 }
 //---------------------------------------------------------------------------
@@ -456,6 +457,7 @@ void __fastcall TOptDialog::GetOpt(void)
 	
 	PosMode		 ->ItemIndex=PrcOpt.mode;
 	Freq		 ->ItemIndex=PrcOpt.nf-1>NFREQ-1?NFREQ-1:PrcOpt.nf-1;
+	SigDef		 ->Text     =PrcOpt.sigdef;
 	ElMask		 ->Text     =s.sprintf("%.0f",PrcOpt.elmin*R2D);
 	DynamicModel ->ItemIndex=PrcOpt.dynamics;
 	TideCorr	 ->ItemIndex=PrcOpt.tidecorr & 7;
@@ -495,8 +497,9 @@ void __fastcall TOptDialog::GetOpt(void)
 	NavSys3		 ->Checked  =PrcOpt.navsys&SYS_GAL;
 	NavSys4		 ->Checked  =PrcOpt.navsys&SYS_QZS;
 	NavSys5		 ->Checked  =PrcOpt.navsys&SYS_SBS;
-	NavSys6		 ->Checked  =PrcOpt.navsys&SYS_CMP;
-	NavSys7		 ->Checked  =PrcOpt.navsys&SYS_IRN;
+	NavSys6		 ->Checked  =PrcOpt.navsys&SYS_BDS2;
+	NavSys7		 ->Checked  =PrcOpt.navsys&SYS_BDS3;
+	NavSys8		 ->Checked  =PrcOpt.navsys&SYS_IRN;
 	PosOpt1		 ->Checked  =PrcOpt.posopt[0];
 	PosOpt2		 ->Checked  =PrcOpt.posopt[1];
 	PosOpt3		 ->Checked  =PrcOpt.posopt[2];
@@ -601,11 +604,13 @@ void __fastcall TOptDialog::GetOpt(void)
 void __fastcall TOptDialog::SetOpt(void)
 {
 	AnsiString FieldSep_Text=FieldSep->Text;
+	AnsiString SigDef_Text=SigDef->Text;
 	TEdit *editu[]={RovPos1,RovPos2,RovPos3};
 	TEdit *editr[]={RefPos1,RefPos2,RefPos3};
 	
 	PrcOpt.mode      =PosMode     ->ItemIndex;
 	PrcOpt.nf        =Freq        ->ItemIndex+1;
+	strcpy(PrcOpt.sigdef, SigDef_Text.c_str());
 	PrcOpt.elmin     =str2dbl(ElMask ->Text)*D2R;
 	PrcOpt.dynamics  =DynamicModel->ItemIndex;
 	PrcOpt.tidecorr  =TideCorr    ->ItemIndex & 7;
@@ -646,8 +651,9 @@ void __fastcall TOptDialog::SetOpt(void)
 	if (NavSys3->Checked) PrcOpt.navsys|=SYS_GAL;
 	if (NavSys4->Checked) PrcOpt.navsys|=SYS_QZS;
 	if (NavSys5->Checked) PrcOpt.navsys|=SYS_SBS;
-	if (NavSys6->Checked) PrcOpt.navsys|=SYS_CMP;
-	if (NavSys7->Checked) PrcOpt.navsys|=SYS_IRN;
+	if (NavSys6->Checked) PrcOpt.navsys|=SYS_BDS2;
+	if (NavSys7->Checked) PrcOpt.navsys|=SYS_BDS3;
+	if (NavSys8->Checked) PrcOpt.navsys|=SYS_IRN;
 	PrcOpt.posopt[0] =PosOpt1   ->Checked;
 	PrcOpt.posopt[1] =PosOpt2   ->Checked;
 	PrcOpt.posopt[2] =PosOpt3   ->Checked;
@@ -797,6 +803,7 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	
 	PosMode		 ->ItemIndex	=prcopt.mode;
 	Freq		 ->ItemIndex	=prcopt.nf>NFREQ-1?NFREQ-1:prcopt.nf-1;
+	SigDef		 ->Text		=prcopt.sigdef;
 	ElMask		 ->Text			=s.sprintf("%.0f",prcopt.elmin*R2D);
     PrcOpt.snrmask              =prcopt.snrmask;
 	DynamicModel ->ItemIndex	=prcopt.dynamics;
@@ -816,8 +823,9 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	NavSys3	     ->Checked		=prcopt.navsys&SYS_GAL;
 	NavSys4	     ->Checked		=prcopt.navsys&SYS_QZS;
 	NavSys5	     ->Checked		=prcopt.navsys&SYS_SBS;
-	NavSys6	     ->Checked		=prcopt.navsys&SYS_CMP;
-	NavSys7	     ->Checked		=prcopt.navsys&SYS_IRN;
+	NavSys6	     ->Checked		=prcopt.navsys&SYS_BDS2;
+	NavSys7	     ->Checked		=prcopt.navsys&SYS_BDS3;
+	NavSys8	     ->Checked		=prcopt.navsys&SYS_IRN;
 	PosOpt1		 ->Checked		=prcopt.posopt[0];
 	PosOpt2		 ->Checked		=prcopt.posopt[1];
 	PosOpt3		 ->Checked		=prcopt.posopt[2];
@@ -949,6 +957,7 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 	AnsiString ProxyAddrE_Text=ProxyAddrE->Text;
 	AnsiString ExSatsE_Text=ExSatsE->Text;
 	AnsiString FieldSep_Text=FieldSep->Text;
+	AnsiString SigDef_Text=SigDef->Text;
 	AnsiString RovAnt_Text=RovAnt->Text,RefAnt_Text=RefAnt->Text;
 	AnsiString RovNameE_Text=RovNameE->Text,RefNameE_Text=RefNameE->Text;
 	AnsiString SatPcvFile_Text=SatPcvFile->Text;
@@ -1050,6 +1059,7 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 
 	prcopt.mode		=PosMode	 ->ItemIndex;
 	prcopt.nf		=Freq		 ->ItemIndex+1;
+	strcpy(prcopt.sigdef, SigDef_Text.c_str());
 	prcopt.elmin	=str2dbl(ElMask	->Text)*D2R;
     prcopt.snrmask	=PrcOpt.snrmask;
 	prcopt.dynamics	=DynamicModel->ItemIndex;
@@ -1070,8 +1080,9 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 					  (NavSys3->Checked?SYS_GAL:0)|
 					  (NavSys4->Checked?SYS_QZS:0)|
 					  (NavSys5->Checked?SYS_SBS:0)|
-					  (NavSys6->Checked?SYS_CMP:0)|
-					  (NavSys7->Checked?SYS_IRN:0);
+					  (NavSys6->Checked?SYS_BDS2:0)|
+					  (NavSys7->Checked?SYS_BDS3:0)|
+					  (NavSys8->Checked?SYS_IRN:0);
 	prcopt.posopt[0]=PosOpt1->Checked;
 	prcopt.posopt[1]=PosOpt2->Checked;
 	prcopt.posopt[2]=PosOpt3->Checked;
@@ -1218,7 +1229,7 @@ void __fastcall TOptDialog::UpdateEnable(void)
 	
 	AmbRes         ->Enabled=ar;
 	GloAmbRes      ->Enabled=ar&&AmbRes->ItemIndex>0&&NavSys2->Checked;
-	BdsAmbRes      ->Enabled=ar&&AmbRes->ItemIndex>0&&NavSys6->Checked;
+	BdsAmbRes      ->Enabled=ar&&AmbRes->ItemIndex>0&&(NavSys6->Checked||NavSys7->Checked);
 	ValidThresAR   ->Enabled=ar&&AmbRes->ItemIndex>=1&&AmbRes->ItemIndex<4;
 	ValidThresARMin->Enabled=ar&&AmbRes->ItemIndex>=1&&AmbRes->ItemIndex<4;
 	ValidThresARMax->Enabled=ar&&AmbRes->ItemIndex>=1&&AmbRes->ItemIndex<4;
@@ -1383,6 +1394,8 @@ void __fastcall TOptDialog::ObsWeightChange(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TOptDialog::BtnFreqClick(TObject *Sender)
 {
+        AnsiString SigDef_Text = SigDef->Text;
+        init_code2idx(SigDef_Text.c_str());
 	FreqDialog->ShowModal();
 }
 //---------------------------------------------------------------------------
