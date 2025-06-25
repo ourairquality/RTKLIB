@@ -234,6 +234,7 @@ public:
 	double MaxSolStd;
 	snrmask_t SnrMask;
 	
+	AnsiString SigDef;
 	AnsiString RnxOpts1,RnxOpts2,PPPOpts;
 	AnsiString FieldSep,RovAnt,RefAnt,AntPcvFile,StaPosFile,PrecEphFile;
 	AnsiString NetRSCorrFile1,NetRSCorrFile2,SatClkCorrFile,GoogleEarthFile;

@@ -325,7 +325,8 @@ QColor Plot::sysColor(int sat)
         case SYS_GLO: return plotOptDialog->getMarkerColor(0, 2);
         case SYS_GAL: return plotOptDialog->getMarkerColor(0, 3);
         case SYS_QZS: return plotOptDialog->getMarkerColor(0, 4);
-        case SYS_CMP: return plotOptDialog->getMarkerColor(0, 5);
+        case SYS_BDS2:
+        case SYS_BDS3: return plotOptDialog->getMarkerColor(0, 5);
         case SYS_IRN: return plotOptDialog->getMarkerColor(0, 6);
         case SYS_SBS: return plotOptDialog->getMarkerColor(0, 0);
         default: return plotOptDialog->getMarkerColor(0, 0);

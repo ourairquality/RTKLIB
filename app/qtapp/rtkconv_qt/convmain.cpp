@@ -745,7 +745,7 @@ void MainWindow::updateEnable()
     ui->cBOutputFileEnable4->setEnabled(sep_nav && (convOptDialog->navSys & SYS_SBS));
     ui->cBOutputFileEnable5->setEnabled(sep_nav && (convOptDialog->navSys & SYS_QZS) && convOptDialog->rinexVersion >= 5);
     ui->cBOutputFileEnable6->setEnabled(sep_nav && (convOptDialog->navSys & SYS_GAL) && convOptDialog->rinexVersion >= 2);
-    ui->cBOutputFileEnable7->setEnabled(sep_nav && (convOptDialog->navSys & SYS_CMP) && convOptDialog->rinexVersion >= 4);
+    ui->cBOutputFileEnable7->setEnabled(sep_nav && (convOptDialog->navSys & SYS_BDS) && convOptDialog->rinexVersion >= 4);
     ui->cBOutputFileEnable8->setEnabled(sep_nav && (convOptDialog->navSys & SYS_IRN) && convOptDialog->rinexVersion >= 6);
     ui->cBOutputFileEnable9->setEnabled(!rnx);
     ui->lEOutputDirectory->setEnabled(ui->cBOutputDirectoryEnable->isChecked());
@@ -900,6 +900,7 @@ void MainWindow::convertFile()
     if (convOptDialog->autoPosition)
         for (i = 0; i < 3; i++) conversionThread->rnxopt.apppos[i] = convOptDialog->approxPosition[i];
     for (i = 0; i < 3; i++) conversionThread->rnxopt.antdel[i] = convOptDialog->antennaDelta[i];
+    snprintf(conversionThread->rnxopt.sigdef, sizeof(conversionThread->rnxopt.sigdef), "%s", qPrintable(convOptDialog->signalDefinitions));
     strncpy(conversionThread->rnxopt.rcvopt, qPrintable(convOptDialog->receiverOptions), 255);
     conversionThread->rnxopt.navsys = convOptDialog->navSys;
     conversionThread->rnxopt.obstype = convOptDialog->observationType;

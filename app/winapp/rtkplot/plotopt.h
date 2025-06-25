@@ -121,6 +121,7 @@ __published:
 	TComboBox *LatLonFmt;
 	TLabel *Label33;
 	TEdit *RnxOpts;
+	TEdit *SigDef;
 	TLabel *Label34;
 	TEdit *TLEFile;
 	TButton *BtnTLEFile;
@@ -131,11 +132,14 @@ __published:
 	TSpeedButton *BtnTLEView;
 	TSpeedButton *BtnTLESatView;
 	TLabel *Label37;
+	TLabel *Label38;
 	TComboBox *MaxMP;
 	TCheckBox *NavSys7;
+	TCheckBox *NavSys8;
 	TEdit *EditTimeSync;
 	TCheckBox *ChkTimeSync;
 	TButton *BtnShapeFile;
+	TSpeedButton *BtnSigs;
 	void __fastcall BtnOKClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnColor1Click(TObject *Sender);
@@ -154,6 +158,7 @@ __published:
 	void __fastcall BtnTLESatViewClick(TObject *Sender);
 	void __fastcall ChkTimeSyncClick(TObject *Sender);
 	void __fastcall BtnShapeFileClick(TObject *Sender);
+	void __fastcall BtnSigsClick(TObject *Sender);
 private:
 	TFont *FontOpt;
 	void __fastcall UpdateFont(void);

@@ -26,8 +26,8 @@ void __fastcall TPlot::UpdateInfo(void)
 void __fastcall TPlot::UpdateTimeObs(void)
 {
     UTF8String msgs1[]={" #OBS= 6+ "," 5 ", " 4 "," 3 "," 2 "," 1 ","",""};
-    UTF8String msgs2[]={" SNR=...45.","..40.","..35.","..30.","..25 ",""," <25 "};
-    UTF8String msgs3[]={" SYS=GPS ","GLO ","GAL ","QZS ","BDS ","IRN ","SBS "};
+    UTF8String msgs2[]={" SNR=...45.","..40.","..35.","..30.","..25 ",""," <25 ",""};
+    UTF8String msgs3[]={" SYS=GPS ","GLO ","GAL ","QZS ","BDS-2 ","BDS-3 ","IRN ","SBS "};
     UTF8String msgs4[]={" MP=..0.6","..0.3","..0.0..","-0.3..","-0.6..","",""};
     UTF8String msg,msgs[8],s;
     double azel[MAXOBS*2],dop[4]={0};
@@ -62,7 +62,7 @@ void __fastcall TPlot::UpdateTimeObs(void)
         }
         else if (PlotType<=PLOT_SKY&&ObsType->ItemIndex==0) {
             msg+=s.sprintf("NSAT=%d ",ns);
-            for (i=0;i<7;i++) msgs[i]=SimObs?msgs3[i]:msgs1[i];
+            for (i=0;i<8;i++) msgs[i]=SimObs?msgs3[i]:msgs1[i];
         }
         else if (PlotType==PLOT_MPS) {
             msg+=s.sprintf("NSAT=%d ",ns);
@@ -70,7 +70,7 @@ void __fastcall TPlot::UpdateTimeObs(void)
         }
         else {
             msg+=s.sprintf("NSAT=%d ",ns);
-            for (i=0;i<7;i++) msgs[i]=SimObs?msgs3[i]:msgs2[i];
+            for (i=0;i<8;i++) msgs[i]=SimObs?msgs3[i]:msgs2[i];
         }
     }
     ShowMsg(msg);
@@ -131,11 +131,11 @@ void __fastcall TPlot::UpdateTimeSol(void)
 // update statistics-information for observation-data plot ------------------
 void __fastcall TPlot::UpdateInfoObs(void)
 {
-    UTF8String msgs0[]={"  NSAT"," GDOP"," PDOP"," HDOP"," VDOP","",""};
+  UTF8String msgs0[]={"  NSAT"," GDOP"," PDOP"," HDOP"," VDOP","","",""};
     UTF8String msgs1[]={" #OBS= 6+ "," 5 "," 4 "," 3 "," 2 "," 1 ","",""};
-    UTF8String msgs2[]={" SNR=...45.","..40.","..35.","..30.","..25 ",""," <25 "};
-    UTF8String msgs3[]={" SYS=GPS ","GLO ","GAL ","QZS ","BDS ","IRN ","SBS "};
-    UTF8String msgs4[]={" MP=..0.6","..0.3","..0.0..","-0.3..","-0.6..","",""};
+    UTF8String msgs2[]={" SNR=...45.","..40.","..35.","..30.","..25 ",""," <25 ",""};
+    UTF8String msgs3[]={" SYS=GPS ","GLO ","GAL ","QZS ","BDS-2 ","BDS-3 ","IRN ","SBS "};
+    UTF8String msgs4[]={" MP=..0.6","..0.3","..0.0..","-0.3..","-0.6..","","",""};
     UTF8String msg,msgs[8];
     gtime_t ts={0},te={0},t,tp={0};
     int i,n=0,ne=0;
@@ -157,7 +157,7 @@ void __fastcall TPlot::UpdateInfoObs(void)
         if (TimeLabel&&(p=strrchr(s1,' '))) *p='\0';
         msg.sprintf("[1]%s-%s : EP=%d N=%d",s1,s2+(TimeLabel?5:0),ne,n);
         
-        for (i=0;i<7;i++) {
+        for (i=0;i<8;i++) {
             if (PlotType==PLOT_DOP) {
                 msgs[i]=msgs0[i];
             }
@@ -285,37 +285,52 @@ void __fastcall TPlot::UpdatePlotType(void)
 // update satellite-list pull-down menu -------------------------------------
 void __fastcall TPlot::UpdateSatList(void)
 {
-    int i,j,sys,sysp=0,sat,smask[MAXSAT]={0};
+    int smask[MAXSAT]={0};
     char s[8];
     
     trace(3,"UpdateSatList\n");
     
-    for (i=0;i<2;i++) for (j=0;j<SolStat[i].n;j++) {
-        sat=SolStat[i].data[j].sat;
+    for (int i=0;i<2;i++) for (int j=0;j<SolStat[i].n;j++) {
+        int sat=SolStat[i].data[j].sat;
         if (1<=sat&&sat<=MAXSAT) smask[sat-1]=1;
     }
-    for (j=0;j<Obs.n;j++) {
-        sat=Obs.data[j].sat;
+    for (int j=0;j<Obs.n;j++) {
+        int sat=Obs.data[j].sat;
         if (1<=sat&&sat<=MAXSAT) smask[sat-1]=1;
     }
     SatList->Items->Clear();
     SatList->Items->Add("ALL");
     
-    for (sat=1;sat<=MAXSAT;sat++) {
+    gtime_t time = utc2gpst(timeget());
+    for (int i = 0; i < 2; i++)
+      if (SolStat[i].n > 0) time = SolStat[i].data[0].time;
+    if (Obs.n > 0) time = Obs.data[0].time;
+
+    bool gps = false, glo = false, gal = false, qzs = false, bds2 = false, bds3 = false, irn = false, sbs = false;
+    for (int sat=1;sat<=MAXSAT;sat++) {
         if (SatMask[sat-1]||!smask[sat-1]) continue;
-        if ((sys=satsys(sat,NULL))==sysp) continue;
-        switch ((sysp=sys)) {
-            case SYS_GPS: strcpy(s,"G"); break;
-            case SYS_GLO: strcpy(s,"R"); break;
-            case SYS_GAL: strcpy(s,"E"); break;
-            case SYS_QZS: strcpy(s,"J"); break;
-            case SYS_CMP: strcpy(s,"C"); break;
-            case SYS_IRN: strcpy(s,"I"); break;
-            case SYS_SBS: strcpy(s,"S"); break;
+        int sys=satsyst(sat,time,NULL);
+        switch (sys) {
+            case SYS_GPS: gps = true; break;
+            case SYS_GLO: glo = true; break;
+            case SYS_GAL: gal = true; break;
+            case SYS_QZS: qzs = true; break;
+            case SYS_BDS2: bds2 = true; break;
+            case SYS_BDS3: bds3 = true; break;
+            case SYS_IRN: irn = true; break;
+            case SYS_SBS: sbs = true; break;
         }
-        SatList->Items->Add(s);
     }
-    for (sat=1;sat<=MAXSAT;sat++) {
+    if (gps) SatList->Items->Add("G");
+    if (glo) SatList->Items->Add("R");
+    if (gal) SatList->Items->Add("E");
+    if (qzs) SatList->Items->Add("J");
+    if (bds2) SatList->Items->Add("C2");
+    if (bds3) SatList->Items->Add("C3");
+    if (irn) SatList->Items->Add("I");
+    if (sbs) SatList->Items->Add("S");
+
+    for (int sat=1;sat<=MAXSAT;sat++) {
         if (SatMask[sat-1]||!smask[sat-1]) continue;
         satno2id(sat,s);
         SatList->Items->Add(s);

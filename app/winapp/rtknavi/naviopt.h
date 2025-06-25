@@ -186,6 +186,7 @@ __published:
 	TEdit *FixCntHoldAmb;
 	TEdit *MoniPortE;
 	TCheckBox *NavSys6;
+	TCheckBox *NavSys7;
 	TSpeedButton *BtnDCBView;
 	TLabel *Label21;
 	TComboBox *SolStatic;
@@ -203,6 +204,7 @@ __published:
 	TEdit *RejectCode;
 	TLabel *Label45;
 	TEdit *ProxyAddrE;
+	TEdit *SigDef;
 	TLabel *Label23;
 	TEdit *EOPFile;
 	TButton *BtnEOPFile;
@@ -225,11 +227,12 @@ __published:
 	TLabel *LabelMaxAveEp;
 	TEdit *MaxAveEp;
 	TCheckBox *ChkInitRestart;
-	TCheckBox *NavSys7;
+	TCheckBox *NavSys8;
 	TComboBox *OutputSingle;
 	TEdit *MaxSolStd;
 	TComboBox *OutputVel;
 	TSpeedButton *BtnFreq;
+	TSpeedButton *BtnSigs;
     TLabel *Label49;
     TLabel *FontLabel1;
 	TButton *BtnFont1;
