@@ -455,7 +455,7 @@ static void procpos(FILE *fp, FILE *fptm, const prcopt_t *popt, const solopt_t *
 
         /* exclude satellites */
         for (i=n=0;i<nobs;i++) {
-            if ((satsys(obs_ptr[i].sat,NULL)&popt->navsys)&&
+            if ((satsyst(obs_ptr[i].sat, obs_ptr[i].time, NULL) & popt->navsys) &&
                 popt->exsats[obs_ptr[i].sat-1]!=1) obs_ptr[n++]= obs_ptr[i];
         }
         if (n<=0) continue;
@@ -829,7 +829,7 @@ static int avepos(double *ra, int base, const obs_t *obs, const nav_t *nav,
 
         for (i=j=0;i<m&&i<MAXOBS;i++) {
             data[j]=obs->data[iobs+i];
-            if ((satsys(data[j].sat,NULL)&opt->navsys)&&
+            if ((satsyst(data[j].sat, data[j].time, NULL) & opt->navsys) &&
                 opt->exsats[data[j].sat-1]!=1) j++;
         }
         if (j<=0||!screent(data[0].time,ts,ts,1.0)) continue; /* only 1 hz */
@@ -953,7 +953,7 @@ static void setpcv(gtime_t time, prcopt_t *popt, nav_t *nav, const satsvns_t *sa
     /* Set satellite antenna parameters */
     for (i=0;i<MAXSAT;i++) {
         nav->pcvs[i]=pcv0;
-        if (!(satsys(i+1,NULL)&popt->navsys)) continue;
+        if (!(satsyst(i + 1, time, NULL) & popt->navsys)) continue;
         const pcv_t *pcv = searchpcv(i + 1, "", time, satsvns, pcvs);
         if (!pcv) {
             satno2id(i+1,id);
@@ -1434,6 +1434,8 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
     const char *ext;
 
     trace(3,"postpos : ti=%.0f tu=%.0f n=%d outfile=%s\n",ti,tu,n,outfile);
+
+    init_code2idx(popt->sigdef);
 
     /* open processing session */
     if (!openses(popt,sopt,fopt,&navs,&satsvns,&pcvss,&pcvsr)) return -1;

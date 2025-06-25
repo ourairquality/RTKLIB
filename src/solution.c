@@ -87,7 +87,7 @@
 #define KNOT2M     0.514444444  /* m/sec --> knot */
 
 static const int nmea_sys[]={ /* NMEA systems */
-    SYS_GPS|SYS_SBS,SYS_GLO,SYS_GAL,SYS_CMP,SYS_QZS,SYS_IRN,0
+    SYS_GPS|SYS_SBS,SYS_GLO,SYS_GAL,SYS_BDS,SYS_QZS,SYS_IRN,0
 };
 static const char *nmea_tid[]={ /* NMEA talker IDs [2] */
     "GP","GL","GA","GB","GQ","GI",""
@@ -620,8 +620,8 @@ static int decode_solsss(char *buff, sol_t *sol)
     for (i=0;i<6;i++) {
         sol->rr[i]=i<3?pos[i]:0.0;
         sol->qr[i]=i<3?(float)SQR(std[i]):0.0f;
-        sol->dtr[i]=0.0;
     }
+    for (i=0;i<7;i++) sol->dtr[i]=0.0;
     sol->ns=0;
     sol->age=sol->ratio=sol->thres=0.0f;
     sol->type=0; /* position type = xyz */
@@ -1453,7 +1453,7 @@ extern int outnmea_gsa(uint8_t *buff, const sol_t *sol, const ssat_t *ssat)
     
     for (i=nsat=0;i<MAXSAT;i++) {
         if (!ssat[i].vs) continue;
-        sys=satsys(i+1,NULL);
+        sys = satsyst(i + 1, sol->time, NULL);
         if (!(sys&mask)) nsys++; /* # of systems */
         mask|=sys;
         azel[2*nsat  ]=ssat[i].azel[0][0];
@@ -1464,7 +1464,7 @@ extern int outnmea_gsa(uint8_t *buff, const sol_t *sol, const ssat_t *ssat)
     
     for (i=0;nmea_sys[i];i++) {
         for (j=nsat=0;j<MAXSAT&&nsat<12;j++) {
-            if (!(satsys(j+1,NULL)&nmea_sys[i])) continue;
+            if (!(satsyst(j + 1, sol->time, NULL) & nmea_sys[i])) continue;
             if (ssat[j].vs) sats[nsat++]=j+1;
         }
         if (nsat>0) {
@@ -1473,7 +1473,7 @@ extern int outnmea_gsa(uint8_t *buff, const sol_t *sol, const ssat_t *ssat)
             for (j=0;j<12;j++) {
                 if (j<nsat) {
                     int prn;
-                    sys=satsys(sats[j],&prn);
+                    sys = satsyst(sats[j], sol->time, &prn);
                     if      (sys==SYS_SBS) prn-=87;  /* SBS: 33-64 */
                     else if (sys==SYS_GLO) prn+=64;  /* GLO: 65-99 */
                     else if (sys==SYS_QZS) prn-=192; /* QZS: 01-10 */
@@ -1502,7 +1502,7 @@ extern int outnmea_gsv(uint8_t *buff, const sol_t *sol, const ssat_t *ssat)
     
     for (i=0;nmea_sys[i];i++) {
         for (j=nsat=0;j<MAXSAT&&nsat<36;j++) {
-            if (!(satsys(j+1,NULL)&nmea_sys[i])) continue;
+            if (!(satsyst(j + 1, sol->time, NULL) & nmea_sys[i])) continue;
             if (ssat[j].azel[0][1]>0.0) sats[nsat++]=j+1;
     }
         nmsg=(nsat+3)/4;
@@ -1512,7 +1512,7 @@ extern int outnmea_gsv(uint8_t *buff, const sol_t *sol, const ssat_t *ssat)
             p+=sprintf(p,"$%sGSV,%d,%d,%02d",nmea_tid[i],nmsg,j+1,nsat);
             for (k=0;k<4;k++,n++) {
                 if (n<nsat) {
-                    sys=satsys(sats[n],&prn);
+                    sys = satsyst(sats[n], sol->time, &prn);
                     if      (sys==SYS_SBS) prn-=87;  /* SBS: 33-64 */
                     else if (sys==SYS_GLO) prn+=64;  /* GLO: 65-99 */
                     else if (sys==SYS_QZS) prn-=192; /* QZS: 01-10 */
@@ -1539,7 +1539,7 @@ extern int outnmea_gsv(uint8_t *buff, const sol_t *sol, const ssat_t *ssat)
 extern int outprcopts(uint8_t *buff, const prcopt_t *opt)
 {
     const int sys[]={
-        SYS_GPS,SYS_GLO,SYS_GAL,SYS_QZS,SYS_CMP,SYS_IRN,SYS_SBS,0
+        SYS_GPS,SYS_GLO,SYS_GAL,SYS_QZS,SYS_BDS2,SYS_BDS3,SYS_IRN,SYS_SBS,0
     };
     const char *s1[]={
         "Single","DGPS","Kinematic","Static","Static-Start","Moving-Base","Fixed",
@@ -1560,7 +1560,7 @@ extern int outprcopts(uint8_t *buff, const prcopt_t *opt)
         "Broadcast+SSR CoM","Precise (CoM)","",""
     };
     const char *s7[]={
-        "GPS","GLONASS","Galileo","QZSS","BDS","NavIC","SBAS","","",""
+        "GPS","GLONASS","Galileo","QZSS","BDS-2","BDS-3","NavIC","SBAS","","",""
     };
     const char *s8[]={
         "OFF","Continuous","Instantaneous","Fix and Hold","","",""
@@ -1577,6 +1577,8 @@ extern int outprcopts(uint8_t *buff, const prcopt_t *opt)
     
     if (PMODE_DGPS<=opt->mode) {
         p+=sprintf(p,"%s freqs     : %d\r\n",COMMENTH,opt->nf);
+        if (opt->sigdef[0])
+          p += sprintf(p, "%s sigdef    : %s\r\n", COMMENTH, opt->sigdef);
     }
     if (opt->mode>PMODE_SINGLE) {
         p+=sprintf(p,"%s solution  : %s\r\n",COMMENTH,s3[opt->soltype]);
@@ -1602,7 +1604,7 @@ extern int outprcopts(uint8_t *buff, const prcopt_t *opt)
         if (opt->navsys&SYS_GLO) {
             p+=sprintf(p,"%s amb glo   : %s\r\n",COMMENTH,s9[opt->glomodear]);
         }
-        if (opt->navsys&SYS_CMP) {
+        if (opt->navsys&SYS_BDS) {
             p+=sprintf(p,"%s amb bds   : %s\r\n",COMMENTH,opt->bdsmodear?"on":"off");
         }
         if (opt->thresar[0]>0.0) {

@@ -528,7 +528,7 @@ static int decode_bnx_01_05(raw_t *raw, uint8_t *buff, int len)
         trace(2,"BINEX 0x01-05: length error len=%d\n",len);
         return -1;
     }
-    if (!(sat=satno(SYS_CMP,prn))) {
+    if (!(sat=satno(SYS_BDS,prn))) {
         trace(2,"BINEX 0x01-05: satellite error prn=%d\n",prn);
         return -1;
     }
@@ -896,12 +896,12 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat,
     double range[8],phase[8],cnr[8],dopp[8]={0},acc,freq;
     uint8_t *p=buff;
     uint8_t flag,flags[4];
-    int i,j,k,sys,prn,fcn=-10,code[8],slip[8],pri[8],idx[8];
+    int i,j,k,fcn=-10,code[8],slip[8],pri[8],idx[8];
     int slipcnt[8]={0},mask[8]={0};
     
     trace(5,"decode_bnx_7f_05_obs: sat=%2d nobs=%2d\n",sat,nobs);
     
-    sys=satsys(sat,&prn);
+    int prn, sys = satsyst(sat, raw->time, &prn);
     
     switch (sys) {
         case SYS_GPS: codes=codes_gps; break;
@@ -909,7 +909,8 @@ static uint8_t *decode_bnx_7f_05_obs(raw_t *raw, uint8_t *buff, int sat,
         case SYS_GAL: codes=codes_gal; break;
         case SYS_QZS: codes=codes_qzs; break;
         case SYS_SBS: codes=codes_sbs; break;
-        case SYS_CMP: codes=codes_cmp; break;
+        case SYS_BDS2:
+        case SYS_BDS3: codes=codes_cmp; break;
         case SYS_IRN: codes=codes_irn; break;
         default: return 0;
     }
@@ -1065,7 +1066,7 @@ static int decode_bnx_7f_05(raw_t *raw, uint8_t *buff, int len)
             case 1: sat=satno(SYS_GLO,prn); break;
             case 2: sat=satno(SYS_SBS,prn); break;
             case 3: sat=satno(SYS_GAL,prn); break;
-            case 4: sat=satno(SYS_CMP,prn); break;
+            case 4: sat=satno(SYS_BDS,prn); break;
             case 5: sat=satno(SYS_QZS,prn); break;
             case 6: sat=satno(SYS_IRN,prn); break;
             default: sat=0; break;

@@ -107,7 +107,7 @@ static int code2sys(char code)
     if (code=='R') return SYS_GLO;
     if (code=='E') return SYS_GAL; /* SP3-d */
     if (code=='J') return SYS_QZS; /* SP3-d */
-    if (code=='C') return SYS_CMP; /* SP3-d */
+    if (code=='C') return SYS_BDS; /* SP3-d */
     if (code=='I') return SYS_IRN; /* SP3-d */
     if (code=='L') return SYS_LEO; /* SP3-d */
     return SYS_NONE;
@@ -433,7 +433,8 @@ static int sys2ix(int sys)
                     1, /* GLO */
                     2, /* GAL */
                     4, /* QZS */
-                    3, /* CMP */
+                    3, /* BDS2 */
+                    3, /* BDS3 */
                     5, /* IRN */
                     -1};  /* LEO */
     return ix[sys2no(sys)];
@@ -822,7 +823,7 @@ extern void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
   cross3(ey, ez, ex);
 
   /* Iono-free LC coefficients */
-  int sys = satsys(sat, NULL);
+  int sys = satsyst(sat, time, NULL);
   int code1, code2;
   if (sys == SYS_GPS || sys == SYS_QZS) { /* L1-L2 */
     code1 = CODE_L1C;
@@ -833,7 +834,10 @@ extern void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
   } else if (sys == SYS_GAL) { /* E1-E5b */
     code1 = CODE_L1C;
     code2 = CODE_L7I;
-  } else if (sys == SYS_CMP) { /* B1I-B2I */
+  } else if (sys == SYS_BDS2) { /* B1I-B2I */
+    code1 = CODE_L2I;
+    code2 = CODE_L7I;
+  } else if (sys == SYS_BDS3) { /* B1I-B2I */
     code1 = CODE_L2I;
     code2 = CODE_L7I;
   } else if (sys == SYS_IRN) { /* L5-S */

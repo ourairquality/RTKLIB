@@ -981,6 +981,7 @@ int __fastcall TMainForm::GetOption(prcopt_t &prcopt, solopt_t &solopt,
     prcopt.mode     =PosMode;
     prcopt.soltype  =Solution;
     prcopt.nf       =Freq+1;
+    strcpy(prcopt.sigdef, SigDef.c_str());
     prcopt.navsys   =NavSys;
     prcopt.elmin    =ElMask*D2R;
     prcopt.snrmask  =SnrMask;
@@ -1371,6 +1372,7 @@ void __fastcall TMainForm::LoadOpt(void)
     
     PosMode            =ini->ReadInteger("opt","posmode",        2);
     Freq               =ini->ReadInteger("opt","freq",     NFREQ-1);
+    SigDef             =ini->ReadString ("opt","sigdef",        "");
     Solution           =ini->ReadInteger("opt","solution",       0);
     ElMask             =ini->ReadFloat  ("opt","elmask",      15.0);
     SnrMask.ena[0]     =ini->ReadInteger("opt","snrmask_ena1",   0);
@@ -1386,7 +1388,7 @@ void __fastcall TMainForm::LoadOpt(void)
     TideCorr           =ini->ReadInteger("opt","tidecorr",       0);
     SatEphem           =ini->ReadInteger("opt","satephem",       0);
     ExSats             =ini->ReadString ("opt","exsats",        "");
-    NavSys             =ini->ReadInteger("opt","navsys", SYS_GPS|SYS_GLO|SYS_GAL|SYS_QZS|SYS_CMP);
+    NavSys             =ini->ReadInteger("opt","navsys", SYS_GPS|SYS_GLO|SYS_GAL|SYS_QZS|SYS_BDS);
     PosOpt[0]          =ini->ReadInteger("opt","posopt1",        0);
     PosOpt[1]          =ini->ReadInteger("opt","posopt2",        0);
     PosOpt[2]          =ini->ReadInteger("opt","posopt3",        0);
@@ -1617,6 +1619,7 @@ void __fastcall TMainForm::SaveOpt(void)
     
     ini->WriteInteger("opt","posmode",     PosMode     );
     ini->WriteInteger("opt","freq",        Freq        );
+    ini->WriteString ("opt","sigdef",      SigDef      );
     ini->WriteInteger("opt","solution",    Solution    );
     ini->WriteFloat  ("opt","elmask",      ElMask      );
     ini->WriteInteger("opt","snrmask_ena1",SnrMask.ena[0]);

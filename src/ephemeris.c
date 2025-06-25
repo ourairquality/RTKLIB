@@ -148,7 +148,7 @@ static double var_urassr(int ura)
 *-----------------------------------------------------------------------------*/
 extern void alm2pos(gtime_t time, const alm_t *alm, double *rs, double *dts)
 {
-    double tk,M,E,Ek,sinE,cosE,u,r,i,O,x,y,sinO,cosO,cosi,mu;
+    double tk,M,E,Ek,sinE,cosE,u,r,i,O,x,y,sinO,cosO,cosi;
     int n;
 
     char tstr[40];
@@ -160,7 +160,7 @@ extern void alm2pos(gtime_t time, const alm_t *alm, double *rs, double *dts)
         rs[0]=rs[1]=rs[2]=*dts=0.0;
         return;
     }
-    mu=satsys(alm->sat,NULL)==SYS_GAL?MU_GAL:MU_GPS;
+    double mu = satsyst(alm->sat, time, NULL) == SYS_GAL ? MU_GAL : MU_GPS;
 
     M=alm->M0+sqrt(mu/(alm->A*alm->A*alm->A))*tk;
     for (n=0,E=M,Ek=0.0;fabs(E-Ek)>RTOL_KEPLER&&n<MAX_ITER_KEPLER;n++) {
@@ -224,7 +224,7 @@ extern void eph2pos(gtime_t time, const eph_t *eph, double *rs, double *dts,
 {
     double tk,M,E,Ek,sinE,cosE,u,r,i,O,sin2u,cos2u,x,y,sinO,cosO,cosi,mu,omge;
     double xg,yg,zg,sino,coso;
-    int n,sys,prn;
+    int n;
 
     char tstr[40];
     trace(4,"eph2pos : time=%s sat=%2d\n",time2str(time,tstr,3),eph->sat);
@@ -235,9 +235,11 @@ extern void eph2pos(gtime_t time, const eph_t *eph, double *rs, double *dts,
     }
     tk=timediff(time,eph->toe);
 
-    switch ((sys=satsys(eph->sat,&prn))) {
+    int prn, sys = satsyst(eph->sat, time, &prn);
+    switch (sys) {
         case SYS_GAL: mu=MU_GAL; omge=OMGE_GAL; break;
-        case SYS_CMP: mu=MU_CMP; omge=OMGE_CMP; break;
+        case SYS_BDS2:
+        case SYS_BDS3: mu=MU_CMP; omge=OMGE_CMP; break;
         default:      mu=MU_GPS; omge=OMGE;     break;
     }
     M=eph->M0+(sqrt(mu/(eph->A*eph->A*eph->A))+eph->deln)*tk;
@@ -262,7 +264,7 @@ extern void eph2pos(gtime_t time, const eph_t *eph, double *rs, double *dts,
     x=r*cos(u); y=r*sin(u); cosi=cos(i);
 
     /* beidou geo satellite */
-    if (sys==SYS_CMP&&(prn<=5||prn>=59)) { /* ref [9] table 4-1 */
+    if ((sys&SYS_BDS)&&(prn<=5||prn>=59)) { /* ref [9] table 4-1 */
         O=eph->OMG0+eph->OMGd*tk-omge*eph->toes;
         sinO=sin(O); cosO=cos(O);
         xg=x*cosO-y*cosi*sinO;
@@ -432,17 +434,18 @@ extern void seph2pos(gtime_t time, const seph_t *seph, double *rs, double *dts,
 static eph_t *seleph(gtime_t time, int sat, int iode, const nav_t *nav)
 {
     double t,tmax,tmin;
-    int i,j=-1,sys,sel=0;
+    int i,j=-1,sel=0;
 
     char tstr[40];
     trace(4,"seleph  : time=%s sat=%2d iode=%d\n",time2str(time,tstr,3),sat,iode);
 
-    sys=satsys(sat,NULL);
+    int sys = satsyst(sat, time, NULL);
     switch (sys) {
         case SYS_GPS: tmax=MAXDTOE+1.0    ; sel=eph_sel[0]; break;
         case SYS_GAL: tmax=MAXDTOE_GAL    ; sel=eph_sel[2]; break;
         case SYS_QZS: tmax=MAXDTOE_QZS+1.0; sel=eph_sel[3]; break;
-        case SYS_CMP: tmax=MAXDTOE_CMP+1.0; sel=eph_sel[4]; break;
+        case SYS_BDS2:
+        case SYS_BDS3: tmax=MAXDTOE_CMP+1.0; sel=eph_sel[4]; break;
         case SYS_IRN: tmax=MAXDTOE_IRN+1.0; sel=eph_sel[5]; break;
         default: tmax=MAXDTOE+1.0; break;
     }
@@ -524,14 +527,13 @@ static int ephclk(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
     eph_t  *eph;
     geph_t *geph;
     seph_t *seph;
-    int sys;
 
     char tstr[40];
     trace(4,"ephclk  : time=%s sat=%2d\n",time2str(time,tstr,3),sat);
 
-    sys=satsys(sat,NULL);
+    int sys = satsyst(sat, time, NULL);
 
-    if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_CMP||sys==SYS_IRN) {
+    if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_BDS2||sys==SYS_BDS3||sys==SYS_IRN) {
         if (!(eph=seleph(teph,sat,-1,nav))) return 0;
         *dts=eph2clk(time,eph);
     }
@@ -556,16 +558,16 @@ static int ephpos(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
     geph_t *geph;
     seph_t *seph;
     double rst[3],dtst[1],tt=1E-3;
-    int i,sys;
+    int i;
 
     char tstr[40];
     trace(4,"ephpos  : time=%s sat=%2d iode=%d\n",time2str(time,tstr,3),sat,iode);
 
-    sys=satsys(sat,NULL);
+    int sys = satsyst(sat, time, NULL);
 
     *svh=-1;
 
-    if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_CMP||sys==SYS_IRN) {
+    if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_BDS2||sys==SYS_BDS3||sys==SYS_IRN) {
         if (!(eph=seleph(teph,sat,iode,nav))) return 0;
         eph2pos(time,eph,rs,dts,var);
         time=timeadd(time,tt);
@@ -630,7 +632,7 @@ static int satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
     const ssr_t *ssr;
     eph_t *eph;
     double t1,t2,t3,er[3],ea[3],ec[3],rc[3],deph[3],dclk,dant[3]={0},tk;
-    int i,sys;
+    int i;
 
     char tstr[40];
     trace(4,"satpos_ssr: time=%s sat=%2d\n",time2str(time,tstr,3),sat);
@@ -683,8 +685,8 @@ static int satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
     if (!ephpos(time,teph,sat,nav,ssr->iode,rs,dts,var,svh)) return 0;
 
     /* satellite clock for gps, galileo and qzss */
-    sys=satsys(sat,NULL);
-    if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_CMP) {
+    int sys = satsyst(sat, time, NULL);
+    if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_BDS2||sys==SYS_BDS3) {
         if (!(eph=seleph(teph,sat,ssr->iode,nav))) return 0;
 
         /* satellite clock by clock parameters */
@@ -864,7 +866,9 @@ extern void setseleph(int sys, int sel)
         case SYS_GLO: eph_sel[1]=sel; break;
         case SYS_GAL: eph_sel[2]=sel; break;
         case SYS_QZS: eph_sel[3]=sel; break;
-        case SYS_CMP: eph_sel[4]=sel; break;
+        case SYS_BDS:
+        case SYS_BDS2:
+        case SYS_BDS3: eph_sel[4]=sel; break;
         case SYS_IRN: eph_sel[5]=sel; break;
         case SYS_SBS: eph_sel[6]=sel; break;
     }
@@ -882,7 +886,9 @@ extern int getseleph(int sys)
         case SYS_GLO: return eph_sel[1];
         case SYS_GAL: return eph_sel[2];
         case SYS_QZS: return eph_sel[3];
-        case SYS_CMP: return eph_sel[4];
+        case SYS_BDS:
+        case SYS_BDS2:
+        case SYS_BDS3: return eph_sel[4];
         case SYS_IRN: return eph_sel[5];
         case SYS_SBS: return eph_sel[6];
     }

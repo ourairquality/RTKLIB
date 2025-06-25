@@ -264,7 +264,8 @@ object MonitorDialog: TMonitorDialog
         'GLONASS'
         'Galileo'
         'QZSS'
-        'BDS'
+        'BDS-2'
+        'BDS-3'
         'NavIC'
         'SBAS')
     end
@@ -289,7 +290,8 @@ object MonitorDialog: TMonitorDialog
         'GLONASS'
         'Galileo'
         'QZSS'
-        'BDS'
+        'BDS-2'
+        'BDS-3'
         'NavIC'
         'SBAS')
     end

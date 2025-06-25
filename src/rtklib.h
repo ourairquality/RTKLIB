@@ -122,20 +122,23 @@ extern "C" {
 #define EFACT_GLO   1.5                 /* error factor: GLONASS */
 #define EFACT_GAL   1.0                 /* error factor: Galileo */
 #define EFACT_QZS   1.0                 /* error factor: QZSS */
-#define EFACT_CMP   1.0                 /* error factor: BeiDou */
+#define EFACT_BDS2  1.0                 /* error factor: BeiDou-2 */
+#define EFACT_BDS3  1.0                 /* error factor: BeiDou-3 */
 #define EFACT_IRN   1.5                 /* error factor: IRNSS */
 #define EFACT_SBS   3.0                 /* error factor: SBAS */
 
-#define SYS_NONE    0x00                /* navigation system: none */
-#define SYS_GPS     0x01                /* navigation system: GPS */
-#define SYS_SBS     0x02                /* navigation system: SBAS */
-#define SYS_GLO     0x04                /* navigation system: GLONASS */
-#define SYS_GAL     0x08                /* navigation system: Galileo */
-#define SYS_QZS     0x10                /* navigation system: QZSS */
-#define SYS_CMP     0x20                /* navigation system: BeiDou */
-#define SYS_IRN     0x40                /* navigation system: IRNS */
-#define SYS_LEO     0x80                /* navigation system: LEO */
-#define SYS_ALL     0xFF                /* navigation system: all */
+#define SYS_NONE    0x000               /* navigation system: none */
+#define SYS_GPS     0x001               /* navigation system: GPS */
+#define SYS_SBS     0x002               /* navigation system: SBAS */
+#define SYS_GLO     0x004               /* navigation system: GLONASS */
+#define SYS_GAL     0x008               /* navigation system: Galileo */
+#define SYS_QZS     0x010               /* navigation system: QZSS */
+#define SYS_BDS2    0x020               /* navigation system: BeiDou-2 */
+#define SYS_BDS3    0x040               /* navigation system: BeiDou-3 */
+#define SYS_BDS     (SYS_BDS2|SYS_BDS3) /* navigation system: BeiDou (2 or 3) */
+#define SYS_IRN     0x080               /* navigation system: IRNS */
+#define SYS_LEO     0x100               /* navigation system: LEO */
+#define SYS_ALL     0x1FF               /* navigation system: all */
 
 /* System codes used in rnxopt_t mask, tobs, shift, and nobs. */
 #define RNX_SYS_GPS 0                   /* Navigation system: GPS */
@@ -207,15 +210,15 @@ extern "C" {
 #define NSYSQZS     0
 #endif
 #ifdef ENACMP
-#define MINPRNCMP   1                   /* min satellite sat number of BeiDou */
-#define MAXPRNCMP   63                  /* max satellite sat number of BeiDou */
-#define NSATCMP     (MAXPRNCMP-MINPRNCMP+1) /* number of BeiDou satellites */
-#define NSYSCMP     1
+#define MINPRNBDS   1                   // Min satellite sat number of BeiDou.
+#define MAXPRNBDS   63                  // Max satellite sat number of BeiDou.
+#define NSATBDS     (MAXPRNBDS-MINPRNBDS+1) // Number of BeiDou satellites.
+#define NSYSBDS     1
 #else
-#define MINPRNCMP   0
-#define MAXPRNCMP   0
-#define NSATCMP     0
-#define NSYSCMP     0
+#define MINPRNBDS   0
+#define MAXPRNBDS   0
+#define NSATBDS     0
+#define NSYSBDS     0
 #endif
 #ifdef ENAIRN
 #define MINPRNIRN   1                   /* min satellite sat number of IRNSS */
@@ -239,13 +242,13 @@ extern "C" {
 #define NSATLEO     0
 #define NSYSLEO     0
 #endif
-#define NSYS        (NSYSGPS+NSYSGLO+NSYSGAL+NSYSQZS+NSYSCMP+NSYSIRN+NSYSLEO) /* number of systems */
+#define NSYS        (NSYSGPS+NSYSGLO+NSYSGAL+NSYSQZS+NSYSBDS+NSYSIRN+NSYSLEO) /* number of systems */
 
 #define MINPRNSBS   120                 /* min satellite PRN number of SBAS */
 #define MAXPRNSBS   158                 /* max satellite PRN number of SBAS */
 #define NSATSBS     (MAXPRNSBS-MINPRNSBS+1) /* number of SBAS satellites */
 
-#define MAXSAT      (NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATCMP+NSATIRN+NSATSBS+NSATLEO)
+#define MAXSAT      (NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATBDS+NSATIRN+NSATSBS+NSATLEO)
                                         /* max satellite number (1 to MAXSAT) */
 #define MAXSTA      255
 
@@ -652,7 +655,7 @@ typedef struct {            // Satellite meta data, svn to sat mapping
 
 typedef struct {           // Antenna parameter type
   int sat;                 // Satellite number (0:receiver)
-  int satsys;              // Satellite system
+  int satsys;              // Satellite system for the svn (may be SYS_BDS2 | SYS_BDS3)
   int svn;                 // Satellite SVN number (0:receiver)
   char type[MAXANT];       // Antenna type
   char code[MAXANT];       // Serial number or satellite code
@@ -952,7 +955,7 @@ typedef struct {        /* solution type */
                         /* {c_xx,c_yy,c_zz,c_xy,c_yz,c_zx} or */
                         /* {c_ee,c_nn,c_uu,c_en,c_nu,c_ue} */
     float  qv[6];       /* velocity variance/covariance (m^2/s^2) */
-    double dtr[6];      /* receiver clock bias to time systems (s) */
+    double dtr[7];      /* receiver clock bias to time systems (s) */
     uint8_t type;       /* type (0:xyz-ecef,1:enu-baseline) */
     uint8_t stat;       /* solution status (SOLQ_???) */
     uint8_t ns;         /* number of valid satellites */
@@ -1077,6 +1080,7 @@ typedef struct {        /* processing options type */
     int mode;           /* positioning mode (PMODE_???) */
     int soltype;        /* solution type (0:forward,1:backward,2:combined) */
     int nf;             /* number of frequencies (1:L1,2:L1+L2,3:L1+L2+L5) */
+    char sigdef[256];   // Signal code to index and priorities declaration.
     int navsys;         /* navigation system */
     double elmin;       /* elevation mask angle (rad) */
     snrmask_t snrmask;  /* SNR mask */
@@ -1206,6 +1210,7 @@ typedef struct {        /* RINEX options type */
     double antdel[3];   /* antenna delta h/e/n */
     double glo_cp_bias[4]; /* GLONASS code-phase biases (m) */
     char comment[MAXCOMMENT][64]; /* comments */
+    char sigdef[256];   // Signal code to index and priorities declaration.
     char rcvopt[256];   /* receiver dependent options */
     uint8_t exsats[MAXSAT]; /* excluded satellites */
     int glofcn[32];     /* glonass fcn+8 */
@@ -1453,18 +1458,25 @@ EXPORT extern opt_t sysopts[];              /* system options table */
 /* satellites, systems, codes functions --------------------------------------*/
 EXPORT int  satno   (int sys, int prn);
 EXPORT int  satsys  (int sat, int *prn);
+EXPORT int  satsyst (int sat, gtime_t t, int *prn);
 EXPORT int  satid2no(const char *id);
 EXPORT void satno2id(int sat, char id[8]);
 EXPORT uint8_t obs2code(const char *obs);
 EXPORT const char *code2obs(uint8_t code);
+EXPORT double band2freq(int sys, int band, int fcn);
 EXPORT double code2freq(int sys, uint8_t code, int fcn);
 EXPORT double sat2freq(int sat, uint8_t code, const nav_t *nav);
+EXPORT double satidx2freq(int sat, int code, const nav_t *nav);
 EXPORT int  code2idx(int sys, uint8_t code);
-EXPORT int  satexclude(int sat, double var, int svh, const prcopt_t *opt);
+EXPORT int idx2band(int sys, int idx);
+EXPORT const char *getcodebandname(int sys, int band);
+EXPORT void init_code2idx(const char *sigdef);
+EXPORT int  satexclude(int sat, gtime_t t, double var, int svh, const prcopt_t *opt);
 EXPORT int  testsnr(int base, int freq, double el, double snr,
                     const snrmask_t *mask);
 EXPORT int testelmask(const double *azel, const elmask_t *elmask);
-EXPORT void setcodepri(int sys, int idx, const char *pri);
+EXPORT void setcodepriorities(int sys, int band, const char *pri);
+EXPORT char *getcodepriorities(int sys, int band);
 EXPORT int  getcodepri(int sys, uint8_t code, const char *opt);
 EXPORT int sigindex(obsd_t *data, int sys, int code, const char *opt);
 
@@ -1476,6 +1488,7 @@ static inline int sys2no(int sys)
 #else
     if (sys==0) return 0;
     int i=1;
+    if (!(sys&0xff)) { i+=8; sys>>=8; }
     if (!(sys&0x0f)) { i+=4; sys>>=4; }
     if (!(sys&0x03)) { i+=2; sys>>=2; }
     if (!(sys&0x01)) { i+=1; }

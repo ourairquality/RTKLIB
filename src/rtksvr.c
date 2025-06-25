@@ -164,7 +164,7 @@ static void update_obs(rtksvr_t *svr, obs_t *obs, int index, int iobs)
         if (iobs<MAXOBSBUF) {
             for (i=0;i<obs->n;i++) {
             sat=obs->data[i].sat;
-            sys=satsys(sat,NULL);
+            sys = satsyst(sat, obs->data[i].time, NULL);
             if (svr->rtk.opt.exsats[sat-1]==1||!(sys&svr->rtk.opt.navsys)) {
                 continue;
             }
@@ -1020,6 +1020,7 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
         sprintf(errmsg,"server already started");
         return 0;
     }
+    init_code2idx(prcopt->sigdef);
     strinitcom();
     svr->cycle=cycle>1?cycle:1;
     svr->nmeacycle=nmeacycle>1000?nmeacycle:1000;
@@ -1105,7 +1106,7 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
     /* sync input streams */
     strsync(svr->stream,svr->stream+1);
     strsync(svr->stream,svr->stream+2);
-    
+
     // Load initial SP3, CLK and ERP files.
     read_infiles(svr);
 

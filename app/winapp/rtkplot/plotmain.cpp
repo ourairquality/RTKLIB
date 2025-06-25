@@ -249,12 +249,13 @@ void __fastcall TPlot::FormShow(TObject *Sender)
         tracelevel(Trace);
     }
     LoadOpt();
+    init_code2idx(SigDef.c_str());
     
     UpdateType(PlotType>=PLOT_OBS?PLOT_TRK:PlotType);
     
+    UpdateOrigin();
     UpdateColor();
     UpdateSatMask();
-    UpdateOrigin();
     
     if (*path1||*path2) {
         ConnectPath(path1,0);
@@ -774,6 +775,7 @@ void __fastcall TPlot::MenuOptionsClick(TObject *Sender)
     if (PlotOptDialog->ShowModal()!=mrOk) return;
     
     SaveOpt();
+    init_code2idx(SigDef.c_str());
     
     for (int i=0;i<3;i++) oopos[i]-=OOPos[i];
     
@@ -789,9 +791,9 @@ void __fastcall TPlot::MenuOptionsClick(TObject *Sender)
     if (rcvpos!=RcvPos||norm(oopos,3)>1E-3||TLEFile!=tlefile) {
         if (SimObs) GenVisData(); else UpdateObs(NObs);
     }
+    UpdateOrigin();
     UpdateColor();
     UpdateSize();
-    UpdateOrigin();
     UpdateInfo();
     UpdateSatMask();
     UpdateSatList();
@@ -2227,8 +2229,14 @@ void __fastcall TPlot::UpdateSatMask(void)
     trace(3,"UpdateSatMask\n");
     
     for (sat=1;sat<=MAXSAT;sat++) SatMask[sat-1]=0;
+
+    gtime_t time = utc2gpst(timeget());
+    for (int i = 0; i < 2; i++)
+      if (SolStat[i].n > 0) time = SolStat[i].data[0].time;
+    if (Obs.n > 0) time = Obs.data[0].time;
+
     for (sat=1;sat<=MAXSAT;sat++) {
-        if (!(satsys(sat,&prn)&NavSys)) SatMask[sat-1]=1;
+      if (!(satsyst(sat,time,&prn)&NavSys)) SatMask[sat-1]=1;
     }
     if (ExSats!="") {
         strcpy(buff,ExSats.c_str());
@@ -2250,12 +2258,20 @@ void __fastcall TPlot::UpdateSatSel(void)
     else if (SatListText=="R") sys=SYS_GLO;
     else if (SatListText=="E") sys=SYS_GAL;
     else if (SatListText=="J") sys=SYS_QZS;
-    else if (SatListText=="C") sys=SYS_CMP;
+    else if (SatListText=="C2") sys=SYS_BDS2;
+    else if (SatListText=="C3") sys=SYS_BDS3;
     else if (SatListText=="I") sys=SYS_IRN;
     else if (SatListText=="S") sys=SYS_SBS;
+
+    gtime_t time = utc2gpst(timeget());
+    for (int i = 0; i < 2; i++)
+      if (SolStat[i].n > 0) time = SolStat[i].data[0].time;
+    if (Obs.n > 0)
+      time = Obs.data[0].time;
+
     for (i=0;i<MAXSAT;i++) {
         satno2id(i+1,id);
-        SatSel[i]=SatListText=="ALL"||SatListText==id||satsys(i+1,NULL)==sys;
+        SatSel[i]=SatListText=="ALL"||SatListText==id||(satsyst(i+1,time,NULL)&sys)!=0;
     }
 }
 // update enable/disable of widgets -----------------------------------------
@@ -2762,6 +2778,7 @@ void __fastcall TPlot::LoadOpt(void)
     Font->Size=FontSize;
     
     RnxOpts   =ini->ReadString ("plot","rnxopts","");
+    SigDef    =ini->ReadString ("plot","sigdef","");
     
     MapApi    =ini->ReadInteger("mapview","mapapi" , 0);
     ApiKey    =ini->ReadString ("mapview","apikey" ,"");
@@ -2922,6 +2939,7 @@ void __fastcall TPlot::SaveOpt(void)
     ini->WriteInteger("plot","fontsize",     FontSize      );
     
     ini->WriteString ("plot","rnxopts",      RnxOpts       );
+    ini->WriteString ("plot","sigdef",       SigDef        );
 
     ini->WriteString ("mapview","apikey",    ApiKey        );
     ini->WriteInteger("mapview","mapapi",    MapApi        );

@@ -54,7 +54,7 @@ static void write_rtcm3_msm(FILE *fp, rtcm_t *rtcm, int msg, int sync) {
   else if (1111 <= msg && msg <= 1117)
     sys = SYS_QZS;
   else if (1121 <= msg && msg <= 1127)
-    sys = SYS_CMP;
+    sys = SYS_BDS;
   else if (1131 <= msg && msg <= 1137)
     sys = SYS_IRN;
   else
@@ -64,7 +64,7 @@ static void write_rtcm3_msm(FILE *fp, rtcm_t *rtcm, int msg, int sync) {
   obsd_t *data = rtcm->obs.data;
   int nobs = rtcm->obs.n, nsat = 0, nsig = 0, mask[MAXCODE] = {0};
   for (int i = 0; i < nobs && i < MAXOBS; i++) {
-    if (satsys(data[i].sat, NULL) != sys) continue;
+    if ((satsys(data[i].sat, NULL) & sys) == 0) continue;
     nsat++;
     for (int j = 0; j < NFREQ + NEXOBS; j++) {
       int code = data[i].code[j];
@@ -90,7 +90,7 @@ static void write_rtcm3_msm(FILE *fp, rtcm_t *rtcm, int msg, int sync) {
   for (int i = 0, j = 0; i < nmsg; i++) {
     int n;
     for (n = 0; n < ns && j < nobs && j < MAXOBS; j++) {
-      if (satsys(data[j].sat, NULL) != sys) continue;
+      if ((satsys(data[j].sat, NULL) & sys) == 0) continue;
       rtcm->obs.data[n++] = data[j];
     }
     rtcm->obs.n = n;

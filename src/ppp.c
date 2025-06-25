@@ -345,7 +345,8 @@ static double varerr(int sat, int sys, double el, double snr_rover,
         case SYS_GAL: sys_fact=EFACT_GAL; break;
         case SYS_SBS: sys_fact=EFACT_SBS; break;
         case SYS_QZS: sys_fact=EFACT_QZS; break;
-        case SYS_CMP: sys_fact=EFACT_CMP; break;
+        case SYS_BDS2: sys_fact=EFACT_BDS2; break;
+        case SYS_BDS3: sys_fact=EFACT_BDS3; break;
         case SYS_IRN: sys_fact=EFACT_IRN; break;
         default:      sys_fact=EFACT_GPS; break;
     }
@@ -475,7 +476,7 @@ static void corr_meas(const obsd_t *obs, const nav_t *nav, const double *azel, c
                       int dantrp, int dantsp, double nadir, double phw, double *L, double *P,
                       double *Lc, double *Pc) {
   double freq[NFREQ] = {0};
-  int sys = satsys(obs->sat, NULL);
+  int sys = satsyst(obs->sat, obs->time, NULL);
 
   for (int i = 0; i < opt->nf; i++) {
     L[i] = P[i] = 0.0;
@@ -516,7 +517,7 @@ static void corr_meas(const obsd_t *obs, const nav_t *nav, const double *azel, c
   }
   /* Choose freqs for iono-free LC */
   *Lc = *Pc = 0.0;
-  int frq2 = seliflc(opt->nf, satsys(obs->sat, NULL));
+  int frq2 = seliflc(opt->nf, satsyst(obs->sat, obs->time, NULL));
   if (freq[0] == 0.0 || freq[frq2] == 0.0) return;
   double C1 = SQR(freq[0]) / (SQR(freq[0]) - SQR(freq[frq2]));
   double C2 = -SQR(freq[frq2]) / (SQR(freq[0]) - SQR(freq[frq2]));
@@ -753,7 +754,7 @@ static void udiono_ppp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
         j=II(sat,&rtk->opt);
         if (rtk->x[j]==0.0) {
             /* initialize ionosphere delay estimates if zero */
-            f2=seliflc(rtk->opt.nf,satsys(sat,NULL));
+            f2 = seliflc(rtk->opt.nf, satsyst(sat, obs[i].time, NULL));
             freq1=sat2freq(sat,obs[i].code[0],nav);
             freq2=sat2freq(sat,obs[i].code[f2],nav);
             if (obs[i].P[0]==0.0||obs[i].P[f2]==0.0||freq1==0.0||freq2==0.0) {
@@ -1038,8 +1039,9 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
             exc[i]=1;
             continue;
         }
-        if (!(sys=satsys(sat,NULL))||!rtk->ssat[sat-1].vs||
-            satexclude(sat,var_rs[i],svh[i],opt)||exc[i]) {
+        sys = satsyst(sat, obs[i].time, NULL);
+        if (!sys || !rtk->ssat[sat-1].vs ||
+            satexclude(sat,obs[i].time,var_rs[i],svh[i],opt)||exc[i]) {
             exc[i]=1;
             continue;
         }
@@ -1091,8 +1093,9 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
             switch (sys) {
                 case SYS_GLO: k=1; break;
                 case SYS_GAL: k=2; break;
-                case SYS_CMP: k=3; break;
-                case SYS_IRN: k=4; break;
+                case SYS_BDS2: k=3; break;
+                case SYS_BDS3: k=4; break;
+                case SYS_IRN: k=5; break;
                 default:      k=0; break;
             }
             cdtr=x[IC(k,opt)];
@@ -1226,7 +1229,8 @@ static void update_stat(rtk_t *rtk, const obsd_t *obs, int n, int stat)
     rtk->sol.dtr[0]=rtk->x[IC(0,opt)]/CLIGHT; /* GPS */
     rtk->sol.dtr[1]=(rtk->x[IC(1,opt)]-rtk->x[IC(0,opt)])/CLIGHT; /* GLO-GPS */
     rtk->sol.dtr[2]=(rtk->x[IC(2,opt)]-rtk->x[IC(0,opt)])/CLIGHT; /* GAL-GPS */
-    rtk->sol.dtr[3]=(rtk->x[IC(3,opt)]-rtk->x[IC(0,opt)])/CLIGHT; /* BDS-GPS */
+    rtk->sol.dtr[3]=(rtk->x[IC(3,opt)]-rtk->x[IC(0,opt)])/CLIGHT; /* BDS2-GPS */
+    rtk->sol.dtr[4]=(rtk->x[IC(4,opt)]-rtk->x[IC(0,opt)])/CLIGHT; /* BDS3-GPS */
 
     for (i=0;i<n&&i<MAXOBS;i++) for (j=0;j<opt->nf;j++) {
         rtk->ssat[obs[i].sat-1].snr_rover[j]=obs[i].SNR[j];
