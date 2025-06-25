@@ -60,6 +60,7 @@ public:
     QString getTleFile();
     QString getRinexOptions();
     QString getTleSatelliteFile();
+    QString getSigDef();
     QFont getFont();
     QColor getCColor(int i);
     QColor getMarkerColor(int i, int j);

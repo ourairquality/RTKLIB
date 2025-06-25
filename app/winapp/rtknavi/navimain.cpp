@@ -551,6 +551,7 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     if (OptDialog->ShowModal()!=mrOk) return;
     
     PrcOpt     =OptDialog->PrcOpt;
+    init_code2idx(PrcOpt.sigdef);
     SolOpt     =OptDialog->SolOpt;
     BaselineC  =OptDialog->BaselineC;
     Baseline[0]=OptDialog->Baseline[0];
@@ -2592,6 +2593,9 @@ void __fastcall TMainForm::LoadOpt(void)
       InputFiles[i] = ini->ReadString("input", s.sprintf("file%d", i), "");
     PrcOpt.mode     =ini->ReadInteger("prcopt", "mode",            2);
     PrcOpt.nf       =ini->ReadInteger("prcopt", "nf",          NFREQ);
+    AnsiString SigDef_Text = ini->ReadString("prcopt", "sigdef", "");
+    strcpy(PrcOpt.sigdef, SigDef_Text.c_str());
+    init_code2idx(PrcOpt.sigdef);
     PrcOpt.elmin    =ini->ReadFloat  ("prcopt", "elmin",    15.0*D2R);
     PrcOpt.snrmask.ena[0]=ini->ReadInteger("prcopt","snrmask_ena1",0);
     PrcOpt.snrmask.ena[1]=ini->ReadInteger("prcopt","snrmask_ena2",0);
@@ -2651,7 +2655,7 @@ void __fastcall TMainForm::LoadOpt(void)
     PrcOpt.syncsol  =ini->ReadInteger("prcopt", "syncsol",          0);
     PrcOpt.arfilter =ini->ReadInteger("prcopt", "arfilter",         1);
     ExSats          =ini->ReadString ("prcopt", "exsats",          "");
-    PrcOpt.navsys   =ini->ReadInteger("prcopt", "navsys",SYS_GPS|SYS_GLO|SYS_GAL|SYS_QZS|SYS_CMP);
+    PrcOpt.navsys   =ini->ReadInteger("prcopt", "navsys",SYS_GPS|SYS_GLO|SYS_GAL|SYS_QZS|SYS_BDS);
     PrcOpt.posopt[0]=ini->ReadInteger("prcopt", "posopt1",         0);
     PrcOpt.posopt[1]=ini->ReadInteger("prcopt", "posopt2",         0);
     PrcOpt.posopt[2]=ini->ReadInteger("prcopt", "posopt3",         0);
@@ -2796,6 +2800,7 @@ void __fastcall TMainForm::LoadOpt(void)
     TTextViewer::FontD->Name=ini->ReadString ("viewer","fontname","Courier New");
     TTextViewer::FontD->Size=ini->ReadInteger("viewer","fontsize",9);
     
+    init_code2idx(PrcOpt.sigdef);
     UpdatePanel();
     
     if (PanelStack==0) {
@@ -2865,6 +2870,7 @@ void __fastcall TMainForm::SaveOpt(void)
       ini->WriteString("input", s.sprintf("file%d", i), InputFiles[i]);
     ini->WriteInteger("prcopt", "mode",       PrcOpt.mode        );
     ini->WriteInteger("prcopt", "nf",         PrcOpt.nf          );
+    ini->WriteString ("prcopt", "sigdef",     PrcOpt.sigdef      );
     ini->WriteFloat  ("prcopt", "elmin",      PrcOpt.elmin       );
     ini->WriteFloat  ("prcopt", "snrmask_ena1",PrcOpt.snrmask.ena[0]);
     ini->WriteFloat  ("prcopt", "snrmask_ena2",PrcOpt.snrmask.ena[1]);

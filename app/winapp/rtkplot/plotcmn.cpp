@@ -302,7 +302,8 @@ TColor __fastcall TPlot::SysColor(int sat)
         case SYS_GLO: return MColor[0][2];
         case SYS_GAL: return MColor[0][3];
         case SYS_QZS: return MColor[0][4];
-        case SYS_CMP: return MColor[0][5];
+        case SYS_BDS2:
+        case SYS_BDS3: return MColor[0][5];
         case SYS_IRN: return MColor[0][6];
         case SYS_SBS: return MColor[0][0];
     }

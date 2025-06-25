@@ -20,14 +20,14 @@ ConvOptDialog::ConvOptDialog(QWidget *parent)
 
     codeOptDialog = new CodeOptDialog(this);
     gloFcnDialog = new GloFcnDialog(this);
-    freqDialog = new FreqDialog(this);
 
-    int glo = MAXPRNGLO, gal = MAXPRNGAL, qzs = MAXPRNQZS, cmp = MAXPRNCMP, irn = MAXPRNIRN;
+    int glo = MAXPRNGLO, gal = MAXPRNGAL, qzs = MAXPRNQZS, bds2 = MAXPRNBDS2, bds3 = MAXPRNBDS3, irn = MAXPRNIRN;
     if (glo <= 0) ui->cBNavSys2->setEnabled(false);
     if (gal <= 0) ui->cBNavSys3->setEnabled(false);
     if (qzs <= 0) ui->cBNavSys4->setEnabled(false);
-    if (cmp <= 0) ui->cBNavSys6->setEnabled(false);
-    if (irn <= 0) ui->cBNavSys7->setEnabled(false);
+    if (bds2 <= 0) ui->cBNavSys6->setEnabled(false);
+    if (bds3 <= 0) ui->cBNavSys7->setEnabled(false);
+    if (irn <= 0) ui->cBNavSys8->setEnabled(false);
 
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &ConvOptDialog::accept);
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &ConvOptDialog::reject);
@@ -63,6 +63,7 @@ void ConvOptDialog::updateUi()
     ui->sBAntennaDelta2->setValue(antennaDelta[2]);
     ui->lEComment0->setText(comment[0]);
     ui->lEComment1->setText(comment[1]);
+    ui->lESigDef->setText(signalDefinitions);
     ui->lEReceiverOptions->setText(receiverOptions);
     ui->cBAutoPosition->setChecked(autoPosition);
     ui->cBPhaseShift->setChecked(phaseShift);
@@ -84,8 +85,9 @@ void ConvOptDialog::updateUi()
     ui->cBNavSys3->setChecked(navSys & SYS_GAL);
     ui->cBNavSys4->setChecked(navSys & SYS_QZS);
     ui->cBNavSys5->setChecked(navSys & SYS_SBS);
-    ui->cBNavSys6->setChecked(navSys & SYS_CMP);
-    ui->cBNavSys7->setChecked(navSys & SYS_IRN);
+    ui->cBNavSys6->setChecked(navSys & SYS_BDS2);
+    ui->cBNavSys7->setChecked(navSys & SYS_BDS3);
+    ui->cBNavSys8->setChecked(navSys & SYS_IRN);
     ui->cBObservationTypeC->setChecked(observationType & OBSTYPE_PR);
     ui->cBObservationTypeL->setChecked(observationType & OBSTYPE_CP);
     ui->cBObservationTypeD->setChecked(observationType & OBSTYPE_DOP);
@@ -129,6 +131,7 @@ void ConvOptDialog::accept()
     antennaDelta[2] = ui->sBAntennaDelta2->value();
     comment[0] = ui->lEComment0->text();
     comment[1] = ui->lEComment1->text();
+    signalDefinitions = ui->lESigDef->text();
     receiverOptions = ui->lEReceiverOptions->text();
     autoPosition = ui->cBAutoPosition->isChecked();
     phaseShift = ui->cBPhaseShift->isChecked();
@@ -154,8 +157,9 @@ void ConvOptDialog::accept()
     if (ui->cBNavSys3->isChecked()) navSys |= SYS_GAL;
     if (ui->cBNavSys4->isChecked()) navSys |= SYS_QZS;
     if (ui->cBNavSys5->isChecked()) navSys |= SYS_SBS;
-    if (ui->cBNavSys6->isChecked()) navSys |= SYS_CMP;
-    if (ui->cBNavSys7->isChecked()) navSys |= SYS_IRN;
+    if (ui->cBNavSys6->isChecked()) navSys |= SYS_BDS2;
+    if (ui->cBNavSys7->isChecked()) navSys |= SYS_BDS3;
+    if (ui->cBNavSys8->isChecked()) navSys |= SYS_IRN;
 
     if (ui->cBObservationTypeC->isChecked()) observationType |= OBSTYPE_PR;
     if (ui->cBObservationTypeL->isChecked()) observationType |= OBSTYPE_CP;
@@ -179,7 +183,13 @@ void ConvOptDialog::accept()
 //---------------------------------------------------------------------------
 void ConvOptDialog::showFrequencyDialog()
 {
-    freqDialog->show();
+    init_code2idx(qPrintable(ui->lESigDef->text()));
+
+    FreqDialog *freqDialog = new FreqDialog(this);
+
+    freqDialog->exec();
+
+    delete freqDialog;
 }
 //---------------------------------------------------------------------------
 void ConvOptDialog::showMaskDialog()
@@ -192,8 +202,9 @@ void ConvOptDialog::showMaskDialog()
     if (ui->cBNavSys3->isChecked()) navSystem |= SYS_GAL;
     if (ui->cBNavSys4->isChecked()) navSystem |= SYS_QZS;
     if (ui->cBNavSys5->isChecked()) navSystem |= SYS_SBS;
-    if (ui->cBNavSys6->isChecked()) navSystem |= SYS_CMP;
-    if (ui->cBNavSys7->isChecked()) navSystem |= SYS_IRN;
+    if (ui->cBNavSys6->isChecked()) navSystem |= SYS_BDS2;
+    if (ui->cBNavSys7->isChecked()) navSystem |= SYS_BDS3;
+    if (ui->cBNavSys8->isChecked()) navSystem |= SYS_IRN;
     
     codeOptDialog->setNavSystem(navSystem);
 
@@ -231,7 +242,8 @@ void ConvOptDialog::updateEnable()
     ui->cBNavSys3->setEnabled(ui->cBRinexVersion->currentIndex() >= 1);
     ui->cBNavSys4->setEnabled(ui->cBRinexVersion->currentIndex() >= 5);
     ui->cBNavSys6->setEnabled(ui->cBRinexVersion->currentIndex() == 2 || ui->cBRinexVersion->currentIndex() >= 4);
-    ui->cBNavSys7->setEnabled(ui->cBRinexVersion->currentIndex() >= 6);
+    ui->cBNavSys7->setEnabled(ui->cBRinexVersion->currentIndex() == 2 || ui->cBRinexVersion->currentIndex() >= 4);
+    ui->cBNavSys8->setEnabled(ui->cBRinexVersion->currentIndex() >= 6);
     ui->cBFreq3->setEnabled(ui->cBRinexVersion->currentIndex() >=1 );
     ui->cBFreq4->setEnabled(ui->cBRinexVersion->currentIndex() >=1 );
     ui->cBFreq5->setEnabled(ui->cBRinexVersion->currentIndex() >=1 );
@@ -271,6 +283,7 @@ void ConvOptDialog::loadOptions(QSettings &ini)
     antennaDelta[2] = ini.value("opt/antdel2", 0.0).toDouble();
     comment[0] = ini.value("opt/comment0", "").toString();
     comment[1] = ini.value("opt/comment1", "").toString();
+    signalDefinitions = ini.value("opt/sigdef", "").toString();
     receiverOptions = ini.value("opt/rcvoption", "").toString();
     navSys = ini.value("opt/navsys", 0xff).toInt();
     observationType = ini.value("opt/obstype", OBSTYPE_ALL).toInt();
@@ -326,6 +339,7 @@ void ConvOptDialog::saveOptions(QSettings &ini)
     ini.setValue("opt/antdel2", antennaDelta[2]);
     ini.setValue("opt/comment0", comment[0]);
     ini.setValue("opt/comment1", comment[1]);
+    ini.setValue("opt/sigdef", signalDefinitions);
     ini.setValue("opt/rcvoption", receiverOptions);
     ini.setValue("opt/navsys", navSys);
     ini.setValue("opt/obstype", observationType);
