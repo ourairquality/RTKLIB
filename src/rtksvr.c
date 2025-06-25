@@ -1020,6 +1020,7 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
         sprintf(errmsg,"server already started");
         return 0;
     }
+    init_code2idx(prcopt->sigdef);
     strinitcom();
     svr->cycle=cycle>1?cycle:1;
     svr->nmeacycle=nmeacycle>1000?nmeacycle:1000;

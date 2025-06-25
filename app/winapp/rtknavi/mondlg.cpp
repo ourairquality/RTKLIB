@@ -23,7 +23,7 @@ extern rtksvr_t rtksvr;		// rtk server struct
 extern stream_t monistr;	// monitor stream
 
 static const int sys_tbl[]={
-	SYS_ALL,SYS_GPS,SYS_GLO,SYS_GAL,SYS_QZS,SYS_CMP,SYS_IRN,SYS_SBS
+  SYS_ALL,SYS_GPS,SYS_GLO,SYS_GAL,SYS_QZS,SYS_BDS2,SYS_BDS3,SYS_IRN,SYS_SBS
 };
 
 //---------------------------------------------------------------------------
@@ -446,7 +446,8 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	if (rtk->opt.navsys&SYS_GLO) navsys=navsys+"GLONASS ";
 	if (rtk->opt.navsys&SYS_GAL) navsys=navsys+"Galileo ";
 	if (rtk->opt.navsys&SYS_QZS) navsys=navsys+"QZSS ";
-	if (rtk->opt.navsys&SYS_CMP) navsys=navsys+"BDS ";
+	if (rtk->opt.navsys&SYS_BDS2) navsys=navsys+"BDS-2 ";
+	if (rtk->opt.navsys&SYS_BDS3) navsys=navsys+"BDS-3 ";
 	if (rtk->opt.navsys&SYS_IRN) navsys=navsys+"NavIC ";
 	if (rtk->opt.navsys&SYS_SBS) navsys=navsys+"SBAS ";
 	
@@ -577,9 +578,9 @@ void __fastcall TMonitorDialog::ShowRtk(void)
 	Tbl->Cells[0][i  ] ="Time of Receiver Clock Rover";
 	Tbl->Cells[1][i++]=rtk->sol.time.time?tstr:"-";
 	
-	Tbl->Cells[0][i  ] ="Time Sytem Offset/Receiver Bias (GLO-GPS,GAL-GPS,BDS-GPS,IRN-GPS) (ns)";
-	Tbl->Cells[1][i++]=s.sprintf("%.3f, %.3f, %.3f, %.3f",rtk->sol.dtr[1]*1E9,rtk->sol.dtr[2]*1E9,
-                                 rtk->sol.dtr[3]*1E9,rtk->sol.dtr[4]*1E9);
+	Tbl->Cells[0][i  ] ="Time Sytem Offset/Receiver Bias (GLO-GPS,GAL-GPS,BDS2-GPS,BDS3-GPS,IRN-GPS,QZS-GPS) (ns)";
+	Tbl->Cells[1][i++]=s.sprintf("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f",rtk->sol.dtr[1]*1E9,rtk->sol.dtr[2]*1E9,
+                                 rtk->sol.dtr[3]*1E9,rtk->sol.dtr[4]*1E9,rtk->sol.dtr[5]*1E9,rtk->sol.dtr[6]*1E9);
 	
 	Tbl->Cells[0][i  ]="Solution Interval (s)";
 	Tbl->Cells[1][i++]=s.sprintf("%.3f",rtk->tt);

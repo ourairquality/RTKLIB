@@ -26,8 +26,8 @@ void __fastcall TPlot::UpdateInfo(void)
 void __fastcall TPlot::UpdateTimeObs(void)
 {
     UTF8String msgs1[]={" #OBS= 6+ "," 5 ", " 4 "," 3 "," 2 "," 1 ","",""};
-    UTF8String msgs2[]={" SNR=...45.","..40.","..35.","..30.","..25 ",""," <25 "};
-    UTF8String msgs3[]={" SYS=GPS ","GLO ","GAL ","QZS ","BDS ","IRN ","SBS "};
+    UTF8String msgs2[]={" SNR=...45.","..40.","..35.","..30.","..25 ",""," <25 ",""};
+    UTF8String msgs3[]={" SYS=GPS ","GLO ","GAL ","QZS ","BDS-2 ","BDS-3 ","IRN ","SBS "};
     UTF8String msgs4[]={" MP=..0.6","..0.3","..0.0..","-0.3..","-0.6..","",""};
     UTF8String msg,msgs[8],s;
     double azel[MAXOBS*2],dop[4]={0};
@@ -62,7 +62,7 @@ void __fastcall TPlot::UpdateTimeObs(void)
         }
         else if (PlotType<=PLOT_SKY&&ObsType->ItemIndex==0) {
             msg+=s.sprintf("NSAT=%d ",ns);
-            for (i=0;i<7;i++) msgs[i]=SimObs?msgs3[i]:msgs1[i];
+            for (i=0;i<8;i++) msgs[i]=SimObs?msgs3[i]:msgs1[i];
         }
         else if (PlotType==PLOT_MPS) {
             msg+=s.sprintf("NSAT=%d ",ns);
@@ -70,7 +70,7 @@ void __fastcall TPlot::UpdateTimeObs(void)
         }
         else {
             msg+=s.sprintf("NSAT=%d ",ns);
-            for (i=0;i<7;i++) msgs[i]=SimObs?msgs3[i]:msgs2[i];
+            for (i=0;i<8;i++) msgs[i]=SimObs?msgs3[i]:msgs2[i];
         }
     }
     ShowMsg(msg);
@@ -131,11 +131,11 @@ void __fastcall TPlot::UpdateTimeSol(void)
 // update statistics-information for observation-data plot ------------------
 void __fastcall TPlot::UpdateInfoObs(void)
 {
-    UTF8String msgs0[]={"  NSAT"," GDOP"," PDOP"," HDOP"," VDOP","",""};
+  UTF8String msgs0[]={"  NSAT"," GDOP"," PDOP"," HDOP"," VDOP","","",""};
     UTF8String msgs1[]={" #OBS= 6+ "," 5 "," 4 "," 3 "," 2 "," 1 ","",""};
-    UTF8String msgs2[]={" SNR=...45.","..40.","..35.","..30.","..25 ",""," <25 "};
-    UTF8String msgs3[]={" SYS=GPS ","GLO ","GAL ","QZS ","BDS ","IRN ","SBS "};
-    UTF8String msgs4[]={" MP=..0.6","..0.3","..0.0..","-0.3..","-0.6..","",""};
+    UTF8String msgs2[]={" SNR=...45.","..40.","..35.","..30.","..25 ",""," <25 ",""};
+    UTF8String msgs3[]={" SYS=GPS ","GLO ","GAL ","QZS ","BDS-2 ","BDS-3 ","IRN ","SBS "};
+    UTF8String msgs4[]={" MP=..0.6","..0.3","..0.0..","-0.3..","-0.6..","","",""};
     UTF8String msg,msgs[8];
     gtime_t ts={0},te={0},t,tp={0};
     int i,n=0,ne=0;
@@ -157,7 +157,7 @@ void __fastcall TPlot::UpdateInfoObs(void)
         if (TimeLabel&&(p=strrchr(s1,' '))) *p='\0';
         msg.sprintf("[1]%s-%s : EP=%d N=%d",s1,s2+(TimeLabel?5:0),ne,n);
         
-        for (i=0;i<7;i++) {
+        for (i=0;i<8;i++) {
             if (PlotType==PLOT_DOP) {
                 msgs[i]=msgs0[i];
             }
@@ -309,7 +309,8 @@ void __fastcall TPlot::UpdateSatList(void)
             case SYS_GLO: strcpy(s,"R"); break;
             case SYS_GAL: strcpy(s,"E"); break;
             case SYS_QZS: strcpy(s,"J"); break;
-            case SYS_CMP: strcpy(s,"C"); break;
+            case SYS_BDS2: strcpy(s,"C2"); break;
+            case SYS_BDS3: strcpy(s,"C3"); break;
             case SYS_IRN: strcpy(s,"I"); break;
             case SYS_SBS: strcpy(s,"S"); break;
         }

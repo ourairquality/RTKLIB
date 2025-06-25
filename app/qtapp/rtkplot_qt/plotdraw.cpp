@@ -1897,7 +1897,7 @@ void Plot::drawDop(QPainter &c, int level)
     graphSingle->yLabelPosition = Graph::LabelPosition::Outer;
     graphSingle->week = startWeek;
 
-    // adjest plot limits
+    // Adjust plot limits
     graphSingle->getLimits(xl, yl);
     yl[0] = 0.0;
     yl[1] = plotOptDialog->getMaxDop();

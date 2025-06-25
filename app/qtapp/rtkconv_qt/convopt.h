@@ -12,7 +12,6 @@ class ConvOptDialog;
 class QSettings;
 class CodeOptDialog;
 class GloFcnDialog;
-class FreqDialog;
 
 //---------------------------------------------------------------------------
 class ConvOptDialog : public QDialog
@@ -29,6 +28,7 @@ public:
     gtime_t rinexTime;
     QString runBy, marker, markerNo, markerType, name[2], receiver[3], antenna[3];
     QString rinexStationCode, comment[2], receiverOptions, excludedSatellites;
+    QString signalDefinitions;
     QString codeMask[7];
     double approxPosition[3], antennaDelta[3], timeTolerance;
     int rinexVersion, rinexFile, navSys, observationType, frequencyType, traceLevel;
@@ -50,7 +50,6 @@ private:
 
     CodeOptDialog *codeOptDialog;
     GloFcnDialog *gloFcnDialog;
-    FreqDialog *freqDialog;
 
     Ui::ConvOptDialog *ui;
 };

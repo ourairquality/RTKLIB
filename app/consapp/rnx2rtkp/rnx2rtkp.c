@@ -53,6 +53,7 @@ static const char *help[]={
 " -m mask   elevation mask angle (deg) [15]",
 " -sys s[,s...] nav system(s) (s=G:GPS,R:GLO,E:GAL,J:QZS,C:BDS,I:IRN) [G|R]",
 " -f freq   number of frequencies for relative mode (1 to 6) [2]",
+" --sigdef sigdef  signal definitions",
 " -v thres  validation threshold for integer ambiguity (0.0:no AR) [3.0]",
 " -b        backward solutions [off]",
 " -c        forward/backward combined solutions [off]",
@@ -138,6 +139,9 @@ int main(int argc, char **argv)
         else if (!strcmp(argv[i],"-k")&&i+1<argc) {++i; continue;}
         else if (!strcmp(argv[i],"-p")&&i+1<argc) prcopt.mode=atoi(argv[++i]);
         else if (!strcmp(argv[i],"-f")&&i+1<argc) prcopt.nf=atoi(argv[++i]);
+        else if (!strcmp(argv[i],"--sigdef")&&i+1<argc) {
+             snprintf(prcopt.sigdef, sizeof(prcopt.sigdef), "%s" ,argv[++i]);
+        }
         else if (!strcmp(argv[i],"-sys")&&i+1<argc) {
             prcopt.navsys=0;
             for (p=argv[++i];*p;p++) {
@@ -146,7 +150,7 @@ int main(int argc, char **argv)
                     case 'R': prcopt.navsys|=SYS_GLO;break;
                     case 'E': prcopt.navsys|=SYS_GAL;break;
                     case 'J': prcopt.navsys|=SYS_QZS;break;
-                    case 'C': prcopt.navsys|=SYS_CMP;break;
+                    case 'C': prcopt.navsys|=SYS_BDS;break;
                     case 'I': prcopt.navsys|=SYS_IRN;break;
                 }
                 if (!(p=strchr(p,','))) break;

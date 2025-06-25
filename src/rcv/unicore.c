@@ -147,7 +147,7 @@ static int sig2code(int sys, int sigtype, int l2c)
         default: return 0;
         }
     }
-    else if (sys == SYS_CMP) {
+    else if (sys == SYS_BDS) {
         switch (sigtype) {
         case  0: return CODE_L2I; // B1I
         case  4: return CODE_L2Q; // B1Q
@@ -194,19 +194,18 @@ static int decode_track_stat(uint32_t stat, int *sys, int *code, int *plock, int
     case 1: *sys = SYS_GLO; break;
     case 2: *sys = SYS_SBS; break;
     case 3: *sys = SYS_GAL; break;
-    case 4: *sys = SYS_CMP; break;
+    case 4: *sys = SYS_BDS; break;
     case 5: *sys = SYS_QZS; break;
     case 6: *sys = SYS_IRN; break;
     default:
         trace(2, "unicore unknown system: sys=%d\n", satsys);
         return -1;
     }
-    int idx = -1;
-    if (!(*code = sig2code(*sys, sigtype, l2c)) || (idx = code2idx(*sys, *code)) < 0) {
+    if (!(*code = sig2code(*sys, sigtype, l2c))) {
         trace(2, "unicore signal type error: sys=%d sigtype=%d\n", *sys, sigtype);
         return -1;
     }
-    return idx;
+    return 0;
 }
 
 static int decode_gpsephb(raw_t* raw)
@@ -509,7 +508,7 @@ static int decode_bdsephb(raw_t* raw)
     ura = R8(p);   p += 8;
 
 
-    if (!(sat = satno(SYS_CMP, prn))) {
+    if (!(sat = satno(SYS_BDS, prn))) {
         trace(2, "unicore bdsephb satellite error: prn=%d\n", prn);
         return -1;
     }

@@ -4,7 +4,7 @@ object OptDialog: TOptDialog
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'Options'
-  ClientHeight = 406
+  ClientHeight = 409
   ClientWidth = 411
   Color = clWhite
   Font.Charset = DEFAULT_CHARSET
@@ -15,48 +15,11 @@ object OptDialog: TOptDialog
   Position = poMainFormCenter
   OnShow = FormShow
   TextHeight = 13
-  object BtnLoad: TButton
-    Left = 2
-    Top = 377
-    Width = 100
-    Height = 28
-    Caption = '&Load...'
-    TabOrder = 2
-    OnClick = BtnLoadClick
-  end
-  object BtnSave: TButton
-    Left = 104
-    Top = 377
-    Width = 100
-    Height = 28
-    Caption = '&Save'
-    TabOrder = 3
-    OnClick = BtnSaveClick
-  end
-  object BtnOk: TButton
-    Left = 206
-    Top = 377
-    Width = 100
-    Height = 28
-    Caption = '&OK'
-    ModalResult = 1
-    TabOrder = 0
-    OnClick = BtnOkClick
-  end
-  object BtnCancel: TButton
-    Left = 308
-    Top = 377
-    Width = 100
-    Height = 28
-    Caption = '&Cancel'
-    ModalResult = 2
-    TabOrder = 1
-  end
   object Misc: TPageControl
     Left = 0
     Top = 0
     Width = 413
-    Height = 377
+    Height = 374
     ActivePage = TabSheet1
     TabOrder = 4
     object TabSheet1: TTabSheet
@@ -366,7 +329,7 @@ object OptDialog: TOptDialog
         TabOrder = 17
       end
       object NavSys2: TCheckBox
-        Left = 65
+        Left = 80
         Top = 232
         Width = 71
         Height = 17
@@ -375,7 +338,7 @@ object OptDialog: TOptDialog
         OnClick = NavSys2Click
       end
       object NavSys3: TCheckBox
-        Left = 134
+        Left = 164
         Top = 232
         Width = 61
         Height = 17
@@ -383,7 +346,7 @@ object OptDialog: TOptDialog
         TabOrder = 19
       end
       object NavSys4: TCheckBox
-        Left = 190
+        Left = 232
         Top = 232
         Width = 45
         Height = 17
@@ -391,30 +354,39 @@ object OptDialog: TOptDialog
         TabOrder = 20
       end
       object NavSys6: TCheckBox
-        Left = 241
+        Left = 288
         Top = 232
         Width = 69
         Height = 17
-        Caption = 'BDS'
+        Caption = 'BDS-2'
         TabOrder = 21
         OnClick = NavSys6Click
       end
       object NavSys7: TCheckBox
-        Left = 284
+        Left = 344
         Top = 232
-        Width = 48
+        Width = 69
         Height = 17
-        Caption = 'NavIC'
+        Caption = 'BDS-3'
         TabOrder = 22
         OnClick = NavSys6Click
       end
+      object NavSys8: TCheckBox
+        Left = 24
+        Top = 254
+        Width = 48
+        Height = 17
+        Caption = 'NavIC'
+        TabOrder = 23
+        OnClick = NavSys6Click
+      end
       object NavSys5: TCheckBox
-        Left = 338
-        Top = 232
+        Left = 80
+        Top = 254
         Width = 51
         Height = 17
         Caption = 'SBAS'
-        TabOrder = 23
+        TabOrder = 24
       end
     end
     object TabSheet2: TTabSheet
@@ -2046,96 +2018,12 @@ object OptDialog: TOptDialog
     object TabSheet6: TTabSheet
       Caption = '&Misc'
       ImageIndex = 6
-      object Label19: TLabel
-        Left = 184
-        Top = 136
-        Width = 34
-        Height = 13
-        Caption = 'Rovers'
-      end
-      object Label39: TLabel
-        Left = -96
-        Top = 702
-        Width = 37
-        Height = 13
-        Caption = 'Label39'
-      end
-      object Label40: TLabel
-        Left = 38
-        Top = 52
-        Width = 150
-        Height = 13
-        Caption = 'SBAS Satellite Selection (0: All) '
-      end
       object Label41: TLabel
-        Left = 38
+        Left = 24
         Top = 8
         Width = 189
         Height = 13
         Caption = 'Time Interpolation of Base Station Data'
-      end
-      object Label42: TLabel
-        Left = 38
-        Top = 30
-        Width = 121
-        Height = 13
-        Caption = 'DGPS/DGNSS Corrections'
-        Enabled = False
-      end
-      object Label44: TLabel
-        Left = 297
-        Top = 137
-        Width = 65
-        Height = 13
-        Caption = 'Base Stations'
-      end
-      object Label45: TLabel
-        Left = 38
-        Top = 137
-        Width = 67
-        Height = 13
-        Caption = 'Station ID List'
-      end
-      object Label60: TLabel
-        Left = 38
-        Top = 74
-        Width = 91
-        Height = 13
-        Caption = 'RINEX Opt (Rover)'
-      end
-      object Label12: TLabel
-        Left = 38
-        Top = 96
-        Width = 85
-        Height = 13
-        Caption = 'RINEX Opt (Base)'
-      end
-      object Label23: TLabel
-        Left = 38
-        Top = 119
-        Width = 58
-        Height = 13
-        Caption = 'PPP Options'
-      end
-      object RovList: TMemo
-        Left = 143
-        Top = 150
-        Width = 127
-        Height = 84
-        Lines.Strings = (
-          'rover')
-        ScrollBars = ssVertical
-        TabOrder = 0
-      end
-      object BaseList: TMemo
-        Left = 273
-        Top = 150
-        Width = 127
-        Height = 84
-        Lines.Strings = (
-          'base')
-        ScrollBars = ssVertical
-        TabOrder = 1
       end
       object IntpRefObs: TComboBox
         Left = 248
@@ -2144,20 +2032,20 @@ object OptDialog: TOptDialog
         Height = 21
         Style = csDropDownList
         ItemIndex = 0
-        TabOrder = 2
+        TabOrder = 0
         Text = 'OFF'
         OnChange = FreqChange
         Items.Strings = (
           'OFF'
           'ON')
       end
-      object SbasSat: TEdit
-        Left = 248
-        Top = 48
-        Width = 152
-        Height = 21
-        TabOrder = 3
-        Text = '0'
+      object Label42: TLabel
+        Left = 24
+        Top = 30
+        Width = 121
+        Height = 13
+        Caption = 'DGPS/DGNSS Corrections'
+        Enabled = False
       end
       object ComboBox1: TComboBox
         Left = 248
@@ -2167,21 +2055,143 @@ object OptDialog: TOptDialog
         Style = csDropDownList
         Enabled = False
         ItemIndex = 0
-        TabOrder = 4
+        TabOrder = 1
         Text = 'SBAS'
         OnChange = FreqChange
         Items.Strings = (
           'SBAS'
           'RTCM')
       end
+      object Label40: TLabel
+        Left = 24
+        Top = 52
+        Width = 150
+        Height = 13
+        Caption = 'SBAS Satellite Selection (0: All) '
+      end
+      object SbasSat: TEdit
+        Left = 248
+        Top = 48
+        Width = 152
+        Height = 21
+        TabOrder = 2
+        Text = '0'
+      end
+      object Label60: TLabel
+        Left = 24
+        Top = 74
+        Width = 91
+        Height = 13
+        Caption = 'RINEX Opt (Rover)'
+      end
+      object RnxOpts1: TEdit
+        Left = 130
+        Top = 70
+        Width = 270
+        Height = 21
+        TabOrder = 3
+      end
+      object Label12: TLabel
+        Left = 24
+        Top = 96
+        Width = 85
+        Height = 13
+        Caption = 'RINEX Opt (Base)'
+      end
+      object RnxOpts2: TEdit
+        Left = 130
+        Top = 92
+        Width = 270
+        Height = 21
+        TabOrder = 4
+      end
+      object Label23: TLabel
+        Left = 24
+        Top = 119
+        Width = 58
+        Height = 13
+        Caption = 'PPP Options'
+      end
+      object PPPOpts: TEdit
+        Left = 130
+        Top = 115
+        Width = 270
+        Height = 21
+        TabOrder = 5
+      end
+      object Label39: TLabel
+        Left = 24
+        Top = 142
+        Width = 96
+        Height = 13
+        Caption = 'Signal definitions'
+      end
+      object BtnSigs: TSpeedButton
+        Left = 109
+        Top = 139
+        Width = 18
+        Height = 21
+        Caption = '?'
+        Flat = True
+        Spacing = 0
+        OnClick = BtnFreqClick
+      end
+      object SigDef: TEdit
+        Left = 130
+        Top = 139
+        Width = 270
+        Height = 21
+        TabOrder = 6
+      end
+      object Label45: TLabel
+        Left = 24
+        Top = 164
+        Width = 67
+        Height = 13
+        Caption = 'Station ID List'
+      end
+      object Label19: TLabel
+        Left = 175
+        Top = 164
+        Width = 34
+        Height = 13
+        Caption = 'Rovers'
+      end
+      object Label44: TLabel
+        Left = 290
+        Top = 164
+        Width = 65
+        Height = 13
+        Caption = 'Base Stations'
+      end
+      object RovList: TMemo
+        Left = 130
+        Top = 178
+        Width = 134
+        Height = 84
+        Lines.Strings = (
+          'rover')
+        ScrollBars = ssVertical
+        TabOrder = 7
+      end
+      object BaseList: TMemo
+        Left = 262
+        Top = 178
+        Width = 134
+        Height = 84
+        Lines.Strings = (
+          'base')
+        ScrollBars = ssVertical
+        TabOrder = 8
+      end
       object Panel1: TPanel
-        Left = 38
-        Top = 150
-        Width = 103
+        Left = 24
+        Top = 178
+        Width = 105
         Height = 85
         BevelInner = bvRaised
         BevelOuter = bvLowered
-        TabOrder = 5
+        TabOrder = 9
         object BtnHelp: TSpeedButton
           Left = 4
           Top = 4
@@ -2222,28 +2232,44 @@ object OptDialog: TOptDialog
           WordWrap = True
         end
       end
-      object RnxOpts1: TEdit
-        Left = 142
-        Top = 70
-        Width = 258
-        Height = 21
-        TabOrder = 6
-      end
-      object RnxOpts2: TEdit
-        Left = 142
-        Top = 92
-        Width = 258
-        Height = 21
-        TabOrder = 7
-      end
-      object PPPOpts: TEdit
-        Left = 142
-        Top = 115
-        Width = 258
-        Height = 21
-        TabOrder = 8
-      end
     end
+  end
+  object BtnLoad: TButton
+    Left = 2
+    Top = 377
+    Width = 100
+    Height = 28
+    Caption = '&Load...'
+    TabOrder = 2
+    OnClick = BtnLoadClick
+  end
+  object BtnSave: TButton
+    Left = 104
+    Top = 377
+    Width = 100
+    Height = 28
+    Caption = '&Save'
+    TabOrder = 3
+    OnClick = BtnSaveClick
+  end
+  object BtnOk: TButton
+    Left = 206
+    Top = 377
+    Width = 100
+    Height = 28
+    Caption = '&OK'
+    ModalResult = 1
+    TabOrder = 0
+    OnClick = BtnOkClick
+  end
+  object BtnCancel: TButton
+    Left = 308
+    Top = 377
+    Width = 100
+    Height = 28
+    Caption = '&Cancel'
+    ModalResult = 2
+    TabOrder = 1
   end
   object OpenDialog: TOpenDialog
     Filter = 

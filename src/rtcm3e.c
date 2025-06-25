@@ -1388,7 +1388,7 @@ static int encode_type1042(rtcm_t *rtcm, int sync)
     
     trace(3,"encode_type1042: sync=%d\n",sync);
     
-    if (satsys(rtcm->ephsat,&prn)!=SYS_CMP) return 0;
+    if ((satsys(rtcm->ephsat, &prn) & SYS_BDS) == 0) return 0;
     eph=rtcm->nav.eph+rtcm->ephsat-1;
     if (eph->sat!=rtcm->ephsat) return 0;
     week =eph->week%8192;
@@ -1457,7 +1457,7 @@ static int encode_type63(rtcm_t *rtcm, int sync)
     
     trace(3,"encode_type63: sync=%d\n",sync);
     
-    if (satsys(rtcm->ephsat,&prn)!=SYS_CMP) return 0;
+    if ((satsys(rtcm->ephsat, &prn) & SYS_BDS) == 0) return 0;
     eph=rtcm->nav.eph+rtcm->ephsat-1;
     if (eph->sat!=rtcm->ephsat) return 0;
     week =eph->week%8192;
@@ -1534,7 +1534,7 @@ static int encode_ssr_head(int type, rtcm_t *rtcm, int sys, int subtype,
         case SYS_GLO: msgno=(type==7)? 0:1062+type; break;
             case SYS_GAL: msgno=(type==7)?12:1239+type; break; /* draft */
             case SYS_QZS: msgno=(type==7)?13:1245+type; break; /* draft */
-            case SYS_CMP: msgno=(type==7)?14:1257+type; break; /* draft */
+            case SYS_BDS: msgno=(type==7)?14:1257+type; break; /* draft */
             case SYS_SBS: msgno=(type==7)? 0:1251+type; break; /* draft */
         default: return 0;
     }
@@ -1624,18 +1624,18 @@ static int encode_ssr1(rtcm_t *rtcm, int sys, int subtype, int sync)
         case SYS_GLO: np=5; ni= 8; nj= 0; offp=  0; break;
         case SYS_GAL: np=6; ni=10; nj= 0; offp=  0; break;
         case SYS_QZS: np=4; ni= 8; nj= 0; offp=192; break;
-        case SYS_CMP: np=6; ni=10; nj=24; offp=  1; break;
+        case SYS_BDS: np=6; ni=10; nj=24; offp=  1; break;
         case SYS_SBS: np=6; ni= 9; nj=24; offp=120; break;
         default: return 0;
     }
     if (subtype>0) { /* IGS SSR */
         np=6; ni=8; nj=0;
-        if      (sys==SYS_CMP) offp=0;
+        if      (sys==SYS_BDS) offp=0;
         else if (sys==SYS_SBS) offp=119;
     }
     /* number of satellites */
     for (j=nsat=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         nsat++;
         udint=rtcm->ssr[j].udi[0];
         iod  =rtcm->ssr[j].iod[0];
@@ -1645,7 +1645,7 @@ static int encode_ssr1(rtcm_t *rtcm, int sys, int subtype, int sync)
     i=encode_ssr_head(1,rtcm,sys,subtype,nsat,sync,iod,udint,refd,0,0);
     
     for (j=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         
         iode=rtcm->ssr[j].iode;      /* SBAS/BDS: toe/t0 modulo */
         iodcrc=rtcm->ssr[j].iodcrc;  /* SBAS/BDS: IOD CRC */
@@ -1686,18 +1686,18 @@ static int encode_ssr2(rtcm_t *rtcm, int sys, int subtype, int sync)
         case SYS_GLO: np=5; offp=  0; break;
         case SYS_GAL: np=6; offp=  0; break;
         case SYS_QZS: np=4; offp=192; break;
-        case SYS_CMP: np=6; offp=  1; break;
+        case SYS_BDS: np=6; offp=  1; break;
         case SYS_SBS: np=6; offp=120; break;
         default: return 0;
     }
     if (subtype>0) { /* IGS SSR */
         np=6;
-        if      (sys==SYS_CMP) offp=0;
+        if      (sys==SYS_BDS) offp=0;
         else if (sys==SYS_SBS) offp=119;
     }
     /* number of satellites */
     for (j=nsat=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         nsat++;
         udint=rtcm->ssr[j].udi[1];
         iod  =rtcm->ssr[j].iod[1];
@@ -1706,7 +1706,7 @@ static int encode_ssr2(rtcm_t *rtcm, int sys, int subtype, int sync)
     i=encode_ssr_head(2,rtcm,sys,subtype,nsat,sync,iod,udint,0,0,0);
     
     for (j=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         
         dclk[0]=ROUND(rtcm->ssr[j].dclk[0]/1E-4);
         dclk[1]=ROUND(rtcm->ssr[j].dclk[1]/1E-6);
@@ -1735,18 +1735,18 @@ static int encode_ssr3(rtcm_t *rtcm, int sys, int subtype, int sync)
         case SYS_GLO: np=5; offp=  0; codes=codes_glo; break;
         case SYS_GAL: np=6; offp=  0; codes=codes_gal; break;
         case SYS_QZS: np=4; offp=192; codes=codes_qzs; break;
-        case SYS_CMP: np=6; offp=  1; codes=codes_bds; break;
+        case SYS_BDS: np=6; offp=  1; codes=codes_bds; break;
         case SYS_SBS: np=6; offp=120; codes=codes_sbs; break;
         default: return 0;
     }
     if (subtype>0) { /* IGS SSR */
         np=6;
-        if      (sys==SYS_CMP) offp=0;
+        if      (sys==SYS_BDS) offp=0;
         else if (sys==SYS_SBS) offp=119;
     }
     /* number of satellites */
     for (j=nsat=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         nsat++;
         udint=rtcm->ssr[j].udi[4];
         iod  =rtcm->ssr[j].iod[4];
@@ -1755,7 +1755,7 @@ static int encode_ssr3(rtcm_t *rtcm, int sys, int subtype, int sync)
     i=encode_ssr_head(3,rtcm,sys,subtype,nsat,sync,iod,udint,0,0,0);
     
     for (j=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         
         for (k=nbias=0;k<32;k++) {
             if (!codes[k]||rtcm->ssr[j].cbias[codes[k]-1]==0.0) continue;
@@ -1787,18 +1787,18 @@ static int encode_ssr4(rtcm_t *rtcm, int sys, int subtype, int sync)
         case SYS_GLO: np=5; ni= 8; nj= 0; offp=  0; break;
         case SYS_GAL: np=6; ni=10; nj= 0; offp=  0; break;
         case SYS_QZS: np=4; ni= 8; nj= 0; offp=192; break;
-        case SYS_CMP: np=6; ni=10; nj=24; offp=  1; break;
+        case SYS_BDS: np=6; ni=10; nj=24; offp=  1; break;
         case SYS_SBS: np=6; ni= 9; nj=24; offp=120; break;
         default: return 0;
     }
     if (subtype>0) { /* IGS SSR */
         np=6; ni=8; nj=0;
-        if      (sys==SYS_CMP) offp=0;
+        if      (sys==SYS_BDS) offp=0;
         else if (sys==SYS_SBS) offp=119;
     }
     /* number of satellites */
     for (j=nsat=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         nsat++;
         udint=rtcm->ssr[j].udi[0];
         iod  =rtcm->ssr[j].iod[0];
@@ -1808,7 +1808,7 @@ static int encode_ssr4(rtcm_t *rtcm, int sys, int subtype, int sync)
     i=encode_ssr_head(4,rtcm,sys,subtype,nsat,sync,iod,udint,refd,0,0);
     
     for (j=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         
         iode=rtcm->ssr[j].iode;
         iodcrc=rtcm->ssr[j].iodcrc;
@@ -1855,18 +1855,18 @@ static int encode_ssr5(rtcm_t *rtcm, int sys, int subtype, int sync)
         case SYS_GLO: np=5; offp=  0; break;
         case SYS_GAL: np=6; offp=  0; break;
         case SYS_QZS: np=4; offp=192; break;
-        case SYS_CMP: np=6; offp=  1; break;
+        case SYS_BDS: np=6; offp=  1; break;
         case SYS_SBS: np=6; offp=120; break;
         default: return 0;
     }
     if (subtype>0) { /* IGS SSR */
         np=6;
-        if      (sys==SYS_CMP) offp=0;
+        if      (sys==SYS_BDS) offp=0;
         else if (sys==SYS_SBS) offp=119;
     }
     /* number of satellites */
     for (j=nsat=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         nsat++;
         udint=rtcm->ssr[j].udi[3];
         iod  =rtcm->ssr[j].iod[3];
@@ -1875,7 +1875,7 @@ static int encode_ssr5(rtcm_t *rtcm, int sys, int subtype, int sync)
     i=encode_ssr_head(5,rtcm,sys,subtype,nsat,sync,iod,udint,0,0,0);
     
     for (j=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         
         ura=rtcm->ssr[j].ura;
         setbitu(rtcm->buff,i,np,prn-offp); i+=np; /* satellite id */
@@ -1897,18 +1897,18 @@ static int encode_ssr6(rtcm_t *rtcm, int sys, int subtype, int sync)
         case SYS_GLO: np=5; offp=  0; break;
         case SYS_GAL: np=6; offp=  0; break;
         case SYS_QZS: np=4; offp=192; break;
-        case SYS_CMP: np=6; offp=  1; break;
+        case SYS_BDS: np=6; offp=  1; break;
         case SYS_SBS: np=6; offp=120; break;
         default: return 0;
     }
     if (subtype>0) { /* IGS SSR */
         np=6;
-        if      (sys==SYS_CMP) offp=0;
+        if      (sys==SYS_BDS) offp=0;
         else if (sys==SYS_SBS) offp=119;
     }
     /* number of satellites */
     for (j=nsat=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         nsat++;
         udint=rtcm->ssr[j].udi[2];
         iod  =rtcm->ssr[j].iod[2];
@@ -1917,7 +1917,7 @@ static int encode_ssr6(rtcm_t *rtcm, int sys, int subtype, int sync)
     i=encode_ssr_head(6,rtcm,sys,subtype,nsat,sync,iod,udint,0,0,0);
     
     for (j=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         
         hrclk=ROUND(rtcm->ssr[j].hrclk/1E-4);
         
@@ -1942,18 +1942,18 @@ static int encode_ssr7(rtcm_t *rtcm, int sys, int subtype, int sync)
         case SYS_GLO: np=5; offp=  0; codes=codes_glo; break;
         case SYS_GAL: np=6; offp=  0; codes=codes_gal; break;
         case SYS_QZS: np=4; offp=192; codes=codes_qzs; break;
-        case SYS_CMP: np=6; offp=  1; codes=codes_bds; break;
+        case SYS_BDS: np=6; offp=  1; codes=codes_bds; break;
         case SYS_SBS: np=6; offp=120; codes=codes_sbs; break;
         default: return 0;
     }
     if (subtype>0) { /* IGS SSR */
         np=6;
-        if      (sys==SYS_CMP) offp=0;
+        if      (sys==SYS_BDS) offp=0;
         else if (sys==SYS_SBS) offp=119;
     }
     /* number of satellites */
     for (j=nsat=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         nsat++;
         udint=rtcm->ssr[j].udi[5];
         iod  =rtcm->ssr[j].iod[5];
@@ -1962,7 +1962,7 @@ static int encode_ssr7(rtcm_t *rtcm, int sys, int subtype, int sync)
     i=encode_ssr_head(7,rtcm,sys,subtype,nsat,sync,iod,udint,0,0,0);
     
     for (j=0;j<MAXSAT;j++) {
-        if (satsys(j+1,&prn)!=sys||!rtcm->ssr[j].update) continue;
+        if ((satsys(j + 1, &prn) & sys) == 0 || !rtcm->ssr[j].update) continue;
         
         for (k=nbias=0;k<32;k++) {
             if (!codes[k]||rtcm->ssr[j].pbias[codes[k]-1]==0.0) continue;
@@ -1996,7 +1996,7 @@ static int to_satid(int sys, int sat)
 {
     int prn;
     
-    if (satsys(sat,&prn)!=sys) return 0;
+    if ((satsys(sat, &prn) & sys) == 0) return 0;
     
     if      (sys==SYS_QZS) prn-=MINPRNQZS-1;
     else if (sys==SYS_SBS) prn-=MINPRNSBS-1;
@@ -2028,7 +2028,7 @@ static int to_sigid(int sys, uint8_t code)
         case SYS_GAL: msm_sig=msm_sig_gal; break;
         case SYS_QZS: msm_sig=msm_sig_qzs; break;
         case SYS_SBS: msm_sig=msm_sig_sbs; break;
-        case SYS_CMP: msm_sig=msm_sig_cmp; break;
+        case SYS_BDS: msm_sig=msm_sig_cmp; break;
         case SYS_IRN: msm_sig=msm_sig_irn; break;
         default: return 0;
     }
@@ -2112,7 +2112,8 @@ static void gen_msm_sat(rtcm_t *rtcm, int sys, int rtype, int nsat, const uint8_
     for (int j = 0; j < NFREQ + NEXOBS; j++) {
       int sig = to_sigid(sys, data->code[j]);
       if (!sig) continue;
-      double freq = code2freq(sys, data->code[j], fcn - 7);
+      // Use satsys() here to distinguish between BDS2 and BDS3.
+      double freq = code2freq(satsys(data->sat, NULL), data->code[j], fcn - 7);
 
       if (psrng && data->P[j] != 0.0) {
         double rng = data->P[j] / RANGE_MS / P2_10;
@@ -2286,7 +2287,8 @@ static void gen_msm_sig(rtcm_t *rtcm, int sys, int nsat, int nsig, int ncell,
       int cell = cell_ind[sig_ind[sig - 1] - 1 + k * nsig];
       if (cell >= 64) continue;
 
-      double freq = code2freq(sys, code, fcn - 7);
+      // Use satsys() here to distinguish between BDS2 and BDS3.
+      double freq = code2freq(satsys(data->sat, NULL), code, fcn - 7);
       double lambda = freq == 0.0 ? 0.0 : CLIGHT / freq;
       double psrng_s = data->P[j] == 0.0 ? INVALID_PSRNG : data->P[j] - rrng[k];
       double phrng_s =
@@ -2301,10 +2303,10 @@ static void gen_msm_sig(rtcm_t *rtcm, int sys, int nsat, int nsig, int ncell,
         // This applies an offset to phrng to keep it within range of its
         // encoding, resetting phrng to zero on a slip or when it goes out of
         // range, and flagging a slip when it is reset. But it means that the
-        // receivers data is not being passed on as-is. gen_msm_sat() attempts
+        // receiver data is not being passed on as-is. gen_msm_sat() attempts
         // to choose a rrng that keeps the phrng within range of its encoding
-        // and in appears that this is adequate for most receivers and
-        // signals, so by default the receivers data is passed on as-is and in
+        // and it appears that this is adequate for most receivers and
+        // signals, so by default the receiver data is passed on as-is and in
         // the case of phrng being out of range it is emitted as invalid.
         if ((LLI & LLI_SLIP) || fabs(phrng_s - rtcm->cp[data->sat - 1][code]) > 4.0 * RANGE_MS * P2_10) {
           rtcm->cp[data->sat - 1][code] = ROUND(phrng_s / lambda) * lambda;
@@ -2344,7 +2346,7 @@ static int encode_msm_head(int rtype, rtcm_t *rtcm, int sys, int sync, int *nsat
         case SYS_GAL: type=rtype+1090; break;
         case SYS_QZS: type=rtype+1110; break;
         case SYS_SBS: type=rtype+1100; break;
-        case SYS_CMP: type=rtype+1120; break;
+        case SYS_BDS: type=rtype+1120; break;
         case SYS_IRN: type=rtype+1130; break;
         default: return 0;
     }
@@ -2357,7 +2359,7 @@ static int encode_msm_head(int rtype, rtcm_t *rtcm, int sys, int sync, int *nsat
         dow=(uint32_t)(tow/86400.0);
         epoch=(dow<<27)+ROUND_U(fmod(tow,86400.0)*1E3);
     }
-    else if (sys==SYS_CMP) {
+    else if (sys==SYS_BDS) {
         /* BDS time (tow-ms) */
         epoch=ROUND_U(time2gpst(gpst2bdt(rtcm->time),NULL)*1E3);
     }
@@ -2879,13 +2881,13 @@ static int encode_type4076(rtcm_t *rtcm, int subtype, int sync)
         case  85: return encode_ssr3(rtcm,SYS_QZS,subtype,sync);
         case  86: return encode_ssr7(rtcm,SYS_QZS,subtype,sync);
         case  87: return encode_ssr5(rtcm,SYS_QZS,subtype,sync);
-        case 101: return encode_ssr1(rtcm,SYS_CMP,subtype,sync);
-        case 102: return encode_ssr2(rtcm,SYS_CMP,subtype,sync);
-        case 103: return encode_ssr4(rtcm,SYS_CMP,subtype,sync);
-        case 104: return encode_ssr6(rtcm,SYS_CMP,subtype,sync);
-        case 105: return encode_ssr3(rtcm,SYS_CMP,subtype,sync);
-        case 106: return encode_ssr7(rtcm,SYS_CMP,subtype,sync);
-        case 107: return encode_ssr5(rtcm,SYS_CMP,subtype,sync);
+        case 101: return encode_ssr1(rtcm,SYS_BDS,subtype,sync);
+        case 102: return encode_ssr2(rtcm,SYS_BDS,subtype,sync);
+        case 103: return encode_ssr4(rtcm,SYS_BDS,subtype,sync);
+        case 104: return encode_ssr6(rtcm,SYS_BDS,subtype,sync);
+        case 105: return encode_ssr3(rtcm,SYS_BDS,subtype,sync);
+        case 106: return encode_ssr7(rtcm,SYS_BDS,subtype,sync);
+        case 107: return encode_ssr5(rtcm,SYS_BDS,subtype,sync);
         case 121: return encode_ssr1(rtcm,SYS_SBS,subtype,sync);
         case 122: return encode_ssr2(rtcm,SYS_SBS,subtype,sync);
         case 123: return encode_ssr4(rtcm,SYS_SBS,subtype,sync);
@@ -2974,13 +2976,13 @@ extern int encode_rtcm3(rtcm_t *rtcm, int type, int subtype, int sync)
         case 1115: ret=encode_msm5(rtcm,SYS_QZS,sync); break;
         case 1116: ret=encode_msm6(rtcm,SYS_QZS,sync); break;
         case 1117: ret=encode_msm7(rtcm,SYS_QZS,sync); break;
-        case 1121: ret=encode_msm1(rtcm,SYS_CMP,sync); break;
-        case 1122: ret=encode_msm2(rtcm,SYS_CMP,sync); break;
-        case 1123: ret=encode_msm3(rtcm,SYS_CMP,sync); break;
-        case 1124: ret=encode_msm4(rtcm,SYS_CMP,sync); break;
-        case 1125: ret=encode_msm5(rtcm,SYS_CMP,sync); break;
-        case 1126: ret=encode_msm6(rtcm,SYS_CMP,sync); break;
-        case 1127: ret=encode_msm7(rtcm,SYS_CMP,sync); break;
+        case 1121: ret=encode_msm1(rtcm,SYS_BDS,sync); break;
+        case 1122: ret=encode_msm2(rtcm,SYS_BDS,sync); break;
+        case 1123: ret=encode_msm3(rtcm,SYS_BDS,sync); break;
+        case 1124: ret=encode_msm4(rtcm,SYS_BDS,sync); break;
+        case 1125: ret=encode_msm5(rtcm,SYS_BDS,sync); break;
+        case 1126: ret=encode_msm6(rtcm,SYS_BDS,sync); break;
+        case 1127: ret=encode_msm7(rtcm,SYS_BDS,sync); break;
         case 1131: ret=encode_msm1(rtcm,SYS_IRN,sync); break;
         case 1132: ret=encode_msm2(rtcm,SYS_IRN,sync); break;
         case 1133: ret=encode_msm3(rtcm,SYS_IRN,sync); break;
@@ -3007,16 +3009,16 @@ extern int encode_rtcm3(rtcm_t *rtcm, int type, int subtype, int sync)
         case 1255: ret=encode_ssr4(rtcm,SYS_SBS,0,sync); break; /* draft */
         case 1256: ret=encode_ssr5(rtcm,SYS_SBS,0,sync); break; /* draft */
         case 1257: ret=encode_ssr6(rtcm,SYS_SBS,0,sync); break; /* draft */
-        case 1258: ret=encode_ssr1(rtcm,SYS_CMP,0,sync); break; /* draft */
-        case 1259: ret=encode_ssr2(rtcm,SYS_CMP,0,sync); break; /* draft */
-        case 1260: ret=encode_ssr3(rtcm,SYS_CMP,0,sync); break; /* draft */
-        case 1261: ret=encode_ssr4(rtcm,SYS_CMP,0,sync); break; /* draft */
-        case 1262: ret=encode_ssr5(rtcm,SYS_CMP,0,sync); break; /* draft */
-        case 1263: ret=encode_ssr6(rtcm,SYS_CMP,0,sync); break; /* draft */
+        case 1258: ret=encode_ssr1(rtcm,SYS_BDS,0,sync); break; /* draft */
+        case 1259: ret=encode_ssr2(rtcm,SYS_BDS,0,sync); break; /* draft */
+        case 1260: ret=encode_ssr3(rtcm,SYS_BDS,0,sync); break; /* draft */
+        case 1261: ret=encode_ssr4(rtcm,SYS_BDS,0,sync); break; /* draft */
+        case 1262: ret=encode_ssr5(rtcm,SYS_BDS,0,sync); break; /* draft */
+        case 1263: ret=encode_ssr6(rtcm,SYS_BDS,0,sync); break; /* draft */
         case   11: ret=encode_ssr7(rtcm,SYS_GPS,0,sync); break; /* tentative */
         case   12: ret=encode_ssr7(rtcm,SYS_GAL,0,sync); break; /* tentative */
         case   13: ret=encode_ssr7(rtcm,SYS_QZS,0,sync); break; /* tentative */
-        case   14: ret=encode_ssr7(rtcm,SYS_CMP,0,sync); break; /* tentative */
+        case   14: ret=encode_ssr7(rtcm,SYS_BDS,0,sync); break; /* tentative */
         case 4073: ret=encode_type4073(rtcm,subtype,sync); break;
         case 4076: ret=encode_type4076(rtcm,subtype,sync); break;
     }

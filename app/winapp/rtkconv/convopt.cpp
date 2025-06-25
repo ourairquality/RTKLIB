@@ -23,12 +23,13 @@ __fastcall TConvOptDialog::TConvOptDialog(TComponent* Owner)
 	: TForm(Owner)
 {
 	AnsiString s;
-	int glo=MAXPRNGLO,gal=MAXPRNGAL,qzs=MAXPRNQZS,cmp=MAXPRNCMP,irn=MAXPRNIRN;
+	int glo=MAXPRNGLO,gal=MAXPRNGAL,qzs=MAXPRNQZS,bds2=MAXPRNBDS2,bds3=MAXPRNBDS3,irn=MAXPRNIRN;
 	if (glo<=0) Nav2->Enabled=false;
 	if (gal<=0) Nav3->Enabled=false;
 	if (qzs<=0) Nav4->Enabled=false;
-	if (cmp<=0) Nav6->Enabled=false;
-	if (irn<=0) Nav7->Enabled=false;
+	if (bds2<=0) Nav6->Enabled=false;
+	if (bds3<=0) Nav7->Enabled=false;
+	if (irn<=0) Nav8->Enabled=false;
 	
 	UpdateEnable();
 }
@@ -58,6 +59,7 @@ void __fastcall TConvOptDialog::FormShow(TObject *Sender)
 	AntDel2->Text=s.sprintf("%.4f",MainWindow->AntDel[2]);
 	Comment0->Text=MainWindow->Comment[0];
 	Comment1->Text=MainWindow->Comment[1];
+	SigDef->Text=MainWindow->SigDef;
 	RcvOption->Text=MainWindow->RcvOption;
 	for (int i=0;i<7;i++) CodeMask[i]=MainWindow->CodeMask[i];
 	AutoPos->Checked=MainWindow->AutoPos;
@@ -76,8 +78,9 @@ void __fastcall TConvOptDialog::FormShow(TObject *Sender)
 	Nav3->Checked=MainWindow->NavSys&SYS_GAL;
 	Nav4->Checked=MainWindow->NavSys&SYS_QZS;
 	Nav5->Checked=MainWindow->NavSys&SYS_SBS;
-	Nav6->Checked=MainWindow->NavSys&SYS_CMP;
-	Nav7->Checked=MainWindow->NavSys&SYS_IRN;
+	Nav6->Checked=MainWindow->NavSys&SYS_BDS2;
+	Nav7->Checked=MainWindow->NavSys&SYS_BDS3;
+	Nav8->Checked=MainWindow->NavSys&SYS_IRN;
 	Obs1->Checked=MainWindow->ObsType&OBSTYPE_PR;
 	Obs2->Checked=MainWindow->ObsType&OBSTYPE_CP;
 	Obs3->Checked=MainWindow->ObsType&OBSTYPE_DOP;
@@ -120,6 +123,7 @@ void __fastcall TConvOptDialog::BtnOkClick(TObject *Sender)
 	MainWindow->AntDel[2]=str2dbl(AntDel2->Text);
 	MainWindow->Comment[0]=Comment0->Text;
 	MainWindow->Comment[1]=Comment1->Text;
+	MainWindow->SigDef=SigDef->Text;
 	MainWindow->RcvOption=RcvOption->Text;
 	for (int i=0;i<7;i++) MainWindow->CodeMask[i]=CodeMask[i];
 	MainWindow->AutoPos=AutoPos->Checked;
@@ -139,8 +143,9 @@ void __fastcall TConvOptDialog::BtnOkClick(TObject *Sender)
 	if (Nav3->Checked) navsys|=SYS_GAL;
 	if (Nav4->Checked) navsys|=SYS_QZS;
 	if (Nav5->Checked) navsys|=SYS_SBS;
-	if (Nav6->Checked) navsys|=SYS_CMP;
-	if (Nav7->Checked) navsys|=SYS_IRN;
+	if (Nav6->Checked) navsys|=SYS_BDS2;
+	if (Nav7->Checked) navsys|=SYS_BDS3;
+	if (Nav8->Checked) navsys|=SYS_IRN;
 	if (Obs1->Checked) obstype|=OBSTYPE_PR;
 	if (Obs2->Checked) obstype|=OBSTYPE_CP;
 	if (Obs3->Checked) obstype|=OBSTYPE_DOP;
@@ -189,8 +194,9 @@ void __fastcall TConvOptDialog::BtnMaskClick(TObject *Sender)
 	if (Nav3->Checked) CodeOptDialog->NavSys|=SYS_GAL;
 	if (Nav4->Checked) CodeOptDialog->NavSys|=SYS_QZS;
 	if (Nav5->Checked) CodeOptDialog->NavSys|=SYS_SBS;
-	if (Nav6->Checked) CodeOptDialog->NavSys|=SYS_CMP;
-	if (Nav7->Checked) CodeOptDialog->NavSys|=SYS_IRN;
+	if (Nav6->Checked) CodeOptDialog->NavSys|=SYS_BDS2;
+	if (Nav7->Checked) CodeOptDialog->NavSys|=SYS_BDS3;
+	if (Nav8->Checked) CodeOptDialog->NavSys|=SYS_IRN;
 	if (Freq1->Checked) CodeOptDialog->FreqType|=FREQTYPE_L1;
 	if (Freq2->Checked) CodeOptDialog->FreqType|=FREQTYPE_L2;
 	if (Freq3->Checked) CodeOptDialog->FreqType|=FREQTYPE_L3;
@@ -209,7 +215,8 @@ void __fastcall TConvOptDialog::UpdateEnable(void)
 	Nav3->Enabled=RnxVer->ItemIndex>=1;
 	Nav4->Enabled=RnxVer->ItemIndex>=5;
 	Nav6->Enabled=RnxVer->ItemIndex==2||RnxVer->ItemIndex>=4;
-	Nav7->Enabled=RnxVer->ItemIndex>=6;
+	Nav7->Enabled=RnxVer->ItemIndex==2||RnxVer->ItemIndex>=4;
+	Nav8->Enabled=RnxVer->ItemIndex>=6;
 	Freq3->Enabled=RnxVer->ItemIndex>=1;
 	Freq4->Enabled=RnxVer->ItemIndex>=1;
 	Freq5->Enabled=RnxVer->ItemIndex>=1;

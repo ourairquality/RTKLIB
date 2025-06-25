@@ -39,7 +39,7 @@ void Plot::updateTimeObservation()
 {
     static QStringList legend_freqs = {" #OBS = 6+ ", " 5 ", " 4 ", " 3 ", " 2 ", " 1", "", ""};
     static QStringList legend_snr = {" SNR = ...45.", "..40.", "..35.", "..30.", "..25 ", "", " <25 "};
-    static QStringList legend_sys = {" SYS = GPS ", "GLO ", "GAL ", "QZS ", "BDS ", "IRN ", "SBS"};
+    static QStringList legend_sys = {" SYS = GPS ", "GLO ", "GAL ", "QZS ", "BDS-2", "BDS-3", "IRN ", "SBS"};
     static QStringList legend_mp = {" MP = ..0.6", "..0.3", "..0.0..", "-0.3..", "-0.6..", "", ""};
     static QStringList legend_iono = {" TEC = 0", "..10", "..20", "..30", "..40", "..50", "..60.."};
     QStringList legend;
@@ -148,7 +148,7 @@ void Plot::updateInfoObservation()
     static QStringList legend_dop = {" NSAT", " GDOP", " PDOP", " HDOP", " VDOP", "", ""};
     static QStringList legend_freqs = {" #OBS = 6+ ", " 5 ", " 4 ", " 3 ", " 2 ", " 1", "", ""};
     static QStringList legend_snr = {" SNR = ...45.", "..40.", "..35.", "..30.", "..25 ", "", " <25 "};
-    static QStringList legend_sys = {" SYS = GPS ", "GLO ", "GAL ", "QZS ", "BDS ", "IRN ", "SBS"};
+    static QStringList legend_sys = {" SYS = GPS ", "GLO ", "GAL ", "QZS ", "BDS-2 ", "BDS-3 ", "IRN ", "SBS"};
     static QStringList legend_mp = {" MP = ..0.6", "..0.3", "..0.0..", "-0.3..", "-0.6..", "", ""};
     static QStringList legend_iono = {" TEC = 0", "..10", "..20", "..30", "..40", "..50", "..60.."};
     QString msg;
@@ -355,7 +355,8 @@ void Plot::updateSatelliteList()
             case SYS_GLO: ui->cBSatelliteList->addItem("R"); break;
             case SYS_GAL: ui->cBSatelliteList->addItem("E"); break;
             case SYS_QZS: ui->cBSatelliteList->addItem("J"); break;
-            case SYS_CMP: ui->cBSatelliteList->addItem("C"); break;
+            case SYS_BDS2: ui->cBSatelliteList->addItem("C2"); break;
+            case SYS_BDS3: ui->cBSatelliteList->addItem("C3"); break;
             case SYS_IRN: ui->cBSatelliteList->addItem("I"); break;
             case SYS_SBS: ui->cBSatelliteList->addItem("S"); break;
         };

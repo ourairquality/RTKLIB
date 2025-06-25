@@ -249,6 +249,7 @@ void __fastcall TPlot::FormShow(TObject *Sender)
         tracelevel(Trace);
     }
     LoadOpt();
+    init_code2idx(SigDef.c_str());
     
     UpdateType(PlotType>=PLOT_OBS?PLOT_TRK:PlotType);
     
@@ -774,6 +775,7 @@ void __fastcall TPlot::MenuOptionsClick(TObject *Sender)
     if (PlotOptDialog->ShowModal()!=mrOk) return;
     
     SaveOpt();
+    init_code2idx(SigDef.c_str());
     
     for (int i=0;i<3;i++) oopos[i]-=OOPos[i];
     
@@ -2250,12 +2252,13 @@ void __fastcall TPlot::UpdateSatSel(void)
     else if (SatListText=="R") sys=SYS_GLO;
     else if (SatListText=="E") sys=SYS_GAL;
     else if (SatListText=="J") sys=SYS_QZS;
-    else if (SatListText=="C") sys=SYS_CMP;
+    else if (SatListText=="C2") sys=SYS_BDS2;
+    else if (SatListText=="C3") sys=SYS_BDS3;
     else if (SatListText=="I") sys=SYS_IRN;
     else if (SatListText=="S") sys=SYS_SBS;
     for (i=0;i<MAXSAT;i++) {
         satno2id(i+1,id);
-        SatSel[i]=SatListText=="ALL"||SatListText==id||satsys(i+1,NULL)==sys;
+        SatSel[i]=SatListText=="ALL"||SatListText==id||(satsys(i+1,NULL)&sys)!=0;
     }
 }
 // update enable/disable of widgets -----------------------------------------
@@ -2762,6 +2765,7 @@ void __fastcall TPlot::LoadOpt(void)
     Font->Size=FontSize;
     
     RnxOpts   =ini->ReadString ("plot","rnxopts","");
+    SigDef    =ini->ReadString ("plot","sigdef","");
     
     MapApi    =ini->ReadInteger("mapview","mapapi" , 0);
     ApiKey    =ini->ReadString ("mapview","apikey" ,"");
@@ -2922,6 +2926,7 @@ void __fastcall TPlot::SaveOpt(void)
     ini->WriteInteger("plot","fontsize",     FontSize      );
     
     ini->WriteString ("plot","rnxopts",      RnxOpts       );
+    ini->WriteString ("plot","sigdef",       SigDef        );
 
     ini->WriteString ("mapview","apikey",    ApiKey        );
     ini->WriteInteger("mapview","mapapi",    MapApi        );

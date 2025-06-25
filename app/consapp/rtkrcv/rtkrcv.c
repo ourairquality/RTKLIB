@@ -162,6 +162,7 @@ static const char *helptxt[]={
     "set opt [val]         : set option",
     "mark [name] [comment] : log a marker",
     "mode ['g'|'s'|'f'|n]  : set the processing mode",
+    "frequencies           : show the freq band to index mapping, codes, and frequencies",
     "load [file]           : load options from file",
     "save [file]           : save options to file",
     "log [file|off]        : start/stop log to file",
@@ -880,8 +881,8 @@ static void prstatus(vt_t *vt)
     vt_printf(vt,"%-28s: %s\n","solution status",sol[rtkstat]);
     time2str(rtk->sol.time,tstr,9);
     vt_printf(vt,"%-28s: %s\n","time of receiver clock rover",rtk->sol.time.time?tstr:"-");
-    vt_printf(vt,"%-28s: %.3f,%.3f,%.3f,%.3f\n","time sys offset (ns)",rtk->sol.dtr[1]*1e9,
-              rtk->sol.dtr[2]*1e9,rtk->sol.dtr[3]*1e9,rtk->sol.dtr[4]*1e9);
+    vt_printf(vt,"%-28s: %.3f,%.3f,%.3f,%.3f,%.3f\n","time sys offset (ns)",rtk->sol.dtr[1]*1e9,
+              rtk->sol.dtr[2]*1e9,rtk->sol.dtr[3]*1e9,rtk->sol.dtr[4]*1e9,rtk->sol.dtr[5]*1e9);
     vt_printf(vt,"%-28s: %.3f\n","solution interval (s)",rtk->tt);
     vt_printf(vt,"%-28s: %.3f\n","age of differential (s)",rtk->sol.age);
     vt_printf(vt,"%-28s: %.3f\n","ratio for ar validation",rtk->sol.ratio);
@@ -1064,7 +1065,7 @@ static void prnavidata(vt_t *vt)
               "Ttr/Tof","L2C","L2P",ESC_RESET);
     for (i=0;i<MAXSAT;i++) {
         int sys = satsys(i+1,&prn);
-        if (!(sys&(SYS_GPS|SYS_GAL|SYS_QZS|SYS_CMP))||
+        if (!(sys&(SYS_GPS|SYS_GAL|SYS_QZS|SYS_BDS))||
             eph[i].sat!=i+1) continue;
         // Mask QZS LEX health.
         valid=eph[i].toe.time!=0&&fabs(timediff(time,eph[i].toe))<=MAXDTOE &&
@@ -1615,6 +1616,36 @@ static void cmd_mode(char **args, int narg, vt_t *vt) {
 
   vt_printf(vt, "%-28s: %s\n", "positioning mode", mode[pmode]);
 }
+/* Freq command --------------------------------------------------------------*/
+static void cmd_freq(char **args, int narg, vt_t *vt) {
+  if (!svr.state) init_code2idx(prcopt.sigdef);
+
+  const int sys[] = {SYS_GPS, SYS_GLO, SYS_GAL, SYS_QZS, SYS_BDS2, SYS_BDS3, SYS_IRN, SYS_SBS};
+  const char *sysname[] = {"GPS", "GLONASS", "Galileo", "QZSS", "BDS-2", "BDS-3", "NavIC", "SBAS"};
+
+  vt_printf(vt, "%-7s  :", "Index");
+  for (int idx = 0; idx < MAXFREQ; idx++) vt_printf(vt, "    F%d                     ", idx + 1);
+  vt_printf(vt, "\n");
+  vt_printf(vt, "----------");
+  for (int idx = 0; idx < MAXFREQ; idx++) vt_printf(vt, "---------------------------");
+  vt_printf(vt, "\n");
+
+  for (int i = 0; i < 8; i++) {
+    vt_printf(vt, "%-7s %c:", sysname[i], (prcopt.navsys & sys[i]) ? '*' : ' ');
+    for (int idx = 0; idx < MAXFREQ; idx++) {
+      int band = idx2band(sys[i], idx);
+      if (band) {
+        char *codepri = getcodepriorities(sys[i], band);
+        const char *name = getcodebandname(sys[i], band);
+        double freq = band2freq(sys[i], band, 0);
+        vt_printf(vt, "  %4s %d%-10s %8.3f", name, band, codepri, freq * 1e-6);
+      }
+      else
+        vt_printf(vt, "  %4s                     ", "-");
+    }
+    vt_printf(vt, "\n");
+  }
+}
 /* load command --------------------------------------------------------------*/
 static void cmd_load(char **args, int narg, vt_t *vt)
 {
@@ -1710,7 +1741,8 @@ static void *con_thread(void *arg)
     const char *cmds[]={
         "start","stop","restart","solution","status","satellite","observ",
         "navidata","precdata","stream","ssr","error","option","set",
-        "mark","mode","load","save","log","help","?","exit","shutdown",""
+        "mark","mode","frequencies","load","save","log","help","?",
+        "exit","shutdown",""
     };
     con_t *con=(con_t *)arg;
     int i,j,narg;
@@ -1772,15 +1804,16 @@ static void *con_thread(void *arg)
             case 13: cmd_set      (args,narg,con->vt); break;
             case 14: cmd_mark     (args,narg,con->vt); break;
             case 15: cmd_mode     (args,narg,con->vt); break;
-            case 16: cmd_load     (args,narg,con->vt); break;
-            case 17: cmd_save     (args,narg,con->vt); break;
-            case 18: cmd_log      (args,narg,con->vt); break;
-            case 19: cmd_help     (args,narg,con->vt); break;
+            case 16: cmd_freq     (args,narg,con->vt); break;
+            case 17: cmd_load     (args,narg,con->vt); break;
+            case 18: cmd_save     (args,narg,con->vt); break;
+            case 19: cmd_log      (args,narg,con->vt); break;
             case 20: cmd_help     (args,narg,con->vt); break;
-            case 21: /* exit */
+            case 21: cmd_help     (args,narg,con->vt); break;
+            case 22: /* exit */
                 if (con->vt->type) con->state=0;
                 break;
-            case 22: /* shutdown */
+            case 23: /* shutdown */
                 if (!strcmp(args[0],"shutdown")) {
                     vt_printf(con->vt,"rtk server shutdown ...\n");
                     sleepms(1000);
@@ -2016,6 +2049,10 @@ static void deamonise(void)
 *       's' or 'stop' for static mode or 'f' or 'fixed' for fixed mode.
 *       An internal mode number is also accepted but not all mode changes
 *       are smoothly handled.
+*
+*     frequencies
+*       Show the frequency band to internal frequency index mapping, the RINEX
+*       code band number and the default code priories, and frequencies in MHz.
 *
 *     load [file]
 *       Load processing options from file. Without option, default file

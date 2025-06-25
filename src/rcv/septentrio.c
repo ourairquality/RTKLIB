@@ -53,18 +53,24 @@ extern const sbsigpband_t igpband2[][5];  // SBAS IGP band 9-10.
 #define MEAS3_SAT_MAX 64
 #define MEAS3_SIG_MAX 16
 
+// Epoch interval index to epoch time in [ms].
 static uint32_t const Meas3_EpochIntervals[] = {
     1,      500, 1000, 2000, 5000, 10000, 15000, 30000, 60000,
-    120000, 1,   1,    1,    1,    1,     1};  // Epoch interval index to epoch time in [ms].
+    120000, 1,   1,    1,    1,    1,     1};
+
+// Meas3 navsys to RTKLIB navsys conversion.
 static uint8_t const Meas3_NavSys[] = {
-    SYS_GPS, SYS_GLO, SYS_GAL, SYS_CMP,
-    SYS_SBS, SYS_QZS, SYS_IRN};  // Meas3 navsys to RTKLIB navsys conversion.
+    SYS_GPS, SYS_GLO, SYS_GAL, SYS_BDS,
+    SYS_SBS, SYS_QZS, SYS_IRN};
+
+// RTKLIB satellite number start for RTKLIB navigation systems.
 static uint8_t const Meas3_SVIDBase[] = {
-    MINPRNGPS, MINPRNGLO, MINPRNGAL, MINPRNCMP,
-    MINPRNSBS, MINPRNQZS, MINPRNIRN};  // RTKLIB satellite number start for RTKLIB navigation
-                                       // systems.
+    MINPRNGPS, MINPRNGLO, MINPRNGAL, MINPRNBDS2,
+    MINPRNSBS, MINPRNQZS, MINPRNIRN};
+
 // Base pseudorange for the different constellations.
-static const double PRBase[]  // Base distance for navigation systems in [m].
+//  Base distance for navigation systems in [m].
+static const double PRBase[]
     = {
         19e6,  // GPS
         19e6,  // GLO
@@ -74,6 +80,7 @@ static const double PRBase[]  // Base distance for navigation systems in [m].
         34e6,  // QZS
         34e6   // IRN
 };
+
 // Mapping of the Meas3 lock time indicator into actual lock time in milliseconds.
 static const uint32_t Meas3_LTItoPLLTime[16] = {0,   60000, 30000, 15000, 10000, 5000, 2000, 1000,
                                                 500, 200,   100,   50,    40,    20,   10,   0};
@@ -149,16 +156,16 @@ extern int init_sbf(raw_t *raw) {
 #define ID_MEASEPOCHEXTRA 4000  // SBF message id: Additional info such as observable variance.
 #define ID_MEASFULLRANGE 4098   // SBF message id: Extended-range code and phase measurements.
 #define ID_MEASE3RNG 4109       // SBF message id: Code, phase and CN0 measurements.
-#define ID_MEASE3CN \
-  4110  // SBF message id: Extension of Meas3Ranges containing fractional C/N0 values.
-#define ID_MEASE3DOPPLER \
-  4111  // SBF message id: Extension of Meas3Ranges containing Doppler values.
-#define ID_MEASE3PP \
-  4112  // SBF message id: Extension of Meas3Ranges containing proprietary flags for data
-        // post-processing. (undocumented).
-#define ID_MEASE3MP \
-  4113  // SBF message id: Extension of Meas3Ranges containing multipath corrections applied by the
-        // receiver. (undocumented).
+// SBF message id: Extension of Meas3Ranges containing fractional C/N0 values.
+#define ID_MEASE3CN 4110
+// SBF message id: Extension of Meas3Ranges containing Doppler values.
+#define ID_MEASE3DOPPLER 4111
+// SBF message id: Extension of Meas3Ranges containing proprietary flags for data
+// post-processing. (undocumented).
+#define ID_MEASE3PP 4112
+// SBF message id: Extension of Meas3Ranges containing multipath corrections applied by the
+// receiver. (undocumented).
+#define ID_MEASE3MP 4113
 #define ID_IQCORR 4046         // SBF message id: Real and imaginary post-correlation values.
 #define ID_ISMR 4086           // SBF message id: Ionospheric scintillation monitor (ISMR) data.
 #define ID_SQMSAMPLES 4087     // SBF message id: Correlation samples for signal quality monitoring.
@@ -266,37 +273,37 @@ extern int init_sbf(raw_t *raw) {
 #define ID_SBASL5ALM 5959  // SBF message id: DFMC SBAS almanac data.
 
 // GNSS Position, Velocity and Time Blocks.
-#define ID_PVTCART1 \
-  5903  // SBF message id: GNSS position, velocity, and time in Cartesian coordinates.
-#define ID_PVTGEOD1 \
-  5904                // SBF message id: GNSS position, velocity, and time in Geodetic coordinates.
+// SBF message id: GNSS position, velocity, and time in Cartesian coordinates.
+#define ID_PVTCART1 5903
+// SBF message id: GNSS position, velocity, and time in Geodetic coordinates.
+#define ID_PVTGEOD1 5904
 #define ID_DOP1 5909  // SBF message id: Dilution of precision.
 #define ID_PVTRESIDUALS1 5910  // SBF message id: Measurement residuals.
 #define ID_RAIMSTATS1 5915     // SBF message id: Integrity statistics.
-#define ID_PVTCART2 \
-  4006  // SBF message id: GNSS position, velocity, and time in Cartesian coordinates.
-#define ID_PVTGEOD2 \
-  4007  // SBF message id: GNSS position, velocity, and time in Geodetic coordinates.
-#define ID_PVTGEODAUTH \
-  4232  // SBF message id: OSNMA-Authenticated Position, velocity, and time in geodetic coordinate.
+// SBF message id: GNSS position, velocity, and time in Cartesian coordinates.
+#define ID_PVTCART2 4006
+// SBF message id: GNSS position, velocity, and time in Geodetic coordinates.
+#define ID_PVTGEOD2 4007
+// SBF message id: OSNMA-Authenticated Position, velocity, and time in geodetic coordinate.
+#define ID_PVTGEODAUTH 4232
 #define ID_COVCART 5905     // SBF message id: Position covariance matrix (X,Y, Z).
 #define ID_COVGEOD 5906     // SBF message id: Position covariance matrix (Lat, Lon, Alt).
 #define ID_VELCOVCART 5907  // SBF message id: Velocity covariance matrix (X, Y, Z).
 #define ID_VELCOVGEOD 5908  // SBF message id: Velocity covariance matrix (North, East, Up).
 #define ID_DOP2 4001        // SBF message id: Dilution of precision.
 #define ID_DOPAUTH 4247     // SBF message id: Dilution of Precision Authenticated Data.
-#define ID_POSCART \
-  4044  // SBF message id: Position, variance and baseline in Cartesian coordinates.
+// SBF message id: Position, variance and baseline in Cartesian coordinates.
+#define ID_POSCART 4044
 #define ID_PVTLOCAL 4052       // SBF message id: Position in a local datum.
 #define ID_POSPROJ 4094        // SBF message id: Plane grid coordinates.
 #define ID_PVTSATCART 4008     // SBF message id: Satellite positions.
 #define ID_PVTRESIDUALS2 4009  // SBF message id: Measurement residuals.
 #define ID_RAIMSTATS2 4011     // SBF message id: Integrity statistics.
 #define ID_GEOCORR 5935        // SBF message id: Orbit, Clock and pseudoranges SBAS corrections.
-#define ID_BASEVECCART \
-  4043  // SBF message id: XYZ relative position and velocity with respect to base(s).
-#define ID_BASEVECGEOD \
-  4028  // SBF message id: ENU relative position and velocity with respect to base(s).
+// SBF message id: XYZ relative position and velocity with respect to base(s).
+#define ID_BASEVECCART 4043
+// SBF message id: ENU relative position and velocity with respect to base(s).
+#define ID_BASEVECGEOD 4028
 #define ID_AMBIGUITIES 4240  // SBF message id: Carrier phase ambiguity states.
 #define ID_PVTSUPPORT 4076   // SBF message id: Internal parameters for maintenance and support.
 #define ID_PVTSUPPORTA 4079  // SBF message id: Internal parameters for maintenance and support.
@@ -308,20 +315,20 @@ extern int init_sbf(raw_t *raw) {
 #define ID_INTPVGEOD 4061      // SBF message id: Integrated PV in Geodetic coordinates.
 #define ID_INTPOSCOVCART 4062  // SBF message id: Integrated position covariance matrix (X, Y, Z).
 #define ID_INTVELCOVCART 4063  // SBF message id: Integrated velocity covariance matrix (X, Y, Z).
-#define ID_INTPOSCOVGEOD \
-  4064  // SBF message id: Integrated position covariance matrix (Lat, Lon, Alt).
-#define ID_INTVELCOVGEOD \
-  4065  // SBF message id: Integrated velocity covariance matrix (North, East, Up).
+// SBF message id: Integrated position covariance matrix (Lat, Lon, Alt).
+#define ID_INTPOSCOVGEOD 4064
+// SBF message id: Integrated velocity covariance matrix (North, East, Up).
+#define ID_INTVELCOVGEOD 4065
 #define ID_INTATTEULER 4070  // SBF message id: Integrated attitude in Euler angles.
-#define ID_INTATTCCOEULER \
-  4072  // SBF message id: Integrated attitude covariance matrix of Euler angles.
-#define ID_INTPVAAGEOD \
-  4045  // SBF message id: Integrated position, velocity, acceleration and attitude.
+// SBF message id: Integrated attitude covariance matrix of Euler angles.
+#define ID_INTATTCCOEULER 4072
+// SBF message id: Integrated position, velocity, acceleration and attitude.
+#define ID_INTPVAAGEOD 4045
 #define ID_INSNAVCART 4225  // SBF message id: INS solution in Cartesian coordinates.
 #define ID_INSNAVGEOD 4226  // SBF message id: INS solution in Geodetic coordinates.
-#define ID_IMUBIAS \
-  4241  // SBF message id: Estimated parameters of the IMU, such as the IMU biases and their
-        // standard deviation.
+// SBF message id: Estimated parameters of the IMU, such as the IMU biases and their
+// standard deviation.
+#define ID_IMUBIAS 4241
 
 // GNSS Attitude Blocks.
 #define ID_ATTEULER 5938     // SBF message id: GNSS attitude expressed as Euler angles.
@@ -342,16 +349,16 @@ extern int init_sbf(raw_t *raw) {
 #define ID_EXTEVENT 5924      // SBF message id: Time at the instant of an external event.
 #define ID_EXTEVENTCART 4937  // SBF message id: Cartesian position at the instant of an event.
 #define ID_EXTEVENTGEO 4938   // SBF message id: Geodetic position at the instant of an event.
-#define ID_EXTEVENTBASEVECCART \
-  4216  // SBF message id: XYZ relative position with respect to base(s) at the instant of an event.
-#define ID_EXTEVENTBASEVECGEOD \
-  4217  // SBF message id: ENU relative position with respect to base(s) at the instant of an event.
-#define ID_EXTEVENTINSNAVCART \
-  4229  // SBF message id: INS solution in Cartesian coordinates at the instant of an event.
-#define ID_EXTEVENTINSNAVGEOD \
-  4230  // SBF message id: INS solution in Geodetic coordinates at the instant of an event.
-#define ID_EXTEEVENTAATTEULER \
-  4237  // GNSS attitude expressed as Euler angles at the instant of an event.
+// SBF message id: XYZ relative position with respect to base(s) at the instant of an event.
+#define ID_EXTEVENTBASEVECCART 4216
+// SBF message id: ENU relative position with respect to base(s) at the instant of an event.
+#define ID_EXTEVENTBASEVECGEOD 4217
+// SBF message id: INS solution in Cartesian coordinates at the instant of an event.
+#define ID_EXTEVENTINSNAVCART 4229
+// SBF message id: INS solution in Geodetic coordinates at the instant of an event.
+#define ID_EXTEVENTINSNAVGEOD 4230
+// GNSS attitude expressed as Euler angles at the instant of an event.
+#define ID_EXTEEVENTAATTEULER 4237
 
 // Differential Correction Blocks.
 #define ID_DIFFCORRIN 5919   // SBF message id: Incoming RTCM or CMR message.
@@ -376,13 +383,13 @@ extern int init_sbf(raw_t *raw) {
 // External Sensor Blocks
 #define ID_EXTSENSORMEAS 4050  // SBF message id: Measurement set of external sensors of one epoch.
 #define ID_EXTSENSORSTATUS 4056  // SBF message id: Overall status of external sensors.
-#define ID_EXTSENSORSETUP \
-  4057  // SBF message id: General information about the setup of external sensors.
+// SBF message id: General information about the setup of external sensors.
+#define ID_EXTSENSORSETUP 4057
 #define ID_EXTSENSORSTATUS2 4223  // SBF message id: Overall status of external sensors.
 #define ID_EXTSENSORINFO 4222     // SBF message id: Configuration information of external sensors.
 #define ID_IMUSETUP 4224          // SBF message id: General information about the setup of the IMU.
-#define ID_VELSENSORSETUP \
-  4244  // SBF message id: General information about the setup of the velocity sensor.
+// SBF message id: General information about the setup of the velocity sensor.
+#define ID_VELSENSORSETUP 4244
 #define ID_LEVERARMSUPPORT1 4248  // SBF message id: LeverArm estimation.
 
 // Status Blocks
@@ -395,8 +402,8 @@ extern int init_sbf(raw_t *raw) {
 #define ID_OUTPUTLINK 4091     // SBF message id: Statistics on in´output streams.
 #define ID_NTRIPCLTSTAT 4053   // SBF message id: NTRIP client connection status.
 #define ID_NTRIPSVRSTAT 4122   // SBF message id: NTRIP server connection status.
-#define ID_IPSTATUS \
-  4058  // SBF message id: IP address, gateway and MAC address of Ethernet interface.
+// SBF message id: IP address, gateway and MAC address of Ethernet interface.
+#define ID_IPSTATUS 4058
 #define ID_WIFIAPSTATUS 4054     // SBF message id: WiFi status in access point mode.
 #define ID_WIFICLTSTATUS 4096    // SBF message id: WiFi status in client mode.
 #define ID_CELLULARSTATUS 4055   // SBF message id: Cellular status.
@@ -431,8 +438,8 @@ extern int init_sbf(raw_t *raw) {
 #define ID_ENCAPSOUT 4097  // SBF message id: SBF encapsulation of non-SBF messages.
 #define ID_RAWDATAIN 4236  // SBF message id: Incoming raw data message.
 #define ID_IMURAWSAMPLES 4250  // SBF message id: IMU Raw samples.
-#define ID_INTERFACESTATS \
-  4261  // SBF message id: Statistics (data traffic and Internet availability) of every interface.
+// SBF message id: Statistics (data traffic and Internet availability) of every interface.
+#define ID_INTERFACESTATS 4261
 
 // Advanced Blocks.
 #define ID_SYSINFO 6000  // SBF message id: System parameters for maintenance and support.
@@ -552,13 +559,13 @@ static int svid2sat(int svid) {
   if (svid <= 106) return satno(SYS_GAL, svid - 70);
   if (svid <= 119) return 0;  // L-Band (MMS) Satellite
   if (svid <= 140) return satno(SYS_SBS, svid);
-  if (svid <= 180) return satno(SYS_CMP, svid - 140);
+  if (svid <= 180) return satno(SYS_BDS, svid - 140);
   if (svid <= 187) return satno(SYS_QZS, svid - 180 + 192);
   if (svid <= 190) return 0;
   if (svid <= 197) return satno(SYS_IRN, svid - 190);
   if (svid <= 215) return satno(SYS_SBS, svid - 57);
   if (svid <= 222) return satno(SYS_IRN, svid - 208);
-  if (svid <= 245) return satno(SYS_CMP, svid - 182);
+  if (svid <= 245) return satno(SYS_BDS, svid - 182);
   return 0;  // Error
 }
 
@@ -578,8 +585,8 @@ static int sig_tbl[SBF_MAXSIG + 1][2] = {
     {SYS_GLO, CODE_L2P},  // 10: GLO L2P
     {SYS_GLO, CODE_L2C},  // 11: GLO L2C/A
     {SYS_GLO, CODE_L3Q},  // 12: GLO L3
-    {SYS_CMP, CODE_L1P},  // 13: BDS B1C
-    {SYS_CMP, CODE_L5P},  // 14: BDS B2a
+    {SYS_BDS, CODE_L1P},  // 13: BDS B1C
+    {SYS_BDS, CODE_L5P},  // 14: BDS B2a
     {SYS_IRN, CODE_L5A},  // 15: IRN L5
     {0, 0},               // 16: reserved
     {SYS_GAL, CODE_L1C},  // 17: GAL E1(L1BC)
@@ -593,13 +600,13 @@ static int sig_tbl[SBF_MAXSIG + 1][2] = {
     {SYS_SBS, CODE_L5I},  // 25: SBS L5
     {SYS_QZS, CODE_L5Q},  // 26: QZS L5
     {SYS_QZS, CODE_L6L},  // 27: QZS L6
-    {SYS_CMP, CODE_L2I},  // 28: BDS B1I
-    {SYS_CMP, CODE_L7I},  // 29: BDS B2I
-    {SYS_CMP, CODE_L6I},  // 30: BDS B3I
+    {SYS_BDS, CODE_L2I},  // 28: BDS B1I
+    {SYS_BDS, CODE_L7I},  // 29: BDS B2I
+    {SYS_BDS, CODE_L6I},  // 30: BDS B3I
     {0, 0},               // 31: reserved
     {SYS_QZS, CODE_L1L},  // 32: QZS L1C
     {SYS_QZS, CODE_L1Z},  // 33: QZS L1S
-    {SYS_CMP, CODE_L7D},  // 34: BDS B2b
+    {SYS_BDS, CODE_L7D},  // 34: BDS B2b
     {0, 0},               // 35: reserved
     {SYS_IRN, CODE_L9A},  // 36: IRN S
     {SYS_IRN, 0},         // 37: IRN L1
@@ -916,7 +923,7 @@ static int decode_measepoch(raw_t *raw) {
     }
     int sys = satsys(sat, NULL);
 
-    if (sig > SBF_MAXSIG || sig_tbl[sig][0] != sys) {
+    if (sig > SBF_MAXSIG || (sig_tbl[sig][0] & sys) == 0) {
       trace(2, "sbf measepoch sig error: sat=%d sig=%d\n", sat, sig);
       pi += len1 + len2 * n2;  // Skip block (and its sub-blocks).
       continue;
@@ -928,7 +935,7 @@ static int decode_measepoch(raw_t *raw) {
     init_obsd(raw->time, sat, raw->obuf.data + n);
 
     // Signals are noted here even if they map to CODE_NONE or have no
-    // freq index as it is need for the deltas.
+    // freq index as it is needed for the deltas.
     int code = sig_tbl[sig][1];
     int idx = sigindex(raw->obuf.data + n, sys, code, raw->opt);
 
@@ -1081,13 +1088,27 @@ static int decode_measepochextra(raw_t *raw) {
     if (n < 0) {
       continue;  // Channel is acquired but not tracked.
     }
-    int sys = sig_tbl[sig][0];
     int code = sig_tbl[sig][1];
-    if (sys == 0 || code == CODE_NONE) continue;  // Internal error.
+    if (code == CODE_NONE) {
+      // Internal error, unexpected signal, no code.
+      trace(1, "SBF unexpected signal, no code.\n");
+      continue;
+    }
+    int sys = satsys(raw->obuf.data[n].sat, NULL);
+    if (sig_tbl[sig][0] == 0) {
+      // Internal error, unexpected signal, no system.
+      trace(1, "SBF unexpected signal, no system.\n");
+      continue;
+    }
+    if ((sig_tbl[sig][0] & sys) == 0) {
+      // Internal error, inconsistent system.
+      trace(1, "SBF inconsistent system.\n");
+      continue;
+    }
     int idx = sigindex(raw->obuf.data + n, sys, code, NULL);
     if (idx < 0) continue;
 
-    // Write rcvr stds to unused RINEX fields.
+    // Note the rcvr stds.
     if (rcvstds) {
       uint16_t codeVarU = U2(raw, pi_chan + 6);
       if (codeVarU != 65535) {
@@ -1361,6 +1382,7 @@ static int decode_meas3ranges(raw_t *raw) {
         glofnc = (int)((gloFncs[satCnt / 2] >> (4 * (satCnt % 2))) & 0xf) - 8;
       }
       int satNo = satno(Meas3_NavSys[navsys], Meas3_SVIDBase[navsys] + svid);
+      int sys = satsys(satNo, NULL); // For the BDS2 BDS3 split.
 
       // Decode master measurement.
       int blockTypeMaster = U1(raw, idx);
@@ -1391,9 +1413,9 @@ static int decode_meas3ranges(raw_t *raw) {
         masterSignalIndex = signalIndexMasterShort;
         slaveSignalMask = signalList << (masterSignalIndex + 1);
         codeMaster = sigTable[navsys][masterSignalIndex];
-        masterFreqIndex = sigindex(raw->obuf.data + n, Meas3_NavSys[navsys], codeMaster, raw->opt);
+        masterFreqIndex = sigindex(raw->obuf.data + n, sys, codeMaster, raw->opt);
         if (masterFreqIndex >= 0 && satNo > 0) {
-          freqMaster = code2freq(Meas3_NavSys[navsys], codeMaster, glofnc);
+          freqMaster = code2freq(sys, codeMaster, glofnc);
           Pm = prbase + (pr_lsb + 4294967296.0 * prMsb) * 0.001;
           raw->obuf.data[n].P[masterFreqIndex] = Pm;
           SNRm = CN0 + 24.0;
@@ -1454,9 +1476,9 @@ static int decode_meas3ranges(raw_t *raw) {
           if (((signalMask >> masterSignalIndex) & 1) != 0) break;
         slaveSignalMask = signalMask ^ (1UL << masterSignalIndex);
         codeMaster = sigTable[navsys][masterSignalIndex];
-        masterFreqIndex = sigindex(raw->obuf.data + n, Meas3_NavSys[navsys], codeMaster, raw->opt);
+        masterFreqIndex = sigindex(raw->obuf.data + n, sys, codeMaster, raw->opt);
         if (masterFreqIndex >= 0 && satNo > 0) {
-          freqMaster = code2freq(Meas3_NavSys[navsys], codeMaster, glofnc);
+          freqMaster = code2freq(sys, codeMaster, glofnc);
           uint8_t isGPSPCode = (navsys == 0) && (codeMaster == CODE_L1W || codeMaster == CODE_L2W);
 
           Pm = (prLsb + 4294967296.0 * prMsb) * 0.001;
@@ -1497,7 +1519,7 @@ static int decode_meas3ranges(raw_t *raw) {
         masterSignalIndex = sbf->meas3_refEpoch.signalIdx[navsys][svid][0];
         slaveSignalMask = sbf->meas3_refEpoch.slaveSignalMask[navsys][svid];
         codeMaster = sigTable[navsys][masterSignalIndex];
-        masterFreqIndex = sigindex(raw->obuf.data + n, Meas3_NavSys[navsys], codeMaster, raw->opt);
+        masterFreqIndex = sigindex(raw->obuf.data + n, sys, codeMaster, raw->opt);
         if (masterFreqIndex >= 0 && satNo > 0) {
           uint8_t BF1 = U1(raw, idx);
           uint32_t BF2 = U4(raw, idx + 1);
@@ -1505,7 +1527,7 @@ static int decode_meas3ranges(raw_t *raw) {
           uint32_t CN0 = (BF2 >> 13) & 0x7;
           uint32_t cmc = BF2 >> 16;
 
-          freqMaster = code2freq(Meas3_NavSys[navsys], codeMaster, glofnc);
+          freqMaster = code2freq(sys, codeMaster, glofnc);
 
           double Pref = sbf->meas3_refEpoch.P[navsys][svid][codeMaster];
           int16_t prRateRef = sbf->meas3_refEpoch.prRate[navsys][svid];
@@ -1555,9 +1577,9 @@ static int decode_meas3ranges(raw_t *raw) {
         masterSignalIndex = sbf->meas3_refEpoch.signalIdx[navsys][svid][0];
         codeMaster = sigTable[navsys][masterSignalIndex];
         masterFreqIndex =
-            sigindex(raw->obuf.data + n, Meas3_NavSys[navsys], codeMaster, raw->opt);
+            sigindex(raw->obuf.data + n, sys, codeMaster, raw->opt);
         if (masterFreqIndex >= 0 && satNo > 0) {
-          freqMaster = code2freq(Meas3_NavSys[navsys], codeMaster, glofnc);
+          freqMaster = code2freq(sys, codeMaster, glofnc);
 
           double Pref = sbf->meas3_refEpoch.P[navsys][svid][codeMaster];
           int16_t prRateRef = sbf->meas3_refEpoch.prRate[navsys][svid];
@@ -1630,7 +1652,7 @@ static int decode_meas3ranges(raw_t *raw) {
           int codeSlave;
           codeSlave = sigTable[navsys][slaveSignalIndex];
           int slaveFreqIndex =
-              sigindex(raw->obuf.data + n, Meas3_NavSys[navsys], codeSlave, raw->opt);
+              sigindex(raw->obuf.data + n, sys, codeSlave, raw->opt);
           int lti = -1;
           int plltimer = -1;
           double Ps = 0, Ls = 0, SNRs = 0;
@@ -1646,7 +1668,7 @@ static int decode_meas3ranges(raw_t *raw) {
               lti = lti3;
               plltimer = Meas3_LTItoPLLTime[lti3];
               uint32_t CN0 = BF2 >> 3;
-              double freqSlave = code2freq(Meas3_NavSys[navsys], codeSlave, glofnc);
+              double freqSlave = code2freq(sys, codeSlave, glofnc);
 
               if (freqMaster > freqSlave)
                 Ps = Pm + prRel * 0.001 - 10;
@@ -1696,7 +1718,7 @@ static int decode_meas3ranges(raw_t *raw) {
               uint32_t prMsbRel = (BF1 >> 28) & 0x7;
               uint32_t CN0 = BF3 & 0x3f;
 
-              double freqSlave = code2freq(Meas3_NavSys[navsys], codeSlave, glofnc);
+              double freqSlave = code2freq(sys, codeSlave, glofnc);
               Ps = Pm + (prMsbRel * 65536 + prLsbRel) * 0.001 - 262.144;
               raw->obuf.data[n].P[slaveFreqIndex] = Ps;
 
@@ -1741,7 +1763,7 @@ static int decode_meas3ranges(raw_t *raw) {
               int slaveRefSigIdx = sbf->meas3_refEpoch.signalIdx[navsys][svid][slaveCnt + 1];
               int codeSlaveRef = sigTable[navsys][slaveRefSigIdx];
 
-              double freqSlave = code2freq(Meas3_NavSys[navsys], codeSlave, glofnc);
+              double freqSlave = code2freq(sys, codeSlave, glofnc);
               double Lmref = sbf->meas3_refEpoch.L[navsys][svid][codeMasterRef];
               double Lsref = sbf->meas3_refEpoch.L[navsys][svid][codeSlaveRef];
               Ls = Lsref + (Lm - Lmref) * freqSlave / freqMaster - 0.128 + dC * 0.001;
@@ -1894,7 +1916,7 @@ int decode_meas3Doppler(raw_t *raw) {
 
     int navsys;
     for (navsys = 0; navsys < 7; navsys++)
-      if (Meas3_NavSys[navsys] == sys) break;
+      if (Meas3_NavSys[navsys] & sys) break;
     if (navsys == 7) continue;
 
     int svid = prn - Meas3_SVIDBase[navsys];
@@ -1964,7 +1986,7 @@ int decode_meas3CN(raw_t *raw) {
 
     int navsys;
     for (navsys = 0; navsys < 7; navsys++)
-      if (Meas3_NavSys[navsys] == sys) break;
+      if (Meas3_NavSys[navsys] & sys) break;
     if (navsys == 7) continue;
 
     int svid = prn - Meas3_SVIDBase[navsys];
@@ -2542,7 +2564,7 @@ static int decode_cmpraw(raw_t *raw) {
   int svid = U1(raw, 14);
   int sat = svid2sat(svid);
   int prn;
-  if (!sat || satsys(sat, &prn) != SYS_CMP) {
+  if (!sat || (satsys(sat, &prn) & SYS_BDS) == 0) {
     trace(2, "sbf cmpraw svid error: svid=%d\n", svid);
     return -1;
   }
@@ -2613,7 +2635,7 @@ static int decode_bdsrawb1c(raw_t *raw) {
   int svid = U1(raw, 14);
   int sat = svid2sat(svid);
   int prn;
-  if (!sat || satsys(sat, &prn) != SYS_CMP) {
+  if (!sat || (satsys(sat, &prn) & SYS_BDS) == 0) {
     trace(2, "sbf bdsrawb1c svid error: svid=%d\n", svid);
     return -1;
   }
@@ -2644,7 +2666,7 @@ static int decode_bdsrawb2a(raw_t *raw) {
   int svid = U1(raw, 14);
   int sat = svid2sat(svid);
   int prn;
-  if (!sat || satsys(sat, &prn) != SYS_CMP) {
+  if (!sat || (satsys(sat, &prn) & SYS_BDS) == 0) {
     trace(2, "sbf bdsrawb2a svid error: svid=%d\n", svid);
     return -1;
   }
@@ -2673,7 +2695,7 @@ static int decode_bdsrawb2b(raw_t *raw) {
   int svid = U1(raw, 14);
   int sat = svid2sat(svid);
   int prn;
-  if (!sat || satsys(sat, &prn) != SYS_CMP) {
+  if (!sat || (satsys(sat, &prn) & SYS_BDS) == 0) {
     trace(2, "sbf bdsrawb2b svid error: svid=%d\n", svid);
     return -1;
   }
@@ -3443,7 +3465,7 @@ static int decode_cmpnav(raw_t *raw) {
   }
 
   uint8_t prn = U1(raw, 14) - 140;
-  int sat = satno(SYS_CMP, prn);
+  int sat = satno(SYS_BDS, prn);
 
   if (sat == 0) return -1;
 
@@ -3519,7 +3541,7 @@ static int decode_cmpcnav2(raw_t *raw, uint32_t sbf_id) {
   }
 
   uint8_t prn = U1(raw, 14);
-  int sat = satno(SYS_CMP, prn);
+  int sat = satno(SYS_BDS, prn);
 
   if (sat == 0) return -1;
 
@@ -3609,7 +3631,7 @@ static int decode_cmpalm(raw_t *raw) {
 
   uint16_t week = U2(raw, 12);
   alm_t alm;
-  alm.sat = satno(SYS_CMP, U1(raw, 14) - 140);
+  alm.sat = satno(SYS_BDS, U1(raw, 14) - 140);
   alm.week = adjust_WN8(week, U1(raw, 15));
   alm.toas = U4(raw, 16);
   alm.A = pow(R4(raw, 20), 2);

@@ -345,7 +345,7 @@ object OptDialog: TOptDialog
         TabOrder = 16
       end
       object NavSys2: TCheckBox
-        Left = 65
+        Left = 80
         Top = 268
         Width = 71
         Height = 19
@@ -354,7 +354,7 @@ object OptDialog: TOptDialog
         OnClick = NavSys2Click
       end
       object NavSys3: TCheckBox
-        Left = 134
+        Left = 164
         Top = 268
         Width = 61
         Height = 19
@@ -362,7 +362,7 @@ object OptDialog: TOptDialog
         TabOrder = 18
       end
       object NavSys4: TCheckBox
-        Left = 190
+        Left = 232
         Top = 268
         Width = 45
         Height = 19
@@ -370,30 +370,39 @@ object OptDialog: TOptDialog
         TabOrder = 19
       end
       object NavSys6: TCheckBox
-        Left = 241
+        Left = 288
         Top = 268
         Width = 69
         Height = 19
-        Caption = 'BDS'
+        Caption = 'BDS-2'
         TabOrder = 20
         OnClick = NavSys6Click
       end
       object NavSys7: TCheckBox
-        Left = 284
+        Left = 344
         Top = 268
-        Width = 48
+        Width = 69
         Height = 19
-        Caption = 'NavIC'
+        Caption = 'BDS-3'
         TabOrder = 21
         OnClick = NavSys6Click
       end
+      object NavSys8: TCheckBox
+        Left = 24
+        Top = 290
+        Width = 48
+        Height = 19
+        Caption = 'NavIC'
+        TabOrder = 22
+        OnClick = NavSys6Click
+      end
       object NavSys5: TCheckBox
-        Left = 338
-        Top = 268
+        Left = 80
+        Top = 290
         Width = 51
         Height = 19
         Caption = 'SBAS'
-        TabOrder = 22
+        TabOrder = 23
       end
     end
     object TabSheet2: TTabSheet
@@ -2355,6 +2364,30 @@ object OptDialog: TOptDialog
         Items.Strings = (
           'Horizontal'
           'Vertical')
+      end
+      object Label57: TLabel
+        Left = 32
+        Top = 237
+        Width = 96
+        Height = 13
+        Caption = 'Signal definitions'
+      end
+      object BtnSigs: TSpeedButton
+        Left = 127
+        Top = 234
+        Width = 18
+        Height = 21
+        Caption = '?'
+        Flat = True
+        Spacing = 0
+        OnClick = BtnFreqClick
+      end
+      object SigDef: TEdit
+        Left = 148
+        Top = 234
+        Width = 234
+        Height = 21
+        TabOrder = 15
       end
     end
   end

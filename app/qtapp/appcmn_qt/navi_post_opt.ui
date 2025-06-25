@@ -330,12 +330,22 @@
              <string/>
             </property>
             <property name="text">
-             <string>BDS</string>
+             <string>BDS-2</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QCheckBox" name="cBNavSys7">
+            <property name="toolTip">
+             <string/>
+            </property>
+            <property name="text">
+             <string>BDS-3</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="cBNavSys8">
             <property name="text">
              <string>NavIC</string>
             </property>
@@ -2854,7 +2864,7 @@
        <string>&amp;Misc</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_7">
-       <item row="10" column="5">
+        <item row="10" column="5">
         <widget class="QSpinBox" name="sBMonitorPort">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set monitor port number. &lt;/p&gt;&lt;p&gt;The monitor port is TCP server port to connect from outside or by RTKPLOT for real-time solution monitor. If multiple instances of RTKNAVI are generated, the following numbers are used automatically. If 0 is set, the monitor port is not used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -3256,6 +3266,48 @@
          </property>
         </widget>
        </item>
+       <item row="16" column="0">
+        <widget class="QLabel" name="Label49">
+         <property name="text">
+          <string>Signal definitions</string>
+         </property>
+         <property name="buddy">
+          <cstring>lESigDef</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="16" column="3">
+        <widget class="QPushButton" name="btnSigFreqs">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>30</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Show frequency table</string>
+         </property>
+         <property name="text">
+          <string>?</string>
+         </property>
+        </widget>
+       </item>
+       <item row="16" column="4" colspan="2">
+        <widget class="QLineEdit" name="lESigDef">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Define the frequency code to index mapping and the respective code priorities. Format: '-[system][band 1..9][priorities...][band 1..9][priorities...]...' (option: &lt;span style=&quot; font-style:italic;&quot;&gt;pos1-sigdef&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="maxLength">
+          <number>256</number>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="tabMiscPost">
@@ -3263,67 +3315,34 @@
        <string>&amp;Misc</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_15">
-       <item row="8" column="2">
-        <widget class="QLabel" name="lblRovers">
+       <item row="0" column="0" colspan="4">
+        <widget class="QLabel" name="lblInterpolationBaseStation">
          <property name="text">
-          <string>Rovers</string>
+          <string>Time Interpolation of Base Station Data</string>
          </property>
          <property name="buddy">
-          <cstring>tERoverList</cstring>
+          <cstring>cBIntputReferenceObservation</cstring>
          </property>
         </widget>
        </item>
-       <item row="9" column="3">
-        <widget class="QPlainTextEdit" name="tEBaseList">
+       <item row="0" column="4">
+        <widget class="QComboBox" name="cBIntputReferenceObservation">
          <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Input the base station ID list to replace keyword %b in input and output file paths. The line starting with &amp;quot;#&amp;quot; is treated as a comment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select ON to enable time interpolation of base station data (option: &lt;span style=&quot; font-style:italic;&quot;&gt;misc-timeinterp&lt;/span&gt;). &lt;/p&gt;&lt;p&gt;&lt;br/&gt;If selecting ON, the base station data are linearly interpolated to the rover epoch and DD (double- difference) is made with them. If not checked, nearest epoch of base station data is used for DD.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
-         <property name="plainText">
-          <string>base</string>
-         </property>
+         <item>
+          <property name="text">
+           <string>OFF</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>ON</string>
+          </property>
+         </item>
         </widget>
        </item>
-       <item row="4" column="2" colspan="2">
-        <widget class="QLineEdit" name="lERnxOptions1">
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify RINEX read options for rover RINEX observation data as follows (option: &lt;span style=&quot; font-style:italic;&quot;&gt;misc-rnxopt1&lt;/span&gt;). &lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Multiple options can be input separated by spaces.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-GLss[=+n.nn]: select GPS signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-RLss[=+n.nn]: select GLO signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-ELss[=+n.nn]: select GAL signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-JLss[=+n.nn]: select QZS signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-CLss[=+n.nn]: select BDS signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-SLss[=+n.nn]: select SBS signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;ss : signal id (refer Appendix D.3 of RTKLIB documentation)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;=+n.nn: phase shift +n.nn (cycle) to be add to carrier-phase observables&lt;/span&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Without the option and multiple signals in a frequency, RTKLIB select a signal for a frequency according to the default priorities of signals. Refer to Appendix D.4 Default Priorities of Multiple Signals of the documentation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="maxLength">
-          <number>256</number>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="2" colspan="2">
-        <widget class="QLineEdit" name="lEPPPOptions">
-         <property name="toolTip">
-          <string>Additional options for PPP processing</string>
-         </property>
-         <property name="maxLength">
-          <number>256</number>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="0">
-        <widget class="QLabel" name="lblRinexOptionsBase">
-         <property name="text">
-          <string>RINEX Options (Base)</string>
-         </property>
-         <property name="buddy">
-          <cstring>lERnxOptions2</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="lblRinexOptionsRover">
-         <property name="text">
-          <string>RINEX Options (Rover)</string>
-         </property>
-         <property name="buddy">
-          <cstring>lERnxOptions1</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0" colspan="3">
+       <item row="2" column="0" colspan="4">
         <widget class="QLabel" name="lblDGPSCorrection">
          <property name="text">
           <string>DGPS/DGNSS Corrections</string>
@@ -3333,34 +3352,71 @@
          </property>
         </widget>
        </item>
-       <item row="8" column="0">
-        <widget class="QLabel" name="lblStationList">
-         <property name="text">
-          <string>Station ID List</string>
-         </property>
-        </widget>
-       </item>
-       <item row="9" column="2">
-        <widget class="QPlainTextEdit" name="tERoverList">
+       <item row="2" column="4">
+        <widget class="QComboBox" name="cbDGPS">
          <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Input the rover ID list to replace keyword %r in input and output file paths. The line starting with &amp;quot;#&amp;quot; is treated as a comment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select source for differential GNSS data&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
-         <property name="plainText">
-          <string>rover</string>
+         <item>
+          <property name="text">
+           <string>SBAS</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>RTCM</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="3" column="0" colspan="3">
+        <widget class="QLabel" name="lblSbasSatellties">
+         <property name="text">
+          <string>SBAS Satellite Selection (0: All) </string>
          </property>
         </widget>
        </item>
-       <item row="8" column="3">
-        <widget class="QLabel" name="lblBaseStations">
+       <item row="3" column="3" colspan="2">
+        <widget class="QSpinBox" name="sBSbasSat">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If SBAS DGPS correction enabled, input SBAS satellite PRN number to be used (option: &lt;span style=&quot; font-style:italic;&quot;&gt;misc-sbasatsel&lt;/span&gt;). &lt;/p&gt;&lt;p&gt;If you input 0, all available SBAS satellites are used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="maximum">
+          <number>256</number>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0" colspan="2">
+        <widget class="QLabel" name="lblRinexOptionsRover">
          <property name="text">
-          <string>Base Stations</string>
+          <string>RINEX Options (Rover)</string>
          </property>
          <property name="buddy">
-          <cstring>tEBaseList</cstring>
+          <cstring>lERnxOptions1</cstring>
          </property>
         </widget>
        </item>
-       <item row="5" column="2" colspan="2">
+       <item row="4" column="3" colspan="2">
+        <widget class="QLineEdit" name="lERnxOptions1">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify RINEX read options for rover RINEX observation data as follows (option: &lt;span style=&quot; font-style:italic;&quot;&gt;misc-rnxopt1&lt;/span&gt;). &lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Multiple options can be input separated by spaces.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-GLss[=+n.nn]: select GPS signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-RLss[=+n.nn]: select GLO signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-ELss[=+n.nn]: select GAL signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-JLss[=+n.nn]: select QZS signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-CLss[=+n.nn]: select BDS signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-SLss[=+n.nn]: select SBS signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;ss : signal id (refer Appendix D.3 of RTKLIB documentation)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;=+n.nn: phase shift +n.nn (cycle) to be add to carrier-phase observables&lt;/span&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Without the option and multiple signals in a frequency, RTKLIB select a signal for a frequency according to the default priorities of signals. Refer to Appendix D.4 Default Priorities of Multiple Signals of the documentation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="maxLength">
+          <number>256</number>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0" colspan="2">
+        <widget class="QLabel" name="lblRinexOptionsBase">
+         <property name="text">
+          <string>RINEX Options (Base)</string>
+         </property>
+         <property name="buddy">
+          <cstring>lERnxOptions2</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="3" colspan="2">
         <widget class="QLineEdit" name="lERnxOptions2">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify RINEX read options for base-station RINEX observation data (option: &lt;span style=&quot; font-style:italic;&quot;&gt;misc-rnxopt2&lt;/span&gt;).&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Multiple options can be input separated by spaces.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-GLss[=+n.nn]: select GPS signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-RLss[=+n.nn]: select GLO signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-ELss[=+n.nn]: select GAL signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-JLss[=+n.nn]: select QZS signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-CLss[=+n.nn]: select BDS signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;-SLss[=+n.nn]: select SBS signal ss&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;ss : signal id (refer Appendix D.3 of RTKLIB documentation)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;=+n.nn: phase shift +n.nn (cycle) to be add to carrier-phase observables&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Without the option and multiple signals in a frequency, RTKLIB select a signal for a frequency according to the default priorities of signals. Refer to Appendix D.4 Default Priorities of Multiple Signals of the documentation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -3370,7 +3426,116 @@
          </property>
         </widget>
        </item>
-       <item row="9" column="0">
+       <item row="6" column="0">
+        <widget class="QLabel" name="Label51">
+         <property name="text">
+          <string>Signal definitions</string>
+         </property>
+         <property name="buddy">
+          <cstring>lESigDefPost</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="2">
+        <widget class="QPushButton" name="btnSigFreqsPost">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>30</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Show frequency table</string>
+         </property>
+         <property name="text">
+          <string>?</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="3" colspan="2">
+        <widget class="QLineEdit" name="lESigDefPost">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Define the frequency code to index mapping and the respective code priorities. Format: '-[system][band 1..9][priorities...][band 1..9][priorities...]...' (option: &lt;span style=&quot; font-style:italic;&quot;&gt;pos1-sigdef&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="maxLength">
+          <number>256</number>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0" colspan="2">
+        <widget class="QLabel" name="lblPPPOptions">
+         <property name="text">
+          <string>PPP Options</string>
+         </property>
+         <property name="buddy">
+          <cstring>lEPPPOptions</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="3" colspan="2">
+        <widget class="QLineEdit" name="lEPPPOptions">
+         <property name="toolTip">
+          <string>Additional options for PPP processing</string>
+         </property>
+         <property name="maxLength">
+          <number>256</number>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="0" colspan="2">
+        <widget class="QLabel" name="lblStationList">
+         <property name="text">
+          <string>Station ID List</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="3">
+        <widget class="QLabel" name="lblRovers">
+         <property name="text">
+          <string>Rovers</string>
+         </property>
+         <property name="buddy">
+          <cstring>tERoverList</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="4">
+        <widget class="QLabel" name="lblBaseStations">
+         <property name="text">
+          <string>Base Stations</string>
+         </property>
+         <property name="buddy">
+          <cstring>tEBaseList</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="3">
+        <widget class="QPlainTextEdit" name="tERoverList">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Input the rover ID list to replace keyword %r in input and output file paths. The line starting with &amp;quot;#&amp;quot; is treated as a comment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="plainText">
+          <string>rover</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="4">
+        <widget class="QPlainTextEdit" name="tEBaseList">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Input the base station ID list to replace keyword %b in input and output file paths. The line starting with &amp;quot;#&amp;quot; is treated as a comment.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="plainText">
+          <string>base</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="0" colspan="3">
         <widget class="QFrame" name="frame">
          <property name="frameShape">
           <enum>QFrame::Shape::Panel</enum>
@@ -3427,6 +3592,13 @@
             </property>
            </widget>
           </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>:</string>
+            </property>
+           </widget>
+          </item>
           <item row="2" column="2">
            <spacer name="verticalSpacer_2">
             <property name="orientation">
@@ -3440,85 +3612,7 @@
             </property>
            </spacer>
           </item>
-          <item row="1" column="1">
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>:</string>
-            </property>
-           </widget>
-          </item>
          </layout>
-        </widget>
-       </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="lblPPPOptions">
-         <property name="text">
-          <string>PPP Options</string>
-         </property>
-         <property name="buddy">
-          <cstring>lEPPPOptions</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="3">
-        <widget class="QComboBox" name="cbDGPS">
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select source for differential GNSS data&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <item>
-          <property name="text">
-           <string>SBAS</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>RTCM</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="0" column="0" colspan="3">
-        <widget class="QLabel" name="lblInterpolationBaseStation">
-         <property name="text">
-          <string>Time Interpolation of Base Station Data</string>
-         </property>
-         <property name="buddy">
-          <cstring>cBIntputReferenceObservation</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="3">
-        <widget class="QComboBox" name="cBIntputReferenceObservation">
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select ON to enable time interpolation of base station data (option: &lt;span style=&quot; font-style:italic;&quot;&gt;misc-timeinterp&lt;/span&gt;). &lt;/p&gt;&lt;p&gt;&lt;br/&gt;If selecting ON, the base station data are linearly interpolated to the rover epoch and DD (double- difference) is made with them. If not checked, nearest epoch of base station data is used for DD.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <item>
-          <property name="text">
-           <string>OFF</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>ON</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="3" column="0" colspan="2">
-        <widget class="QLabel" name="lblSbasSatellties">
-         <property name="text">
-          <string>SBAS Satellite Selection (0: All) </string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="2" colspan="2">
-        <widget class="QSpinBox" name="sBSbasSat">
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If SBAS DGPS correction enabled, input SBAS satellite PRN number to be used (option: &lt;span style=&quot; font-style:italic;&quot;&gt;misc-sbasatsel&lt;/span&gt;). &lt;/p&gt;&lt;p&gt;If you input 0, all available SBAS satellites are used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="maximum">
-          <number>256</number>
-         </property>
         </widget>
        </item>
       </layout>
@@ -3605,6 +3699,7 @@
   <tabstop>cBNavSys4</tabstop>
   <tabstop>cBNavSys6</tabstop>
   <tabstop>cBNavSys7</tabstop>
+  <tabstop>cBNavSys8</tabstop>
   <tabstop>cBNavSys5</tabstop>
   <tabstop>cBAmbiguityResolution</tabstop>
   <tabstop>cBAmbiguityResolutionGLO</tabstop>
@@ -3716,6 +3811,7 @@
   <tabstop>sBSbasSatellite</tabstop>
   <tabstop>sBMonitorPort</tabstop>
   <tabstop>lEProxyAddress</tabstop>
+  <tabstop>lESigDef</tabstop>
   <tabstop>btnFontPanel</tabstop>
   <tabstop>btnFontSolution</tabstop>
   <tabstop>cBPanelStack</tabstop>
@@ -3723,6 +3819,7 @@
   <tabstop>cbDGPS</tabstop>
   <tabstop>lERnxOptions1</tabstop>
   <tabstop>lERnxOptions2</tabstop>
+  <tabstop>lESigDefPost</tabstop>
   <tabstop>lEPPPOptions</tabstop>
   <tabstop>btnHelp</tabstop>
   <tabstop>tERoverList</tabstop>

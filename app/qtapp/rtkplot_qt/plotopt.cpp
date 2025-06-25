@@ -101,6 +101,7 @@ void PlotOptDialog::updateConfig()
     elevation_mask = ui->cBElevationMask->currentText().toDouble();
     timeFormat = ui->cBTimeFormat->currentIndex();
     elevationMaskEnabled = ui->cBElevationMaskPattern->currentIndex();
+    init_code2idx(qPrintable(ui->lERinexOptions->text()));
 }
 
 //---------------------------------------------------------------------------
@@ -329,8 +330,9 @@ int PlotOptDialog::getNavSys()
            (ui->cBNavSys3->isChecked() ? SYS_GAL : 0) |
            (ui->cBNavSys4->isChecked() ? SYS_QZS : 0) |
            (ui->cBNavSys5->isChecked() ? SYS_SBS : 0) |
-           (ui->cBNavSys6->isChecked() ? SYS_CMP : 0) |
-           (ui->cBNavSys7->isChecked() ? SYS_IRN : 0);
+           (ui->cBNavSys6->isChecked() ? SYS_BDS2 : 0) |
+           (ui->cBNavSys7->isChecked() ? SYS_BDS3 : 0) |
+           (ui->cBNavSys8->isChecked() ? SYS_IRN : 0);
 }
 //---------------------------------------------------------------------------
 QString PlotOptDialog::getExcludedSatellites()
@@ -468,6 +470,11 @@ QString PlotOptDialog::getTleSatelliteFile()
     return ui->lETLESatelliteFile->text();
 }
 //---------------------------------------------------------------------------
+QString PlotOptDialog::getSigDef()
+{
+    return ui->lESigDef->text();
+}
+//---------------------------------------------------------------------------
 QFont PlotOptDialog::getFont()
 {
     return fontOption;
@@ -523,8 +530,9 @@ void PlotOptDialog::loadOptions(QSettings & settings)
     ui->cBNavSys3->setChecked(navSys & SYS_GAL);
     ui->cBNavSys4->setChecked(navSys & SYS_QZS);
     ui->cBNavSys5->setChecked(navSys & SYS_SBS);
-    ui->cBNavSys6->setChecked(navSys & SYS_CMP);
-    ui->cBNavSys7->setChecked(navSys & SYS_IRN);
+    ui->cBNavSys6->setChecked(navSys & SYS_BDS2);
+    ui->cBNavSys7->setChecked(navSys & SYS_BDS3);
+    ui->cBNavSys8->setChecked(navSys & SYS_IRN);
     ui->cBAnimationCycle->setCurrentText(QString::number(settings.value("plot/animcycle", 10).toInt()));
     ui->sBRefreshCycle->setValue(settings.value("plot/refcycle", 100).toInt());
     ui->cBHideLowSatellites->setCurrentIndex(settings.value("plot/hidelowsat", 0).toInt());
@@ -534,6 +542,7 @@ void PlotOptDialog::loadOptions(QSettings & settings)
     ui->cBTimeSync->setChecked(settings.value("plot/timesyncout", 0).toBool());
     ui->sBTimeSyncPort->setValue(settings.value("plot/timesyncport", 10071).toInt());
     ui->lERinexOptions->setText(settings.value("plot/rnxopts", "").toString());
+    ui->lESigDef->setText(settings.value("plot/sigdef", "").toString());
     ui->lEShapeFile->setText(settings.value("plot/shapefile", "").toString());
     ui->lETLEFile->setText(settings.value("plot/tlefile", "").toString());
     ui->lETLESatelliteFile->setText(settings.value("plot/tlesatfile", "").toString());
@@ -634,8 +643,9 @@ void PlotOptDialog::saveOptions(QSettings & settings)
                                      (ui->cBNavSys3->isChecked() ? SYS_GAL : 0) |
                                      (ui->cBNavSys4->isChecked() ? SYS_QZS : 0) |
                                      (ui->cBNavSys5->isChecked() ? SYS_SBS : 0) |
-                                     (ui->cBNavSys6->isChecked() ? SYS_CMP : 0) |
-                                     (ui->cBNavSys7->isChecked() ? SYS_IRN : 0));
+                                     (ui->cBNavSys6->isChecked() ? SYS_BDS2 : 0) |
+                                     (ui->cBNavSys7->isChecked() ? SYS_BDS3 : 0) |
+                                     (ui->cBNavSys8->isChecked() ? SYS_IRN : 0));
     settings.setValue("plot/animcycle", ui->cBAnimationCycle->currentText().toInt());
     settings.setValue("plot/refcycle", ui->sBRefreshCycle->value());
     settings.setValue("plot/hidelowsat", ui->cBHideLowSatellites->currentIndex());
@@ -643,6 +653,7 @@ void PlotOptDialog::saveOptions(QSettings & settings)
     settings.setValue("plot/timesyncout", ui->cBTimeSync->isChecked());
     settings.setValue("plot/timesyncport", ui->sBTimeSyncPort->value());
     settings.setValue("plot/rnxopts", ui->lERinexOptions->text());
+    settings.setValue("plot/sigdef", ui->lESigDef->text());
 
     settings.setValue("plot/mcolor0", markerColor[0][0]);
     settings.setValue("plot/mcolor1", markerColor[0][1]);

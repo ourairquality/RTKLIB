@@ -112,6 +112,7 @@ static const char *help[]={
 "                  sbf  = Septentrio SBF",
 "                  unicore = Unicore binary data output",
 "                  rinex= RINEX",
+"     --sigdef sigdef  signal definitions",
 "     -ro opt      receiver options",
 "     -f freq      number of frequencies [all]",
 "     -hc comment  rinex header: comment line",
@@ -135,7 +136,7 @@ static const char *help[]={
 "     -mask   [sig[,...]] signal mask(s) (sig={G|R|E|J|S|C|I}L{1C|1P|1W|...})",
 "     -nomask [sig[,...]] signal no mask (same as above)",
 "     -x sat       exclude satellite",
-"     -y sys       exclude systems (G:GPS,R:GLO,E:GAL,J:QZS,S:SBS,C:BDS,I:IRN)",
+"     -y sys       exclude systems (G:GPS,R:GLO,E:GAL,J:QZS,S:SBS,C:BDS,C2:BDS-2,C3:BDS-3,I:IRN)",
 "     --glofcn [-7 to 6][,...]] GLONASS fcn for R01 to R32",
 "     -d dir       output directory [same as input file]",
 "     -c staid     use RINEX file name convention with staid [off]",
@@ -431,7 +432,7 @@ static int cmdopts(int argc, char **argv, rnxopt_t *opt, char **ifile,
     
     opt->rnxver=304;
     opt->obstype=OBSTYPE_PR|OBSTYPE_CP;
-    opt->navsys=SYS_GPS|SYS_GLO|SYS_GAL|SYS_QZS|SYS_SBS|SYS_CMP|SYS_IRN;
+    opt->navsys=SYS_GPS|SYS_GLO|SYS_GAL|SYS_QZS|SYS_SBS|SYS_BDS|SYS_IRN;
     opt->ttol = 0.005;
     
     for (i=0;i<RNX_NUMSYS;i++) {
@@ -466,6 +467,9 @@ static int cmdopts(int argc, char **argv, rnxopt_t *opt, char **ifile,
         }
         else if (!strcmp(argv[i],"-r" )&&i+1<argc) {
             fmt=argv[++i];
+        }
+        else if (!strcmp(argv[i],"--sigdef")&&i+1<argc) {
+            snprintf(opt->sigdef, sizeof(opt->sigdef), "%s" ,argv[++i]);
         }
         else if (!strcmp(argv[i],"-ro")&&i+1<argc) {
             strcpy(opt->rcvopt,argv[++i]);
@@ -570,7 +574,9 @@ static int cmdopts(int argc, char **argv, rnxopt_t *opt, char **ifile,
             else if (!strcmp(sys,"E")) opt->navsys&=~SYS_GAL;
             else if (!strcmp(sys,"J")) opt->navsys&=~SYS_QZS;
             else if (!strcmp(sys,"S")) opt->navsys&=~SYS_SBS;
-            else if (!strcmp(sys,"C")) opt->navsys&=~SYS_CMP;
+            else if (!strcmp(sys,"C")) opt->navsys&=~SYS_BDS;
+            else if (!strcmp(sys,"C2")) opt->navsys&=~SYS_BDS2;
+            else if (!strcmp(sys,"C3")) opt->navsys&=~SYS_BDS3;
             else if (!strcmp(sys,"I")) opt->navsys&=~SYS_IRN;
         }
         else if (!strcmp(argv[i], "--glofcn") && i + 1 < argc) {

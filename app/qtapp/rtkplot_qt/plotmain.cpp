@@ -2297,13 +2297,14 @@ void Plot::updateSatelliteSelection()
     else if (satelliteList == "R") sys = SYS_GLO;
     else if (satelliteList == "E") sys = SYS_GAL;
     else if (satelliteList == "J") sys = SYS_QZS;
-    else if (satelliteList == "C") sys = SYS_CMP;
+    else if (satelliteList == "C2") sys = SYS_BDS2;
+    else if (satelliteList == "C3") sys = SYS_BDS3;
     else if (satelliteList == "I") sys = SYS_IRN;
     else if (satelliteList == "S") sys = SYS_SBS;
 
     for (int i = 0; i < MAXSAT; i++) {
         satno2id(i + 1, id);
-        satelliteSelection[i] = (satelliteList == "ALL") || (satelliteList == id) || satsys(i + 1, NULL) == sys;
+        satelliteSelection[i] = (satelliteList == "ALL") || (satelliteList == id) || (satsys(i + 1, NULL) & sys) != 0;
     }
 }
 // update enable/disable of widgets -----------------------------------------

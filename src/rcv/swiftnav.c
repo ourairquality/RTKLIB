@@ -168,8 +168,8 @@ static bandcode_t rtklib_bandcode_map[CODE_COUNT] =
      {CODE_L5I, SYS_GPS, 3},     /* [CODE_GPS_L5I]  */
      {CODE_L5Q, SYS_GPS, 3},     /* [CODE_GPS_L5Q]  */
      {CODE_L5X, SYS_GPS, 3},     /* [CODE_GPS_L5X]  */
-     {CODE_L2I, SYS_CMP, 0},     /* [CODE_BDS2_B1]  */
-     {CODE_L7I, SYS_CMP, 1},     /* [CODE_BDS2_B2]  */
+     {CODE_L2I, SYS_BDS, 0},     /* [CODE_BDS2_B1]  */
+     {CODE_L7I, SYS_BDS, 1},     /* [CODE_BDS2_B2]  */
      {CODE_L1B, SYS_GAL, 0},     /* [CODE_GAL_E1B]  */
      {CODE_L1C, SYS_GAL, 0},     /* [CODE_GAL_E1C]  */
      {CODE_L1X, SYS_GAL, 0},     /* [CODE_GAL_E1X]  */
@@ -192,7 +192,7 @@ static bandcode_t rtklib_bandcode_map[CODE_COUNT] =
      {CODE_L5X, SYS_QZS, 3}};    /* [CODE_QZS_L5X]  */
 #define IS_GPS(c) (SYS_GPS == rtklib_bandcode_map[(c)].sys)
 #define IS_QZSS(c) (SYS_QZS == rtklib_bandcode_map[(c)].sys)
-#define IS_BDS(c) (SYS_CMP == rtklib_bandcode_map[(c)].sys)
+#define IS_BDS(c) (SYS_BDS == rtklib_bandcode_map[(c)].sys)
 #define IS_GLO(c) (SYS_GLO == rtklib_bandcode_map[(c)].sys)
 #define IS_GAL(c) (SYS_GAL == rtklib_bandcode_map[(c)].sys)
 #define IS_SBAS(c) (SYS_SBS == rtklib_bandcode_map[(c)].sys)
@@ -990,12 +990,12 @@ static int decode_bdsnav(raw_t *raw) {
   }
 
   prn = puiTmp[0];
-  if ((prn < MINPRNCMP) || (prn > MAXPRNCMP)) {
+  if ((prn < MINPRNBDS2) || (prn > MAXPRNBDS3)) {
     trace(2, "decode_bdsnav: prn error: sat=%d\n", prn);
     return -1;
   }
 
-  sat = satno(SYS_CMP, prn);
+  sat = satno(SYS_BDS, prn);
   if (sat == 0) {
     trace(2, "decode_bdsnav: can't work out Beidou sat for PRN %02d\n", prn);
     return -1;

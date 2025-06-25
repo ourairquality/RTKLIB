@@ -172,7 +172,12 @@
         </item>
         <item>
          <property name="text">
-          <string>BDS</string>
+          <string>BDS-2</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>BDS-3</string>
          </property>
         </item>
         <item>
@@ -214,7 +219,12 @@
         </item>
         <item>
          <property name="text">
-          <string>BDS</string>
+          <string>BDS-2</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>BDS-3</string>
          </property>
         </item>
         <item>

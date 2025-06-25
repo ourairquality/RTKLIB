@@ -59,11 +59,14 @@ __published:
 	TCheckBox *Nav5;
 	TComboBox *TraceLevel;
 	TLabel *Label3;
+	TLabel *Label14;
+	TEdit *SigDef;
 	TLabel *Label8;
 	TEdit *RcvOption;
 	TLabel *Label9;
 	TComboBox *RnxVer;
 	TCheckBox *Nav6;
+	TCheckBox *Nav7;
 	TEdit *MarkerType;
 	TEdit *MarkerNo;
 	TEdit *ExSats;
@@ -76,7 +79,7 @@ __published:
 	TCheckBox *OutLeaps;
 	TCheckBox *AutoPos;
 	TButton *BtnMask;
-	TCheckBox *Nav7;
+	TCheckBox *Nav8;
 	TCheckBox *HalfCyc;
 	TCheckBox *SortSats;
 	TCheckBox *ChkSepNav;

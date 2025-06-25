@@ -203,7 +203,7 @@ const double chisqr[100]={      /* chi-sqr(n) (alpha=0.001) */
 };
 const prcopt_t prcopt_default={ /* defaults processing options */
     PMODE_KINEMA,SOLTYPE_FORWARD, /* mode,soltype */
-    2,SYS_GPS|SYS_GLO|SYS_GAL,  /* nf, navsys */
+    2,"",SYS_GPS|SYS_GLO|SYS_GAL, /* nf, sigdef, navsys */
     15.0*D2R,{{0,0}},           /* elmin,snrmask */
     0,3,3,1,0,1,                /* sateph,modear,glomodear,gpsmodear,bdsmodear,arfilter */
     20,0,4,5,10,20,             /* maxout,minlock,minfixsats,minholdsats,mindropsats,minfix */
@@ -267,16 +267,111 @@ static const char *obscodes[MAXCODE + 1]={
     "6E","7D","7P","7Z","8D", "8P","4A","4B","4X","6D", /* 60-69 */
     "6P"
 };
-static char codepris[7][MAXFREQ][16]={  /* code priority for each freq-index */
-    /* L1/E1/B1 L2/E5b/B2b L5/E5a/B2a E6/LEX/B3 E5(a+b)         */
-    {"CPYWMNSLX","CPYWMNDLSX","IQX"    ,""       ,""        ,""}, /* GPS */
-    {"CPABX"   ,"CPABX"     ,"IQX"     ,""       ,""        ,""}, /* GLO */
-    {"CABXZ"   ,"XIQ"       ,"XIQ"     ,"ABCXZ"  ,"IQX"     ,""}, /* GAL */
-    {"CLSXZBE" ,"LSX"       ,"IQXDPZ"  ,"LSXEZ"  ,""        ,""}, /* QZS */
-    {"C"       ,"IQX"       ,""        ,""       ,""        ,""}, /* SBS */
-    {"IQX"     ,"IQXDPZ"    ,"DPX"     ,"IQXDPZA","DPXSLZAN","DPX"}, /* BDS */
-    {"ABCX"    ,"ABCX"      ,"DPX"     ,""       ,""        ,""}  /* IRN */
+// Signal band names, usable for presentation in the frequency tables.
+static const char codebandname[8][9][5] = {
+  {  "L1", "L2",   "",   "", "L5",   "",   "",   "",   ""}, // GPS
+  {  "L1",   "",   "",   "", "L5",   "",   "",   "",   ""}, // SBS
+  {  "G1", "G2", "G3","G1a",   "","G2a",   "",   "",   ""}, // GLONASS
+  {  "E1",   "",    "",  "","E5A", "E6","E5B","E5AB",  ""}, // Galileo
+  {  "L1", "L2",   "",   "", "L5", "L6",   "",   "",   ""}, // QZSS
+  {    "", "B1",   "",   "",   "", "B3", "B2",   "",   ""}, // BDS-2
+  { "B1C", "B1",   "",   "","B2a", "B3","B2a","B2ab",  ""}, // BDS-3
+  {  "L1",   "",   "",   "", "L5",   "",   "",   "",  "S"}, // IRN
 };
+// Code priority for each frequency band.
+static const char default_codepris[8][9][16]={
+  {"CPYWMNSLX", "CPYWMNDLSX", ""   , ""   , "IQX"   , ""      , ""   , ""   , ""}, // GPS
+  {"C"        , "IQX"       , ""   , ""   , ""      , ""      , ""   , ""   , ""}, // SBS
+  {"CP"       , "CP"        , "IQX", "ABX", ""      , "ABX"   , ""   , ""   , ""}, // GLO
+  {"CABXZ"    , ""          , ""   , ""   , "XIQ"   , "ABCXZ" , "XIQ", "IQX", ""}, // GAL
+  {"CLSXZBE"  , "LSX"       , ""   , ""   , "IQXDPZ", "LSXEZ" , ""   , ""   , ""}, // QZS
+  {""         , "IQX"       , ""   , ""   , ""      , "IQX"   , "IQX", ""   , ""}, // BDS-2
+  {"DPXSLZ"   , "IQX"       , ""   , ""   , "DPX"   , "IQXDPZ", "DPZ", "DPX", ""}, // BDS-3
+  {"DPX"      , ""          , ""   , ""   , "ABCX"  , ""      , ""   , ""   , "ABCX"} // IRN
+};
+// Copy of the above, modified by the sigdef and setcodepriorities().
+static char codepris[8][9][16]={
+  {"CPYWMNSLX", "CPYWMNDLSX", ""   , ""   , "IQX"   , ""      , ""   , ""   , ""}, // GPS
+  {"C"        , "IQX"       , ""   , ""   , ""      , ""      , ""   , ""   , ""}, // SBS
+  {"CP"       , "CP"        , "IQX", "ABX", ""      , "ABX"   , ""   , ""   , ""}, // GLO
+  {"CABXZ"    , ""          , ""   , ""   , "XIQ"   , "ABCXZ" , "XIQ", "IQX", ""}, // GAL
+  {"CLSXZBE"  , "LSX"       , ""   , ""   , "IQXDPZ", "LSXEZ" , ""   , ""   , ""}, // QZS
+  {""         , "IQX"       , ""   , ""   , ""      , "IQX"   , "IQX", ""   , ""}, // BDS-2
+  {"DPXSLZ"   , "IQX"       , ""   , ""   , "DPX"   , "IQXDPZ", "DPZ", "DPX", ""}, // BDS-3
+  {"DPX"      , ""          , ""   , ""   , "ABCX"  , ""      , ""   , ""   , "ABCX"} // IRN
+};
+// The RTKLIB frequency index for each systems observation code frequency band
+// (per the RINEX specification). This mapping is expected to be the same
+// across all data processed and is indexed using only the code band. Codes in
+// the same band are assigned the same frequency index, per system, with BDS
+// split into BDS-2 and BDS-3 to allow separate mappings. Whereas the code
+// priorities for a given frequency index can vary per receiver.  There are 9
+// RINEX obs code bands, 1 to 9.
+static const int default_codebandidx[8][9] = {
+  // GPS: L1, L2,,, L5.
+  {  0,  1, -1, -1,  2, -1, -1, -1, -1},
+  // SBS: L1,,,, L5.
+  {  0, -1, -1, -1,  1, -1, -1, -1, -1},
+  // GLONASS: G1, G2, G3, G1a,, G2a.
+  {  0,  1,  2,  3, -1,  4, -1, -1, -1},
+  // Galileo: E1,,,, E5a, E6, E5b, E5ab.
+  {  0, -1, -1, -1,  1,  2,  3,  4, -1},
+  // QZSS: L1, L2,,, L5, L6.
+  {  0,  1, -1, -1,  2,  3, -1, -1, -1},
+  // BDS-2: , B1,,,, B3, B2.
+  { -1,  0, -1, -1, -1,  1,  2, -1, -1},
+  // BDS-3: B1C, B1,,, B2a, B3, B2b, B2ab.
+  {  4,  0, -1, -1,  2,  1,  3,  5, -1},
+  // IRN: L1,,,, L5,,,, S.
+  {  0, -1, -1, -1,  1, -1, -1, -1,  2},
+};
+// Copy of the above, modified by the sigdef option.
+static int codebandidx[8][9] = {
+  {  0,  1, -1, -1,  2, -1, -1, -1, -1},
+  {  0, -1, -1, -1,  1, -1, -1, -1, -1},
+  {  0,  1,  2,  3, -1,  4, -1, -1, -1},
+  {  0, -1, -1, -1,  1,  2,  3,  4, -1},
+  {  0,  1, -1, -1,  2,  3, -1, -1, -1},
+  { -1,  0, -1, -1, -1,  1,  2, -1, -1},
+  {  4,  0, -1, -1,  2,  1,  3,  5, -1},
+  {  0, -1, -1, -1,  1, -1, -1, -1,  2},
+};
+// Reverse mapping from the internal frequency index to the code band.
+// This can be useful for quickly determining the signal frequency
+// given a system and internal frequency index. GLONASS needs special
+// handling.
+static const int default_idxcodeband[8][MAXFREQ] = {
+  // GPS: L1, L2, L5.
+  {1, 2, 5, 0, 0, 0},
+  // SBS: L1, L5.
+  {1, 5, 0, 0, 0, 0},
+  // GLONASS: G1, G2, G3, G1a, G2a, [special handling for G1 and G2]
+  {1, 2, 3, 4, 6, 0},
+  // Galileo: E1, E5a, E6, E5b, E5ab.
+  // Was 1 7 5 6 8 (demo5)
+  {1, 5, 6, 7, 8, 0},
+  // QZSS: L1, L2, L5, L6.
+  {1, 2, 5, 6, 0, 0},
+  // BDS-2: B1, B3, B2.
+  {2, 6, 7, 0, 0, 0},
+  // BDS-3: B1, B3, B2a, B2b, B1C, B2ab.
+  // Was 2 7 5 6 1 8 (demo5)
+  {2, 6, 5, 7, 1, 8},
+  // IRN: L5, S, L1.
+  {5, 9, 1, 0, 0, 0},
+};
+// Copy of the above, modified by the sigdef option.
+static int idxcodeband[8][MAXFREQ] = {
+  {1, 2, 5, 0, 0, 0},
+  {1, 5, 0, 0, 0, 0},
+  {1, 2, 3, 4, 6, 0},
+  {1, 5, 6, 7, 8, 0},
+  {1, 2, 5, 6, 0, 0},
+  {2, 6, 7, 0, 0, 0},
+  {2, 6, 5, 7, 1, 8},
+  {1, 5, 9, 0, 0, 0},
+};
+
 static fatalfunc_t *fatalfunc=NULL; /* fatal callback function */
 
 /* crc tables generated by util/gencrc ---------------------------------------*/
@@ -412,19 +507,30 @@ extern int satno(int sys, int prn)
         case SYS_QZS:
             if (prn<MINPRNQZS||MAXPRNQZS<prn) return 0;
             return NSATGPS+NSATGLO+NSATGAL+prn-MINPRNQZS+1;
-        case SYS_CMP:
-            if (prn<MINPRNCMP||MAXPRNCMP<prn) return 0;
-            return NSATGPS+NSATGLO+NSATGAL+NSATQZS+prn-MINPRNCMP+1;
+        case SYS_BDS2:
+            if (prn<MINPRNBDS2||MAXPRNBDS2<prn) return 0;
+            return NSATGPS+NSATGLO+NSATGAL+NSATQZS+prn-MINPRNBDS2+1;
+        case SYS_BDS3:
+            if (prn<MINPRNBDS3||MAXPRNBDS3<prn) return 0;
+            return NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATBDS2+prn-MINPRNBDS3+1;
+        case SYS_BDS:
+            // Accept this case too, to save the caller having to separate
+            // BDS2 and BDS3.
+            if (MINPRNBDS2 <= prn && prn <= MAXPRNBDS2)
+              return NSATGPS+NSATGLO+NSATGAL+NSATQZS+prn-MINPRNBDS2+1;
+            if (MINPRNBDS3 <= prn && prn <= MAXPRNBDS3)
+              return NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATBDS2+prn-MINPRNBDS3+1;
+            return 0;
         case SYS_IRN:
             if (prn<MINPRNIRN||MAXPRNIRN<prn) return 0;
-            return NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATCMP+prn-MINPRNIRN+1;
+            return NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATBDS2+NSATBDS3+prn-MINPRNIRN+1;
         case SYS_LEO:
             if (prn<MINPRNLEO||MAXPRNLEO<prn) return 0;
-            return NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATCMP+NSATIRN+
+            return NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATBDS2+NSATBDS3+NSATIRN+
                    prn-MINPRNLEO+1;
         case SYS_SBS:
             if (prn<MINPRNSBS||MAXPRNSBS<prn) return 0;
-            return NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATCMP+NSATIRN+NSATLEO+
+            return NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATBDS2+NSATBDS3+NSATIRN+NSATLEO+
                    prn-MINPRNSBS+1;
     }
     return 0;
@@ -451,10 +557,13 @@ extern int satsys(int sat, int *prn)
     else if ((sat-=NSATGAL)<=NSATQZS) {
         sys=SYS_QZS; sat+=MINPRNQZS-1;
     }
-    else if ((sat-=NSATQZS)<=NSATCMP) {
-        sys=SYS_CMP; sat+=MINPRNCMP-1;
+    else if ((sat-=NSATQZS)<=NSATBDS2) {
+        sys=SYS_BDS2; sat+=MINPRNBDS2-1;
     }
-    else if ((sat-=NSATCMP)<=NSATIRN) {
+    else if ((sat-=NSATBDS2)<=NSATBDS3) {
+        sys=SYS_BDS3; sat+=MINPRNBDS3-1;
+    }
+    else if ((sat-=NSATBDS3)<=NSATIRN) {
         sys=SYS_IRN; sat+=MINPRNIRN-1;
     }
     else if ((sat-=NSATIRN)<=NSATLEO) {
@@ -492,7 +601,9 @@ extern int satid2no(const char *id)
         case 'R': sys=SYS_GLO; prn+=MINPRNGLO-1; break;
         case 'E': sys=SYS_GAL; prn+=MINPRNGAL-1; break;
         case 'J': sys=SYS_QZS; prn+=MINPRNQZS-1; break;
-        case 'C': sys=SYS_CMP; prn+=MINPRNCMP-1; break;
+        case 'C':
+          // Same prn base as for BDS2, and satno() accepts SYS_BDS.
+          sys=SYS_BDS; prn += MINPRNBDS2 - 1; break;
         case 'I': sys=SYS_IRN; prn+=MINPRNIRN-1; break;
         case 'L': sys=SYS_LEO; prn+=MINPRNLEO-1; break;
         case 'S': sys=SYS_SBS; prn+=100; break;
@@ -514,7 +625,10 @@ extern void satno2id(int sat, char id[8])
         case SYS_GLO: snprintf(id,8,"R%02d",prn-MINPRNGLO+1); return;
         case SYS_GAL: snprintf(id,8,"E%02d",prn-MINPRNGAL+1); return;
         case SYS_QZS: snprintf(id,8,"J%02d",prn-MINPRNQZS+1); return;
-        case SYS_CMP: snprintf(id,8,"C%02d",prn-MINPRNCMP+1); return;
+        case SYS_BDS2:
+        case SYS_BDS3:
+          // Same prn base for BDS2 and BDS3.
+          snprintf(id,8,"C%02d",prn-MINPRNBDS2+1); return;
         case SYS_IRN: snprintf(id,8,"I%02d",prn-MINPRNIRN+1); return;
         case SYS_LEO: snprintf(id,8,"L%02d",prn-MINPRNLEO+1); return;
         case SYS_SBS: snprintf(id,8,"%03d" ,prn); return;
@@ -627,153 +741,229 @@ extern const char *code2obs(uint8_t code)
     if (code<=CODE_NONE||MAXCODE<code) return "";
     return obscodes[code];
 }
-/* GPS obs code to frequency -------------------------------------------------*/
-static int code2freq_GPS(uint8_t code, double *freq)
-{
-    const char *obs=code2obs(code);
 
-    switch (obs[0]) {
-        case '1': *freq=FREQL1; return 0; /* L1 */
-        case '2': *freq=FREQL2; return 1; /* L2 */
-        case '5': *freq=FREQL5; return 2; /* L5 */
-    }
-    return -1;
-}
-/* GLONASS obs code to frequency ---------------------------------------------*/
-static int code2freq_GLO(uint8_t code, int fcn, double *freq)
-{
-    const char *obs=code2obs(code);
-
-    switch (obs[0]) {
-        case '1':  /* G1 */
-          if (fcn<-7||fcn>6) return -1;
-          *freq=FREQ1_GLO+DFRQ1_GLO*fcn;
-          return 0;
-        case '2': /* G2 */
-          if (fcn<-7||fcn>6) return -1;
-          *freq=FREQ2_GLO+DFRQ2_GLO*fcn;
-          return 1;
-        case '3': *freq=FREQ3_GLO;               return 2; /* G3 */
-        case '4': *freq=FREQ1a_GLO;              return 0; /* G1a */
-        case '6': *freq=FREQ2a_GLO;              return 1; /* G2a */
-    }
-    return -1;
-}
-/* Galileo obs code to frequency ---------------------------------------------*/
-static int code2freq_GAL(uint8_t code, double *freq)
-{
-    const char *obs=code2obs(code);
-
-    switch (obs[0]) {
-        case '1': *freq=FREQL1; return 0; /* E1 */
-        case '7': *freq=FREQE5b; return 1; /* E5b */
-        case '5': *freq=FREQL5; return 2; /* E5a */
-        case '6': *freq=FREQL6; return 3; /* E6 */
-        case '8': *freq=FREQE5ab; return 4; /* E5ab */
-    }
-    return -1;
-}
-/* QZSS obs code to frequency ------------------------------------------------*/
-static int code2freq_QZS(uint8_t code, double *freq)
-{
-    const char *obs=code2obs(code);
-
-    switch (obs[0]) {
-        case '1': *freq=FREQL1; return 0; /* L1 */
-        case '2': *freq=FREQL2; return 1; /* L2 */
-        case '5': *freq=FREQL5; return 2; /* L5 */
-        case '6': *freq=FREQL6; return 3; /* L6 */
-    }
-    return -1;
-}
-/* SBAS obs code to frequency ------------------------------------------------*/
-static int code2freq_SBS(uint8_t code, double *freq)
-{
-    const char *obs=code2obs(code);
-
-    switch (obs[0]) {
-        case '1': *freq=FREQL1; return 0; /* L1 */
-        case '5': *freq=FREQL5; return 1; /* L5 */
-    }
-    return -1;
-}
-/* BDS obs code to frequency -------------------------------------------------*/
-static int code2freq_BDS(uint8_t code, double *freq)
-{
-    const char *obs=code2obs(code);
-
-    switch (obs[0]) {
-        case '2': *freq=FREQ1_CMP; return 0; /* B1I */
-        case '7': *freq=FREQ2_CMP; return 1; /* B2,B2b */
-        case '5': *freq=FREQL5;    return 2; /* B2a */
-        case '6': *freq=FREQ3_CMP; return 3; /* B3 */
-        case '1': *freq=FREQL1;    return 4; /* B1C,B1A */
-        case '8': *freq=FREQE5ab;  return 5; /* B2ab */
-    }
-    return -1;
-}
-/* NavIC obs code to frequency -----------------------------------------------*/
-static int code2freq_IRN(uint8_t code, double *freq)
-{
-    const char *obs=code2obs(code);
-
-    switch (obs[0]) {
-        case '5': *freq=FREQL5; return 0; /* L5 */
-        case '9': *freq=FREQs; return 1; /* S */
-        case '1': *freq=FREQL1; return 2; /* L1 */
-    }
-    return -1;
-}
 /* system and obs code to frequency index --------------------------------------
 * convert system and obs code to frequency index
 * args   : int    sys       I   satellite system (SYS_???)
 *          uint8_t code     I   obs code (CODE_???)
 * return : frequency index (-1: error)
-*                       0     1     2     3     4     5
-*           ---------------------------------------------
-*            GPS       L1    L2    L5     -     -     -
-*            GLONASS   G1    G2    G3     -     -     -  (G1=G1,G1a,G2=G2,G2a)
-*            Galileo   E1    E5b   E5a   E6   E5ab    -
-*            QZSS      L1    L2    L5    L6     -     -
-*            SBAS      L1     -    L5     -     -     -
-*            BDS       B1    B2b   B2a   B3   B1C   B2ab
-*            NavIC     L5     S    L1     -     -     -
 *-----------------------------------------------------------------------------*/
-extern int code2idx(int sys, uint8_t code)
-{
-    double freq;
-
-    switch (sys) {
-        case SYS_GPS: return code2freq_GPS(code,&freq);
-        case SYS_GLO: return code2freq_GLO(code,0,&freq);
-        case SYS_GAL: return code2freq_GAL(code,&freq);
-        case SYS_QZS: return code2freq_QZS(code,&freq);
-        case SYS_SBS: return code2freq_SBS(code,&freq);
-        case SYS_CMP: return code2freq_BDS(code,&freq);
-        case SYS_IRN: return code2freq_IRN(code,&freq);
-    }
+extern int code2idx(int sys, uint8_t code) {
+  const char *obs = code2obs(code);
+  if (obs[0] < '1' || obs[0] > '9') {
+    trace(1, "internal error: code2idx called with unexpected code=%d\n", code);
     return -1;
+  }
+  int band = obs[0] - '1';
+  int sysno = sys2no(sys);
+  if (sysno == 0 || sysno > 8) {
+    trace(1, "internal error: code2idx called with undefined sys=%d\n", sys);
+    return -1;
+  }
+  if (1 << (sysno - 1) != sys) {
+    trace(1, "internal error: code2idx called with ambiguous sys=%d\n", sys);
+    return -1;
+  }
+  return codebandidx[sysno - 1][band];
+}
+
+/* system and obs code to frequency index --------------------------------------
+* convert system and obs code to frequency index
+* args   : int    sys       I   satellite system (SYS_???)
+*          int    idx       I   frequency index
+* return : band number (0: error)
+*-----------------------------------------------------------------------------*/
+extern int idx2band(int sys, int idx) {
+  int sysno = sys2no(sys);
+  if (sysno == 0 || sysno > 8) {
+    trace(1, "internal error: idx2band called with undefined sys=%d\n", sys);
+    return 0.0;
+  }
+  if (1 << (sysno - 1) != sys) {
+    trace(1, "internal error: idx2band called with ambiguous sys=%d\n", sys);
+    return 0.0;
+  }
+
+  return idxcodeband[sysno - 1][idx];
+}
+// Return a signal frequency band name for the given system and internal
+// frequency index. The band name is intended for presentation. Optionally
+// return the band number and the code priorities.
+extern const char *getcodebandname(int sys, int band)
+{
+  int sysno = sys2no(sys);
+  if (sysno == 0 || sysno > 8) {
+    trace(1, "internal error: getcodebandname called with undefined sys=%d\n", sys);
+    return "";
+  }
+  if (1 << (sysno - 1) != sys) {
+    trace(1, "internal error: getcodebandname called with ambiguous sys=%d\n", sys);
+    return "";
+  }
+
+  if (band <= 0 || band > 9) {
+    trace(1, "internal error: band=%d out of range in getcodebandname\n", band);
+    return "";
+  }
+
+  return codebandname[sysno - 1][band - 1];
+}
+
+// Initialize the code to index mapping and optionally the respective code
+// priorities.
+//
+// String encoding format:
+//  '-[system][band 1..9][priorities...][band 1..9][priorities...]...'
+//
+// The specified systems are modified from the defaults. The systems may occur
+// in any order. Following the system, the bands and code priorities are read
+// for each frequency index. Each new band number starts the next frequency
+// index. A band number may be immediately repeated without the index being
+// increased to assist formatting. White spaces and commas are ignored and may
+// be used for formatting. The RINEX bands are numbered 1 to 9, and a band of
+// zero skips an index. If code priorities are supplied then they replace the
+// default code priorities, per system code band.
+//
+// Example: '-G 1,2,5 -E 1,5,6 -C2 6 -C3 1,5,6 -S 1 -I 1,5'
+//
+// For example, terse: '-G1C2LS5Q-E1C5QX6B-C26I-C31P5P6I-S1C-I1C5Q'
+// For example, terse: '-G1C2LS5Q-E1C5QX6B-C26I-C31P5P6I-S1C-I1C5Q'
+//
+// For example, verbose: '-G 1C,2L,2S,5Q -E 1C,5QX,6B -C2 6I -C3 1P,5P,6I -S 1C -I 1C,5Q'
+//
+extern void init_code2idx(const char *sigdef)
+{
+  trace(2, "init_code2idx: sigdef='%s'\n", sigdef);
+  // Reinitialize the defaults, so that the effect of the signal definition is
+  // repeatable and modifies the defaults rather than being incremental.
+  memcpy(codepris, default_codepris, sizeof(codepris));
+  memcpy(codebandidx, default_codebandidx, sizeof(codebandidx));
+  memcpy(idxcodeband, default_idxcodeband, sizeof(idxcodeband));
+  const char *p = sigdef;
+  int sysn = -1;
+  while (p[0]) {
+    p = strchr(p, '-');
+    if (p == NULL || p[1] == '\0') return;
+    switch (p[1]) {
+      case 'G': // GPS
+        p += 2;
+        sysn = 0;
+        break;
+      case 'S': // SBAS
+        p += 2;
+        sysn = 1;
+        break;
+      case 'R': // GLONASS
+        p += 2;
+        sysn = 2;
+        break;
+      case 'E': // Galileo
+        p += 2;
+        sysn = 3;
+        break;
+      case 'J': // QZSS
+        p += 2;
+        sysn = 4;
+        break;
+      case 'C': // BDS
+        if (p[2] == '2') { // BDS2
+          p += 3;
+          sysn = 5;
+          break;
+        }
+        if (p[2] == '3') { // BDS3
+          p += 3;
+          sysn = 6;
+          break;
+        }
+        trace(0, "Unexpected BDS system at %s\n", p);
+        p++;
+        continue;
+      case 'I': // NavIC
+        p += 2;
+        sysn = 7;
+        break;
+      default:
+        trace(0, "Unexpected system at %s\n", p);
+        p++;
+        continue;
+    }
+    // Clear the assignments for this system.
+    for (int i = 0; i < 9; i++) codebandidx[sysn][i] = -1;
+    for (int idx = 0; idx < MAXFREQ; idx++) idxcodeband[sysn][idx] = 0;;
+    int idx = -1, band = -1, npri = 0;
+    for (; p[0]; p++) {
+      if (p[0] == '-') break;
+      if (p[0] == ',' || p[0] == ' ' || p[0] == '\t' || p[0] == '\r' || p[0] == '\n') continue;
+      // Allow band 0, to skip a frequency index.
+      if (p[0] >= '0' && p[0] <= '9') {
+        int b = p[0] - '0';
+        if (b == band) continue;
+        // New band, increase the frequency index.
+        idx++;
+        if (b > 0) {
+          if (idx < 6) {
+            codebandidx[sysn][b - 1] = idx;
+            idxcodeband[sysn][idx] = b;
+          }
+          else
+            trace(0, "Frequency index overflow at '%s'\n", p);
+        }
+        band = b > 0 ? b : -1;
+        npri = 0;
+        continue;
+      }
+      if (p[0] >= 'A' && p[0] <= 'Z') {
+        if (idx < 0 || band < 0) {
+          trace(0, "Unexpected code at '%s'\n", p);
+          p++;
+          continue;
+        }
+        // The first code priority clears the priorities list.
+        if (npri == 0) memset(codepris[sysn][band - 1], 0, sizeof(codepris[0][0]));
+        // Add this code to the priorities list.
+        if (npri >= (int)sizeof(codepris[0][0]) - 1) {
+          trace(0, "Code priorities overflow at '%s'\n", p);
+          continue;
+        }
+        codepris[sysn][band - 1][npri] = p[0];
+        npri++;
+        continue;
+      }
+      trace(0, "Unexpected code at '%s'\n", p);
+    }
+  }
 }
 
 // sigindex --------------------------------------------
 //
-// Allocate a new signal frequency index for the signal with the given code and
-// taking into account the code priorities. There can be multiple codes for a
-// given frequency index and if there is a conflict then this is resolved
-// using the code priorities. If the new code has a higher priority then the
-// current signal is moved into the extra-obs region and the new allocation is
-// initialized. If there is an existing frequency index allocation with the
-// same code then the data is not modified which allows repeated calls with
-// the same index, vs allocating multiple frequency indices for the same
-// code. It is assumed that the data code at an unused index is set to
-// CODE_NONE. On the first allocation at a data index the data is
-// initialized. The system could be computed form the data->sat, but pass it
-// in anyway as the caller usually has this pre-computed.
+// Allocate a new signal frequency index for the signal with the given code
+// and taking into account the code priorities. There can be multiple codes
+// for a given frequency index and if there is a conflict then this is
+// resolved using the code priorities. If the new code has a higher priority
+// then the current signal is moved into the extra-obs region and the new
+// allocation is initialized. If there is an existing frequency index
+// allocation with the same code then the data is not modified which allows
+// repeated calls with the same index, vs allocating multiple frequency
+// indices for the same code. It is assumed that the data code at an unused
+// index is set to CODE_NONE. On the first allocation at a data index the data
+// is initialized. The system can be computed form the data->sat, but allow it
+// to be passed in anyway as the caller usually has this pre-computed.
 //
 // If the opt argument is NULL then do not allocate a new index, rather just
 // search for a matching allocation for the given code using the same search
 // strategy but without checking consistency of the code priorities.
 extern int sigindex(obsd_t *data, int sys, int code, const char *opt) {
+  // A particular system is expected, to uniquely define the allocation, so
+  // try the satellite if no system, or an ambiguous system, is supplied.
+  if (sys == 0 || sys == SYS_BDS) {
+    sys = satsys(data->sat, NULL);
+    if (sys == SYS_NONE) {
+      trace(1, "sigindex undefined system for sat=%d sys=%d code=%d\n", data->sat, sys, code);
+      return -1;
+    }
+  }
+
   int idx = code2idx(sys, code);
   if (idx < 0) return -1;
 
@@ -794,7 +984,7 @@ extern int sigindex(obsd_t *data, int sys, int code, const char *opt) {
     return idx;
   }
 
-  // Search the extra obs region, for matching code, or a free index.  The
+  // Search the extra obs region, for a matching code, or a free index. The
   // allocations in the region are in order, so can stop at the first free
   // index.
   int idx2;
@@ -843,27 +1033,129 @@ extern int sigindex(obsd_t *data, int sys, int code, const char *opt) {
   return idx;
 }
 
+/* GPS obs code to frequency -------------------------------------------------*/
+static double band2freq_GPS(int band)
+{
+    switch (band) {
+        case 1: return FREQL1; // L1
+        case 2: return FREQL2; // L2
+        case 5: return FREQL5; // L5
+    }
+    return 0.0;
+}
+/* GLONASS obs code to frequency ---------------------------------------------*/
+static double band2freq_GLO(int band, int fcn)
+{
+    switch (band) {
+        case 1: // G1
+          if (fcn < -7 || fcn > 6) return 0.0;
+          return FREQ1_GLO + DFRQ1_GLO * fcn;
+        case 2: // G2
+          if (fcn < -7 || fcn > 6) return 0.0;
+          return FREQ2_GLO + DFRQ2_GLO * fcn;
+        case 3: return FREQ3_GLO;  // G3
+        case 4: return FREQ1a_GLO; // G1a
+        case 6: return FREQ2a_GLO; // G2a
+    }
+    return 0.0;
+}
+/* Galileo obs code to frequency ---------------------------------------------*/
+static double band2freq_GAL(int band)
+{
+    switch (band) {
+        case 1: return FREQL1;   // E1
+        case 7: return FREQE5b;  // E5b
+        case 5: return FREQL5;   // E5a
+        case 6: return FREQL6;   // E6
+        case 8: return FREQE5ab; // E5ab
+    }
+    return 0.0;
+}
+/* QZSS obs code to frequency ------------------------------------------------*/
+static double band2freq_QZS(int band)
+{
+    switch (band) {
+        case 1: return FREQL1; // L1
+        case 2: return FREQL2; // L2
+        case 5: return FREQL5; // L5
+        case 6: return FREQL6; // L6
+    }
+    return 0.0;
+}
+/* SBAS obs code to frequency ------------------------------------------------*/
+static int band2freq_SBS(int band)
+{
+    switch (band) {
+        case 1: return FREQL1; // L1
+        case 5: return FREQL5; // L5
+    }
+    return 0.0;
+}
+/* BDS obs code to frequency -------------------------------------------------*/
+static double band2freq_BDS(int band)
+{
+    switch (band) {
+        case 2: return FREQ1_CMP; // B1I
+        case 7: return FREQ2_CMP; // B2 (BDS2),B2b (BDS3)
+        case 5: return FREQL5;    // B2a
+        case 6: return FREQ3_CMP; // B3, B3A (BDS3)
+        case 1: return FREQL1;    // B1C,B1A
+        case 8: return FREQE5ab;  // B2ab (BDS3)
+    }
+    return 0.0;
+}
+/* NavIC obs code to frequency -----------------------------------------------*/
+static double band2freq_IRN(int band)
+{
+    switch (band) {
+        case 5: return FREQL5; // L5
+        case 9: return FREQs;  // S
+        case 1: return FREQL1; // L1
+    }
+    return 0.0;
+}
+// System and frequency band to frequency ------------------------------------
+// Convert system and frequency to carrier frequency
+// Args   : int    sys       I   satellite system (SYS_???)
+//          int    band      I   RINEX band number [1 to 9]
+//          int    fcn       I   frequency channel number for GLONASS
+// Return : carrier frequency (Hz) (0.0: error)
+//
+// Note the frequency for now does not depend on the sub-system, on the
+// distinction between BDS2 and BDS3 so the 'sys' argument may be SYS_BDS, in
+// contrast to code2idx() which may vary between BDS2 and BDS3 and so can not
+// accept SYS_BDS.
+extern double band2freq(int sys, int band, int fcn)
+{
+  if (band == 0) return 0.0;
+  switch (sys) {
+    case SYS_GPS: return band2freq_GPS(band);
+    case SYS_GLO: return band2freq_GLO(band, fcn);
+    case SYS_GAL: return band2freq_GAL(band);
+    case SYS_QZS: return band2freq_QZS(band);
+    case SYS_SBS: return band2freq_SBS(band);
+    case SYS_BDS2:
+    case SYS_BDS3:
+    case SYS_BDS: return band2freq_BDS(band);
+    case SYS_IRN: return band2freq_IRN(band);
+  }
+  return 0.0;
+}
 /* system and obs code to frequency --------------------------------------------
 * convert system and obs code to carrier frequency
 * args   : int    sys       I   satellite system (SYS_???)
 *          uint8_t code     I   obs code (CODE_???)
 *          int    fcn       I   frequency channel number for GLONASS
 * return : carrier frequency (Hz) (0.0: error)
+*
+* As with band2freq() this also accepts SYS_BDS.
 *-----------------------------------------------------------------------------*/
 extern double code2freq(int sys, uint8_t code, int fcn)
 {
-    double freq=0.0;
-
-    switch (sys) {
-        case SYS_GPS: (void)code2freq_GPS(code,&freq); break;
-        case SYS_GLO: (void)code2freq_GLO(code,fcn,&freq); break;
-        case SYS_GAL: (void)code2freq_GAL(code,&freq); break;
-        case SYS_QZS: (void)code2freq_QZS(code,&freq); break;
-        case SYS_SBS: (void)code2freq_SBS(code,&freq); break;
-        case SYS_CMP: (void)code2freq_BDS(code,&freq); break;
-        case SYS_IRN: (void)code2freq_IRN(code,&freq); break;
-    }
-    return freq;
+    const char *obs = code2obs(code);
+    if (obs[0] == '\0') return 0.0;
+    int band = obs[0] - '0';
+    return band2freq(sys, band, fcn);
 }
 /* satellite and obs code to frequency -----------------------------------------
 * convert satellite and obs code to carrier frequency
@@ -892,60 +1184,129 @@ extern double sat2freq(int sat, uint8_t code, const nav_t *nav)
     }
     return code2freq(sys,code,fcn);
 }
+/* satellite and obs code to frequency -----------------------------------------
+* convert satellite and obs code to carrier frequency
+* args   : int    sat       I   satellite number
+*          int    idx       I   frequency index
+*          nav_t  *nav_t    I   navigation data for GLONASS (NULL: not used)
+* return : carrier frequency (Hz) (0.0: error)
+*-----------------------------------------------------------------------------*/
+extern double satidx2freq(int sat, int idx, const nav_t *nav)
+{
+    int i,fcn=-8,sys,prn;
+
+    sys=satsys(sat,&prn);
+
+    if (sys==SYS_GLO && nav) {
+        /* First non-empty entry */
+        for (i=0;i<nav->ng;i++) {
+            if (nav->geph[i].sat==sat) break;
+        }
+        if (i<nav->ng) {
+            fcn=nav->geph[i].frq;
+        }
+        else if (nav->glo_fcn[prn-1]>0) {
+            fcn=nav->glo_fcn[prn-1]-8;
+        }
+    }
+    return band2freq(sys, idx2band(sys, idx), fcn);
+}
 /* set code priority -----------------------------------------------------------
 * set code priority for multiple codes in a frequency
 * args   : int    sys       I   system (or of SYS_???)
-*          int    idx       I   frequency index (0- )
+*          int    band      I   RINEX code band (1 to 9)
 *          char   *pri      I   priority of codes (series of code characters)
 *                               (higher priority precedes lower)
 * return : none
+*
+* Priorities are also set by the sigdef.
 *-----------------------------------------------------------------------------*/
-extern void setcodepri(int sys, int idx, const char *pri)
+extern void setcodepriorities(int sys, int band, const char *pri)
 {
-    trace(3,"setcodepri:sys=%d idx=%d pri=%s\n",sys,idx,pri);
+  trace(3,"setcodepri:sys=%d band=%d pri=%s\n", sys, band, pri);
 
-    if (idx<0||idx>=MAXFREQ) return;
-    if (sys&SYS_GPS) strcpy(codepris[0][idx],pri);
-    if (sys&SYS_GLO) strcpy(codepris[1][idx],pri);
-    if (sys&SYS_GAL) strcpy(codepris[2][idx],pri);
-    if (sys&SYS_QZS) strcpy(codepris[3][idx],pri);
-    if (sys&SYS_SBS) strcpy(codepris[4][idx],pri);
-    if (sys&SYS_CMP) strcpy(codepris[5][idx],pri);
-    if (sys&SYS_IRN) strcpy(codepris[6][idx],pri);
+  int sysno = sys2no(sys);
+  if (sysno == 0 || sysno > 8) {
+    trace(1, "internal error: setcodepriorities called with undefined sys=%d\n", sys);
+    return;
+  }
+  if (1 << (sysno - 1) != sys) {
+    trace(1, "internal error: setcodepriorities called with ambiguous sys=%d\n", sys);
+    return;
+  }
+
+  if (band < 1 || band > 9) {
+    trace(1, "internal error: band=%d out of range in setcodepriorities\n", band);
+    return;
+  }
+
+  snprintf(codepris[sysno - 1][band - 1], sizeof(codepris[0][band - 1]), "%s", pri);
 }
-/* get code priority -----------------------------------------------------------
-* get code priority for multiple codes in a frequency
-* args   : int    sys       I   system (SYS_???)
+// Return the code priorities for the given system and frequency index, before
+// variation by receiver specific options.
+extern char *getcodepriorities(int sys, int band)
+{
+  int sysno = sys2no(sys);
+  if (sysno == 0 || sysno > 8) {
+    trace(1, "internal error: getcodepriorities called with undefined sys=%d\n", sys);
+    return "";
+  }
+  if (1 << (sysno - 1) != sys) {
+    trace(1, "internal error: getcodepriorities called with ambiguous sys=%d\n", sys);
+    return "";
+  }
+
+  if (band < 1 || band > 9) {
+    trace(1, "internal error: band=%d out of range in getcodepriorities\n", band);
+    return "";
+  }
+
+  return codepris[sysno - 1][band - 1];
+}
+/* Get code priority -----------------------------------------------------------
+* Get code priority for multiple codes in a frequency
+* Args   : int    sys       I   system (SYS_???)
 *          uint8_t code     I   obs code (CODE_???)
 *          char   *opt      I   code options (NULL:no option)
-* return : priority (15:highest-1:lowest,0:error)
+* Return : priority (15:highest-1:lowest,0:error)
+*
+* The priorites start at 15 and decrease for each matching system and code
+* band in the options, and then for each priority in the common priorities
+* list.
 *-----------------------------------------------------------------------------*/
 extern int getcodepri(int sys, uint8_t code, const char *opt)
 {
-    const char *p,*optstr, *obs;
-    char str[8]="";
-    int i,j;
+  const char *optstr;
+  int sysno;
+  switch (sys) {
+    case SYS_GPS: sysno = 0; optstr="-GL%2s"; break;
+    case SYS_SBS: sysno = 1; optstr="-SL%2s"; break;
+    case SYS_GLO: sysno = 2; optstr="-RL%2s"; break;
+    case SYS_GAL: sysno = 3; optstr="-EL%2s"; break;
+    case SYS_QZS: sysno = 4; optstr="-JL%2s"; break;
+    case SYS_BDS2: sysno = 5; optstr="-C2L%2s"; break;
+    case SYS_BDS3: sysno = 6; optstr="-C3L%2s"; break;
+    case SYS_IRN: sysno = 7; optstr="-IL%2s"; break;
+    default: return 0;
+  }
 
-    switch (sys) {
-        case SYS_GPS: i=0; optstr="-GL%2s"; break;
-        case SYS_GLO: i=1; optstr="-RL%2s"; break;
-        case SYS_GAL: i=2; optstr="-EL%2s"; break;
-        case SYS_QZS: i=3; optstr="-JL%2s"; break;
-        case SYS_SBS: i=4; optstr="-SL%2s"; break;
-        case SYS_CMP: i=5; optstr="-CL%2s"; break;
-        case SYS_IRN: i=6; optstr="-IL%2s"; break;
-        default: return 0;
-    }
-    if ((j=code2idx(sys,code))<0) return 0;
-    obs=code2obs(code);
+  const char *obs = code2obs(code);
+  int band = obs[0] - '1';
+  if (band < 1 || band > 9) return 0;
 
-    /* parse code options */
-    for (p=opt;p&&(p=strchr(p,'-'));p++) {
-        if (sscanf(p,optstr,str)<1||str[0]!=obs[0]) continue;
-        return str[1]==obs[1]?15:0;
-    }
-    /* search code priority */
-    return (p=strchr(codepris[i][j],obs[1]))?14-(int)(p-codepris[i][j]):0;
+  // Parse code options.
+  int pri = 15;
+  for (const char *p = opt; p && (p = strchr(p, '-')); p++) {
+    char str[8] = "";
+    if (sscanf(p, optstr, str) < 1 || str[0] != obs[0]) continue;
+    if (str[1] == obs[1]) return pri;
+    if (pri > 0) pri--;
+  }
+  // Search code priority.
+  char *p = strchr(codepris[sysno][band - 1], obs[1]);
+  if (p == NULL) return 0;
+  pri -= p - codepris[sysno][band - 1];
+  return pri < 0 ? 0 : pri;
 }
 /* Extract unsigned/signed bits ------------------------------------------------
 * extract unsigned/signed bits from byte data
@@ -993,7 +1354,7 @@ extern void setbitu(uint8_t *buff, unsigned pos, unsigned len, uint32_t data)
         return;
     }
     uint32_t mask=1u<<(len-1);
-    for (int i=pos;i<pos+len;i++,mask>>=1) {
+    for (unsigned int i=pos;i<pos+len;i++,mask>>=1) {
         if (data&mask)
             buff[i/8]|=1u<<(7-i%8);
         else
@@ -2472,7 +2833,7 @@ static int code2sys(char code) {
     case 'R': return SYS_GLO;
     case 'E': return SYS_GAL;
     case 'J': return SYS_QZS;
-    case 'C': return SYS_CMP;
+    case 'C': return SYS_BDS;
     case 'I': return SYS_IRN;
     case 'L': return SYS_LEO;
     case 'S': return SYS_SBS;
@@ -2534,7 +2895,7 @@ extern int readsinex(const char *file, satsvns_t *satsvns) {
         trace(1, "Sinex: no mapping to sat for '%s'\n", satid);
         continue; // Give up on this mapping
       }
-      if (svnsys != satsys(satsvn.sat, NULL)) {
+      if ((svnsys & satsys(satsvn.sat, NULL)) == 0) {
         trace(0, "Error: sinex svn sys '%c' and prn sys '%c' not consistent.\n", buff[1], buff[36]);
         continue;
       }
@@ -3342,7 +3703,7 @@ extern pcv_t *searchpcv(int sat, const char *type, gtime_t time, const satsvns_t
     if (satsvns) svn = searchsatsvn(sat, time, satsvns);
     for (int i = 0; i < pcvs->n; i++) {
       pcv_t *pcv = pcvs->pcv + i;
-      if (pcv->satsys && pcv->satsys != sys) continue;
+      if (pcv->satsys && (pcv->satsys & sys) == 0) continue;
       if (svn) {
         if (pcv->svn != svn) {
           if (pcv->sat && pcv->sat == sat) {
@@ -4633,7 +4994,8 @@ extern double ionppp(const double *pos, const double *azel, double re,
 extern int seliflc(int optnf,int sys)
 {
     /* use L1/L5 for Galileo if L5 is enabled */
-    return((optnf==2||sys!=SYS_GAL)?1:2);
+    //return((optnf==2||sys!=SYS_GAL)?1:2);
+    return 1;
 }
 
 /* Troposphere model -----------------------------------------------------------
