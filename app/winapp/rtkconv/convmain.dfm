@@ -3,7 +3,7 @@ object MainWindow: TMainWindow
   Top = 0
   BorderIcons = [biSystemMenu, biMinimize]
   Caption = 'RTKCONV'
-  ClientHeight = 391
+  ClientHeight = 393
   ClientWidth = 472
   Color = clWhite
   Constraints.MaxHeight = 430

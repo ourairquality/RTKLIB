@@ -131,7 +131,7 @@ extern void strconvfree(strconv_t *conv)
 /* copy received data from receiver raw to rtcm ------------------------------*/
 static void raw2rtcm(rtcm_t *out, const raw_t *raw, int ret)
 {
-    int i,sat,set,sys,prn;
+    int i,sat,set;
     
     out->time=raw->time;
     
@@ -140,7 +140,7 @@ static void raw2rtcm(rtcm_t *out, const raw_t *raw, int ret)
             out->time=raw->obs.data[i].time;
             out->obs.data[i]=raw->obs.data[i];
             
-            sys=satsys(raw->obs.data[i].sat,&prn);
+            int prn, sys = satsyst(raw->obs.data[i].sat, raw->obs.data[i].time, &prn);
             if (sys==SYS_GLO&&raw->nav.glo_fcn[prn-1]) {
                 out->nav.glo_fcn[prn-1]=raw->nav.glo_fcn[prn-1];
             }
@@ -150,13 +150,13 @@ static void raw2rtcm(rtcm_t *out, const raw_t *raw, int ret)
     else if (ret==2) {
         sat=raw->ephsat;
         set=raw->ephset;
-        sys=satsys(sat,&prn);
+        int prn, sys = satsys(sat, &prn);
         if (sys==SYS_GLO) {
             out->nav.geph[prn-1]=raw->nav.geph[prn-1];
             out->ephsat=sat;
             out->ephset=set;
         }
-        else if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_CMP||
+        else if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_BDS2||sys==SYS_BDS3||
                  sys==SYS_IRN) {
             out->nav.eph[sat-1+MAXSAT*set]=raw->nav.eph[sat-1+MAXSAT*set];
             out->ephsat=sat;
@@ -184,7 +184,7 @@ static void raw2rtcm(rtcm_t *out, const raw_t *raw, int ret)
 /* copy received data from receiver rtcm to rtcm -----------------------------*/
 static void rtcm2rtcm(rtcm_t *out, const rtcm_t *rtcm, int ret, int stasel)
 {
-    int i,sat,set,sys,prn;
+    int i,sat,set;
     
     out->time=rtcm->time;
     
@@ -194,7 +194,7 @@ static void rtcm2rtcm(rtcm_t *out, const rtcm_t *rtcm, int ret, int stasel)
         for (i=0;i<rtcm->obs.n;i++) {
             out->obs.data[i]=rtcm->obs.data[i];
             
-            sys=satsys(rtcm->obs.data[i].sat,&prn);
+            int prn, sys = satsyst(rtcm->obs.data[i].sat, rtcm->obs.data[i].time, &prn);
             if (sys==SYS_GLO&&rtcm->nav.glo_fcn[prn-1]) {
                 out->nav.glo_fcn[prn-1]=rtcm->nav.glo_fcn[prn-1];
             }
@@ -204,13 +204,13 @@ static void rtcm2rtcm(rtcm_t *out, const rtcm_t *rtcm, int ret, int stasel)
     else if (ret==2) {
         sat=rtcm->ephsat;
         set=rtcm->ephset;
-        sys=satsys(sat,&prn);
+        int prn, sys = satsys(sat, &prn);
         if (sys==SYS_GLO) {
             out->nav.geph[prn-1]=rtcm->nav.geph[prn-1];
             out->ephsat=sat;
             out->ephset=set;
         }
-        else if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_CMP||
+        else if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_BDS2||sys==SYS_BDS3||
                  sys==SYS_IRN) {
             out->nav.eph[sat-1+MAXSAT*set]=rtcm->nav.eph[sat-1+MAXSAT*set];
             out->ephsat=sat;
@@ -232,7 +232,7 @@ static void write_rtcm3_msm(stream_t *str, rtcm_t *out, int msg, int sync)
     else if (1091<=msg&&msg<=1097) sys=SYS_GAL;
     else if (1101<=msg&&msg<=1107) sys=SYS_SBS;
     else if (1111<=msg&&msg<=1117) sys=SYS_QZS;
-    else if (1121<=msg&&msg<=1127) sys=SYS_CMP;
+    else if (1121<=msg&&msg<=1127) sys=SYS_BDS;
     else if (1131<=msg&&msg<=1137) sys=SYS_IRN;
     else return;
     
@@ -241,7 +241,7 @@ static void write_rtcm3_msm(stream_t *str, rtcm_t *out, int msg, int sync)
     
     /* count number of satellites and signals */
     for (i=0;i<nobs&&i<MAXOBS;i++) {
-        if (satsys(data[i].sat,NULL)!=sys) continue;
+        if ((satsyst(data[i].sat, data[i].time, NULL) & sys) == 0) continue;
         nsat++;
         for (j=0;j<NFREQ+NEXOBS;j++) {
             if (!(code=data[i].code[j])||mask[code-1]) continue;
@@ -264,7 +264,7 @@ static void write_rtcm3_msm(stream_t *str, rtcm_t *out, int msg, int sync)
     
     for (i=j=0;i<nmsg;i++) {
         for (n=0;n<ns&&j<nobs&&j<MAXOBS;j++) {
-            if (satsys(data[j].sat,NULL)!=sys) continue;
+            if ((satsyst(data[j].sat, data[j].time, NULL) & sys) == 0) continue;
             out->obs.data[n++]=data[j];
         }
         out->obs.n=n;
@@ -341,11 +341,11 @@ static int nextsat(nav_t *nav, int sat, int msg)
         case 1045: sys=SYS_GAL; set=1; p1=MINPRNGAL; p2=MAXPRNGAL; break;
         case 1046: sys=SYS_GAL; set=0; p1=MINPRNGAL; p2=MAXPRNGAL; break;
         case   63:
-        case 1042: sys=SYS_CMP; set=0; p1=MINPRNCMP; p2=MAXPRNCMP; break;
+        case 1042: sys=SYS_BDS; set=0; p1=MINPRNBDS; p2=MAXPRNBDS; break;
         case 1041: sys=SYS_IRN; set=0; p1=MINPRNIRN; p2=MAXPRNIRN; break;
         default: return 0;
     }
-    if (satsys(sat,&p0)!=sys) return satno(sys,p1);
+    if ((satsys(sat, &p0) & sys) == 0) return satno(sys, p1);
     
     /* search next valid ephemeris */
     for (p=p0>=p2?p1:p0+1;p!=p0;p=p>=p2?p1:p+1) {

@@ -134,15 +134,16 @@ static gtime_t time_stat={0};    /* rtk status file time */
 *          velef/velnf/veluf : velocity e/n/u (m/s) fixed
 *          accef/accnf/accuf : acceleration e/n/u (m/s^2) fixed
 *
-*   $CLK,week,tow,stat,clk1,clk2,clk3,clk4,clk5,clk6
+*   $CLK,week,tow,stat,clk1,clk2,clk3,clk4,clk5,clk6,clk7
 *          week/tow : gps week no/time of week (s)
 *          stat     : solution status
 *          clk1     : receiver clock bias GPS (ns)
 *          clk2     : receiver clock bias GLO-GPS (ns)
 *          clk3     : receiver clock bias GAL-GPS (ns)
-*          clk4     : receiver clock bias BDS-GPS (ns)
-*          clk5     : receiver clock bias IRN-GPS (ns)
-*          clk6     : receiver clock bias QZS-GPS (ns)
+*          clk4     : receiver clock bias BDS2-GPS (ns)
+*          clk5     : receiver clock bias BDS3-GPS (ns)
+*          clk6     : receiver clock bias IRN-GPS (ns)
+*          clk7     : receiver clock bias QZS-GPS (ns)
 *
 *   $ION,week,tow,stat,sat,az,el,ion,ion-fixed
 *          week/tow : gps week no/time of week (s)
@@ -282,10 +283,10 @@ extern int rtkoutstat(rtk_t *rtk, int level, char *buff)
                        0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
         }
         /* Receiver clocks */
-        p+=sprintf(p,"$CLK,%d,%.3f,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n",
+        p+=sprintf(p,"$CLK,%d,%.3f,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n",
                    week,tow,rtk->sol.stat,1,rtk->sol.dtr[0]*1E9,rtk->sol.dtr[1]*1E9,
                    rtk->sol.dtr[2]*1E9,rtk->sol.dtr[3]*1E9,
-                   rtk->sol.dtr[4]*1E9,rtk->sol.dtr[5]*1E9);
+                   rtk->sol.dtr[4]*1E9,rtk->sol.dtr[5]*1E9,rtk->sol.dtr[6]*1E9);
 
         /* Ionospheric parameters */
         if (est&&rtk->opt.ionoopt==IONOOPT_EST) {
@@ -447,7 +448,8 @@ static double varerr(int sat, int sys, double el_rover, double el_base,
         case SYS_GAL: sys_fact=EFACT_GAL;break;
         case SYS_SBS: sys_fact=EFACT_SBS; break;
         case SYS_QZS: sys_fact=EFACT_QZS; break;
-        case SYS_CMP: sys_fact=EFACT_CMP; break;
+        case SYS_BDS2: sys_fact=EFACT_BDS2; break;
+        case SYS_BDS3: sys_fact=EFACT_BDS3; break;
         case SYS_IRN: sys_fact=EFACT_IRN; break;
         default:      sys_fact=EFACT_GPS; break;
     }
@@ -938,7 +940,7 @@ static void detslp_dop(rtk_t *rtk, const obsd_t *obs, const int *ix, int ns,
         }
     }
 }
-/* test satellite system (m=0:GPS/SBS,1:GLO,2:GAL,3:BDS,4:QZS,5:IRN) ---------*/
+/* test satellite system (m=0:GPS/SBS,1:GLO,2:GAL,3:BDS2,4:BDS3,5:QZS,6:IRN) ---------*/
 static inline int test_sys(int sys, int m)
 {
     const int im[]={-1, /* Undefined */
@@ -946,9 +948,10 @@ static inline int test_sys(int sys, int m)
                      0, /* SBS */
                      1, /* GLO */
                      2, /* GAL */
-                     4, /* QZS */
-                     3, /* CMP */
-                     5, /* IRN */
+                     5, /* QZS */
+                     3, /* BDS2 */
+                     4, /* BDS3 */
+                     6, /* IRN */
                     -1};  /* LEO */
     return m==im[sys2no(sys)];
 }
@@ -1044,8 +1047,8 @@ static void udbias(rtk_t *rtk, double tt, const obsd_t *obs, const int *sat,
         }
     }
 
-    /* Step through sat systems: m=0:gps/SBS,1:glo,2:gal,3:bds 4:qzs 5:irn */
-    for (int m = 0; m < 6; m++) {
+    // Step through sat systems: m=0:gps/SBS,1:glo,2:gal,3:bds2,4:bds3,5:qzs,6:irn
+    for (int m = 0; m < 7; m++) {
       for (int k = 0; k < nf; k++) {
         /* Estimate approximate phase-bias by delta phase - delta code */
         double *bias = zeros(ns,1);
@@ -1186,7 +1189,7 @@ static int zdres(int base, const obsd_t *obs, int n, const double *rs, const dou
     int sat = obs[i].sat;
 
     if (opt->ionoopt == IONOOPT_IFLC) { /* Iono-free linear combination */
-      int sys = satsys(sat, NULL);
+      int sys = satsyst(sat, obs[i].time, NULL);
       int code1 = obs[i].code[0];
       double freq1 = sat2freq(sat, code1, nav);
       int f2 = seliflc(opt->nf, sys);
@@ -1229,7 +1232,7 @@ static int zdres(int base, const obsd_t *obs, int n, const double *rs, const dou
         continue;
 
       // Excluded satellite?
-      if (satexclude(sat, var[i], svh[i], opt)) continue;
+      if (satexclude(sat, obs[i].time, var[i], svh[i], opt)) continue;
 
       // Adjust range for satellite clock-bias.
       r += -CLIGHT * dts[i * 2];
@@ -1294,7 +1297,7 @@ static int zdres(int base, const obsd_t *obs, int n, const double *rs, const dou
         if (testsnr(base, f, azel[1 + i * 2], obs[i].SNR[f], &opt->snrmask)) continue;
 
         // Excluded satellite?
-        if (satexclude(sat, var[i], svh[i], opt)) continue;
+        if (satexclude(sat, obs[i].time, var[i], svh[i], opt)) continue;
 
         // Adjust range for satellite clock-bias
         r += -CLIGHT * dts[i * 2];
@@ -1519,8 +1522,8 @@ static int ddres(rtk_t *rtk, const obsd_t *obs, double dt, const double *x,
             tropr[i]=prectrop(rtk->sol.time,posr,1,azel+ir[i]*2,opt,x,dtdxr+i*3);
         }
     }
-    /* Step through sat systems: m=0:gps/sbs,1:glo,2:gal,3:bds 4:qzs 5:irn*/
-    for (int m=0;m<6;m++) {
+    // Step through sat systems: m=0:gps/sbs,1:glo,2:gal,3:bds2,4:bds3,5:qzs,6:irn
+    for (int m=0;m<7;m++) {
 
         /* Step through phases/codes */
         for (int f=opt->mode>PMODE_DGPS?0:nf;f<nf*2;f++) {
@@ -1844,10 +1847,11 @@ static int ddidx(rtk_t *rtk, int *ix, int gps, int glo, int sbs) {
 
   int nb = 0, nf = NF(&rtk->opt);
   double fix[MAXSAT], ref[MAXSAT];
-  /* m=0:GPS/SBS,1:GLO,2:GAL,3:BDS,4:QZS,5:IRN */
-  for (int m = 0; m < 6; m++) {
+  // m=0:GPS/SBS,1:GLO,2:GAL,3:BDS2,4:BDS3,5:QZS,6:IRN
+  for (int m = 0; m < 7; m++) {
     /* Skip if ambiguity resolution turned off for this sys */
-    int nofix = (m == 0 && gps == 0) || (m == 1 && glo == 0) || (m == 3 && rtk->opt.bdsmodear == 0);
+    int nofix = (m == 0 && gps == 0) || (m == 1 && glo == 0) ||
+        ((m == 3 || m == 4) && rtk->opt.bdsmodear == 0);
 
     /* Step through freqs */
     for (int f = 0; f < nf; f++) {
@@ -1936,7 +1940,7 @@ static void holdamb(rtk_t *rtk, const double *xa)
 
     // Pre-calculate the size nv. Needs to match the loop below.
     int used[MAXSAT]={0}, ns = 0;
-    for (int m=0;m<6;m++) {
+    for (int m=0;m<7;m++) {
       for (int f=0;f<nf;f++) {
         int sat[MAXSAT], n = 0;
         for (int i=0;i<MAXSAT;i++) {
@@ -1981,7 +1985,7 @@ static void holdamb(rtk_t *rtk, const double *xa)
     int nv2=0, index[MAXSAT];
     // Note this might depend on the particular ordering of fix pairs
     // selected by ddidx() - that the first valid sat is the reference.
-    for (int m=0;m<6;m++) for (int f=0;f<nf;f++) {
+    for (int m=0;m<7;m++) for (int f=0;f<nf;f++) {
         int sat[MAXSAT], n = 0;
         for (int i=0;i<MAXSAT;i++) {
             if (!test_sys(rtk->ssat[i].sys,m)||rtk->ssat[i].fix[f]!=2||
@@ -2396,7 +2400,7 @@ static int relpos(rtk_t *rtk, const obsd_t *obs, int nu, int nr,
 
     /* Init satellite status arrays */
     for (int i=0;i<MAXSAT;i++) {
-        rtk->ssat[i].sys=satsys(i+1,NULL); /* gnss system */
+        rtk->ssat[i].sys = satsyst(i+1, obs[0].time, NULL); // GNSS system.
         for (int j=0;j<NFREQ;j++) {
             rtk->ssat[i].vsat[j]=0;  /* Valid satellite */
             rtk->ssat[i].snr_rover[j]=0;
@@ -2459,7 +2463,7 @@ static int relpos(rtk_t *rtk, const obsd_t *obs, int nu, int nr,
     for (int i = 0; i < ns; i++) {
       if (opt->ionoopt == IONOOPT_IFLC) {
         // Use the minimum SNR.
-        int sys = satsys(sat[i] - 1, NULL);
+        int sys = satsyst(sat[i] - 1, time, NULL);
         int f2 = seliflc(opt->nf, sys);
         rtk->ssat[sat[i] - 1].snr_rover[0] = MIN(obs[iu[i]].SNR[0], obs[iu[i]].SNR[f2]);
         rtk->ssat[sat[i] - 1].snr_base[0] = MIN(obs[ir[i]].SNR[0], obs[ir[i]].SNR[f2]);
@@ -2796,7 +2800,7 @@ extern void rtkfree(rtk_t *rtk)
 *                .rr[]      IO  rover position/velocity
 *                               (I:fixed mode,O:single mode)
 *                .dtr[0]    O   receiver clock bias (s)
-*                .dtr[1-5]  O   receiver GLO/GAL/BDS/IRN/QZS-GPS time offset (s)
+*                .dtr[1-6]  O   receiver GLO/GAL/BDS2/BDS3/IRN/QZS-GPS time offset (s)
 *                .Qr[]      O   rover position covariance
 *                .stat      O   solution status (SOLQ_???)
 *                .ns        O   number of valid satellites

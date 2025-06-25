@@ -39,7 +39,7 @@ void Plot::updateTimeObservation()
 {
     static QStringList legend_freqs = {" #OBS = 6+ ", " 5 ", " 4 ", " 3 ", " 2 ", " 1", "", ""};
     static QStringList legend_snr = {" SNR = ...45.", "..40.", "..35.", "..30.", "..25 ", "", " <25 "};
-    static QStringList legend_sys = {" SYS = GPS ", "GLO ", "GAL ", "QZS ", "BDS ", "IRN ", "SBS"};
+    static QStringList legend_sys = {" SYS = GPS ", "GLO ", "GAL ", "QZS ", "BDS-2", "BDS-3", "IRN ", "SBS"};
     static QStringList legend_mp = {" MP = ..0.6", "..0.3", "..0.0..", "-0.3..", "-0.6..", "", ""};
     static QStringList legend_iono = {" TEC = 0", "..10", "..20", "..30", "..40", "..50", "..60.."};
     QStringList legend;
@@ -148,7 +148,7 @@ void Plot::updateInfoObservation()
     static QStringList legend_dop = {" NSAT", " GDOP", " PDOP", " HDOP", " VDOP", "", ""};
     static QStringList legend_freqs = {" #OBS = 6+ ", " 5 ", " 4 ", " 3 ", " 2 ", " 1", "", ""};
     static QStringList legend_snr = {" SNR = ...45.", "..40.", "..35.", "..30.", "..25 ", "", " <25 "};
-    static QStringList legend_sys = {" SYS = GPS ", "GLO ", "GAL ", "QZS ", "BDS ", "IRN ", "SBS"};
+    static QStringList legend_sys = {" SYS = GPS ", "GLO ", "GAL ", "QZS ", "BDS-2 ", "BDS-3 ", "IRN ", "SBS"};
     static QStringList legend_mp = {" MP = ..0.6", "..0.3", "..0.0..", "-0.3..", "-0.6..", "", ""};
     static QStringList legend_iono = {" TEC = 0", "..10", "..20", "..30", "..40", "..50", "..60.."};
     QString msg;
@@ -325,21 +325,27 @@ void Plot::updatePlotTypeMenu()
 // update satellite-list pull-down menu -------------------------------------
 void Plot::updateSatelliteList()
 {
-    int i, j, sys, previousSys = 0, sat, satMask[MAXSAT] = { 0 };
+    int satMask[MAXSAT] = { 0 };
     char s[8];
 
     trace(3, "updateSatelliteList\n");
 
     // populate satMask from solutions and observations
-    for (i = 0; i < 2; i++)
-        for (j = 0; j < solutionStat[i].n; j++) {
-            sat = solutionStat[i].data[j].sat;
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < solutionStat[i].n; j++) {
+            int sat = solutionStat[i].data[j].sat;
             if (1 <= sat && sat <= MAXSAT) satMask[sat - 1] = 1;
         }
-    for (j = 0; j < observation.n; j++) {
-        sat = observation.data[j].sat;
+    }
+    for (int j = 0; j < observation.n; j++) {
+        int sat = observation.data[j].sat;
         if (1 <= sat && sat <= MAXSAT) satMask[sat - 1] = 1;
     }
+
+    gtime_t time = utc2gpst(timeget());
+    for (int i = 0; i < 2; i++)
+        if (solutionStat[i].n > 0) time = solutionStat[i].data[0].time;
+    if (observation.n > 0) time = observation.data[0].time;
 
     // update combobox
     ui->cBSatelliteList->blockSignals(true);
@@ -347,23 +353,32 @@ void Plot::updateSatelliteList()
     ui->cBSatelliteList->addItem("ALL");
 
     // add satellite systems
-    for (sat = 1; sat <= MAXSAT; sat++) {
+    bool gps = false, glo = false, gal = false, qzs = false, bds2 = false, bds3 = false, irn = false, sbs = false;
+    for (int sat = 1; sat <= MAXSAT; sat++) {
         if (satelliteMask[sat - 1] || !satMask[sat - 1]) continue;
-        if ((sys = satsys(sat, NULL)) == previousSys) continue;
+        int sys = satsyst(sat, time, NULL);
         switch (sys) {
-            case SYS_GPS: ui->cBSatelliteList->addItem("G"); break;
-            case SYS_GLO: ui->cBSatelliteList->addItem("R"); break;
-            case SYS_GAL: ui->cBSatelliteList->addItem("E"); break;
-            case SYS_QZS: ui->cBSatelliteList->addItem("J"); break;
-            case SYS_CMP: ui->cBSatelliteList->addItem("C"); break;
-            case SYS_IRN: ui->cBSatelliteList->addItem("I"); break;
-            case SYS_SBS: ui->cBSatelliteList->addItem("S"); break;
+            case SYS_GPS: gps = true; break;
+            case SYS_GLO: glo = true; break;
+            case SYS_GAL: gal = true; break;
+            case SYS_QZS: qzs = true; break;
+            case SYS_BDS2: bds2 = true; break;
+            case SYS_BDS3: bds3 = true; break;
+            case SYS_IRN: irn = true; break;
+            case SYS_SBS: sbs = true; break;
         };
-        previousSys = sys;
     }
+    if (gps) ui->cBSatelliteList->addItem("G");
+    if (glo) ui->cBSatelliteList->addItem("R");
+    if (gal) ui->cBSatelliteList->addItem("E");
+    if (qzs) ui->cBSatelliteList->addItem("J");
+    if (bds2) ui->cBSatelliteList->addItem("C2");
+    if (bds3) ui->cBSatelliteList->addItem("C3");
+    if (irn) ui->cBSatelliteList->addItem("I");
+    if (sbs) ui->cBSatelliteList->addItem("S");
 
     // add individual satellites
-    for (sat = 1; sat <= MAXSAT; sat++) {
+    for (int sat = 1; sat <= MAXSAT; sat++) {
         if (satelliteMask[sat - 1] || !satMask[sat - 1]) continue;
         satno2id(sat, s);
         ui->cBSatelliteList->addItem(s);

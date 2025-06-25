@@ -3,7 +3,7 @@ object MainForm: TMainForm
   Top = 0
   BorderIcons = [biSystemMenu, biMinimize]
   Caption = 'RTKPOST'
-  ClientHeight = 438
+  ClientHeight = 432
   ClientWidth = 512
   Color = clWindow
   Constraints.MaxHeight = 478
