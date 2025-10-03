@@ -323,6 +323,50 @@ static int decode_nmeagga(char **val, int n, sol_t *sol)
     
     return 1;
 }
+/* Decode NMEA GST (Estimated error in position) sentence -------------*/
+static int decode_nmeagst(char **val, int n, sol_t *sol)
+{
+#if 0
+  gtime_t time;
+    double tod=0.0,lat=0.0,lon=0.0,hdop=0.0,alt=0.0,msl=0.0,ep[6],tt;
+    double pos[3]={0},age=0.0;
+    char ns='N',ew='E',ua=' ',um=' ';
+    int i,solq=0,nrcv=0;
+
+    trace(4,"decode_nmeagst: n=%d\n",n);
+
+    for (int i = 0; i < n; i++) {
+        switch (i) {
+            case  0: tod = atof(val[i]); break; // UTC of position (hhmmss).
+            case  1: rms = atof(val[i]); break; // RMS of range inputs.
+            case  2: smajor = atof(val[i]); break; // Std or semi-major error ellipse axis (m).
+            case  3: sminor = atof(val[i]); break; // Std or semi-minor error ellipse axis (m).
+            case  4: orient = atof(val[i]); break; // Orientation of semi-major error ellipse axis.
+            case  5: latstd = atof(val[i]); break; // Std of lat error (m).
+            case  6: lonstd = atof(val[i]); break; // Std of lon error (m).
+            case  7: altstd = atof(val[i]); break; // Std of altitude error (m).
+        }
+    }
+    if (sol->time.time == 0) {
+        trace(3, "no date info for nmea gst\n");
+        return 0;
+    }
+    time2epoch(sol->time, ep);
+    septime(tod, ep + 3, ep + 4, ep + 5);
+    time = utc2gpst(epoch2time(ep));
+    tt = timediff(time, sol->time);
+    if      (tt < -43200.0) sol->time = timeadd(time,  86400.0);
+    else if (tt >  43200.0) sol->time = timeadd(time, -86400.0);
+    else sol->time = time;
+
+    char tstr[40];
+    trace(5, "decode_nmeagst: %s \n",
+          time2str(sol->time, tstr, 0), sol->rr[0], sol->rr[1], sol->rr[2], sol->stat, sol->ns,
+          hdop, ua, um);
+#endif
+
+    return 2;
+}
 /* test NMEA sentence header -------------------------------------------------*/
 static int test_nmea(const char *buff)
 {
@@ -369,6 +413,9 @@ static int decode_nmea(char *buff, sol_t *sol)
     }
     else if (!strcmp(val[0]+3,"GGA")) { /* $xxGGA */
         return decode_nmeagga(val+1,n-1,sol);
+    }
+    else if (!strcmp(val[0]+3,"GST")) { /* $xxGST */
+        return decode_nmeagst(val+1,n-1,sol);
     }
     return 0;
 }
@@ -1414,22 +1461,120 @@ extern int outnmea_gst(uint8_t *buff, const sol_t *sol)
       smajor = SQRT(Q[4]);
       sminor = SQRT(Q[0]);
     } else {
-      // Jacobi method.
-      double tau = (Q[4] - Q[0])/ Q[1] / 2;
-      double t = copysign(1, tau) / (fabs(tau) + SQRT(1 + tau * tau));
-      double c = 1 / SQRT(1 + t * t), s = t * c;
-      double l1 = Q[0] - t * Q[1], l2 = Q[4] + t * Q[1];
-      // Largest eigen value defines the orientation, an angle from north.
-      if (fabs(l1) > fabs(l2)) {
-        angle = atan2(c, -s);
-        smajor = SQRT(l1);
-        sminor = SQRT(l2);
+#if 1
+      Q[0] = 4.25;
+      Q[1] = 3.10;
+      Q[4] = 4.29;
+      fprintf(stderr, "\r\na %lf %lf %lf %lf\r\n", Q[0], Q[1], Q[1], Q[4]);
+      // This gives the same angle as below with the eigen vectors,
+      // are they the same??
+      double dq = Q[4] - Q[0];
+      angle = atan2(2 * Q[1], dq) / 2;
+      //if (Q[1] < 0) angle += PI;
+      //else if (dq < 0) angle += 2 * PI;
+      double k = SQRT(dq * dq + 4 * Q[1] * Q[1]);
+      fprintf(stderr, "dq=%lf angle=%lf k=%lf\r\n", dq, angle * R2D, k);
+      // This seems to give the same as the sqrt of the eigen values below,
+      // are they the same equations?
+      smajor = SQRT((Q[4] + Q[0] + k) / 2);
+      sminor = SQRT((Q[4] + Q[0] - k) / 2);
+      {
+        double B = -(Q[0] + Q[4]), C = Q[0] * Q[4] - Q[1] * Q[1];
+        double e1 = (-B + SQRT(B * B - 4 * C)) / 2;
+        double e2 = (-B - SQRT(B * B - 4 * C)) / 2;
+        fprintf(stderr, "eq %lf %lf  %lf %lf  %lf %lf\r\n", e1, e2,
+                e1 * e1 + B * e1 + C,
+                e2 * e2 + B * e2 + C,
+                (Q[0] - e1) * (Q[4] - e1) - Q[1] * Q[1],
+                (Q[0] - e2) * (Q[4] - e2) - Q[1] * Q[1]);
       }
-      else {
-        angle = atan2(s, c);
-        smajor = SQRT(l2);
-        sminor = SQRT(l1);
+      {
+        // Eigen values, give the std of the semi-major and minor axis.
+        double ad2 = (Q[0] + Q[4]) / 2;
+        double r = SQRT(ad2 * ad2 - (Q[0] * Q[4] - Q[1] * Q[1]));
+        double e1 = ad2 + r, e2 = ad2 - r;
+        // Check
+        fprintf(stderr, "s1 %lf s2 %lf e1 %lf e2 %lf check %lf %lf\r\n",
+                smajor, sminor,
+                e1, e2,
+                (Q[0] - e1) * (Q[4] - e1) - Q[1] * Q[1],
+                (Q[0] - e2) * (Q[4] - e2) - Q[1] * Q[1]);
+
+        {
+          double a = Q[0] - e1, b = Q[1], c = Q[1], d = Q[4] - e1;
+          double det = a * d - b * c;
+          fprintf(stderr, "c2 %lf %lf %lf %lf  %lf \r\n", a, b, c, d, det);
+        }
+
+        // Maximum eigen value, for the semi-major axis.
+        double maxe = fabs(e1) > fabs(e2) ? e1 : e2;
+        // Eigen vector for the semi-major axis.
+        fprintf(stderr, "v  %lf %lf %lf %lf %lf  %lf %lf %lf %lf %lf\r\n",
+                Q[0], maxe, Q[0] - maxe, Q[1], -Q[1] / (Q[0] - maxe),
+                Q[4], maxe, Q[4] - maxe, Q[1], (Q[4] - maxe) / -Q[1]);
       }
+      {
+        // This is equivalent to solving the quadratic equation above,
+        // just slightly different ordering.
+        double tr = Q[0] + Q[4], det = Q[0] * Q[4] - Q[1] * Q[1];
+        double l1 = tr / 2 + SQRT(tr * tr / 4 - det);
+        double l2 = tr / 2 - SQRT(tr * tr / 4 - det);
+        if (fabs(Q[4]) > 1e-6) {
+          double v11 = l1 - Q[1], v12 = -Q[1];
+          double v21 = Q[1], v22 = l2 - Q[4];
+          fprintf(stderr, "e2 %lf %lf  %lf %lf  %lf %lf %lf  %lf %lf %lf  %lf %lf %lf  %lf %lf %lf\r\n",
+                  tr, det, l1, l2,
+                  l1 - Q[4], Q[1], atan2(l1 - Q[4], Q[1]) * R2D,
+                  l2 - Q[4], Q[1], atan2(l2 - Q[4], Q[1]) * R2D,
+                  Q[1], l1 - Q[0], atan2(Q[1], l1 - Q[0]) * R2D,
+                  Q[1], l2 - Q[0], atan2(Q[1], l2 - Q[0]) * R2D);
+          fprintf(stderr, "cv %lf %lf\r\n",
+                  (Q[0] - l1) * v11 + Q[1] * v12,
+                  Q[1] * v21 + (Q[4] - l2) * v22);
+        }
+      }
+      {
+        // Jacobi method.
+        double tau = (Q[4] - Q[0])/ Q[1] / 2;
+        double t = copysign(1, tau) / (fabs(tau) + SQRT(1 + tau * tau));
+        double c = 1 / SQRT(1 + t * t), s = t * c;
+        double l1 = Q[0] - t * Q[1], l2 = Q[4] + t * Q[1];
+        fprintf(stderr, "j %lf %lf  %lf %lf  %lf %lf\r\n", tau, t, c, s, l1, l2);
+        double v11 = c, v12 = -s, v21 = s, v22 = c;
+        fprintf(stderr, "cv %lf %lf  %lf %lf\r\n",
+                (Q[0] - l1) * v11 + Q[1] * v12,
+                Q[1] * v21 + (Q[4] - l2) * v22,
+                atan2(c, -s) * R2D, atan2(s, c) * R2D);
+        // Largest eigen value defines the orientation, an angle from north.
+        if (fabs(l1) > fabs(l2)) {
+          angle = atan2(c, -s);
+          smajor = SQRT(l1);
+          sminor = SQRT(l2);
+        }
+        else {
+          angle = atan2(s, c);
+          smajor = SQRT(l2);
+          sminor = SQRT(l1);
+        }
+        fprintf(stderr, "j %lf %lf %lf\r\n", angle * R2D, smajor, sminor);
+      }
+
+      // Now how to decode this?
+      {
+        double phi = PI / 2 - angle;
+        double varX1 = smajor * smajor * cos(phi) * cos(phi) + sminor * sminor * sin(phi) * sin(phi);
+        double varX2 = smajor * smajor * sin(phi) * sin(phi) + sminor * sminor * cos(phi) * cos(phi);
+        double cov12 = (smajor * smajor - sminor * sminor) * sin(phi) * cos(phi);
+        fprintf(stderr, "cov %lf %lf %lf\n", varX1, varX2, cov12);
+      }
+      {
+        double phi = angle;
+        double varX1 = smajor * smajor * sin(phi) * sin(phi) + sminor * sminor * cos(phi) * cos(phi);
+        double varX2 = smajor * smajor * cos(phi) * cos(phi) + sminor * sminor * sin(phi) * sin(phi);
+        double cov12 = (smajor * smajor - sminor * sminor) * sin(phi) * cos(phi);
+        fprintf(stderr, "cov %lf %lf %lf\n", varX1, varX2, cov12);
+      }
+#endif
     }
 
     char *p = (char *)buff;
