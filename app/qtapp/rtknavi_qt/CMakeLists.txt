@@ -81,7 +81,7 @@ set_target_properties(rtknavi_qt PROPERTIES
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
 )
-install(TARGETS rtknavi_qt RUNTIME DESTINATION bin)
+install(TARGETS rtkget_qt RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
 if (UNIX)
    install(FILES rtknavi_qt.desktop DESTINATION ${XDG_APPS_INSTALL_DIR})
    install(FILES ../icon/rtknavi.png DESTINATION ${XDG_APPS_PIXMAPS_DIR})

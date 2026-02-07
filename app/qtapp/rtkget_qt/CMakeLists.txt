@@ -43,7 +43,7 @@ set_target_properties(rtkget_qt PROPERTIES
     MACOSX_BUNDLE ON
 )
 
-install(TARGETS rtkget_qt RUNTIME DESTINATION bin)
+install(TARGETS rtkget_qt RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
 if (UNIX)
    install(FILES rtkget_qt.desktop DESTINATION ${XDG_APPS_INSTALL_DIR})
    install(FILES ../icon/rtkget.png DESTINATION ${XDG_APPS_PIXMAPS_DIR})

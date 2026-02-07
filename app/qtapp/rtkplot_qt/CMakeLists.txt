@@ -90,7 +90,7 @@ set_target_properties(rtkplot_qt PROPERTIES
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
 )
-install(TARGETS rtkplot_qt RUNTIME DESTINATION bin)
+install(TARGETS rtkget_qt RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
 if (UNIX)
    install(FILES rtkplot_qt.desktop DESTINATION ${XDG_APPS_INSTALL_DIR})
    install(FILES ../icon/rtkplot.png DESTINATION ${XDG_APPS_PIXMAPS_DIR})
