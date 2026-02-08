@@ -32,7 +32,7 @@
 *                           delete API strsvrsetsrctbl()
 *                           use integer types in stdint.h
 *-----------------------------------------------------------------------------*/
-#define _POSIX_C_SOURCE 199506
+#define _POSIX_C_SOURCE 200112L
 #include "rtklib.h"
 
 /* test observation data message ---------------------------------------------*/

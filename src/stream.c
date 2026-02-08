@@ -75,7 +75,7 @@
 *                           suppress warning for buffer overflow by sprintf()
 *                           use integer types in stdint.h
 *-----------------------------------------------------------------------------*/
-#define _POSIX_C_SOURCE 199506
+#define _POSIX_C_SOURCE 200112L
 #include <ctype.h>
 #include "rtklib.h"
 #ifndef WIN32
