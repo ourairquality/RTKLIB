@@ -36,7 +36,7 @@
 *                           add option -w
 *           2017/09/01 1.21 add command ssr
 *-----------------------------------------------------------------------------*/
-/*#define _POSIX_C_SOURCE 199506 */
+#define _POSIX_C_SOURCE 200112L
 #include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
