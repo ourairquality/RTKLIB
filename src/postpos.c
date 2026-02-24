@@ -1450,7 +1450,7 @@ extern int postpos(gtime_t ts, gtime_t te, double ti, double tu,
                 while (k<nf) index[k++]=j;
 
                 if (nf>=MAXINFILE) {
-                    trace(2,"too many input files. trancated\n");
+                    trace(2,"too many input files. truncated\n");
                     break;
                 }
             }

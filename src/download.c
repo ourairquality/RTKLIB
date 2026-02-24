@@ -14,7 +14,7 @@
 *                            limit max number of download paths
 *                            use integer types in stdint.h
 *-----------------------------------------------------------------------------*/
-#define _POSIX_C_SOURCE 199506
+#define _POSIX_C_SOURCE 200112L
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>

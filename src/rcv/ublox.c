@@ -76,7 +76,7 @@
 *                           CODE_L1I -> CODE_L2I for BDS B1I (RINEX 3.04)
 *                           use integer types in stdint.h
 *-----------------------------------------------------------------------------*/
-#define _POSIX_C_SOURCE 199506
+#define _POSIX_C_SOURCE 200112L
 #include "rtklib.h"
 
 #define UBXSYNC1    0xB5        /* ubx message sync code 1 */
