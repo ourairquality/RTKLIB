@@ -44,7 +44,7 @@
 *                           use integer type in stdint.h
 *                           suppress warnings
 *-----------------------------------------------------------------------------*/
-#define _POSIX_C_SOURCE 199506
+#define _POSIX_C_SOURCE 200112L
 #include "rtklib.h"
 
 #define STQSYNC1    0xA0        /* skytraq binary sync code 1 */

@@ -21,7 +21,7 @@
 *           2020/07/10 1.8  suppress warnings
 *           2020/11/30 1.9  use integer type in stdint.h
 *-----------------------------------------------------------------------------*/
-#define _POSIX_C_SOURCE 199506
+#define _POSIX_C_SOURCE 200112L
 #include "rtklib.h"
 
 #define NVSSYNC     0x10        /* nvs message sync code 1 */

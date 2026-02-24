@@ -143,7 +143,7 @@
 *                           use integer types in stdint.h
 *                           suppress warnings
 *-----------------------------------------------------------------------------*/
-#define _POSIX_C_SOURCE 199506
+#define _POSIX_C_SOURCE 200112L
 #include <stdarg.h>
 #include <ctype.h>
 #include <errno.h>
