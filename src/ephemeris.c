@@ -814,11 +814,9 @@ extern void satposs(gtime_t teph, const obsd_t *obs, int n, const nav_t *nav,
             continue;
           }
         }
-        else {
-        if (!ephclk(time[i],teph,obs[i].sat,nav,&dt)) {
-            trace(3,"no broadcast clock %s sat=%2d\n",time2str(time[i],tstr,3),obs[i].sat);
-            continue;
-        }
+        else if (!ephclk(time[i],teph,obs[i].sat,nav,&dt)) {
+          trace(3,"no broadcast clock %s sat=%2d\n",time2str(time[i],tstr,3),obs[i].sat);
+          continue;
         }
         time[i]=timeadd(time[i],-dt);
 
