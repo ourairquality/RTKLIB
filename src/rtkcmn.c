@@ -143,7 +143,7 @@
 *                           use integer types in stdint.h
 *                           suppress warnings
 *-----------------------------------------------------------------------------*/
-#define _POSIX_C_SOURCE 199506
+#define _POSIX_C_SOURCE 200112L
 #include <stdarg.h>
 #include <ctype.h>
 #include <errno.h>
@@ -3309,7 +3309,7 @@ extern int execcmd(const char *cmd)
 }
 /* expand file path ------------------------------------------------------------
 * expand file path with wild-card (*) in file
-* args   : char   *path     I   file path to expand (captal insensitive)
+* args   : char   *path     I   file path to expand (capital insensitive)
 *          char   *paths    O   expanded file paths
 *          int    nmax      I   max number of expanded file paths
 * return : number of expanded file paths
