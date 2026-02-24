@@ -505,7 +505,7 @@ static void udpos(rtk_t *rtk, double tt)
     /* static mode */
     if (rtk->opt.mode==PMODE_STATIC||rtk->opt.mode==PMODE_STATIC_START) return;
 
-    /* kinmatic mode without dynamics */
+    /* kinematic mode without dynamics */
     if (!rtk->opt.dynamics) {
         for (i=0;i<3;i++) initx(rtk,rtk->sol.rr[i],VAR_POS,i);
         return;
@@ -651,7 +651,7 @@ static void udrcvbias(rtk_t *rtk, double tt)
     }
 }
 // Detect a change in the observation code for a given frequency index.
-// Only one bias per frequency index per satallite is supported, so if the
+// Only one bias per frequency index per satellite is supported, so if the
 // observation code changes then consider it a slip.
 static void detslp_code(rtk_t *rtk, const obsd_t *obs, int i, int rcv) {
   int sat = obs[i].sat;
