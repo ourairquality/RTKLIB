@@ -1061,7 +1061,7 @@ static int ppp_res(int post, const obsd_t *obs, int n, const double *rs,
                   str,post,sat,code?"P":"L",frq+1,res,sqrt(var[nv]),azel[1+i*2]*R2D);
 
             /* reject satellite by pre-fit residuals */
-            double maxinno = (post==-1?1000:10*opt->maxinno[code]);
+            double maxinno = (post==-1?1000:1)*opt->maxinno[code];
             if (post<=0&&opt->maxinno[code]>0.0&&fabs(res)>maxinno) {
                 trace(2,"outlier (%d) rejected %s sat=%2d %s%d res=%9.4f el=%4.1f\n",
                       post,str,sat,code?"P":"L",frq+1,res,azel[1+i*2]*R2D);
