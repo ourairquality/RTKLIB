@@ -50,7 +50,7 @@ set_target_properties(rtkconv_qt PROPERTIES
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
 )
-install(TARGETS rtkconv_qt RUNTIME DESTINATION bin)
+install(TARGETS rtkconv_qt RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
 
 if (UNIX)
    install(FILES rtkconv_qt.desktop DESTINATION ${XDG_APPS_INSTALL_DIR})
