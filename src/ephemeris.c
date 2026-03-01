@@ -807,10 +807,16 @@ extern void satposs(gtime_t teph, const obsd_t *obs, int n, const nav_t *nav,
         /* transmission time by satellite clock */
         time[i]=timeadd(obs[i].time,-pr/CLIGHT);
 
-        /* satellite clock bias by broadcast ephemeris */
-        if (!ephclk(time[i],teph,obs[i].sat,nav,&dt)) {
-            trace(3,"no broadcast clock %s sat=%2d\n",time2str(time[i],tstr,3),obs[i].sat);
+        /* satellite clock offset from precise products or broadcast ephemeris */
+        if (ephopt==EPHOPT_PREC&&nav->nc>0) {
+          if(!pephclk(time[i],obs[i].sat,nav,&dt,NULL)) {
+            trace(3,"no precise clock %s sat=%2d\n",time2str(time[i],tstr,3),obs[i].sat);
             continue;
+          }
+        }
+        else if (!ephclk(time[i],teph,obs[i].sat,nav,&dt)) {
+          trace(3,"no broadcast clock %s sat=%2d\n",time2str(time[i],tstr,3),obs[i].sat);
+          continue;
         }
         time[i]=timeadd(time[i],-dt);
 
@@ -821,10 +827,13 @@ extern void satposs(gtime_t teph, const obsd_t *obs, int n, const nav_t *nav,
             continue;
         }
         /* if no precise clock available, use broadcast clock instead */
+        /* NOTE: broadcast clock from ephclk() does NOT include relativistic
+         *       correction for GPS, GAL and BDS! */
         if (dts[i*2]==0.0) {
             if (!ephclk(time[i],teph,obs[i].sat,nav,dts+i*2)) continue;
             dts[1+i*2]=0.0;
             *var=SQR(STD_BRDCCLK);
+            trace(3,"no precise clock, use broadcast %s sat=%2d\n",time2str(time[i],tstr,3),obs[i].sat);
         }
         trace(4,"satposs: %d,time=%.9f dt=%.9f pr=%.3f rs=%13.3f %13.3f %13.3f dts=%12.3f var=%7.3f\n",
             obs[i].sat,time[i].sec,dt,pr,rs[i*6],rs[1+i*6],rs[2+i*6],dts[i*2]*1E9,
