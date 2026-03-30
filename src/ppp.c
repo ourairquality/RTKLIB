@@ -412,7 +412,7 @@ static void corr_meas(const obsd_t *obs, const nav_t *nav, const double *azel,
                       double *Lc, double *Pc)
 {
     double freq[NFREQ]={0},C1,C2;
-    int i,ix=0,frq,frq2,bias_ix,sys=satsys(obs->sat,NULL);
+    int i,ix=0,frq2,sys=satsys(obs->sat,NULL);
 
     for (i=0;i<opt->nf;i++) {
         L[i]=P[i]=0.0;
@@ -424,7 +424,7 @@ static void corr_meas(const obsd_t *obs, const nav_t *nav, const double *azel,
         /* antenna phase center and phase windup correction */
         L[i]=obs->L[i]*CLIGHT/freq[i]-dants[i]-dantr[i]-phw*CLIGHT/freq[i];
         P[i]=obs->P[i]               -dants[i]-dantr[i];
-
+        double P_nobias = P[i];
         if (opt->sateph==EPHOPT_SSRAPC||opt->sateph==EPHOPT_SSRCOM) {
             /* select SSR code correction based on code */
             if (sys==SYS_GPS)
@@ -437,18 +437,13 @@ static void corr_meas(const obsd_t *obs, const nav_t *nav, const double *azel,
             P[i]+=(nav->ssr[obs->sat-1].cbias[obs->code[i]-1]-nav->ssr[obs->sat-1].cbias[ix]);
         }
         else {   /* apply code bias corrections from file */
-            if (sys==SYS_GAL&&(i==1||i==2)) frq=3-i;  /* GAL biases are L1/L5 */
-            else frq=i;  /* other biases are L1/L2 */
-            if (frq>=MAX_CODE_BIAS_FREQS) continue;  /* only 2 freqs per system supported in code bias table */
-            bias_ix=code2bias_ix(sys,obs->code[i]); /* look up bias index in table */
-            if (bias_ix>0) {  /*  0=ref code */
-                P[i]+=nav->cbias[obs->sat-1][frq][bias_ix-1]; /* code bias */
-            }
+            P[i]-=code2bias(nav,sys,obs->sat,obs->code[i],0); /* differential bias*/
         }
+        trace(4,"sys=%d sat=%d frq=%d, P: %.3f->%.3f, dt=%.3f\n",sys,obs->sat,i,P_nobias,P[i],(P[i]-P_nobias)/(1E-9*CLIGHT));
     }
     /* choose freqs for iono-free LC */
     *Lc=*Pc=0.0;
-    frq2=L[1]==0?2:1;  /* if L[1]==0, try L[2] */
+    frq2=seliflc(opt->nf,satsys(obs->sat,NULL));
     if (freq[0]==0.0||freq[frq2]==0.0) return;
     C1= SQR(freq[0])/(SQR(freq[0])-SQR(freq[frq2]));
     C2=-SQR(freq[frq2])/(SQR(freq[0])-SQR(freq[frq2]));

@@ -57,10 +57,9 @@
 #define MAXDTE      900.0           /* max time difference to ephem time (s) */
 #define EXTERR_CLK  1E-3            /* extrapolation error for clock (m/s) */
 #define EXTERR_EPH  5E-7            /* extrapolation error for ephem (m/s^2) */
-#define MAX_BIAS_SYS 4              /* # of constellations supported */
 
 /* table to translate code to code bias table index  */
-static int8_t code_bias_ix[MAX_BIAS_SYS][MAXCODE];
+static int8_t code_bias_ix[NSYS][MAXCODE];
 /* initialize code bias lookup table -------------------------------------------
 *       -1 = code not supported
 *        0 = reference code (0 bias)
@@ -69,7 +68,7 @@ static int8_t code_bias_ix[MAX_BIAS_SYS][MAXCODE];
 static void init_bias_ix(void) {
     int i,j;
 
-    for (i=0;i<MAX_BIAS_SYS;i++) for (j=0;j<MAXCODE;j++)
+    for (i=0;i<NSYS;i++) for (j=0;j<MAXCODE;j++)
         code_bias_ix[i][j]=-1;
 
     /* GPS */
@@ -92,6 +91,9 @@ static void init_bias_ix(void) {
     code_bias_ix[2][CODE_L5Q]=0;
     code_bias_ix[2][CODE_L5I]=1;
     code_bias_ix[2][CODE_L5X]=2;
+    code_bias_ix[2][CODE_L7Q]=0;
+    code_bias_ix[2][CODE_L7I]=1;
+    code_bias_ix[2][CODE_L7X]=2;
     /* Beidou */
     code_bias_ix[3][CODE_L2I]=0;
     code_bias_ix[3][CODE_L6I]=0;
@@ -374,14 +376,14 @@ extern int readsap(const char *file, const gtime_t time, nav_t *nav) {
   return 1;
 }
 /* read DCB parameters from DCB file -------------------------------------------
-*    - supports satellite and receiver biases
+*    - supports satellite biases
 *-----------------------------------------------------------------------------*/
 static int readdcbf(const char *file, nav_t *nav, const sta_t *sta)
 {
     FILE *fp;
     double cbias;
     char buff[256],str1[32],str2[32]="";
-    int i,j,sat,type=0;
+    int sat,type=0;
 
     trace(3,"readdcbf: file=%s\n",file);
 
@@ -400,16 +402,17 @@ static int readdcbf(const char *file, nav_t *nav, const sta_t *sta)
         if ((cbias=str2num(buff,26,9))==0.0) continue;
 
         if (sta&&(!strcmp(str1,"G")||!strcmp(str1,"R"))) { /* receiver DCB */
-            for (i=0;i<MAXRCV;i++) {
-                if (!strcmp(sta[i].name,str2)) break;
-            }
-            if (i<MAXRCV) {
-                j=!strcmp(str1,"G")?0:1;
-                nav->rbias[i][j][type-1]=cbias*1E-9*CLIGHT; /* ns -> m */
-            }
+/* receiver DCBs never used in RTKLIB so remove support */
+//            for (i=0;i<MAXRCV;i++) {
+//                if (!strcmp(sta[i].name,str2)) break;
+//            }
+//            if (i<MAXRCV) {
+//                j=!strcmp(str1,"G")?0:1;
+//                nav->rbias[i][j][type-1]=cbias*1E-9*CLIGHT; /* ns -> m */
+//            }
         }
         else if ((sat=satid2no(str1))) { /* satellite dcb */
-            nav->cbias[sat-1][type-1][0]=cbias*1E-9*CLIGHT; /* ns -> m */
+            nav->cbias[sat-1][type-1][0]=-cbias*1E-9*CLIGHT; /* ns -> m */
         }
     }
     fclose(fp);
@@ -430,19 +433,24 @@ static int sys2ix(int sys)
     }
     return 0;
 }
-/* translate satellite system and code to code bias table index ----------------
-*       -1 = code not supported
-*        0 = reference code (0 bias)
-*        1-3 = table index for code
+/* lookup code bias from table ----------------
+*       return 0 if not found
+*       mode:  0=DCB or pseudo-DCB
+*              1=OSB or pseudo-OSB
 * ----------------------------------------------------------------------------*/
-extern int code2bias_ix(int sys, int code) {
-    int sys_ix;
+extern double code2bias(const nav_t *nav, int sys, int sat, int code, int mode) {
+    int sys_ix,frq_ix,code_ix;
+    double bias=0;
 
     sys_ix=sys2ix(sys);
-    if (sys_ix<MAX_BIAS_SYS)
-        return code_bias_ix[sys_ix][code];
-    else
-        return 0;
+    frq_ix=code2idx(sys,code);
+    if (frq_ix>=0&&sat<=MAXSAT) {
+        code_ix = code_bias_ix[sys_ix][code];
+        bias=nav->cbias[sat-1][frq_ix][code_ix];  // absolute bias
+        if (mode==0)
+            bias-=nav->cbias[sat-1][frq_ix][0];  // difference with reference
+    }
+    return bias;
 }
 /* read DCB parameters from BIA or BSX file ------------------------------------
 *    - supports satellite code biases only
@@ -452,12 +460,12 @@ static int readbiaf(const char *file, nav_t *nav)
     FILE *fp;
     double cbias;
     char buff[256],bias[6]="",svn[6]="",prn[6]="",obs1[6]="",obs2[6];
-    int i,sat,freq,code1,code2,bias_ix1,bias_ix2,sys;
+    int sat,sys_ix,frq_ix,code1,code2,bias_ix1,bias_ix2,sys;
 
     trace(3,"readbiaf: file=%s\n",file);
 
     if (!(fp=fopen(file,"r"))) {
-        trace(2,"dcb parameters file open error: %s\n",file);
+        trace(2,"BIA/BSX parameters file open error: %s\n",file);
         return 0;
     }
     while (fgets(buff,sizeof(buff),fp)) {
@@ -466,34 +474,22 @@ static int readbiaf(const char *file, nav_t *nav)
         if ((cbias=str2num(buff,70,21))==0.0) continue;
         sat=satid2no(prn);
         sys=satsys(sat,NULL);
-        /* other code biases are L1/L2, Galileo is L1/L5 */
-        if (obs1[1]=='1')
-            freq=0;
-        else if ((sys!=SYS_GAL&&obs1[1]=='2')||(sys==SYS_GAL&&obs1[1]=='5'))
-            freq=1;
-        else continue;
-        
+        sys_ix=sys2ix(sys);
         if (!(code1=obs2code(&obs1[1]))) continue; /* skip if code not valid */
-        bias_ix1=code2bias_ix(sys,code1);
+        if ((frq_ix=code2idx(sys,code1))<0) continue;
+        if ((bias_ix1=code_bias_ix[sys_ix][code1])<0) continue;
         if (strcmp(bias,"OSB")==0) {
-            /* observed signal bias */
-            if (bias_ix1==0) { /* this is ref code */
-                for (i=0;i<MAX_CODE_BIASES;i++)
-                    /* adjust all other codes by ref code bias */
-                    nav->cbias[sat-1][freq][i]+=cbias*1E-9*CLIGHT; /* ns -> m */
-            } else {
-                nav->cbias[sat-1][freq][bias_ix1-1]-=cbias*1E-9*CLIGHT; /* ns -> m */
-            }
+            nav->cbias[sat-1][frq_ix][bias_ix1]=cbias*1E-9*CLIGHT; /* ns -> m */
         }
         else if (strcmp(bias,"DSB")==0) {
             /* differential signal bias */
             if (obs1[1]!=obs2[1]) continue; /* skip biases between freqs for now */
             if (!(code2=obs2code(&obs2[1]))) continue; /* skip if code not valid */
-            bias_ix2=code2bias_ix(sys,code2);
+            if ((bias_ix2=code_bias_ix[sys_ix][code2])<0) continue;
             if (bias_ix1==0) /* this is ref code */
-                nav->cbias[sat-1][freq][bias_ix2-1]=cbias*1E-9*CLIGHT; /* ns -> m */
+                nav->cbias[sat-1][frq_ix][bias_ix2]=-cbias*1E-9*CLIGHT; /* ns -> m */
             else if (bias_ix2==0) /* this is ref code */
-                nav->cbias[sat-1][freq][bias_ix1-1]=-cbias*1E-9*CLIGHT; /* ns -> m */
+                nav->cbias[sat-1][frq_ix][bias_ix1]=cbias*1E-9*CLIGHT; /* ns -> m */
         }
 
     }
@@ -521,7 +517,7 @@ extern int readdcb(const char *file, nav_t *nav, const sta_t *sta)
 
     init_bias_ix(); /* init translation table from code to table column */
 
-    for (i=0;i<MAXSAT;i++) for (j=0;j<MAX_CODE_BIAS_FREQS;j++) for (k=0;k<MAX_CODE_BIASES;k++) {
+    for (i=0;i<MAXSAT;i++) for (j=0;j<NFREQ;j++) for (k=0;k<MAX_CODE_BIASES;k++) {
         nav->cbias[i][j][k]=0.0;
     }
     for (i=0;i<MAXEXFILE;i++) {

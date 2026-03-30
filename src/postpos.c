@@ -1092,10 +1092,8 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
 
     /* read dcb parameters from DCB, BIA, BSX files */
     dcb_ok = 0;
-    for (i=0;i<MAX_CODE_BIASES;i++) for (k=0;k<MAX_CODE_BIAS_FREQS;k++) {
-        /* FIXME: cbias later initialized with 0 in readdcb()!  */
-        for (j=0;j<MAXSAT;j++) navs.cbias[j][k][i]=-1;
-        for (j=0;j<MAXRCV;j++) navs.rbias[j][k][i]=0;
+    for (i=0;i<MAX_CODE_BIASES;i++) for (k=0;k<NFREQ;k++) {
+        for (j=0;j<MAXSAT;j++) navs.cbias[j][k][i]=0;
         }
     for (i=0;i<n;i++) {  /* first check infiles for .BIA or .BSX files */
         if ((dcb_ok=readdcb(infile[i],&navs,stas))) break;
