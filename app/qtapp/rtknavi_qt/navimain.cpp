@@ -1720,12 +1720,12 @@ void MainWindow::drawSolutionPlot(QLabel *plot, int type, int freq)
             drawText(c, w / 2 + x, 1, s2, Qt::darkGray, 1, 2);
         }
     } else if (type == 1) { // snr plot rover
-        drawSnr(c, w, h - topMargin, 0, topMargin, 0, type);
+        drawSnr(c, w, h - topMargin, 0, topMargin, 0, freq);
         s1 = tr("Rover %L1 SNR (dBHz)").arg(fstr[freq]);
         drawText(c, x, 1, s1, Qt::darkGray, 1, 2);
     } else if (type == 2) { // skyplot rover
-        drawSatellites(c, w, h, 0, 0, 0, type);
-        s1 = tr("Rover %L1").arg(fstr[type]);
+        drawSatellites(c, w, h, 0, 0, 0, freq);
+        s1 = tr("Rover %L1").arg(fstr[freq]);
         drawText(c, x, 1, s1, Qt::darkGray, 1, 2);
     } else if (type == 3) { // skyplot+snr plot rover
         s1 = tr("Rover %L1").arg(fstr[freq]);
@@ -1921,7 +1921,7 @@ void MainWindow::drawSatellites(QPainter &c, int w, int h, int x0, int y0,
         radius = QFontMetrics(optDialog->panelFont).height();
 
         c.setBrush(!validSatellites[index][k] ? Color::Silver :
-                        (freq < NFREQ ? snrColor(snr[freq]) : color_sys[sysIdx]));
+                        (freq < NFREQ + 1 ? snrColor(snr[freq]) : color_sys[sysIdx]));
         c.setPen(Qt::darkGray);
         color_text = Qt::white;
         if (freq < NFREQ + 1 && snr[freq] <= 0) {
