@@ -75,7 +75,7 @@ MainWindow *mainForm;
 #define KACYCLE     5000                // keep alive cycle (ms)
 #define TIMEOUT     10000               // inactive timeout time (ms)
 #define MAX_PORT_OFFSET  9              // max port number offset
-#define MAXTRKSCALE 23                  // track scale
+#define MAXTRKSCALE 26                  // track scale
 #define MAXPANELMODE 7                  // max panel mode
 
 #define SQRT(x)     ((x)<0.0||(x)!=(x)?0.0:sqrt(x))
@@ -126,7 +126,7 @@ MainWindow::MainWindow(QWidget *parent)
     timeSystem = solutionType = 0;
     for (int i = 0; i < 4; i++) {
         plotType[i] = frequencyType[i] = baselineMode[i] = trackType[i] = 0;
-        trackScale[i] = 5;
+        trackScale[i] = 8;
     };
     solutionsCurrent = solutionsStart = solutionsEnd = numSatellites[0] = numSatellites[1] = 0;
     nMapPoint = 0;
@@ -2041,17 +2041,18 @@ void MainWindow::drawTrack(QPainter &c, int id, QPaintDevice *plot)
     QPoint p1, p2;
     QString label;
     static const double scale[] = {
-        0.00021, 0.00047, 0.001, 0.0021, 0.0047, 0.01, 0.021, 0.047, 0.1,   0.21,   0.47,
-        1.0,	 2.1,	  4.7,	 10.0,	 21.0,	 47.0, 100.0, 210.0, 470.0, 1000.0, 2100.0,4700.0,
+        0.000021, 0.000047, 0.0001, 0.00021, 0.00047, 0.001, 0.0021, 0.0047,
+        0.01, 0.021, 0.047, 0.1,   0.21,   0.47,
+        1.0,	 2.1,	  4.7,	 10.0,	 21.0,	 47.0, 100.0, 210.0, 470.0, 1000.0, 2100.0, 4700.0,
         10000.0
     };
     double *x, *y, xt, yt, sx, sy, ref[3], pos[3], dr[3], enu[3];
-    int i, j, currentPointNo, numPoints = 0, type, scl;
+    int i, j, currentPointNo, numPoints = 0;
 
     trace(3, "drawTrack\n");
 
-    type = id == 0 ? trackType[0] : trackType[1];
-    scl = id == 0 ? trackScale[0] : trackScale[1];
+    int type = trackType[id];
+    int scl = trackScale[id];
 
     x = new double[optDialog->solutionBufferSize];
     y = new double[optDialog->solutionBufferSize];
@@ -2535,10 +2536,10 @@ void MainWindow::loadOptions()
     trackType[1] = settings.value("setting/trktype2", 0).toInt();
     trackType[2] = settings.value("setting/trktype3", 0).toInt();
     trackType[3] = settings.value("setting/trktype4", 0).toInt();
-    trackScale[0] = settings.value("setting/trkscale1", 5).toInt();
-    trackScale[1] = settings.value("setting/trkscale2", 5).toInt();
-    trackScale[2] = settings.value("setting/trkscale3", 5).toInt();
-    trackScale[3] = settings.value("setting/trkscale4", 5).toInt();
+    trackScale[0] = settings.value("setting/trkscale1", 8).toInt();
+    trackScale[1] = settings.value("setting/trkscale2", 8).toInt();
+    trackScale[2] = settings.value("setting/trkscale3", 8).toInt();
+    trackScale[3] = settings.value("setting/trkscale4", 8).toInt();
     frequencyType[0] = settings.value("setting/freqtype1", 0).toInt();
     frequencyType[1] = settings.value("setting/freqtype2", 0).toInt();
     frequencyType[2] = settings.value("setting/freqtype3", 0).toInt();

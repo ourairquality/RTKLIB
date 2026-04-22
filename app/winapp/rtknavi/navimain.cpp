@@ -127,8 +127,8 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
         CmdEna[i][0]=CmdEna[i][1]=CmdEna[i][2]=0;
     }
     TimeSys=SolType=PlotType1=PlotType2=FreqType1=FreqType2=0;
-    TrkType1=TrkType2=0;
-    TrkScale1=TrkScale2=5;
+    TrkType1=TrkType2=TrkType3=TrkType4=0;
+    TrkScale1=TrkScale2=TrkScale3=TrkScale4=8;
     BLMode1=BLMode2=BLMode3=BLMode4=0;
     PSol=PSolS=PSolE=Nsat[0]=Nsat[1]=0;
     NMapPnt=0;
@@ -1009,6 +1009,34 @@ void __fastcall TMainForm::BtnShrink2Click(TObject *Sender)
 {
     if (TrkScale2>=MAXTRKSCALE) return;
     TrkScale2++;
+    UpdatePlot();
+}
+// callback on button expand-2 ----------------------------------------------
+void __fastcall TMainForm::BtnExpand3Click(TObject *Sender)
+{
+    if (TrkScale3<=0) return;
+    TrkScale3--;
+    UpdatePlot();
+}
+// callback on button shrink-3 ----------------------------------------------
+void __fastcall TMainForm::BtnShrink3Click(TObject *Sender)
+{
+    if (TrkScale3>=MAXTRKSCALE) return;
+    TrkScale3++;
+    UpdatePlot();
+}
+// callback on button expand-4 ----------------------------------------------
+void __fastcall TMainForm::BtnExpand4Click(TObject *Sender)
+{
+    if (TrkScale4<=0) return;
+    TrkScale4--;
+    UpdatePlot();
+}
+// callback on button shrink-4 ----------------------------------------------
+void __fastcall TMainForm::BtnShrink4Click(TObject *Sender)
+{
+    if (TrkScale4>=MAXTRKSCALE) return;
+    TrkScale4++;
     UpdatePlot();
 }
 // callback on button-rtk-monitor -------------------------------------------
@@ -2037,12 +2065,12 @@ void __fastcall TMainForm::DrawTrk(TImage *plot)
         10000.0
     };
     double *x,*y,xt,yt,sx,sy,ref[3],pos[3],dr[3],enu[3];
-    int i,j,k,n=0,type,scl;
+    int i,j,k,n=0;
     
     trace(3,"DrawTrk\n");
     
-    type=plot->Name=="Plot1"?TrkType1 :TrkType2 ;
-    scl =plot->Name=="Plot1"?TrkScale1:TrkScale2;
+    int type=plot->Name=="Plot1"?TrkType1:plot->Name=="Plot2"?TrkType2:plot->Name=="Plot3"?TrkType3:TrkType4;
+    int scl =plot->Name=="Plot1"?TrkScale1:plot->Name=="Plot2"?TrkScale2:plot->Name=="Plot3"?TrkScale3:TrkScale4;
     
     x=new double[SolBuffSize];
     y=new double[SolBuffSize];
@@ -2611,10 +2639,10 @@ void __fastcall TMainForm::LoadOpt(void)
     TrkType2        =ini->ReadInteger("setting","trktype2",        0);
     TrkType3        =ini->ReadInteger("setting","trktype3",        0);
     TrkType4        =ini->ReadInteger("setting","trktype4",        0);
-    TrkScale1       =ini->ReadInteger("setting","trkscale1",       5);
-    TrkScale2       =ini->ReadInteger("setting","trkscale2",       5);
-    TrkScale3       =ini->ReadInteger("setting","trkscale3",       5);
-    TrkScale4       =ini->ReadInteger("setting","trkscale4",       5);
+    TrkScale1       =ini->ReadInteger("setting","trkscale1",       8);
+    TrkScale2       =ini->ReadInteger("setting","trkscale2",       8);
+    TrkScale3       =ini->ReadInteger("setting","trkscale3",       8);
+    TrkScale4       =ini->ReadInteger("setting","trkscale4",       8);
     FreqType1       =ini->ReadInteger("setting","freqtype1",       0);
     FreqType2       =ini->ReadInteger("setting","freqtype2",       0);
     FreqType3       =ini->ReadInteger("setting","freqtype3",       0);

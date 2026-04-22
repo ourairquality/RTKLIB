@@ -186,6 +186,10 @@ __published:
 	void __fastcall BtnShrink1Click(TObject *Sender);
 	void __fastcall BtnExpand2Click(TObject *Sender);
 	void __fastcall BtnShrink2Click(TObject *Sender);
+	void __fastcall BtnExpand3Click(TObject *Sender);
+	void __fastcall BtnShrink3Click(TObject *Sender);
+	void __fastcall BtnExpand4Click(TObject *Sender);
+	void __fastcall BtnShrink4Click(TObject *Sender);
 	void __fastcall BtnMarkClick(TObject *Sender);
 	void __fastcall Panel24Resize(TObject *Sender);
 	void __fastcall Panel25Resize(TObject *Sender);
