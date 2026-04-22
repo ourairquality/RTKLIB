@@ -51,7 +51,7 @@ set_target_properties(srctblbrows_qt PROPERTIES
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
 )
-install(TARGETS rtkget_qt RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
+install(TARGETS srctblbrows_qt RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
 if (UNIX)
    install(FILES srctblbrows_qt.desktop DESTINATION ${XDG_APPS_INSTALL_DIR})
    install(FILES ../icon/srctblbrows.png DESTINATION ${XDG_APPS_PIXMAPS_DIR})

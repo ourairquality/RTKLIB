@@ -51,7 +51,7 @@ set_target_properties(rtkpost_qt PROPERTIES
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
 )
-install(TARGETS rtkget_qt RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
+install(TARGETS rtkpost_qt RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
 if (UNIX)
    install(FILES rtkpost_qt.desktop DESTINATION ${XDG_APPS_INSTALL_DIR})
    install(FILES ../icon/rtkpost.png DESTINATION ${XDG_APPS_PIXMAPS_DIR})
