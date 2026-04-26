@@ -57,9 +57,10 @@
 #define MAXDTE      900.0           /* max time difference to ephem time (s) */
 #define EXTERR_CLK  1E-3            /* extrapolation error for clock (m/s) */
 #define EXTERR_EPH  5E-7            /* extrapolation error for ephem (m/s^2) */
+#define MAX_BIAS_SYS 6              /* # of constellations supported */
 
 /* table to translate code to code bias table index  */
-static int8_t code_bias_ix[NSYS][MAXCODE];
+static int8_t code_bias_ix[MAX_BIAS_SYS][MAXCODE];
 /* initialize code bias lookup table -------------------------------------------
 *       -1 = code not supported
 *        0 = reference code (0 bias)
@@ -68,7 +69,7 @@ static int8_t code_bias_ix[NSYS][MAXCODE];
 static void init_bias_ix(void) {
     int i,j;
 
-    for (i=0;i<NSYS;i++) for (j=0;j<MAXCODE;j++)
+    for (i=0;i<MAX_BIAS_SYS;i++) for (j=0;j<MAXCODE;j++)
         code_bias_ix[i][j]=-1;
 
     /* GPS */
@@ -402,14 +403,16 @@ static int readdcbf(const char *file, nav_t *nav, const sta_t *sta)
         if ((cbias=str2num(buff,26,9))==0.0) continue;
 
         if (sta&&(!strcmp(str1,"G")||!strcmp(str1,"R"))) { /* receiver DCB */
-/* receiver DCBs never used in RTKLIB so remove support */
-//            for (i=0;i<MAXRCV;i++) {
-//                if (!strcmp(sta[i].name,str2)) break;
-//            }
-//            if (i<MAXRCV) {
-//                j=!strcmp(str1,"G")?0:1;
-//                nav->rbias[i][j][type-1]=cbias*1E-9*CLIGHT; /* ns -> m */
-//            }
+#ifdef RTK_DISABLED
+            /* Receiver DCBs never used in RTKLIB so remove support */
+            for (i=0;i<MAXRCV;i++) {
+                if (!strcmp(sta[i].name,str2)) break;
+            }
+            if (i<MAXRCV) {
+                j=!strcmp(str1,"G")?0:1;
+                nav->rbias[i][j][type-1]=cbias*1E-9*CLIGHT; /* ns -> m */
+            }
+#endif
         }
         else if ((sat=satid2no(str1))) { /* satellite dcb */
             nav->cbias[sat-1][type-1][0]=-cbias*1E-9*CLIGHT; /* ns -> m */
@@ -431,7 +434,7 @@ static int sys2ix(int sys)
         case SYS_QZS: return 4;
         case SYS_IRN: return 5;
     }
-    return 0;
+    return -1;
 }
 /* lookup code bias from table ----------------
 *       return 0 if not found
@@ -444,7 +447,7 @@ extern double code2bias(const nav_t *nav, int sys, int sat, int code, int mode) 
 
     sys_ix=sys2ix(sys);
     frq_ix=code2idx(sys,code);
-    if (frq_ix>=0&&sat<=MAXSAT) {
+    if (sys_ix >= 0 && sys_ix < MAX_BIAS_SYS && frq_ix >= 0 && sat <= MAXSAT) {
         code_ix = code_bias_ix[sys_ix][code];
         bias=nav->cbias[sat-1][frq_ix][code_ix];  // absolute bias
         if (mode==0)
@@ -475,6 +478,7 @@ static int readbiaf(const char *file, nav_t *nav)
         sat=satid2no(prn);
         sys=satsys(sat,NULL);
         sys_ix=sys2ix(sys);
+        if (sys_ix < 0 || sys_ix >= MAX_BIAS_SYS) continue;
         if (!(code1=obs2code(&obs1[1]))) continue; /* skip if code not valid */
         if ((frq_ix=code2idx(sys,code1))<0) continue;
         if ((bias_ix1=code_bias_ix[sys_ix][code1])<0) continue;
