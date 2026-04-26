@@ -707,7 +707,7 @@ object MainForm: TMainForm
           B4000000000000000000B4B4B4FFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
           FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
           FF00}
-        OnClick = BtnExpand2Click
+        OnClick = BtnExpand3Click
       end
       object BtnShrink3: TSpeedButton
         Left = 1
@@ -735,7 +735,7 @@ object MainForm: TMainForm
           B4000000000000000000B4B4B4FFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
           FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
           FF00}
-        OnClick = BtnShrink2Click
+        OnClick = BtnShrink3Click
       end
     end
     object Panel25: TPanel
@@ -833,7 +833,7 @@ object MainForm: TMainForm
           B4000000000000000000B4B4B4FFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
           FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
           FF00}
-        OnClick = BtnExpand2Click
+        OnClick = BtnExpand4Click
       end
       object BtnShrink4: TSpeedButton
         Left = 1
@@ -861,7 +861,7 @@ object MainForm: TMainForm
           B4000000000000000000B4B4B4FFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
           FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
           FF00}
-        OnClick = BtnShrink2Click
+        OnClick = BtnShrink4Click
       end
     end
   end
