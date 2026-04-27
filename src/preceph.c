@@ -445,10 +445,12 @@ extern double code2bias(const nav_t *nav, int sys, int sat, int code, int mode) 
     int sys_ix,frq_ix,code_ix;
     double bias=0;
 
+    if (code <= CODE_NONE) return 0;
     sys_ix=sys2ix(sys);
     frq_ix=code2idx(sys,code);
     if (sys_ix >= 0 && sys_ix < MAX_BIAS_SYS && frq_ix >= 0 && sat <= MAXSAT) {
         code_ix = code_bias_ix[sys_ix][code];
+        if (code_ix < 0) return 0;
         bias=nav->cbias[sat-1][frq_ix][code_ix];  // absolute bias
         if (mode==0)
             bias-=nav->cbias[sat-1][frq_ix][0];  // difference with reference
