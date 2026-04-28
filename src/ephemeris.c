@@ -777,12 +777,13 @@ extern int satpos(gtime_t time, gtime_t teph, int sat, int ephopt,
 *          dts[(0:1)+i*2]= obs[i] sat clock {bias,drift} (s|s/s)
 *          var[i]        = obs[i] sat position and clock error variance (m^2)
 *          svh[i]        = obs[i] sat health flag
-*          if no navigation data, set 0 to rs[], dts[], var[] and svh[]
-*          satellite position and clock are values at signal transmission time
-*          satellite position is referenced to antenna phase center
-*          satellite clock does not include code bias correction (tgd or bgd)
-*          any pseudorange and broadcast ephemeris are always needed to get
-*          signal transmission time
+*          If no navigation data, set 0 to rs[], dts[], var[] and svh[].
+*          Satellite position and clock are values at signal transmission time.
+*          Precise satellite position is referenced to center of mass.
+*          Satellite clock does not include code bias correction (tgd or bgd).
+*          At least one pseudorange and satellite clock offsets from precise
+*          products or broadcast ephemeris always needed to get signal
+*          transmission time.
 *-----------------------------------------------------------------------------*/
 extern void satposs(gtime_t teph, const obsd_t *obs, int n, const nav_t *nav,
                     int ephopt, double *rs, double *dts, double *var, int *svh)
