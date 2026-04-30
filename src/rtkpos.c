@@ -2209,7 +2209,7 @@ static int relpos(rtk_t *rtk, const obsd_t *obs, int nu, int nr,
     }
     trace(3,"sol_rr= ");tracemat(3,rtk->sol.rr,1,6,15,3);
     /* save phase measurements */
-    for (i=0;i<n;i++) for (j=0;j<nf;j++) {
+    for (i=0;i<n;i++) for (j=0;j<opt->nf;j++) {
         if (obs[i].L[j]==0.0) continue;
         rtk->ssat[obs[i].sat-1].pt[obs[i].rcv-1][j]=obs[i].time;
         rtk->ssat[obs[i].sat-1].ph[obs[i].rcv-1][j]=obs[i].L[j];
