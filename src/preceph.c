@@ -146,7 +146,7 @@ static int readsp3h(FILE *fp, gtime_t *time, char *type, int *sats,
             bfact[0]=str2num(buff, 3,10);
             bfact[1]=str2num(buff,14,12);
         }
-        else if (i==2*nl+11){
+        else if (i==2*nl+7){
             break; /* at end of header */
         }
         i=i+1; /* line counter */
@@ -186,6 +186,8 @@ static void readsp3b(FILE *fp, char type, int *sats, int ns, double *bfact,
     while (fgets(buff,sizeof(buff),fp)) {
 
         if (!strncmp(buff,"EOF",3)) break;
+
+        if (buff[0] == '/' && buff[1] == '*') continue; // Comment.
 
         if (buff[0]!='*'||str2time(buff,3,28,&time)) {
             trace(2,"sp3 invalid epoch %31.31s\n",buff);
