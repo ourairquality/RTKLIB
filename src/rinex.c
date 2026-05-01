@@ -671,11 +671,31 @@ static int readrnxh(FILE *fp, double *ver, char *type, int *sys, int *tsys,
         }
         else if (strstr(label,"RINEX VERSION / TYPE")) {
             *ver=str2num(buff,0,9);
-            // Format change for clock files >=3.04
-            *type=(*ver<3.04||flag==0)?*(buff+20):*(buff+21);
+            char sc;
+            if (*ver >= 3.04) {
+              // The format changed for clock files >=3.04.
+              if (flag == 1) { // Expecting a clock file.
+                *type = buff[21];
+                sc = buff[42];
+                if (*type != 'C') {
+                  *type = buff[20];
+                  sc = buff[40];
+                }
+              } else { // Not expecting a clock file.
+                *type = buff[20];
+                sc = buff[40];
+                if (*type == ' ' && buff[21] == 'C') {
+                  *type = buff[21];
+                  sc = buff[42];
+                }
+              }
+            } else {
+              *type = buff[20];
+              sc = buff[40];
+            }
 
             // Satellite system
-            switch ((*ver<3.04||flag==0)?*(buff+40):*(buff+42)) {
+            switch (sc) {
                 case ' ':
                 case 'G': *sys=SYS_GPS;  *tsys=TSYS_GPS; break;
                 case 'R': *sys=SYS_GLO;  *tsys=TSYS_UTC; break;
@@ -686,7 +706,7 @@ static int readrnxh(FILE *fp, double *ver, char *type, int *sys, int *tsys,
                 case 'I': *sys=SYS_IRN;  *tsys=TSYS_IRN; break; /* v.3.03 */
                 case 'M': *sys=SYS_NONE; *tsys=TSYS_GPS; break; /* mixed */
                 default :
-                    trace(2,"not supported satellite system: %c\n",*(buff+40));
+                    trace(2,"not supported satellite system: %c\n", sc);
                     break;
             }
             continue;
