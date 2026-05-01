@@ -53,7 +53,7 @@ set_target_properties(strsvr_qt PROPERTIES
     WIN32_EXECUTABLE ON
     MACOSX_BUNDLE ON
 )
-install(TARGETS rtkget_qt RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
+install(TARGETS strsvr_qt RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
 if (UNIX)
    install(FILES strsvr_qt.desktop DESTINATION ${XDG_APPS_INSTALL_DIR})
    install(FILES ../icon/strsvr.png DESTINATION ${XDG_APPS_PIXMAPS_DIR})
