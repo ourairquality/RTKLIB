@@ -832,6 +832,10 @@ extern int rtksvrinit(rtksvr_t *svr)
         memset(svr->rtcm+i,0,sizeof(rtcm_t));
     }
     for (i=0;i<MAXSTRRTK;i++) strinit(svr->stream+i);
+
+    for (i=0;i<MAXSAT;i++) for (j=0;j<6;j++) {
+        svr->nav.ssr[i].t0[j]=time0;
+    }
     
     for (i=0;i<3;i++) *svr->cmds_periodic[i]='\0';
     *svr->cmd_reset='\0';

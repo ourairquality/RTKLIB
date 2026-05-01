@@ -1320,6 +1320,7 @@ void __fastcall TMainForm::SvrStart(void)
     strsetopt(stropt);
     strcpy(rtksvr.cmd_reset,ResetCmd.c_str());
     rtksvr.bl_reset=MaxBL;
+    //rtksvrinit(&rtksvr);  // uncomment this to make RTKNAVI repeatable from run to run (useful for debug)
     
     // start rtk server
     if (!rtksvrstart(&rtksvr,SvrCycle,SvrBuffSize,strs,(const char **)paths,Format,
