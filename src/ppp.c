@@ -426,18 +426,11 @@ static void corr_meas(const obsd_t *obs, const nav_t *nav, const double *azel,
         P[i]=obs->P[i]               -dants[i]-dantr[i];
         double P_nobias = P[i];
         if (opt->sateph==EPHOPT_SSRAPC||opt->sateph==EPHOPT_SSRCOM) {
-            /* select SSR code correction based on code */
-            if (sys==SYS_GPS)
-                ix=(i==0?CODE_L1W-1:CODE_L2W-1);
-            else if (sys==SYS_GLO)
-                ix=(i==0?CODE_L1P-1:CODE_L2P-1);
-            else if (sys==SYS_GAL)
-                ix=(i==0?CODE_L1X-1:CODE_L7X-1);
             /* apply SSR correction */
-            P[i]+=(nav->ssr[obs->sat-1].cbias[obs->code[i]-1]-nav->ssr[obs->sat-1].cbias[ix]);
+            P[i]-=nav->ssr[obs->sat-1].cbias[obs->code[i]-1];
         }
         else {   /* apply code bias corrections from file */
-            P[i]-=code2bias(nav,sys,obs->sat,obs->code[i],0); /* differential bias*/
+            P[i]-=code2bias(nav,sys,obs->sat,obs->code[i],1); /* absolute bias*/
         }
         trace(4,"sys=%d sat=%d frq=%d, P: %.3f->%.3f, dt=%.3f\n",sys,obs->sat,i,P_nobias,P[i],(P[i]-P_nobias)/(1E-9*CLIGHT));
     }
@@ -450,6 +443,7 @@ static void corr_meas(const obsd_t *obs, const nav_t *nav, const double *azel,
 
     if (L[0]!=0.0&&L[frq2]!=0.0) *Lc=C1*L[0]+C2*L[frq2];
     if (P[0]!=0.0&&P[frq2]!=0.0) *Pc=C1*P[0]+C2*P[frq2];
+    trace(4,"corr_meas: sat=%d f2=%d, Lc=%.3f Pc=%.3f\n",obs->sat,frq2,*Lc,*Pc);
 }
 /* detect cycle slip by LLI --------------------------------------------------*/
 static void detslp_ll(rtk_t *rtk, const obsd_t *obs, int n)
