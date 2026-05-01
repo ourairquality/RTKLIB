@@ -568,7 +568,6 @@ static int decode_bds_d1_eph(const uint8_t *buff, eph_t *eph)
     eph_bds.f2    =getbits (buff,i+214,11)*P2_66;
     eph_bds.f0    =getbits2(buff,i+225, 7,i+240,17)*P2_33;
     eph_bds.f1    =getbits2(buff,i+257, 5,i+270,17)*P2_50;
-    eph_bds.iode  =getbitu (buff,i+287, 5); /* AODE */
     
     i=8*38*1; /* subframe 2 */
     frn2       =getbitu (buff,i+ 15, 3);
@@ -611,6 +610,7 @@ static int decode_bds_d1_eph(const uint8_t *buff, eph_t *eph)
               toc_bds);
         return 0;
     }
+    eph_bds.iode  =((int)(toc_bds/720.0))%240; /* per BeiDou ICD */
     eph_bds.ttr=bdt2gpst(bdt2time(eph_bds.week,sow1)); /* bdt -> gpst */
     if      (eph_bds.toes>sow1+302400.0) eph_bds.week++;
     else if (eph_bds.toes<sow1-302400.0) eph_bds.week--;
@@ -724,7 +724,6 @@ static int decode_bds_d2_eph(const uint8_t *buff, eph_t *eph)
     sow4       =getbitu2(buff,i+ 18, 8,i+ 30,12);
     f1p4       =getbitu2(buff,i+ 46, 6,i+ 60,12);
     eph_bds.f2    =getbits2(buff,i+ 72,10,i+ 90, 1)*P2_66;
-    eph_bds.iode  =getbitu (buff,i+ 91, 5); /* AODE */
     eph_bds.deln  =getbits (buff,i+ 96,16)*P2_43*SC2RAD;
     cucp4      =getbits (buff,i+120,14);
     
@@ -791,6 +790,7 @@ static int decode_bds_d2_eph(const uint8_t *buff, eph_t *eph)
               toc_bds);
         return 0;
     }
+    eph_bds.iode  =((int)(toc_bds/720.0))%240; /* per BeiDou ICD */
     eph_bds.f1  =merge_two_s(f1p3  ,f1p4  ,18)*P2_50;
     eph_bds.cuc =merge_two_s(cucp4 ,cucp5 , 4)*P2_31;
     eph_bds.e   =merge_two_s(ep5   ,ep6   ,22)*P2_33;

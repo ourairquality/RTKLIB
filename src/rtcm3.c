@@ -1437,7 +1437,7 @@ static int decode_type1042(rtcm_t *rtcm)
         week      =getbitu(rtcm->buff,i,13);              i+=13;
         eph.sva   =getbitu(rtcm->buff,i, 4);              i+= 4;
         eph.idot  =getbits(rtcm->buff,i,14)*P2_43*SC2RAD; i+=14;
-        eph.iode  =getbitu(rtcm->buff,i, 5);              i+= 5; /* AODE */
+                                                          i+= 5; /* AODE */
         toc       =getbitu(rtcm->buff,i,17)*8.0;          i+=17;
         eph.f2    =getbits(rtcm->buff,i,11)*P2_66;        i+=11;
         eph.f1    =getbits(rtcm->buff,i,22)*P2_50;        i+=22;
@@ -1479,6 +1479,7 @@ static int decode_type1042(rtcm_t *rtcm)
     }
     eph.sat=sat;
     eph.week=adjbdtweek(week);
+    eph.iode  =((int)(toc/720.0))%240; /* per BeiDou ICD */
     if (rtcm->time.time==0) rtcm->time=utc2gpst(timeget());
     tt=timediff(bdt2gpst(bdt2time(eph.week,eph.toes)),rtcm->time);
     if      (tt<-302400.0) eph.week++;
@@ -1616,7 +1617,7 @@ static int decode_ssr1(rtcm_t *rtcm, int sys, int subtype)
         case SYS_GLO: np=5; ni= 8; nj= 0; offp=  0; break;
         case SYS_GAL: np=6; ni=10; nj= 0; offp=  0; break;
         case SYS_QZS: np=4; ni= 8; nj= 0; offp=192; break;
-        case SYS_CMP: np=6; ni=10; nj=24; offp=  1; break;
+        case SYS_CMP: np=6; ni=10; nj=8; offp=  0; break;
         case SYS_SBS: np=6; ni= 9; nj=24; offp=120; break;
         default: return sync?0:10;
     }
@@ -1643,6 +1644,9 @@ static int decode_ssr1(rtcm_t *rtcm, int sys, int subtype)
         rtcm->ssr[sat-1].t0 [0]=rtcm->time;
         rtcm->ssr[sat-1].udi[0]=udint;
         rtcm->ssr[sat-1].iod[0]=iod;
+        if (sys==SYS_CMP && subtype==0) {
+            iode=iodcrc; /* BDS per-satellite SSR IOD */
+        }
         rtcm->ssr[sat-1].iode=iode;     /* SBAS/BDS: toe/t0 modulo */
         rtcm->ssr[sat-1].iodcrc=iodcrc; /* SBAS/BDS: IOD CRC */
         rtcm->ssr[sat-1].refd=refd;
@@ -1776,7 +1780,7 @@ static int decode_ssr4(rtcm_t *rtcm, int sys, int subtype)
         case SYS_GLO: np=5; ni= 8; nj= 0; offp=  0; break;
         case SYS_GAL: np=6; ni=10; nj= 0; offp=  0; break;
         case SYS_QZS: np=4; ni= 8; nj= 0; offp=192; break;
-        case SYS_CMP: np=6; ni=10; nj=24; offp=  1; break;
+        case SYS_CMP: np=6; ni=10; nj=8; offp=  0; break;
         case SYS_SBS: np=6; ni= 9; nj=24; offp=120; break;
         default: return sync?0:10;
     }
@@ -1807,6 +1811,9 @@ static int decode_ssr4(rtcm_t *rtcm, int sys, int subtype)
         rtcm->ssr[sat-1].t0 [0]=rtcm->ssr[sat-1].t0 [1]=rtcm->time;
         rtcm->ssr[sat-1].udi[0]=rtcm->ssr[sat-1].udi[1]=udint;
         rtcm->ssr[sat-1].iod[0]=rtcm->ssr[sat-1].iod[1]=iod;
+        if (sys==SYS_CMP && subtype==0) {
+            iode=iodcrc; /* BDS per-satellite SSR IOD */
+        }
         rtcm->ssr[sat-1].iode=iode;
         rtcm->ssr[sat-1].iodcrc=iodcrc;
         rtcm->ssr[sat-1].refd=refd;
