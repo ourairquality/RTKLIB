@@ -1456,8 +1456,8 @@ extern int outnmea_gsa(uint8_t *buff, const sol_t *sol, const ssat_t *ssat)
         sys=satsys(i+1,NULL);
         if (!(sys&mask)) nsys++; /* # of systems */
         mask|=sys;
-        azel[2*nsat  ]=ssat[i].azel[0];
-        azel[2*nsat+1]=ssat[i].azel[1];
+        azel[2*nsat  ]=ssat[i].azel[0][0];
+        azel[2*nsat+1]=ssat[i].azel[0][1];
         sats[nsat++]=i+1;
         }
         dops(nsat,azel,0.0,dop);
@@ -1503,7 +1503,7 @@ extern int outnmea_gsv(uint8_t *buff, const sol_t *sol, const ssat_t *ssat)
     for (i=0;nmea_sys[i];i++) {
         for (j=nsat=0;j<MAXSAT&&nsat<36;j++) {
             if (!(satsys(j+1,NULL)&nmea_sys[i])) continue;
-            if (ssat[j].azel[1]>0.0) sats[nsat++]=j+1;
+            if (ssat[j].azel[0][1]>0.0) sats[nsat++]=j+1;
     }
         nmsg=(nsat+3)/4;
     
@@ -1516,8 +1516,8 @@ extern int outnmea_gsv(uint8_t *buff, const sol_t *sol, const ssat_t *ssat)
                     if      (sys==SYS_SBS) prn-=87;  /* SBS: 33-64 */
                     else if (sys==SYS_GLO) prn+=64;  /* GLO: 65-99 */
                     else if (sys==SYS_QZS) prn-=192; /* QZS: 01-10 */
-                    az =ssat[sats[n]-1].azel[0]*R2D; if (az<0.0) az+=360.0;
-                    el =ssat[sats[n]-1].azel[1]*R2D;
+                    az =ssat[sats[n]-1].azel[0][0]*R2D; if (az<0.0) az+=360.0;
+                    el =ssat[sats[n]-1].azel[0][1]*R2D;
                     snr=ssat[sats[n]-1].snr_rover[0];
                 p+=sprintf(p,",%02d,%02.0f,%03.0f,%02.0f",prn,el,az,snr);
             }
