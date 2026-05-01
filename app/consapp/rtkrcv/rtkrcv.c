@@ -867,8 +867,9 @@ static void prstatus(vt_t *vt)
             if (rtk->ssat[i].vsat[fi]) { any = 1; break; }
           if (!any) continue;
         }
-        azel[  n*2]=rtk->ssat[i].azel[0];
-        azel[1+n*2]=rtk->ssat[i].azel[1];
+        // For the DOP use the rover azel.
+        azel[  n*2]=rtk->ssat[i].azel[0][0];
+        azel[1+n*2]=rtk->ssat[i].azel[0][1];
         n++;
     }
     dops(n,azel,0.0,dop);
@@ -979,20 +980,22 @@ done:
 /* print satellite -----------------------------------------------------------*/
 static void prsatellite(vt_t *vt, int nf)
 {
-    double az,el;
-    char id[8];
-    int i,j,fix;
-    
     trace(4,"prsatellite:\n");
-    
+
     rtk_t *rtk = (rtk_t *)malloc(sizeof(rtk_t));
     if (rtk == NULL) return;
 
     rtksvrlock(&svr);
     *rtk=svr.rtk;
     rtksvrunlock(&svr);
+
+    int i,j,fix;
     if (nf<=0||nf>NFREQ) nf=NFREQ;
-    vt_printf(vt,"\n%s%3s %2s %5s %4s",ESC_BOLD,"SAT","V","Az","El");
+    int pmode = rtk->opt.mode;
+    int rel = pmode >= PMODE_DGPS && pmode <= PMODE_FIXED;
+    vt_printf(vt, "\n%s%3s %2s ", ESC_BOLD, "SAT", "V");
+    if (rel) vt_printf(vt, "%5s %4s %5s %4s", "R.Azi", "R.El", "B.Azi", "B.El");
+    else vt_printf(vt, "%5s %4s", "Azim", "Elev");
     for (j=0;j<nf;j++) vt_printf(vt," F%d"    , j + 1);
     for (j=0;j<nf;j++) vt_printf(vt,"  Fix%d" , j + 1);
     for (j=0;j<nf;j++) vt_printf(vt,"  P%dRes", j + 1);
@@ -1003,7 +1006,9 @@ static void prsatellite(vt_t *vt, int nf)
     vt_printf(vt,"%s\n",ESC_RESET);
     
     for (i=0;i<MAXSAT;i++) {
-        if (rtk->ssat[i].azel[1]<=0.0) continue;
+        if (rtk->ssat[i].azel[0][1]<=0.0) continue;
+        if (rel && rtk->ssat[i].azel[1][1] <= 0.0) continue;
+        char id[8];
         satno2id(i+1,id);
         int vsat = 0;
         if (rtk->opt.mode == PMODE_SINGLE) {
@@ -1013,9 +1018,16 @@ static void prsatellite(vt_t *vt, int nf)
             if (rtk->ssat[i].vsat[fi]) { vsat = 1; break; }
         }
         vt_printf(vt,"%3s %2s",id,vsat?"OK":"-");
-        az=rtk->ssat[i].azel[0]*R2D; if (az<0.0) az+=360.0;
-        el=rtk->ssat[i].azel[1]*R2D;
-        vt_printf(vt," %5.1f %4.1f",az,el);
+        double az_rover = rtk->ssat[i].azel[0][0] * R2D;
+        double el_rover = rtk->ssat[i].azel[0][1] * R2D;
+        if (az_rover < 0.0) az_rover += 360.0;
+        vt_printf(vt, " %5.1f %4.1f", az_rover, el_rover);
+        if (rel) {
+          double az_base = rtk->ssat[i].azel[1][0] * R2D;
+          double el_base = rtk->ssat[i].azel[1][1] * R2D;
+          if (az_base < 0.0) az_base += 360.0;
+          vt_printf(vt, " %5.1f %4.1f", az_base, el_base);
+        }
         for (j=0;j<nf;j++) vt_printf(vt," %2s",rtk->ssat[i].vsat[j]?"OK":"-");
         for (j=0;j<nf;j++) {
             fix=rtk->ssat[i].fix[j];

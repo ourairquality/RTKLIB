@@ -180,8 +180,8 @@ extern int pppoutstat(rtk_t *rtk, char *buff, int level)
             if (rtk->x[j]==0.0) continue;
             satno2id(i+1,id);
             p+=sprintf(p,"$ION,%d,%.3f,%d,%s,%.1f,%.1f,%.4f,%.4f\n",week,tow,
-                       rtk->sol.stat,id,rtk->ssat[i].azel[0]*R2D,
-                       rtk->ssat[i].azel[1]*R2D,x[j],STD(rtk,j));
+                       rtk->sol.stat,id,rtk->ssat[i].azel[0][0]*R2D,
+                       rtk->ssat[i].azel[0][1]*R2D,x[j],STD(rtk,j));
         }
     }
     if (level <= 1) return (int)(p-buff);
@@ -194,7 +194,7 @@ extern int pppoutstat(rtk_t *rtk, char *buff, int level)
         for (int j=0;j<NF(&rtk->opt);j++) {
             int k=IB(i+1,j,&rtk->opt);
             p+=sprintf(p,"$SAT,%d,%.3f,%s,%d,%.1f,%.1f,%.4f,%.4f,%d,%.2f,%d,%d,%d,%u,%u,%u,%.2f,%.6f,%.5f\n",
-                       week,tow,id,j+1,ssat->azel[0]*R2D,ssat->azel[1]*R2D,
+                       week,tow,id,j+1,ssat->azel[0][0]*R2D,ssat->azel[0][1]*R2D,
                        ssat->resp[j],ssat->resc[j],ssat->vsat[j],ssat->snr_rover[j],
                        ssat->fix[j],ssat->slip[j]&(LLI_SLIP|LLI_HALFC),ssat->lock[j],ssat->outc[j],
                        ssat->slipc[j],ssat->rejc[j],k<rtk->nx?rtk->x[k]:0,
@@ -765,7 +765,7 @@ static void udiono_ppp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
         if (rtk->x[j]==0.0&&(int)rtk->ssat[i].outc[0]<=gap_resion) {
             /* initialize ionosphere delay estimates if zero */
             ecef2pos(rtk->sol.rr,pos);
-            azel=rtk->ssat[sat-1].azel;
+            azel=rtk->ssat[sat-1].azel[0];
             f2=seliflc(rtk->opt.nf,satsys(sat,NULL));
             if (testsnr(0,0,azel[1],obs[i].SNR[0],&rtk->opt.snrmask)) continue;
             freq1=sat2freq(sat,obs[i].code[0],nav);
@@ -802,7 +802,7 @@ static void udiono_ppp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
             trace(3,"ion init: sat=%d ion=%.4f var=%.1f\n",sat,ion,var);
         }
         else { /* temporal update */
-            sinel=sin(MAX(rtk->ssat[sat-1].azel[1],5.0*D2R));
+            sinel=sin(MAX(rtk->ssat[sat-1].azel[0][1],5.0*D2R));
             /* update variance of delay state */
             rtk->P[j+j*rtk->nx]+=SQR(rtk->opt.prn[1]/sinel)*fabs(rtk->tt);
         }
@@ -856,7 +856,7 @@ static void udbias_ppp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
         for (i=k=0;i<n&&i<MAXOBS;i++) {
             sat=obs[i].sat;
             j=IB(sat,f,&rtk->opt);
-            corr_meas(obs+i,nav,rtk->ssat[sat-1].azel,&rtk->opt,0,0,0.0,
+            corr_meas(obs+i,nav,rtk->ssat[sat-1].azel[0],&rtk->opt,0,0,0.0,
                       0.0,L,P,&Lc,&Pc);
 
             bias[i]=0.0;
