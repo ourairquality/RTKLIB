@@ -466,7 +466,7 @@ static int readbiaf(const char *file, nav_t *nav)
 {
     FILE *fp;
     double cbias;
-    char buff[256],bias[6]="",svn[6]="",prn[6]="",obs1[6]="",obs2[6];
+    char buff[256],bias[4]="",svn[4]="",prn[4]="",obs1[4]="",obs2[4];
     int sat,sys_ix,frq_ix,code1,code2,bias_ix1,bias_ix2,sys;
 
     trace(3,"readbiaf: file=%s\n",file);
@@ -476,7 +476,11 @@ static int readbiaf(const char *file, nav_t *nav)
         return 0;
     }
     while (fgets(buff,sizeof(buff),fp)) {
-        if (sscanf(buff,"%4s %5s %4s %4s %4s",bias,svn,prn,obs1,obs2)<5) continue;
+        if ((int)strlen(buff)<91) continue;
+        strncpy(bias, buff+1,  3); bias[3] ='\0';
+        strncpy(prn,  buff+11, 3); prn[3]  ='\0';
+        strncpy(obs1, buff+25, 3); obs1[3] ='\0';
+        strncpy(obs2, buff+29, 3); obs2[3] ='\0';
         if (obs1[0]!='C') continue;  /* skip phase biases for now */
         if ((cbias=str2num(buff,70,21))==0.0) continue;
         sat=satid2no(prn);
