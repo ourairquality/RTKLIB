@@ -498,20 +498,18 @@ static void detslp_gf(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
 /* detect slip by Melbourne-Wubbena linear combination jump ------------------*/
 static void detslp_mw(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
 {
-    double mw0,mw1;
-    int i,j,k,sat;
-
     trace(4,"detslp_mw: n=%d\n",n);
 
-    for (i=0;i<n&&i<MAXOBS;i++) {
-        sat=obs[i].sat;
-        for (k=1;k<rtk->opt.nf;k++) {
+    for (int i=0;i<n&&i<MAXOBS;i++) {
+        int sat=obs[i].sat;
+        for (int k=1;k<rtk->opt.nf;k++) {
             /* skip check if slip already detected */
             if (rtk->ssat[sat-1].slip[k]&LLI_SLIP) continue;
             /* calc MW LC of phase between freq0 and freqk */
-            if ((mw1=mwmeas(obs+i,nav,k))==0.0) continue;
+            double mw1=mwmeas(obs+i,nav,k);
+            if (mw1==0.0) continue;
 
-            mw0=rtk->ssat[sat-1].mw[k-1];    /* retrieve previous mw */
+            double mw0=rtk->ssat[sat-1].mw[k-1];    /* retrieve previous mw */
             rtk->ssat[sat-1].mw[k-1]=mw1;    /* save current mw for next epoch */
 
             if (mw0!=0.0&&fabs(mw1-mw0)>THRES_MW_JUMP) {
