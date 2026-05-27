@@ -2334,61 +2334,63 @@ void __fastcall TMainForm::LoadNav(nav_t *nav)
     eph_t eph0={0};
     char buff[2049],id[32],*p;
     long unsigned toe_time,toc_time,ttr_time;
-    int i;
     
     trace(3,"LoadNav\n");
     
-    for (i=0;i<MAXSAT*2;i++) {
-        if ((str=ini->ReadString("navi",s.sprintf("eph_%03d",i),""))=="") continue;
-        nav->eph[i]=eph0;
+    for (int i = 0; i < MAXSAT; i++) {
+      for (int j = 0; j < 4; j++) {
+        if ((str=ini->ReadString("navi",s.sprintf("eph_%03d_%d",i,j),""))=="") continue;
+        nav->eph[i + j * MAXSAT] = eph0;
         strcpy(buff,str.c_str());
         if (!(p=strchr(buff,','))) continue;
         *p='\0';
-        if (!(nav->eph[i].sat=satid2no(buff))) continue;
+        eph_t *eph = &nav->eph[i + j * MAXSAT];
+        if (!(eph->sat=satid2no(buff))) continue;
         sscanf(p+1,"%d,%d,%d,%d,%lu,%lu,%lu,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d,%lf",
-               &nav->eph[i].iode,
-               &nav->eph[i].iodc,
-               &nav->eph[i].sva ,
-               &nav->eph[i].svh ,
+               &eph->iode,
+               &eph->iodc,
+               &eph->sva ,
+               &eph->svh ,
                &toe_time,
                &toc_time,
                &ttr_time,
-               &nav->eph[i].A   ,
-               &nav->eph[i].e   ,
-               &nav->eph[i].i0  ,
-               &nav->eph[i].OMG0,
-               &nav->eph[i].omg ,
-               &nav->eph[i].M0  ,
-               &nav->eph[i].deln,
-               &nav->eph[i].OMGd,
-               &nav->eph[i].idot,
-               &nav->eph[i].crc ,
-               &nav->eph[i].crs ,
-               &nav->eph[i].cuc ,
-               &nav->eph[i].cus ,
-               &nav->eph[i].cic ,
-               &nav->eph[i].cis ,
-               &nav->eph[i].toes,
-               &nav->eph[i].fit ,
-               &nav->eph[i].f0  ,
-               &nav->eph[i].f1  ,
-               &nav->eph[i].f2  ,
-               &nav->eph[i].tgd[0],
-               &nav->eph[i].code,
-               &nav->eph[i].flag,
-               &nav->eph[i].tgd[1]);
-        nav->eph[i].toe.time=toe_time;
-        nav->eph[i].toc.time=toc_time;
-        nav->eph[i].ttr.time=ttr_time;
+               &eph->A   ,
+               &eph->e   ,
+               &eph->i0  ,
+               &eph->OMG0,
+               &eph->omg ,
+               &eph->M0  ,
+               &eph->deln,
+               &eph->OMGd,
+               &eph->idot,
+               &eph->crc ,
+               &eph->crs ,
+               &eph->cuc ,
+               &eph->cus ,
+               &eph->cic ,
+               &eph->cis ,
+               &eph->toes,
+               &eph->fit ,
+               &eph->f0  ,
+               &eph->f1  ,
+               &eph->f2  ,
+               &eph->tgd[0],
+               &eph->code,
+               &eph->flag,
+               &eph->tgd[1]);
+        eph->toe.time=toe_time;
+        eph->toc.time=toc_time;
+        eph->ttr.time=ttr_time;
+      }
     }
     str=ini->ReadString("navi","ion","");
-    for (i=0;i<8;i++) nav->ion_gps[i]=0.0;
+    for (int i=0;i<8;i++) nav->ion_gps[i]=0.0;
     sscanf(str.c_str(),"%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",
            nav->ion_gps  ,nav->ion_gps+1,nav->ion_gps+2,nav->ion_gps+3,
            nav->ion_gps+4,nav->ion_gps+5,nav->ion_gps+6,nav->ion_gps+7);
     
     str=ini->ReadString("navi","utc","");
-    for (i=0;i<8;i++) nav->utc_gps[i]=0.0;
+    for (int i=0;i<8;i++) nav->utc_gps[i]=0.0;
     sscanf(str.c_str(),"%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",
            nav->utc_gps,nav->utc_gps+1,nav->utc_gps+2,nav->utc_gps+3,
            nav->utc_gps+4,nav->utc_gps+5,nav->utc_gps+6,nav->utc_gps+7);
@@ -2401,54 +2403,56 @@ void __fastcall TMainForm::SaveNav(nav_t *nav)
     TIniFile *ini=new TIniFile(IniFile);
     AnsiString str,s;
     char id[8];
-    int i;
     
     trace(3,"SaveNav\n");
     
-    for (i=0;i<MAXSAT*2;i++) {
-        if (nav->eph[i].ttr.time==0) continue;
+    for (int i = 0; i < MAXSAT; i++) {
+      for (int j = 0; j < 4; j++) {
+        eph_t *eph = &nav->eph[i + j * MAXSAT];
+        if (eph->ttr.time==0) continue;
         str="";
-        satno2id(nav->eph[i].sat,id);
+        satno2id(eph->sat,id);
         str=str+s.sprintf("%s,",id);
-        str=str+s.sprintf("%d,",nav->eph[i].iode);
-        str=str+s.sprintf("%d,",nav->eph[i].iodc);
-        str=str+s.sprintf("%d,",nav->eph[i].sva);
-        str=str+s.sprintf("%d,",nav->eph[i].svh);
-        str=str+s.sprintf("%lu,",(long unsigned)nav->eph[i].toe.time);
-        str=str+s.sprintf("%lu,",(long unsigned)nav->eph[i].toc.time);
-        str=str+s.sprintf("%lu,",(long unsigned)nav->eph[i].ttr.time);
-        str=str+s.sprintf("%.14E,",nav->eph[i].A);
-        str=str+s.sprintf("%.14E,",nav->eph[i].e);
-        str=str+s.sprintf("%.14E,",nav->eph[i].i0);
-        str=str+s.sprintf("%.14E,",nav->eph[i].OMG0);
-        str=str+s.sprintf("%.14E,",nav->eph[i].omg);
-        str=str+s.sprintf("%.14E,",nav->eph[i].M0);
-        str=str+s.sprintf("%.14E,",nav->eph[i].deln);
-        str=str+s.sprintf("%.14E,",nav->eph[i].OMGd);
-        str=str+s.sprintf("%.14E,",nav->eph[i].idot);
-        str=str+s.sprintf("%.14E,",nav->eph[i].crc);
-        str=str+s.sprintf("%.14E,",nav->eph[i].crs);
-        str=str+s.sprintf("%.14E,",nav->eph[i].cuc);
-        str=str+s.sprintf("%.14E,",nav->eph[i].cus);
-        str=str+s.sprintf("%.14E,",nav->eph[i].cic);
-        str=str+s.sprintf("%.14E,",nav->eph[i].cis);
-        str=str+s.sprintf("%.14E,",nav->eph[i].toes);
-        str=str+s.sprintf("%.14E,",nav->eph[i].fit);
-        str=str+s.sprintf("%.14E,",nav->eph[i].f0);
-        str=str+s.sprintf("%.14E,",nav->eph[i].f1);
-        str=str+s.sprintf("%.14E,",nav->eph[i].f2);
-        str=str+s.sprintf("%.14E,",nav->eph[i].tgd[0]);
-        str=str+s.sprintf("%d,",nav->eph[i].code);
-        str=str+s.sprintf("%d,",nav->eph[i].flag);
-        str=str+s.sprintf("%.14E,",nav->eph[i].tgd[1]);
-        ini->WriteString("navi",s.sprintf("eph_%03d",i),str);
+        str=str+s.sprintf("%d,",eph->iode);
+        str=str+s.sprintf("%d,",eph->iodc);
+        str=str+s.sprintf("%d,",eph->sva);
+        str=str+s.sprintf("%d,",eph->svh);
+        str=str+s.sprintf("%lu,",(long unsigned)eph->toe.time);
+        str=str+s.sprintf("%lu,",(long unsigned)eph->toc.time);
+        str=str+s.sprintf("%lu,",(long unsigned)eph->ttr.time);
+        str=str+s.sprintf("%.14E,",eph->A);
+        str=str+s.sprintf("%.14E,",eph->e);
+        str=str+s.sprintf("%.14E,",eph->i0);
+        str=str+s.sprintf("%.14E,",eph->OMG0);
+        str=str+s.sprintf("%.14E,",eph->omg);
+        str=str+s.sprintf("%.14E,",eph->M0);
+        str=str+s.sprintf("%.14E,",eph->deln);
+        str=str+s.sprintf("%.14E,",eph->OMGd);
+        str=str+s.sprintf("%.14E,",eph->idot);
+        str=str+s.sprintf("%.14E,",eph->crc);
+        str=str+s.sprintf("%.14E,",eph->crs);
+        str=str+s.sprintf("%.14E,",eph->cuc);
+        str=str+s.sprintf("%.14E,",eph->cus);
+        str=str+s.sprintf("%.14E,",eph->cic);
+        str=str+s.sprintf("%.14E,",eph->cis);
+        str=str+s.sprintf("%.14E,",eph->toes);
+        str=str+s.sprintf("%.14E,",eph->fit);
+        str=str+s.sprintf("%.14E,",eph->f0);
+        str=str+s.sprintf("%.14E,",eph->f1);
+        str=str+s.sprintf("%.14E,",eph->f2);
+        str=str+s.sprintf("%.14E,",eph->tgd[0]);
+        str=str+s.sprintf("%d,",eph->code);
+        str=str+s.sprintf("%d,",eph->flag);
+        str=str+s.sprintf("%.14E,",eph->tgd[1]);
+        ini->WriteString("navi",s.sprintf("eph_%03d_%d",i,j),str);
+      }
     }
     str="";
-    for (i=0;i<8;i++) str=str+s.sprintf("%.14E,",nav->ion_gps[i]);
+    for (int i=0;i<8;i++) str=str+s.sprintf("%.14E,",nav->ion_gps[i]);
     ini->WriteString("navi","ion",str);
     
     str="";
-    for (i=0;i<8;i++) str=str+s.sprintf("%.14E,",nav->utc_gps[i]);
+    for (int i=0;i<8;i++) str=str+s.sprintf("%.14E,",nav->utc_gps[i]);
     ini->WriteString("navi","utc",str);
     
     delete ini;
