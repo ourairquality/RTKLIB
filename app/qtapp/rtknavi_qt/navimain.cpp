@@ -2361,66 +2361,68 @@ void MainWindow::loadNavigation(nav_t *nav)
     eph_t eph0;
     char buff[2049], *p;
     long unsigned toe_time,toc_time,ttr_time;
-    int i;
 
     trace(3, "loadNavigation\n");
 
     memset(&eph0, 0, sizeof(eph_t));
 
-    for (i = 0; i < 2 * MAXSAT; i++) {
-        if ((str = settings.value(QString("navi/eph_%1").arg(i, 3, 10, QChar('0'))).toString()).isEmpty()) continue;
-        nav->eph[i] = eph0;
+    for (int i = 0; i < MAXSAT; i++) {
+      for (int j = 0; j < 4; j++) {
+        if ((str = settings.value(QString("navi/eph_%1_%2").arg(i, 3, 10, QChar('0')).arg(j)).toString()).isEmpty()) continue;
+        nav->eph[i + j * MAXSAT] = eph0;
         strncpy(buff, qPrintable(str), 2047);
         if (!(p = strchr(buff, ','))) continue;
         *p = '\0';
-        if (!(nav->eph[i].sat = satid2no(buff))) continue;
+        eph_t *eph = &nav->eph[i + j * MAXSAT];
+        if (!(eph->sat = satid2no(buff))) continue;
         sscanf(p + 1, "%d,%d,%d,%d,%lu,%lu,%lu,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d,%lf",
-               &nav->eph[i].iode,
-               &nav->eph[i].iodc,
-               &nav->eph[i].sva,
-               &nav->eph[i].svh,
+               &eph->iode,
+               &eph->iodc,
+               &eph->sva,
+               &eph->svh,
                &toe_time,
                &toc_time,
                &ttr_time,
-               &nav->eph[i].A,
-               &nav->eph[i].e,
-               &nav->eph[i].i0,
-               &nav->eph[i].OMG0,
-               &nav->eph[i].omg,
-               &nav->eph[i].M0,
-               &nav->eph[i].deln,
-               &nav->eph[i].OMGd,
-               &nav->eph[i].idot,
-               &nav->eph[i].crc,
-               &nav->eph[i].crs,
-               &nav->eph[i].cuc,
-               &nav->eph[i].cus,
-               &nav->eph[i].cic,
-               &nav->eph[i].cis,
-               &nav->eph[i].toes,
-               &nav->eph[i].fit,
-               &nav->eph[i].f0,
-               &nav->eph[i].f1,
-               &nav->eph[i].f2,
-               &nav->eph[i].tgd[0],
-               &nav->eph[i].code,
-               &nav->eph[i].flag,
-               &nav->eph[i].tgd[1]);
-        nav->eph[i].toe.time = toe_time;
-        nav->eph[i].toc.time = toc_time;
-        nav->eph[i].ttr.time = ttr_time;
+               &eph->A,
+               &eph->e,
+               &eph->i0,
+               &eph->OMG0,
+               &eph->omg,
+               &eph->M0,
+               &eph->deln,
+               &eph->OMGd,
+               &eph->idot,
+               &eph->crc,
+               &eph->crs,
+               &eph->cuc,
+               &eph->cus,
+               &eph->cic,
+               &eph->cis,
+               &eph->toes,
+               &eph->fit,
+               &eph->f0,
+               &eph->f1,
+               &eph->f2,
+               &eph->tgd[0],
+               &eph->code,
+               &eph->flag,
+               &eph->tgd[1]);
+        eph->toe.time = toe_time;
+        eph->toc.time = toc_time;
+        eph->ttr.time = ttr_time;
+      }
     }
     // read ionospheric parameters
     str = settings.value("navi/ion", "").toString();
     QStringList tokens = str.split(",");
-    for (i = 0; i < 8; i++) nav->ion_gps[i] = 0.0;
-    for (i = 0; (i < 8) && (i < tokens.size()); i++) nav->ion_gps[i] = tokens.at(i).toDouble();
+    for (int i = 0; i < 8; i++) nav->ion_gps[i] = 0.0;
+    for (int i = 0; (i < 8) && (i < tokens.size()); i++) nav->ion_gps[i] = tokens.at(i).toDouble();
 
     // read time offsets
     str = settings.value("navi/utc", "").toString();
     tokens = str.split(",");
-    for (i = 0; i < 8; i++) nav->utc_gps[i] = 0.0;
-    for (i = 0; (i < 8) && (i < tokens.size()); i++) nav->utc_gps[i] = tokens.at(i).toDouble();
+    for (int i = 0; i < 8; i++) nav->utc_gps[i] = 0.0;
+    for (int i = 0; (i < 8) && (i < tokens.size()); i++) nav->utc_gps[i] = tokens.at(i).toDouble();
 }
 // save navigation data -----------------------------------------------------
 void MainWindow::saveNavigation(nav_t *nav)
@@ -2428,56 +2430,58 @@ void MainWindow::saveNavigation(nav_t *nav)
     QSettings settings(iniFile, QSettings::IniFormat);
     QString str;
     char id[8];
-    int i;
 
     trace(3, "saveNavigation\n");
 
     if (nav == NULL) return;
 
-    for (i = 0; i < nav->n; i++) {
-        if (nav->eph[i].ttr.time == 0) continue;
+    for (int i = 0; i < MAXSAT; i++) {
+      for (int j = 0; j < 4; j++) {
+        eph_t *eph = &nav->eph[i + j * MAXSAT];
+        if (eph->ttr.time == 0) continue;
         str = "";
-        satno2id(nav->eph[i].sat, id);
+        satno2id(eph->sat, id);
         str = str + id + ",";
-        str = str + QString("%1,").arg(nav->eph[i].iode);
-        str = str + QString("%1,").arg(nav->eph[i].iodc);
-        str = str + QString("%1,").arg(nav->eph[i].sva);
-        str = str + QString("%1,").arg(nav->eph[i].svh);
-        str = str + QString("%1,").arg(static_cast<long unsigned>(nav->eph[i].toe.time));
-        str = str + QString("%1,").arg(static_cast<long unsigned>(nav->eph[i].toc.time));
-        str = str + QString("%1,").arg(static_cast<long unsigned>(nav->eph[i].ttr.time));
-        str = str + QString("%1,").arg(nav->eph[i].A, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].e, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].i0, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].OMG0, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].omg, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].M0, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].deln, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].OMGd, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].idot, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].crc, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].crs, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].cuc, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].cus, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].cic, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].cis, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].toes, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].fit, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].f0, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].f1, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].f2, 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].tgd[0], 0, 'E', 14);
-        str = str + QString("%1,").arg(nav->eph[i].code);
-        str = str + QString("%1,").arg(nav->eph[i].flag);
-        str = str + QString("%1,").arg(nav->eph[i].tgd[1],0,'E',14);
-        settings.setValue(QString("navi/eph_%1").arg(i, 3, 10, QChar('0')), str);
+        str = str + QString("%1,").arg(eph->iode);
+        str = str + QString("%1,").arg(eph->iodc);
+        str = str + QString("%1,").arg(eph->sva);
+        str = str + QString("%1,").arg(eph->svh);
+        str = str + QString("%1,").arg(static_cast<long unsigned>(eph->toe.time));
+        str = str + QString("%1,").arg(static_cast<long unsigned>(eph->toc.time));
+        str = str + QString("%1,").arg(static_cast<long unsigned>(eph->ttr.time));
+        str = str + QString("%1,").arg(eph->A, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->e, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->i0, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->OMG0, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->omg, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->M0, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->deln, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->OMGd, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->idot, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->crc, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->crs, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->cuc, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->cus, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->cic, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->cis, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->toes, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->fit, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->f0, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->f1, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->f2, 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->tgd[0], 0, 'E', 14);
+        str = str + QString("%1,").arg(eph->code);
+        str = str + QString("%1,").arg(eph->flag);
+        str = str + QString("%1,").arg(eph->tgd[1],0,'E',14);
+        settings.setValue(QString("navi/eph_%1_%2").arg(i, 3, 10, QChar('0')).arg(j), str);
+      }
     }
     str = "";
-    for (i = 0; i < 8; i++) str = str + QString("%1,").arg(nav->ion_gps[i], 0, 'E', 14);
+    for (int i = 0; i < 8; i++) str = str + QString("%1,").arg(nav->ion_gps[i], 0, 'E', 14);
     settings.setValue("navi/ion", str);
 
     str = "";
-    for (i = 0; i < 8; i++) str = str + QString("%1,").arg(nav->utc_gps[i], 0, 'E', 14);
+    for (int i = 0; i < 8; i++) str = str + QString("%1,").arg(nav->utc_gps[i], 0, 'E', 14);
     settings.setValue("navi/utc", str);
 }
 // set tray icon ------------------------------------------------------------

@@ -3200,41 +3200,45 @@ extern int readnav(const char *file, nav_t *nav)
         if ((p=strchr(buff,','))) *p='\0'; else continue;
         if (!(sat=satid2no(buff))) continue;
         if (satsys(sat,&prn)==SYS_GLO) {
-            nav->geph[prn-1]=geph0;
-            nav->geph[prn-1].sat=sat;
+            geph_t geph = geph0;
+            geph.sat=sat;
             toe_time=tof_time=0;
-            (void)sscanf(p+1,"%d,%d,%d,%d,%d,%d,%lu,%lu,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,"
+            int j = -1;
+            (void)sscanf(p+1,"%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,"
                         "%lf,%lf,%lf,%lf",
-                   &nav->geph[prn-1].iode,&nav->geph[prn-1].frq,&nav->geph[prn-1].svh,
-                   &nav->geph[prn-1].flags,&nav->geph[prn-1].sva,&nav->geph[prn-1].age,
+                   &j,&geph.iode,&geph.frq,&geph.svh,
+                   &geph.flags,&geph.sva,&geph.age,
                    &toe_time,&tof_time,
-                   &nav->geph[prn-1].pos[0],&nav->geph[prn-1].pos[1],&nav->geph[prn-1].pos[2],
-                   &nav->geph[prn-1].vel[0],&nav->geph[prn-1].vel[1],&nav->geph[prn-1].vel[2],
-                   &nav->geph[prn-1].acc[0],&nav->geph[prn-1].acc[1],&nav->geph[prn-1].acc[2],
-                   &nav->geph[prn-1].taun  ,&nav->geph[prn-1].gamn  ,&nav->geph[prn-1].dtaun);
-            nav->geph[prn-1].toe.time=toe_time;
-            nav->geph[prn-1].tof.time=tof_time;
+                   &geph.pos[0],&geph.pos[1],&geph.pos[2],
+                   &geph.vel[0],&geph.vel[1],&geph.vel[2],
+                   &geph.acc[0],&geph.acc[1],&geph.acc[2],
+                   &geph.taun  ,&geph.gamn  ,&geph.dtaun);
+            geph.toe.time=toe_time;
+            geph.tof.time=tof_time;
+            if (j >= 0 && j < 2) nav->geph[prn - 1 + j * MAXPRNGLO] = geph;
         }
         else {
-            nav->eph[sat-1]=eph0;
-            nav->eph[sat-1].sat=sat;
+            eph_t eph = eph0;
+            eph.sat=sat;
             toe_time=toc_time=ttr_time=0;
-            (void)sscanf(p+1,"%d,%d,%d,%d,%lu,%lu,%lu,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,"
+            int j = -1;
+            (void)sscanf(p+1,"%d,%d,%d,%d,%d,%lu,%lu,%lu,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,"
                         "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d",
-                   &nav->eph[sat-1].iode,&nav->eph[sat-1].iodc,&nav->eph[sat-1].sva ,
-                   &nav->eph[sat-1].svh ,
+                   &j,&eph.iode,&eph.iodc,&eph.sva ,
+                   &eph.svh ,
                    &toe_time,&toc_time,&ttr_time,
-                   &nav->eph[sat-1].A   ,&nav->eph[sat-1].e   ,&nav->eph[sat-1].i0  ,
-                   &nav->eph[sat-1].OMG0,&nav->eph[sat-1].omg ,&nav->eph[sat-1].M0  ,
-                   &nav->eph[sat-1].deln,&nav->eph[sat-1].OMGd,&nav->eph[sat-1].idot,
-                   &nav->eph[sat-1].crc ,&nav->eph[sat-1].crs ,&nav->eph[sat-1].cuc ,
-                   &nav->eph[sat-1].cus ,&nav->eph[sat-1].cic ,&nav->eph[sat-1].cis ,
-                   &nav->eph[sat-1].toes,&nav->eph[sat-1].fit ,&nav->eph[sat-1].f0  ,
-                   &nav->eph[sat-1].f1  ,&nav->eph[sat-1].f2  ,&nav->eph[sat-1].tgd[0],
-                   &nav->eph[sat-1].code, &nav->eph[sat-1].flag);
-            nav->eph[sat-1].toe.time=toe_time;
-            nav->eph[sat-1].toc.time=toc_time;
-            nav->eph[sat-1].ttr.time=ttr_time;
+                   &eph.A   ,&eph.e   ,&eph.i0  ,
+                   &eph.OMG0,&eph.omg ,&eph.M0  ,
+                   &eph.deln,&eph.OMGd,&eph.idot,
+                   &eph.crc ,&eph.crs ,&eph.cuc ,
+                   &eph.cus ,&eph.cic ,&eph.cis ,
+                   &eph.toes,&eph.fit ,&eph.f0  ,
+                   &eph.f1  ,&eph.f2  ,&eph.tgd[0],
+                   &eph.code, &eph.flag);
+            eph.toe.time=toe_time;
+            eph.toc.time=toc_time;
+            eph.ttr.time=ttr_time;
+            if (j >= 0 && j < 4) nav->eph[sat - 1 + j * MAXSAT] = eph;
         }
     }
     fclose(fp);
@@ -3243,42 +3247,47 @@ extern int readnav(const char *file, nav_t *nav)
 extern int savenav(const char *file, const nav_t *nav)
 {
     FILE *fp;
-    int i;
     char id[8];
 
     trace(3,"savenav: file=%s\n",file);
 
     if (!(fp=fopen(file,"w"))) return 0;
 
-    for (i=0;i<MAXSAT;i++) {
-        if (nav->eph[i].ttr.time==0) continue;
-        satno2id(nav->eph[i].sat,id);
-        fprintf(fp,"%s,%d,%d,%d,%d,%lu,%lu,%lu,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
+    for (int i = 0; i < MAXSAT; i++) {
+      for (int j = 0; j < 4; j++) {
+        eph_t *eph = &nav->eph[i + j * MAXSAT];
+        if (eph->ttr.time==0) continue;
+        satno2id(eph->sat,id);
+        fprintf(fp,"%s,%d,%d,%d,%d,%d,%lu,%lu,%lu,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
                    "%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
                    "%.14E,%.14E,%.14E,%.14E,%.14E,%d,%d\n",
-                id,nav->eph[i].iode,nav->eph[i].iodc,nav->eph[i].sva ,
-                nav->eph[i].svh ,(long unsigned)nav->eph[i].toe.time,
-                (long unsigned)nav->eph[i].toc.time,(long unsigned)nav->eph[i].ttr.time,
-                nav->eph[i].A   ,nav->eph[i].e  ,nav->eph[i].i0  ,nav->eph[i].OMG0,
-                nav->eph[i].omg ,nav->eph[i].M0 ,nav->eph[i].deln,nav->eph[i].OMGd,
-                nav->eph[i].idot,nav->eph[i].crc,nav->eph[i].crs ,nav->eph[i].cuc ,
-                nav->eph[i].cus ,nav->eph[i].cic,nav->eph[i].cis ,nav->eph[i].toes,
-                nav->eph[i].fit ,nav->eph[i].f0 ,nav->eph[i].f1  ,nav->eph[i].f2  ,
-                nav->eph[i].tgd[0],nav->eph[i].code,nav->eph[i].flag);
+                id,j,eph->iode,eph->iodc,eph->sva ,
+                eph->svh ,(long unsigned)eph->toe.time,
+                (long unsigned)eph->toc.time,(long unsigned)eph->ttr.time,
+                eph->A   ,eph->e  ,eph->i0  ,eph->OMG0,
+                eph->omg ,eph->M0 ,eph->deln,eph->OMGd,
+                eph->idot,eph->crc,eph->crs ,eph->cuc ,
+                eph->cus ,eph->cic,eph->cis ,eph->toes,
+                eph->fit ,eph->f0 ,eph->f1  ,eph->f2  ,
+                eph->tgd[0],eph->code,eph->flag);
+      }
     }
-    for (i=0;i<MAXPRNGLO;i++) {
-        if (nav->geph[i].tof.time==0) continue;
-        satno2id(nav->geph[i].sat,id);
-        fprintf(fp,"%s,%d,%d,%d,%d,%d,%d,%lu,%lu,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
+    for (int i = 0; i < MAXPRNGLO; i++) {
+      for (int j = 0; j < 2; j++) {
+        geph_t *geph = &nav->geph[i + j * MAXPRNGLO];
+        if (geph->tof.time==0) continue;
+        satno2id(geph->sat,id);
+        fprintf(fp,"%s,%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
                    "%.14E,%.14E,%.14E,%.14E,%.14E,%.14E\n",
-                id,nav->geph[i].iode,nav->geph[i].frq,nav->geph[i].svh,
-                nav->geph[i].flags,
-                nav->geph[i].sva,nav->geph[i].age,(long unsigned)nav->geph[i].toe.time,
-                (long unsigned)nav->geph[i].tof.time,
-                nav->geph[i].pos[0],nav->geph[i].pos[1],nav->geph[i].pos[2],
-                nav->geph[i].vel[0],nav->geph[i].vel[1],nav->geph[i].vel[2],
-                nav->geph[i].acc[0],nav->geph[i].acc[1],nav->geph[i].acc[2],
-                nav->geph[i].taun,nav->geph[i].gamn,nav->geph[i].dtaun);
+                id,j,geph->iode,geph->frq,geph->svh,
+                geph->flags,
+                geph->sva,geph->age,(long unsigned)geph->toe.time,
+                (long unsigned)geph->tof.time,
+                geph->pos[0],geph->pos[1],geph->pos[2],
+                geph->vel[0],geph->vel[1],geph->vel[2],
+                geph->acc[0],geph->acc[1],geph->acc[2],
+                geph->taun,geph->gamn,geph->dtaun);
+      }
     }
     /*fprintf(fp,"IONUTC,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
                "%.14E,%.14E,%.14E,%.0f",
