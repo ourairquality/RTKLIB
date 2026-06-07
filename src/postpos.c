@@ -243,11 +243,17 @@ static void update_rtcm_ssr(gtime_t time)
 
         /* update ssr corrections */
         for (i=0;i<MAXSAT;i++) {
-            if (!rtcm.ssr[i].update||
-                rtcm.ssr[i].iod[0]!=rtcm.ssr[i].iod[1]||
-                timediff(time,rtcm.ssr[i].t0[0])<-1E-3) continue;
-            navs.ssr[i]=rtcm.ssr[i];
-            rtcm.ssr[i].update=0;
+          if (!rtcm.ssr[i].update) continue;
+          if (rtcm.ssr[i].iod[0] != rtcm.ssr[i].iod[1]) continue;
+          if (timediff(time, rtcm.ssr[i].t0[0]) < -1E-3) continue;
+          int ssr_iode = rtcm.ssr[i].iode;
+          if (navs.ssr[i][0].iode != ssr_iode) {
+            trace(4, "update_rtcm_ssr new sat=%d iode %d to %d\n", i + 1, navs.ssr[i][0].iode, ssr_iode);
+            // New SSR IODE, save old SSR.
+            navs.ssr[i][1] = navs.ssr[i][0];
+          }
+          navs.ssr[i][0] = rtcm.ssr[i];
+          rtcm.ssr[i].update = 0;
         }
         // Update vtec.
         navs.vtec = rtcm.nav.vtec;
@@ -429,7 +435,7 @@ static void corr_phase_bias_ssr(obsd_t *obs, int n, const nav_t *nav)
         if ((freq=sat2freq(obs[i].sat,code,nav))==0.0) continue;
 
         /* correct phase bias (cyc) */
-        obs[i].L[j]-=nav->ssr[obs[i].sat-1].pbias[code-1]*freq/CLIGHT;
+        obs[i].L[j]-=nav->ssr[obs[i].sat-1][0].pbias[code-1]*freq/CLIGHT;
     }
 }
 /* process positioning -------------------------------------------------------*/
