@@ -442,44 +442,51 @@ object OptDialog: TOptDialog
         Height = 13
         Caption = 'Max Age of Diff (s) / Outs to Reset Amb'
       end
-      object Label11: TLabel
+      object Label53: TLabel
         Left = 24
         Top = 161
+        Width = 179
+        Height = 13
+        Caption = 'Max Age of SSR corrections (s)'
+      end
+      object Label11: TLabel
+        Left = 24
+        Top = 183
         Width = 179
         Height = 13
         Caption = 'Outlier Threshold for Code/Phase (m)'
       end
       object Label37: TLabel
         Left = 24
-        Top = 183
+        Top = 205
         Width = 143
         Height = 13
         Caption = '# of Filter Iter / Sync Solution'
       end
       object Label49: TLabel
         Left = 24
-        Top = 227
+        Top = 249
         Width = 131
         Height = 13
         Caption = 'Min Fix Sats / Min Hold Sats'
       end
       object Label33: TLabel
         Left = 24
-        Top = 249
+        Top = 271
         Width = 66
         Height = 13
         Caption = 'Min Drop Sats'
       end
       object Label50: TLabel
         Left = 24
-        Top = 271
+        Top = 293
         Width = 144
         Height = 13
         Caption = 'Max Pos Var for AR / AR Filter'
       end
       object Label47: TLabel
         Left = 24
-        Top = 293
+        Top = 315
         Width = 143
         Height = 13
         Caption = 'Hold Amb Var / Hold Amb Gain'
@@ -618,14 +625,6 @@ object OptDialog: TOptDialog
         TabOrder = 13
         Text = '30'
       end
-      object MaxAgeSSR: TEdit
-        Left = 258
-        Top = 136
-        Width = 75
-        Height = 21
-        TabOrder = 13
-        Text = '90'
-      end
       object OutCntResetAmb: TEdit
         Left = 325
         Top = 136
@@ -634,9 +633,17 @@ object OptDialog: TOptDialog
         TabOrder = 14
         Text = '5'
       end
-      object RejectCode: TEdit
+      object MaxAgeSSR: TEdit
         Left = 248
         Top = 158
+        Width = 75
+        Height = 21
+        TabOrder = 13
+        Text = '90'
+      end
+      object RejectCode: TEdit
+        Left = 248
+        Top = 180
         Width = 75
         Height = 21
         TabOrder = 15
@@ -644,7 +651,7 @@ object OptDialog: TOptDialog
       end
       object RejectPhase: TEdit
         Left = 325
-        Top = 158
+        Top = 180
         Width = 75
         Height = 21
         TabOrder = 16
@@ -652,7 +659,7 @@ object OptDialog: TOptDialog
       end
       object NumIter: TEdit
         Left = 248
-        Top = 180
+        Top = 202
         Width = 75
         Height = 21
         TabOrder = 17
@@ -660,7 +667,7 @@ object OptDialog: TOptDialog
       end
       object SyncSol: TComboBox
         Left = 325
-        Top = 180
+        Top = 202
         Width = 75
         Height = 21
         Style = csDropDownList
@@ -675,7 +682,7 @@ object OptDialog: TOptDialog
       end
       object BaselineConst: TCheckBox
         Left = 24
-        Top = 202
+        Top = 224
         Width = 179
         Height = 17
         Caption = 'Baseline Length Constraint (m)'
@@ -684,7 +691,7 @@ object OptDialog: TOptDialog
       end
       object BaselineLen: TEdit
         Left = 248
-        Top = 202
+        Top = 224
         Width = 75
         Height = 21
         TabOrder = 20
@@ -692,7 +699,7 @@ object OptDialog: TOptDialog
       end
       object BaselineSig: TEdit
         Left = 325
-        Top = 202
+        Top = 224
         Width = 75
         Height = 21
         TabOrder = 21
@@ -700,7 +707,7 @@ object OptDialog: TOptDialog
       end
       object MinFixSats: TEdit
         Left = 248
-        Top = 224
+        Top = 246
         Width = 75
         Height = 21
         TabOrder = 22
@@ -708,7 +715,7 @@ object OptDialog: TOptDialog
       end
       object MinHoldSats: TEdit
         Left = 325
-        Top = 224
+        Top = 246
         Width = 75
         Height = 21
         TabOrder = 23
@@ -716,7 +723,7 @@ object OptDialog: TOptDialog
       end
       object MinDropSats: TEdit
         Left = 248
-        Top = 246
+        Top = 268
         Width = 75
         Height = 21
         TabOrder = 24
@@ -724,7 +731,7 @@ object OptDialog: TOptDialog
       end
       object MaxPosVarAR: TEdit
         Left = 248
-        Top = 268
+        Top = 290
         Width = 75
         Height = 21
         TabOrder = 25
@@ -732,7 +739,7 @@ object OptDialog: TOptDialog
       end
       object ARFilter: TComboBox
         Left = 325
-        Top = 268
+        Top = 290
         Width = 75
         Height = 21
         Style = csDropDownList
@@ -746,7 +753,7 @@ object OptDialog: TOptDialog
       end
       object VarHoldAmb: TEdit
         Left = 248
-        Top = 290
+        Top = 312
         Width = 75
         Height = 21
         TabOrder = 27
@@ -754,7 +761,7 @@ object OptDialog: TOptDialog
       end
       object GainHoldAmb: TEdit
         Left = 325
-        Top = 290
+        Top = 312
         Width = 75
         Height = 21
         TabOrder = 28

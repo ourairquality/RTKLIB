@@ -59,6 +59,7 @@ __published:
 	TEdit *ElMaskAR;
 	TEdit *SlipThres;
 	TEdit *MaxAgeDiff;
+	TEdit *MaxAgeSSR;
     TEdit *RejectPhase;
 	TEdit *NumIter;
 	TTabSheet *TabSheet3;
@@ -249,6 +250,7 @@ __published:
     TEdit *MeasErr6;
     TEdit *DopThres;
     TLabel *Label52;
+    TLabel *Label53;
     TEdit *MeasErr5;
 	void __fastcall BtnOkClick(TObject *Sender);
 	void __fastcall RovAntPcvClick(TObject *Sender);

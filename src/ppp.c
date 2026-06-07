@@ -506,7 +506,7 @@ static void corr_meas(const obsd_t *obs, const nav_t *nav, const double *azel, c
     double P_nobias = P[i];
     if (opt->sateph == EPHOPT_SSRAPC || opt->sateph == EPHOPT_SSRCOM) {
       // Apply SSR correction.
-      P[i] -= nav->ssr[obs->sat - 1].cbias[code - 1];
+      P[i] -= nav->ssr[obs->sat - 1][0].cbias[code - 1];
     } else { // Apply code bias corrections from file.
       P[i] -= code2bias(nav, sys, obs->sat, obs->code[i], 1); // Absolute bias.
     }
@@ -786,8 +786,8 @@ static void udiono_ppp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
                 double Pf_corr=obs[i].P[f2];
                 if (rtk->opt.sateph==EPHOPT_SSRAPC||rtk->opt.sateph==EPHOPT_SSRCOM) {
                     /* apply SSR correction */
-                    P0_corr-=nav->ssr[obs->sat-1].cbias[obs[i].code[0]-1];
-                    Pf_corr-=nav->ssr[obs->sat-1].cbias[obs[i].code[f2]-1];
+                    P0_corr-=nav->ssr[obs->sat-1][0].cbias[obs[i].code[0]-1];
+                    Pf_corr-=nav->ssr[obs->sat-1][0].cbias[obs[i].code[f2]-1];
                 }
                 else {   /* apply code bias corrections from file */
                     P0_corr-=code2bias(nav,sys,sat,obs[i].code[0],1);

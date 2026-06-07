@@ -314,43 +314,16 @@ static void update_antpos(rtksvr_t *svr, int index) {
 static void update_ssr(rtksvr_t *svr, int index)
 {
     for (int i=0;i<MAXSAT;i++) {
-        int sat=i+1;
         if (!svr->rtcm[index].ssr[i].update) continue;
-        svr->rtcm[index].ssr[i].update=0; // just check once per update 
-
-        // Check consistency between iods of orbit and clock.
-        if (svr->rtcm[index].ssr[i].iod[0]!=svr->rtcm[index].ssr[i].iod[1])
-            continue;
-
-        // Check consistency of iode between ssr and broadcast.
-        int ssr_iode=svr->rtcm[index].ssr[i].iode, iode=-1;
-        if (ssr_iode<0) continue;
-        int prn;
-        if (satsys(sat, &prn)!=SYS_GLO) {
-            eph_t *eph=svr->nav.eph+i;
-            if (eph->sat==sat&&ssr_iode==eph->iode)  // check current ephemeris
-                iode=eph->iode;
-            else { // check previous ephemeris
-               eph=svr->nav.eph+i+2*MAXSAT;
-               if (eph->sat==sat&&ssr_iode==eph->iode)
-                   iode=eph->iode;
-            }
-        } else { // SYS_GLO
-            geph_t *geph=svr->nav.geph+prn-1;
-            if (geph->sat==sat&&ssr_iode==geph->iode)
-                iode=geph->iode;
-            else { // check previous ephemeris
-                geph=svr->nav.geph+prn-1+MAXPRNGLO;
-                if (geph->sat==sat&&ssr_iode==geph->iode)
-                   iode=geph->iode;
-            }
+        if (svr->rtcm[index].ssr[i].iod[0]!=svr->rtcm[index].ssr[i].iod[1]) continue;
+        int ssr_iode = svr->rtcm[index].ssr[i].iode;
+        if (svr->nav.ssr[i][0].iode != ssr_iode) {
+          trace(4, "update_ssr new sat=%d iode %d to %d\n", i + 1, svr->nav.ssr[i][0].iode, ssr_iode);
+          // New SSR IODE, save old SSR.
+          svr->nav.ssr[i][1] = svr->nav.ssr[i][0];
         }
-        if (iode!=-1) {
-            if (svr->nav.ssr[i].iode!=ssr_iode) {
-                trace(4,"update_ssr_iode: sat=%d %d->%d\n",sat,svr->nav.ssr[i].iode,ssr_iode);
-            }
-            svr->nav.ssr[i]=svr->rtcm[index].ssr[i];
-       }
+        svr->nav.ssr[i][0] = svr->rtcm[index].ssr[i];
+        svr->rtcm[index].ssr[i].update = 0;
     }
     svr->nmsg[index][7]++;
 
@@ -641,7 +614,7 @@ static void corr_phase_bias(obsd_t *obs, int n, const nav_t *nav)
         if ((freq=sat2freq(obs[i].sat,code,nav))==0.0) continue;
         
         /* correct phase bias (cyc) */
-        obs[i].L[j]-=nav->ssr[obs[i].sat-1].pbias[code-1]*freq/CLIGHT;
+        obs[i].L[j]-=nav->ssr[obs[i].sat-1][0].pbias[code-1]*freq/CLIGHT;
     }
 }
 /* periodic command ----------------------------------------------------------*/
@@ -962,10 +935,9 @@ extern int rtksvrinit(rtksvr_t *svr)
     for (i=0;i<MAXSTRRTK;i++) strinit(svr->stream+i);
 
     for (i=0;i<MAXSAT;i++) {
-        svr->nav.ssr[i].iode=-1;
-        for (j=0;j<6;j++) {
-            svr->nav.ssr[i].t0[j]=time0;
-        }
+        svr->nav.ssr[i][0].iode = svr->nav.ssr[i][1].iode = -1;
+        for (int k = 0; k < 6; k++)
+            svr->nav.ssr[i][0].t0[k] = svr->nav.ssr[i][1].t0[k] = time0;
     }
     
     *svr->cmd_reset='\0';

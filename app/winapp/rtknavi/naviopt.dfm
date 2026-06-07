@@ -4,7 +4,7 @@ object OptDialog: TOptDialog
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'Options'
-  ClientHeight = 384
+  ClientHeight = 406
   ClientWidth = 413
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,7 +17,7 @@ object OptDialog: TOptDialog
   TextHeight = 13
   object BtnLoad: TButton
     Left = 2
-    Top = 355
+    Top = 377
     Width = 100
     Height = 28
     Caption = '&Load...'
@@ -26,7 +26,7 @@ object OptDialog: TOptDialog
   end
   object BtnSave: TButton
     Left = 104
-    Top = 355
+    Top = 377
     Width = 100
     Height = 28
     Caption = '&Save'
@@ -35,7 +35,7 @@ object OptDialog: TOptDialog
   end
   object BtnOk: TButton
     Left = 206
-    Top = 355
+    Top = 377
     Width = 100
     Height = 28
     Caption = '&OK'
@@ -45,7 +45,7 @@ object OptDialog: TOptDialog
   end
   object BtnCancel: TButton
     Left = 308
-    Top = 355
+    Top = 377
     Width = 100
     Height = 28
     Caption = '&Cancel'
@@ -56,7 +56,7 @@ object OptDialog: TOptDialog
     Left = 0
     Top = 0
     Width = 413
-    Height = 353
+    Height = 375
     ActivePage = TabSheet1
     Align = alTop
     TabOrder = 4
@@ -463,7 +463,7 @@ object OptDialog: TOptDialog
         Top = 161
         Width = 192
         Height = 13
-        Caption = 'Max Age of SSR corrections'
+        Caption = 'Max Age of SSR corrections (s)'
       end
       object Label11: TLabel
         Left = 24

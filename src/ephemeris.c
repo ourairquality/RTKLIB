@@ -632,57 +632,60 @@ static int satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
     char tstr[40];
     trace(4,"satpos_ssr: time=%s sat=%2d\n",time2str(time,tstr,3),sat);
 
-    ssr=nav->ssr+sat-1;
+    int j;
+    for (j = 0; j < 2; j++) {
+      *svh = -1;
+      ssr=&nav->ssr[sat-1][j];
 
-    if (!ssr->t0[0].time) {
+      if (!ssr->t0[0].time) {
         trace(2,"no ssr orbit correction: %s sat=%2d\n",time2str(time,tstr,0),sat);
-        return 0;
-    }
-    if (!ssr->t0[1].time) {
+        continue;
+      }
+      if (!ssr->t0[1].time) {
         trace(2,"no ssr clock correction: %s sat=%2d\n",time2str(time,tstr,0),sat);
-        return 0;
-    }
-    /* inconsistency between orbit and clock correction */
-    if (ssr->iod[0]!=ssr->iod[1]) {
+        continue;
+      }
+      /* inconsistency between orbit and clock correction */
+      if (ssr->iod[0]!=ssr->iod[1]) {
         trace(2,"inconsistent ssr correction: %s sat=%2d iod=%d %d\n",
               time2str(time,tstr,0),sat,ssr->iod[0],ssr->iod[1]);
-        *svh=-1;
-        return 0;
-    }
-    t1=timediff(time,ssr->t0[0]);
-    t2=timediff(time,ssr->t0[1]);
-    t3=timediff(time,ssr->t0[2]);
+        *svh = -1;
+        continue;
+      }
+      t1=timediff(time,ssr->t0[0]);
+      t2=timediff(time,ssr->t0[1]);
+      t3=timediff(time,ssr->t0[2]);
 
-    /* ssr orbit and clock correction (ref [4]) */
-    if (fabs(t1)>MAXAGESSR||fabs(t2)>MAXAGESSR) {
+      /* ssr orbit and clock correction (ref [4]) */
+      if (fabs(t1)>opt->maxagessr||fabs(t2)>opt->maxagessr) {
         trace(2,"age of ssr error: %s sat=%2d t=%.0f %.0f\n",time2str(time,tstr,0),
               sat,t1,t2);
-        *svh=-1;
-        return 0;
-    }
-    if (ssr->udi[0]>=1.0) t1-=ssr->udi[0]/2.0;
-    if (ssr->udi[1]>=1.0) t2-=ssr->udi[1]/2.0;
+        *svh = -1;
+        continue;
+      }
+      if (ssr->udi[0]>=1.0) t1-=ssr->udi[0]/2.0;
+      if (ssr->udi[1]>=1.0) t2-=ssr->udi[1]/2.0;
 
-    for (i=0;i<3;i++) deph[i]=ssr->deph[i]+ssr->ddeph[i]*t1;
-    dclk=ssr->dclk[0]+ssr->dclk[1]*t2+ssr->dclk[2]*t2*t2;
+      for (i=0;i<3;i++) deph[i]=ssr->deph[i]+ssr->ddeph[i]*t1;
+      dclk=ssr->dclk[0]+ssr->dclk[1]*t2+ssr->dclk[2]*t2*t2;
 
-    /* ssr highrate clock correction (ref [4]) */
-    if (ssr->iod[0]==ssr->iod[2]&&ssr->t0[2].time&&fabs(t3)<MAXAGESSR_HRCLK) {
+      /* ssr highrate clock correction (ref [4]) */
+      if (ssr->iod[0]==ssr->iod[2]&&ssr->t0[2].time&&fabs(t3)<MAXAGESSR_HRCLK) {
         dclk+=ssr->hrclk;
-    }
-    if (norm(deph,3)>MAXECORSSR||fabs(dclk)>MAXCCORSSR) {
+      }
+      if (norm(deph,3)>MAXECORSSR||fabs(dclk)>MAXCCORSSR) {
         trace(3,"invalid ssr correction: %s deph=%.1f dclk=%.1f\n",
               time2str(time,tstr,0),norm(deph,3),dclk);
-        *svh=-1;
-        return 0;
-    }
-    /* satellite position and clock by broadcast ephemeris */
-    if (!ephpos(time,teph,sat,nav,ssr->iode,rs,dts,var,svh)) return 0;
+        *svh = -1;
+        continue;
+      }
+      /* satellite position and clock by broadcast ephemeris */
+      if (!ephpos(time,teph,sat,nav,ssr->iode,rs,dts,var,svh)) continue;
 
-    /* satellite clock for gps, galileo and qzss */
-    int sys = satsyst(sat, time, NULL);
-    if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_BDS2||sys==SYS_BDS3) {
-        if (!(eph=seleph(teph,sat,ssr->iode,nav))) return 0;
+      /* satellite clock for gps, galileo and qzss */
+      int sys = satsyst(sat, time, NULL);
+      if (sys==SYS_GPS||sys==SYS_GAL||sys==SYS_QZS||sys==SYS_BDS2||sys==SYS_BDS3) {
+        if (!(eph=seleph(teph,sat,ssr->iode,nav))) continue;
 
         /* satellite clock by clock parameters */
         tk=timediff(time,eph->toc);
@@ -691,7 +694,27 @@ static int satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
 
         /* relativity correction */
         dts[0]-=2.0*dot3(rs,rs+3)/CLIGHT/CLIGHT;
+      }
+      break;
     }
+
+    if (j >= 2) {
+      char id[8]="";
+      satno2id(sat,id);
+      int iode0 = nav->ssr[sat-1][0].iode, iode1 = nav->ssr[sat-1][1].iode;
+      if (iode0 > 0) {
+        trace(3, "satpos_ssr: no ssr match found sat=%d %s %d %d\n", sat, id,
+                iode0, iode1);
+      }
+      return 0;
+    }
+    if (j >= 1) {
+      char id[8]="";
+      satno2id(sat,id);
+      int iode0 = nav->ssr[sat-1][0].iode, iode1 = nav->ssr[sat-1][1].iode;
+      trace(3, "satpos_ssr: previous ssr used sat=%d %s %d %d\n", sat, id, iode0, iode1);
+    }
+
     /* radial-along-cross directions in ecef */
     if (!normv3(rs+3,ea)) return 0;
     cross3(rs,rs+3,rc);
