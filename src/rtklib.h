@@ -955,7 +955,7 @@ typedef struct {        /* navigation data type */
     sbssat_t sbssat;    /* SBAS satellite corrections */
     sbsion_t sbsion[MAXBAND+1]; /* SBAS ionosphere corrections */
     dgps_t dgps[MAXSAT]; /* DGPS corrections */
-    ssr_t ssr[MAXSAT];  /* SSR corrections */
+    ssr_t ssr[MAXSAT][2]; /* SSR corrections, current and previous */
 } nav_t;
 
 typedef struct {        /* station parameter type */

@@ -2215,7 +2215,7 @@ void MonitorDialog::showRtcmSsr()
     for (i = n = 0; i < MAXSAT; i++) {
         if (!(satsyst(i + 1, time, NULL) & sys)) continue;
         if (inputStream == RTKSVRNIN)
-          ssr[n] = rtksvr->nav.ssr[i];
+          ssr[n] = rtksvr->nav.ssr[i][0];
         else
           ssr[n] = rtksvr->rtcm[effectiveStream].ssr[i];
         bool valid = ssr[n].t0[0].time && fabs(timediff(time, ssr[n].t0[0])) <= 1800.0 && ssr[n].iode >= 0;

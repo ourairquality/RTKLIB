@@ -152,7 +152,7 @@ static const char *helptxt[]={
     "navidata [-p] [-n] [cycle] : show navigation data",
     "precdata [files]      : show or load precise ephemeris, clock, and erp data",
     "stream [cycle]        : show stream status",
-    "ssr [-n] [-c] [-p] [cycle] : show ssr corrections",
+    "ssr [-n] [-c] [-l] [-p] [cycle] : show ssr corrections",
     "error                 : show error/warning messages",
     "option [opt]          : show option(s)",
     "set opt [val]         : set option",
@@ -1348,7 +1348,7 @@ static void prstream(vt_t *vt)
     }
 }
 /* print ssr correction ------------------------------------------------------*/
-static void prssr(vt_t *vt, int ri, int cbias, int pbias)
+static void prssr(vt_t *vt, int ri, int cbias, int pbias, int prev)
 {
     static char buff[128*MAXSAT];
     gtime_t time;
@@ -1360,7 +1360,7 @@ static void prssr(vt_t *vt, int ri, int cbias, int pbias)
     time=svr.rtk.sol.time;
     for (i=0;i<MAXSAT;i++) {
       if (ri <= 0 || ri > RTKSVRNIN)
-        ssr[i] = svr.nav.ssr[i];
+        ssr[i] = prev ? svr.nav.ssr[i][1] : svr.nav.ssr[i][0];
       else
         ssr[i] = svr.rtcm[ri - 1].ssr[i];
     }
@@ -1578,15 +1578,19 @@ static void cmd_ssr(char **args, int narg, vt_t *vt)
     trace(3,"cmd_ssr:\n");
     
     int cycle = 0;
-    int ri = 0, cbias = 0, pbias = 0;
+    int ri = 0, cbias = 0, pbias = 0, prev = 0;
     for (int i = 1; i < narg; i++) {
       if (sscanf(args[i], "-%d", &ri) == 1) continue;
       if (strcmp(args[i], "-c") == 0) {
         cbias = 1;
         continue;
       }
-      if (strcmp(args[i], "-p") == 0) {
+      if (strcmp(args[i], "-l") == 0) {
         pbias = 1;
+        continue;
+      }
+      if (strcmp(args[i], "-p") == 0) {
+        prev = 1;
         continue;
       }
       cycle = (int)(atof(args[i]) * 1000.0);
@@ -1594,7 +1598,7 @@ static void cmd_ssr(char **args, int narg, vt_t *vt)
 
     while (!vt_chkbrk(vt)) {
         if (cycle>0) vt_printf(vt,ESC_CLEAR);
-        prssr(vt, ri, cbias, pbias);
+        prssr(vt, ri, cbias, pbias, prev);
         if (cycle>0) sleepms(cycle); else return;
     }
     vt_printf(vt,"\n");
@@ -2167,11 +2171,12 @@ static void daemonise(void)
 *     stream [cycle]
 *       Show stream status. Use option cycle for cyclic display.
 *
-*     ssr [-n] [-c] [-p] [cycle]
-*       Show the RTCM SSR state. Option -n selects the nth respective
+*     ssr [-n] [-c] [-l] [-p] [cycle]
+*       Show the RTCM SSR state. Option -n selects the nth respective 
 *       input, output, or correction RTCM stream index otherwise the combined
-*       ssr state is used. Option -c includes code biases and option -p
-*       includes phase biases. Use option cycle for cyclic display.
+*       ssr state is used. Option -c includes code biases and option -l
+*       includes phase biases. Option -p shows the previous ssr corrections
+*       from the combined ssr state. Use option cycle for cyclic display.
 *
 *     error
 *       Show error/warning messages. To stop messages, send break (ctr-C).
