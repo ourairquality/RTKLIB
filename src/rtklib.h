@@ -1159,6 +1159,7 @@ typedef struct {        /* processing options type */
     double gainholdamb; /* gain used for GLO and SBAS sats to adjust ambiguity */
     double maxtdiff;    /* max difference of time (sec) */
     double maxinno[2];  /* reject threshold of innovation for phase and code (m) */
+    double maxagessr;   /* Max age of ssr orbit and clock (s). */
     double baseline[2]; /* baseline length constraint {const,sigma} (m) */
     double ru[3];       /* rover position for fixed mode {x,y,z} (ecef) (m) */
     double rb[3];       /* base position for relative mode {x,y,z} (ecef) (m) */
@@ -1866,11 +1867,11 @@ EXPORT int pephclk_avail(gtime_t time, const nav_t *nav, int avail[MAXSAT]);
 EXPORT int patt_avail(gtime_t time, const nav_t *nav, int avail[MAXSAT]);
 EXPORT void satantoff(gtime_t time, const double *rs, int sat, const nav_t *nav,
                       double *dant);
-EXPORT int  satpos(gtime_t time, gtime_t teph, int sat, int ephopt,
+EXPORT int  satpos(gtime_t time, gtime_t teph, int sat, const prcopt_t *opt,
                    const nav_t *nav, double *rs, double *dts, double *var,
                    int *svh);
 EXPORT void satposs(gtime_t time, const obsd_t *obs, int n, const nav_t *nav,
-                    int sateph, double *rs, double *dts, double *var, int *svh);
+                    const prcopt_t *opt, double *rs, double *dts, double *var, int *svh);
 EXPORT void setseleph(int sys, int sel);
 EXPORT int  getseleph(int sys);
 EXPORT void readsp3(const char *file, nav_t *nav, int opt);

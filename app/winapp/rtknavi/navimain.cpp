@@ -2696,6 +2696,7 @@ void __fastcall TMainForm::LoadOpt(void)
     PrcOpt.thresdop=ini->ReadFloat    ("prcopt", "thresdop",      0.00);
     PrcOpt.thresslip=ini->ReadFloat  ("prcopt", "thresslip",     0.05);
     PrcOpt.maxtdiff =ini->ReadFloat  ("prcopt", "maxtdiff",      30.0);
+    PrcOpt.maxagessr=ini->ReadFloat  ("prcopt", "maxagessr",     90.0);
     PrcOpt.maxinno[0]=ini->ReadFloat  ("prcopt", "maxphase",      5.0);
     PrcOpt.maxinno[1]=ini->ReadFloat  ("prcopt", "maxcode",      30.0);
     PrcOpt.varholdamb=ini->ReadFloat ("prcopt", "varholdamb",     0.1);
@@ -2972,6 +2973,7 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteFloat  ("prcopt", "thresslip",  PrcOpt.thresslip   );
     ini->WriteFloat  ("prcopt", "thresdop",   PrcOpt.thresdop    );
     ini->WriteFloat  ("prcopt", "maxtdiff",   PrcOpt.maxtdiff    );
+    ini->WriteFloat  ("prcopt", "maxagessr",  PrcOpt.maxagessr   );
     ini->WriteFloat  ("prcopt", "maxphase",   PrcOpt.maxinno[0]  );
     ini->WriteFloat  ("prcopt", "maxcode",    PrcOpt.maxinno[1]  );
     ini->WriteFloat  ("prcopt", "varholdamb", PrcOpt.varholdamb  );

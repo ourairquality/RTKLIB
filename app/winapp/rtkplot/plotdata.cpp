@@ -1199,7 +1199,7 @@ void __fastcall TPlot::UpdateObs(int nobs)
                 if (!tle_pos(time,name,"","",&TLEData,NULL,rs)) continue;
             }
             else {
-                if (!satpos(time,time,sat,EPHOPT_BRDC,&Nav,rs,dts,&var,&svh)) {
+                if (!satpos(time,time,sat,&prcopt_default,&Nav,rs,dts,&var,&svh)) {
                     continue;
                 }
             }

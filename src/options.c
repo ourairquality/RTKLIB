@@ -115,6 +115,7 @@ EXPORT opt_t sysopts[]={
     {"pos2-elmaskhold", 1,  (void *)&elmaskhold_,        "deg"  },
     {"pos2-aroutcnt",   0,  (void *)&prcopt_.maxout,     ""     },
     {"pos2-maxage",     1,  (void *)&prcopt_.maxtdiff,   "s"    },
+    {"pos2-maxagessr",  1,  (void *)&prcopt_.maxagessr,  "s"    },
     {"pos2-syncsol",    3,  (void *)&prcopt_.syncsol,    SWTOPT },
     {"pos2-slipthres",  1,  (void *)&prcopt_.thresslip,  "m"    },
     {"pos2-dopthres",   1,  (void *)&prcopt_.thresdop,   "m"    },

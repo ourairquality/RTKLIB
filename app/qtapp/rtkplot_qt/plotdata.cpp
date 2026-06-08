@@ -1182,7 +1182,7 @@ void Plot::updateObservation(int nobs)
                     continue;
                 }
             } else {
-                if (!satpos(time, time, sat, EPHOPT_BRDC, &navigation, rs, dts, &var, &svh)) {
+                if (!satpos(time, time, sat, &prcopt_default, &navigation, rs, dts, &var, &svh)) {
                     continue;
                 }
             }

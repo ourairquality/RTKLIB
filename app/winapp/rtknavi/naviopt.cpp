@@ -485,6 +485,7 @@ void __fastcall TOptDialog::GetOpt(void)
 	ElMaskAR	 ->Text     =s.sprintf("%.0f",PrcOpt.elmaskar*R2D);
 	ElMaskHold	 ->Text     =s.sprintf("%.0f",PrcOpt.elmaskhold*R2D);
 	MaxAgeDiff	 ->Text     =s.sprintf("%.1f",PrcOpt.maxtdiff);
+	MaxAgeSSR	 ->Text     =s.sprintf("%.1f",PrcOpt.maxagessr);
 	RejectCode   ->Text     =s.sprintf("%.1f",PrcOpt.maxinno[1]);
 	RejectPhase  ->Text     =s.sprintf("%.1f",PrcOpt.maxinno[0]);
 	VarHoldAmb   ->Text     =s.sprintf("%.4f",PrcOpt.varholdamb);
@@ -638,6 +639,7 @@ void __fastcall TOptDialog::SetOpt(void)
 	PrcOpt.elmaskar  =str2dbl(ElMaskAR   ->Text)*D2R;
 	PrcOpt.elmaskhold=str2dbl(ElMaskHold ->Text)*D2R;
 	PrcOpt.maxtdiff  =str2dbl(MaxAgeDiff ->Text);
+	PrcOpt.maxagessr  =str2dbl(MaxAgeSSR ->Text);
 	PrcOpt.maxinno[1]=str2dbl(RejectCode ->Text);
 	PrcOpt.maxinno[0]=str2dbl(RejectPhase->Text);
 	PrcOpt.varholdamb=str2dbl(VarHoldAmb->Text);
@@ -854,6 +856,7 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	ElMaskAR	 ->Text			=s.sprintf("%.0f",prcopt.elmaskar*R2D);
 	ElMaskHold	 ->Text			=s.sprintf("%.0f",prcopt.elmaskhold*R2D);
 	MaxAgeDiff	 ->Text			=s.sprintf("%.1f",prcopt.maxtdiff );
+	MaxAgeSSR	 ->Text			=s.sprintf("%.1f",prcopt.maxagessr);
 	RejectCode   ->Text			=s.sprintf("%.1f",prcopt.maxinno[1]);
 	RejectPhase  ->Text			=s.sprintf("%.1f",prcopt.maxinno[0]);
 	VarHoldAmb   ->Text			=s.sprintf("%.4f",prcopt.varholdamb);
@@ -1111,6 +1114,7 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 	prcopt.elmaskar	=str2dbl(ElMaskAR	->Text)*D2R;
 	prcopt.elmaskhold=str2dbl(ElMaskHold->Text)*D2R;
 	prcopt.maxtdiff	=str2dbl(MaxAgeDiff	->Text);
+	prcopt.maxagessr	=str2dbl(MaxAgeSSR->Text);
 	prcopt.maxinno[1]	=str2dbl(RejectCode ->Text);
 	prcopt.maxinno[0]	=str2dbl(RejectPhase->Text);
 	prcopt.varholdamb=str2dbl(VarHoldAmb->Text);

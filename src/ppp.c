@@ -1324,7 +1324,7 @@ extern void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     udstate_ppp(rtk,obs,n,nav);
 
     /* Satellite positions and clocks */
-    satposs(obs[0].time,obs,n,nav,rtk->opt.sateph,rs,dts,var,svh);
+    satposs(obs[0].time,obs,n,nav,&rtk->opt,rs,dts,var,svh);
 
     /* Exclude measurements of eclipsing satellite (block IIA) */
     if (rtk->opt.posopt[3]) {

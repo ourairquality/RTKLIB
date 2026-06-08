@@ -56,6 +56,7 @@ __published:
 	TEdit *ElMaskAR;
 	TEdit *SlipThres;
 	TEdit *MaxAgeDiff;
+	TEdit *MaxAgeSSR;
 	TEdit *RejectPhase;
 	TEdit *NumIter;
 	TTabSheet *TabSheet3;

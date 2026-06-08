@@ -1722,7 +1722,7 @@ static double intpres(gtime_t time, const obsd_t *obs, int n, const nav_t *nav, 
   // Calculate sat positions for previous base obs.
   double rs[MAXOBS * 6], dts[MAXOBS * 2], var[MAXOBS];
   int svh[MAXOBS * 2];
-  satposs(time, rtk->intpres_obsb, rtk->intpres_nb, nav, opt->sateph, rs, dts, var, svh);
+  satposs(time, rtk->intpres_obsb, rtk->intpres_nb, nav, opt, rs, dts, var, svh);
 
   // Calculate [measured pseudorange - range] for previous base obs.
   double yb[MAXOBS * NFREQ * 2], e[MAXOBS * NFREQ * 3], azel[MAXOBS * 2], freq[MAXOBS * NFREQ];
@@ -2294,7 +2294,7 @@ static int relpos(rtk_t *rtk, const obsd_t *obs, int nu, int nr,
     /* Compute satellite positions, velocities and clocks for base and rover */
     int svh[MAXOBS*2];
     gtime_t time = obs[0].time;
-    satposs(time,obs,n,nav,opt->sateph,rs,dts,var,svh);
+    satposs(time,obs,n,nav,opt,rs,dts,var,svh);
 
     /* Calculate [range - measured pseudorange] for base station (phase and code)
          output is in y[nu:nu+nr], see call for rover below for more details */
