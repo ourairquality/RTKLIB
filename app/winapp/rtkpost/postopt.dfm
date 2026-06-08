@@ -618,6 +618,14 @@ object OptDialog: TOptDialog
         TabOrder = 13
         Text = '30'
       end
+      object MaxAgeSSR: TEdit
+        Left = 258
+        Top = 136
+        Width = 75
+        Height = 21
+        TabOrder = 13
+        Text = '90'
+      end
       object OutCntResetAmb: TEdit
         Left = 325
         Top = 136

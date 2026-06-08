@@ -111,7 +111,7 @@ static void sat_azel(const obsd_t *obs, int n, const nav_t *nav,
     int svh[MAXOBS];
     
     /* satellite positions and clocks */
-    satposs(obs[0].time,obs,n,nav,EPHOPT_BRDC,rs,dts,var,svh);
+    satposs(obs[0].time,obs,n,nav,&prcopt_default,rs,dts,var,svh);
     
     for (i=0;i<n;i++) {
         if (geodist(rs+i*6,rr,e))>0.0) satazel(pos,e,azel+i*2);

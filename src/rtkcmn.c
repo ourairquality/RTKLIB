@@ -220,6 +220,7 @@ const prcopt_t prcopt_default={ /* defaults processing options */
     0.0,0.0,0.05,0,             /* elmaskar,elmaskhold,thresslip,thresdop, */
     0.1,0.01,30.0,              /* varholdamb,gainholdamb,maxtdif */
     {5.0,30.0},                 /* maxinno {phase,code} */
+    90.0,                       /* Max age of ssr orbit and clock (s). */
     {0},{0},{0},                /* baseline,ru,rb */
     {"",""},                    /* anttype */
     {{0}},{{0}},{0},            /* antdel,pcv,exsats */
