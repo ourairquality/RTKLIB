@@ -292,7 +292,7 @@ static int est_iono(obs_t *obs, nav_t *nav, const pcv_t *pcv, double *rr,
         time=obs->data[i].time;
         
         /* satellite positions and clocks */
-        satposs(time,obs->data+i,n,nav,EPHOPT_BRDC,rs,dts,var,svh);
+        satposs(time,obs->data+i,n,nav,&prcopt_default,rs,dts,var,svh);
         
         /* satellite azimuth/elevation angle */
         for (j=0;j<n;j++) {

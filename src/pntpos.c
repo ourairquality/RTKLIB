@@ -841,7 +841,7 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
         opt_.tropopt=TROPOPT_SAAS;
     }
     /* satellite positions, velocities and clocks */
-    satposs(sol->time,obs,n,nav,opt_.sateph,rs,dts,var,svh);
+    satposs(sol->time,obs,n,nav,&opt_,rs,dts,var,svh);
     
     /* estimate receiver position and time with pseudorange */
     stat=estpos(obs,n,rs,dts,var,svh,nav,&opt_,base,sol,azel_,vsat,resp,msg);

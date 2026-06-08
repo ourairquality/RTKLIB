@@ -98,7 +98,6 @@
 #define DEFURASSR 0.15            /* default accuracy of ssr corr (m) */
 #define MAXECORSSR 10.0           /* max orbit correction of ssr (m) */
 #define MAXCCORSSR (1E-6*CLIGHT)  /* max clock correction of ssr (m) */
-#define MAXAGESSR 90.0            /* max age of ssr orbit and clock (s) */
 #define MAXAGESSR_HRCLK 10.0      /* max age of ssr high-rate clock (s) */
 #define STD_BRDCCLK 30.0          /* error of broadcast clock (m) */
 #define STD_GAL_NAPA 500.0        /* error of galileo ephemeris for NAPA (m) */
@@ -623,7 +622,7 @@ static int satpos_sbas(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
 }
 /* satellite position and clock with ssr correction --------------------------*/
 static int satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
-                      int opt, double *rs, double *dts, double *var, int *svh)
+                      const prcopt_t *opt, int comp, double *rs, double *dts, double *var, int *svh)
 {
     const ssr_t *ssr;
     eph_t *eph;
@@ -702,8 +701,8 @@ static int satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
     }
     cross3(ea,ec,er);
 
-    /* satellite antenna offset correction */
-    if (opt) {
+    /* Satellite antenna offset correction, for Center Of Mass. */
+    if (comp) {
         satantoff(time,rs,sat,nav,dant);
     }
     for (i=0;i<3;i++) {
@@ -725,6 +724,7 @@ static int satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
 * args   : gtime_t time     I   time (gpst)
 *          gtime_t teph     I   time to select ephemeris (gpst)
 *          int    sat       I   satellite number
+*          prcopt_t *opt    I   processing options.
 *          int    ephopt    I   ephemeris option (EPHOPT_???)
 *          nav_t  *nav      I   navigation data
 *          double *rs       O   sat position and velocity (ecef)
@@ -736,20 +736,20 @@ static int satpos_ssr(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
 * notes  : satellite position is referenced to antenna phase center
 *          satellite clock does not include code bias correction (tgd or bgd)
 *-----------------------------------------------------------------------------*/
-extern int satpos(gtime_t time, gtime_t teph, int sat, int ephopt,
+extern int satpos(gtime_t time, gtime_t teph, int sat, const prcopt_t *opt,
                   const nav_t *nav, double *rs, double *dts, double *var,
                   int *svh)
 {
     char tstr[40];
-    trace(4,"satpos  : time=%s sat=%2d ephopt=%d\n",time2str(time,tstr,3),sat,ephopt);
+    trace(4,"satpos  : time=%s sat=%2d ephopt=%d\n",time2str(time,tstr,3),sat,opt->sateph);
 
     *svh=0;
 
-    switch (ephopt) {
+    switch (opt->sateph) {
         case EPHOPT_BRDC  : return ephpos     (time,teph,sat,nav,-1,rs,dts,var,svh);
         case EPHOPT_SBAS  : return satpos_sbas(time,teph,sat,nav,   rs,dts,var,svh);
-        case EPHOPT_SSRAPC: return satpos_ssr (time,teph,sat,nav, 0,rs,dts,var,svh);
-        case EPHOPT_SSRCOM: return satpos_ssr (time,teph,sat,nav, 1,rs,dts,var,svh);
+        case EPHOPT_SSRAPC: return satpos_ssr (time,teph,sat,nav, opt, 0,rs,dts,var,svh);
+        case EPHOPT_SSRCOM: return satpos_ssr (time,teph,sat,nav, opt, 1,rs,dts,var,svh);
         case EPHOPT_PREC  :
             if (!peph2pos(time,sat,nav,1,rs,dts,var)) break; else return 1;
     }
@@ -762,7 +762,7 @@ extern int satpos(gtime_t time, gtime_t teph, int sat, int ephopt,
 *          obsd_t *obs      I   observation data
 *          int    n         I   number of observation data
 *          nav_t  *nav      I   navigation data
-*          int    ephopt    I   ephemeris option (EPHOPT_???)
+*          prcopt_t *opt    I   processing options.
 *          double *rs       O   satellite positions and velocities (ecef)
 *          double *dts      O   satellite clocks
 *          double *var      O   sat position and clock error variances (m^2)
@@ -782,12 +782,13 @@ extern int satpos(gtime_t time, gtime_t teph, int sat, int ephopt,
 *          transmission time.
 *-----------------------------------------------------------------------------*/
 extern void satposs(gtime_t teph, const obsd_t *obs, int n, const nav_t *nav,
-                    int ephopt, double *rs, double *dts, double *var, int *svh)
+                    const prcopt_t *opt, double *rs, double *dts, double *var, int *svh)
 {
     gtime_t time[2*MAXOBS]={{0}};
     double dt,pr;
     int i,j;
 
+    int ephopt = opt->sateph;
     char tstr[40];
     trace(3,"satposs : teph=%s n=%d ephopt=%d\n",time2str(teph,tstr,3),n,ephopt);
 
@@ -825,7 +826,7 @@ extern void satposs(gtime_t teph, const obsd_t *obs, int n, const nav_t *nav,
         time[i]=timeadd(time[i],-dt);
 
         /* satellite position and clock at transmission time */
-        if (!satpos(time[i],teph,obs[i].sat,ephopt,nav,rs+i*6,dts+i*2,var+i,
+        if (!satpos(time[i],teph,obs[i].sat,opt,nav,rs+i*6,dts+i*2,var+i,
                     svh+i)) {
             trace(3,"no ephemeris %s sat=%2d\n",time2str(time[i],tstr,3),obs[i].sat);
             continue;

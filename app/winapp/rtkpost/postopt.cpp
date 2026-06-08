@@ -411,6 +411,7 @@ void __fastcall TOptDialog::GetOpt(void)
 	ElMaskAR	 ->Text			=s.sprintf("%.0f",MainForm->ElMaskAR);
 	ElMaskHold	 ->Text			=s.sprintf("%.0f",MainForm->ElMaskHold);
 	MaxAgeDiff	 ->Text			=s.sprintf("%.1f",MainForm->MaxAgeDiff);
+	MaxAgeSSR	 ->Text			=s.sprintf("%.1f",MainForm->MaxAgeSSR);
 	RejectCode   ->Text			=s.sprintf("%.1f",MainForm->RejectCode);
 	RejectPhase  ->Text			=s.sprintf("%.1f",MainForm->RejectPhase);
 	VarHoldAmb   ->Text			=s.sprintf("%.4f",MainForm->VarHoldAmb);
@@ -554,6 +555,7 @@ void __fastcall TOptDialog::SetOpt(void)
 	MainForm->ElMaskAR	  	=ElMaskAR   ->Text.ToInt();
 	MainForm->ElMaskHold  	=ElMaskHold ->Text.ToInt();
 	MainForm->MaxAgeDiff  	=str2dbl(MaxAgeDiff ->Text);
+	MainForm->MaxAgeSSR  	=str2dbl(MaxAgeSSR ->Text);
 	MainForm->RejectCode 	=str2dbl(RejectCode ->Text);
 	MainForm->RejectPhase 	=str2dbl(RejectPhase->Text);
 	MainForm->VarHoldAmb 	=str2dbl(VarHoldAmb->Text);
@@ -711,6 +713,7 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	ElMaskAR	 ->Text			=s.sprintf("%.0f",prcopt.elmaskar*R2D);
 	ElMaskHold	 ->Text			=s.sprintf("%.0f",prcopt.elmaskhold*R2D);
 	MaxAgeDiff	 ->Text			=s.sprintf("%.1f",prcopt.maxtdiff );
+	MaxAgeSSR	 ->Text			=s.sprintf("%.1f",prcopt.maxagessr);
 	RejectCode   ->Text			=s.sprintf("%.1f",prcopt.maxinno[1] );
 	RejectPhase  ->Text			=s.sprintf("%.1f",prcopt.maxinno[0] );
 	VarHoldAmb   ->Text			=s.sprintf("%.5f",prcopt.varholdamb);
@@ -896,6 +899,7 @@ int ppp=PosMode->ItemIndex>=PMODE_PPP_KINEMA;
 	prcopt.elmaskar	=str2dbl(ElMaskAR	->Text)*D2R;
 	prcopt.elmaskhold=str2dbl(ElMaskHold->Text)*D2R;
 	prcopt.maxtdiff	=str2dbl(MaxAgeDiff	->Text);
+	prcopt.maxagessr=str2dbl(MaxAgeSSR->Text);
 	prcopt.maxinno[1]=str2dbl(RejectCode ->Text);
 	prcopt.maxinno[0]=str2dbl(RejectPhase->Text);
 	prcopt.varholdamb=str2dbl(VarHoldAmb->Text);
