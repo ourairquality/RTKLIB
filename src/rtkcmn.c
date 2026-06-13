@@ -754,7 +754,7 @@ extern int satexclude(int sat, gtime_t t, double var, int svh, const prcopt_t *o
         if (opt->exsats[sat-1]==2) return 0; /* included satellite */
         if (!(sys&opt->navsys)) return 1; /* unselected sat sys */
     }
-    if (sys==SYS_QZS) svh&=0xFE; /* mask QZSS LEX health */
+    if (sys==SYS_QZS) svh&=0xEE; /* mask QZSS L1C/A, L1C/B health */
     if (sys == SYS_GLO) {
       if ((svh & 9) != 0 || (svh & 6) == 4) {
         trace(3,"unhealthy GLO satellite: sat=%3d svh=%02X\n",sat,svh);
