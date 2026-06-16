@@ -4238,8 +4238,10 @@ static int decode_extevent(raw_t *raw) {
 
   gtime_t eventime = gpst2time(week, tow + offset - clk_bias);
 
-  raw->obs.flag = 1 + source;  // Event flag.
+  // TODO the source is not used.
+  raw->obs.flag = 5; /* Event flag */
   raw->obs.data[0].eventime = eventime;
+  raw->obs.rcvcount++;
   raw->obs.tmcount++;
 
   if (raw->outtype) {
