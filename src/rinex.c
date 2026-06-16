@@ -752,7 +752,7 @@ static int decode_obsepoch(FILE *fp, char *buff, double ver, gtime_t *time,
         if (3<=*flag&&*flag<=5) return n;
 
         if (str2time(buff,0,26,time)) {
-            trace(2,"rinex obs invalid epoch: epoch=%26.26s\n",buff);
+            trace(2, "rinex obs invalid epoch: epoch='%26.26s'\n", buff);
             return 0;
         }
         for (i=0,j=32;i<n;i++,j+=3) {
@@ -766,7 +766,7 @@ static int decode_obsepoch(FILE *fp, char *buff, double ver, gtime_t *time,
             }
         }
     }
-    else { /* ver.3 */
+    if (ver <= 4.0199) { // Ver. 3, 4.00 and 4.01.
         *flag=(int)str2num(buff,31,1);
 
         /* handle external event */
@@ -778,9 +778,38 @@ static int decode_obsepoch(FILE *fp, char *buff, double ver, gtime_t *time,
 
         if (3<=*flag&&*flag<=5) return n;
 
-        if (buff[0]!='>'||str2time(buff,1,28,time)) {
-            trace(2,"rinex obs invalid epoch: epoch=%29.29s\n",buff);
+        if (buff[0] != '>' || str2time(buff, 2, 27, time)) {
+            trace(2, "rinex obs invalid epoch: epoch='%29.29s'\n", buff);
             return 0;
+        }
+    }
+    else { // Ver 4.02
+        *flag = (int)str2num(buff, 31, 1);
+
+        // Handle external event.
+        if (*flag == 5) str2time(buff, 1, 28, time);
+
+        if ((n = (int)str2num(buff, 32, 3)) <= 0) return 0;
+
+        if (3 <= *flag && *flag <= 5) return n;
+
+        size_t len = strlen(buff);
+        if (len <= 2 || buff[0] != '>') {
+          trace(2, "rinex obs invalid epoch1: epoch='%34.34s'\n", buff);
+          return 0;
+        }
+        char tbuf[33];
+        int i;
+        for (i = 0; i < 27 && i + 2 < len; i++) tbuf[i] = buff[2 + i];
+        tbuf[i] = '\0';
+        if (len > 57 && tbuf[26] >= '0' && tbuf[26] <= '9') {
+          // Copy the extended seconds digits.
+          for (int j = 0; j < 5 && 57 + j < len; j++, i++) tbuf[i] = buff[57 + j];
+          tbuf[i] = '\0';
+        }
+        if (str2time(tbuf, 0, strlen(tbuf), time)) {
+          trace(2, "rinex obs invalid epoch2: epoch='%62.62s'\n", buff);
+          return 0;
         }
     }
     char tstr[40];
@@ -2380,9 +2409,15 @@ static void outrinexevent(FILE *fp, const rnxopt_t *opt, const obsd_t *obs,
         fprintf(fp," %02d %02.0f %02.0f %02.0f %02.0f%11.7f  %d%3d",
                 (int)epe[0]%100,epe[1],epe[2],epe[3],epe[4],epe[5],5,n);
         if (epdiff >= 0) fprintf(fp,"\n");
-    } else { /* ver.3 */
+    } else if (opt->rnxver <= 401) { // Ver 3, 4.00 and 4.01.
         fprintf(fp,"> %04.0f %02.0f %02.0f %02.0f %02.0f%11.7f  %d%3d\n",
                 epe[0],epe[1],epe[2],epe[3],epe[4],epe[5],5,n);
+    } else { // Ver 4.02
+      char sbuf[20];
+      snprintf(sbuf, sizeof(sbuf), "%16.12lf", epe[5]);
+      if (strlen(sbuf) >= 16 && strcmp(sbuf + 11, "00000") == 0) sbuf[11] = '\0';
+      fprintf(fp,"> %04.0f %02.0f %02.0f %02.0f %02.0f%11.11s  %d%3d%21s%5.5s\n",
+              epe[0], epe[1], epe[2], epe[3], epe[4], sbuf, 5, n, "", sbuf + 11);
     }
     if (n) fprintf(fp,"%-60.60s%-20s\n"," Time mark is not valid","COMMENT");
 }
@@ -2443,10 +2478,15 @@ extern int outrnxobsb(FILE *fp, const rnxopt_t *opt, const obsd_t *obs, int n,
             if (i>0&&i%12==0) fprintf(fp,"\n%32s","");
             fprintf(fp,"%-3s",sats[i]);
         }
-    }
-    else { /* ver.3 */
-        fprintf(fp,"> %04.0f %02.0f %02.0f %02.0f %02.0f %010.7f  %d%3d%21s\n",
-                ep[0],ep[1],ep[2],ep[3],ep[4],ep[5],0,ns,"");
+    } else if (opt->rnxver <= 401) { // Ver 3, 4.00 and 4.01.
+      fprintf(fp,"> %04.0f %02.0f %02.0f %02.0f %02.0f %010.7f  %d%3d%21s\n",
+              ep[0],ep[1],ep[2],ep[3],ep[4],ep[5],0,ns,"");
+    } else { // Ver 4.02
+      char sbuf[20];
+      snprintf(sbuf, sizeof(sbuf), "%16.12lf", ep[5]);
+      if (strlen(sbuf) >= 16 && strcmp(sbuf + 11, "00000") == 0) sbuf[11] = '\0';
+      fprintf(fp,"> %04.0f %02.0f %02.0f %02.0f %02.0f%11.11s  %d%3d%21s%5.5s\n",
+              ep[0], ep[1], ep[2], ep[3], ep[4], sbuf, 0, ns, "", sbuf + 11);
     }
     for (i=0;i<ns;i++) {
         sys = satsyst(obs[ind[i]].sat, obs[ind[i]].time, NULL);
