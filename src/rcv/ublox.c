@@ -1359,7 +1359,9 @@ static int decode_timtm2(raw_t *raw)
             eventime = utc2gpst(eventime);
         raw->obs.flag = 5; /* Event flag */
         raw->obs.data[0].eventime = eventime;
-        raw->obs.rcvcount = count;
+        // Handle rollover.
+        uint16_t last_count = raw->obs.rcvcount & 0xffff;
+        raw->obs.rcvcount += (count - last_count);
         raw->obs.tmcount++;
         raw->obs.data[0].timevalid = time;
     } else {

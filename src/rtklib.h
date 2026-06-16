@@ -621,8 +621,8 @@ typedef struct {        /* observation data record */
 typedef struct {        /* observation data */
     int n,nmax;         /* number of observation data/allocated */
     int flag;           /* epoch flag (0:ok,1:power failure,>1:event flag) */
-    int rcvcount;       /* count of rcv event */
-    int tmcount;        /* time mark count */
+    unsigned rcvcount;  /* rolling count of rcv events */
+    unsigned tmcount;   /* time mark count */
     obsd_t *data;       /* observation data records */
 } obs_t;
 

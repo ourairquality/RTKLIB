@@ -815,7 +815,7 @@ static void prstatus(vt_t *vt)
     };
     gtime_t eventime={0};
     pthread_t thread;
-    int j,cycle,state,rtkstat,nsat0,nsat1,prcout,rcvcount,tmcount,timevalid,nave;
+    int j,cycle,state,rtkstat,nsat0,nsat1,prcout,timevalid,nave;
     int cputime,nb[RTKSVRNIN]={0},nmsg[RTKSVRNIN][10]={{0}};
     char tstr[40],tmstr[40],s[1024],*p;
     double runtime,rt[3]={0},dop[4]={0},rr[3],bl1=0.0,bl2=0.0;
@@ -841,9 +841,9 @@ static void prstatus(vt_t *vt)
     rtkstat=svr.rtk.sol.stat;
     nsat0=svr.obs[0][0].n;
     nsat1=svr.obs[1][0].n;
-    rcvcount = svr.raw[0].obs.rcvcount;
-    tmcount = svr.raw[0].obs.tmcount;
-    cputime=svr.cputime;
+    unsigned rcvcount = svr.raw[0].obs.rcvcount;
+    unsigned tmcount = svr.raw[0].obs.tmcount;
+    cputime = svr.cputime;
     prcout=svr.prcout;
     nave=svr.nave;
     for (int i=0;i<RTKSVRNIN;i++) nb[i]=svr.nb[i];
@@ -976,8 +976,8 @@ static void prstatus(vt_t *vt)
     vt_printf(vt,"%-28s: %.4f\n","baseline length float (m)",bl1);
     vt_printf(vt,"%-28s: %.4f\n","baseline length fixed (m)",bl2);
     vt_printf(vt,"%-28s: %s\n","last time mark",tmcount ? tmstr : "-");
-    vt_printf(vt,"%-28s: %d\n","receiver time mark count",rcvcount);
-    vt_printf(vt,"%-28s: %d\n","rtklib time mark count",tmcount);
+    vt_printf(vt,"%-28s: %u\n","receiver time mark count",rcvcount);
+    vt_printf(vt,"%-28s: %u\n","rtklib time mark count",tmcount);
 
 done:
     free(rtk);

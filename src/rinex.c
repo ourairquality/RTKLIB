@@ -730,61 +730,83 @@ static int readrnxh(FILE *fp, double *ver, char *type, int *sys, int *tsys,
     return 0;
 }
 /* decode observation epoch --------------------------------------------------*/
+// Return: (0: no satellite data, 1+: satellite data, -1: error)
+// Note the time is only modified if successfully decoded.
+// The flag is always set.
 static int decode_obsepoch(FILE *fp, char *buff, double ver, gtime_t *time,
-                           int *flag, int *sats)
+                           int *flag, unsigned *sats)
 {
-    int i,j,n;
-    char satid[8]={'\0'};
-
     trace(4,"decode_obsepoch: ver=%.2f\n",ver);
 
-    if (ver<=2.9999) { /* ver.2 */
-        /* epoch flag: 3:new site,4:header info,5:external event */
-        *flag=(int)str2num(buff,28,1);
-
-        /* handle external event */
-        if (*flag == 5) {
-            str2time(buff,0,26,time);
-        }
-
-        if ((n=(int)str2num(buff,29,3))<=0) return 0;
-
-        if (3<=*flag&&*flag<=5) return n;
-
-        if (str2time(buff,0,26,time)) {
-            trace(2,"rinex obs invalid epoch: epoch=%26.26s\n",buff);
-            return 0;
-        }
-        for (i=0,j=32;i<n;i++,j+=3) {
-            if (j>=68) {
-                if (!fgets(buff,MAXRNXLEN,fp)) break;
-                j=32;
+    *flag = 0;
+    int n;
+    if (ver <= 2.9999) { // Ver. 2
+        // Epoch flag: 3:new site, 4:header info, 5:external event.
+        *flag = (int)str2num(buff, 28, 1);
+        int tsucc = str2time(buff, 0, 26, time) == 0;
+        n = (int)str2num(buff, 29, 3);
+        if (n < 0) return -1; // Expect a non-negative number.
+        if (*flag <= 2 || *flag >= 6) {
+          // Expect a time.
+          if (!tsucc) { // Expect a time.
+            trace(2, "rinex obs invalid epoch: epoch='%s'\n", buff);
+            return -1;
+          }
+          for (int i = 0, j = 32; i < n; i++, j += 3) {
+            if (j >= 68) {
+              if (!fgets(buff, MAXRNXLEN, fp)) break;
+              j = 32;
             }
-            if (i<MAXOBS) {
-                strncpy(satid,buff+j,3);
-                sats[i]=satid2no(satid);
+            if (i < MAXOBS) {
+              char satid[8] = {'\0'};
+              strncpy(satid, buff + j, 3);
+              sats[i] = satid2no(satid);
             }
+          }
         }
     }
-    else { /* ver.3 */
-        *flag=(int)str2num(buff,31,1);
-
-        /* handle external event */
-        if (*flag == 5) {
-            str2time(buff,1,28,time);
+    else if (ver <= 4.0199) { // Ver. 3, 4.00 and 4.01.
+        size_t len = strlen(buff);
+        if (len <= 2 || buff[0] != '>') {
+          trace(2, "rinex obs invalid epoch: epoch='%s'\n", buff);
+          return -1;
         }
-
-        if ((n=(int)str2num(buff,32,3))<=0) return 0;
-
-        if (3<=*flag&&*flag<=5) return n;
-
-        if (buff[0]!='>'||str2time(buff,1,28,time)) {
-            trace(2,"rinex obs invalid epoch: epoch=%29.29s\n",buff);
-            return 0;
+        int tsucc = str2time(buff, 2, 27, time) == 0;
+        *flag = (int)str2num(buff, 31, 1);
+        n = (int)str2num(buff, 32, 3);
+        if (n < 0) return -1; // Expect a non-negative number.
+        if ((*flag <= 2 || *flag >= 6) && !tsucc) { // Expect a time.
+            trace(2, "rinex obs invalid epoch: epoch='%s'\n", buff);
+            return -1;
+        }
+    }
+    else { // Ver 4.02
+        size_t len = strlen(buff);
+        if (len <= 2 || buff[0] != '>') {
+          trace(2, "rinex obs invalid epoch: epoch='%s'\n", buff);
+          return -1;
+        }
+        // Attempt to decode the time which may not be present.
+        char tbuf[33];
+        unsigned i;
+        for (i = 0; i < 27 && i + 2 < len; i++) tbuf[i] = buff[2 + i];
+        tbuf[i] = '\0';
+        if (len > 57 && tbuf[26] >= '0' && tbuf[26] <= '9') {
+          // Copy the optional extended seconds digits.
+          for (unsigned j = 0; j < 5 && 57 + j < len; j++, i++) tbuf[i] = buff[57 + j];
+          tbuf[i] = '\0';
+        }
+        int tsucc = str2time(tbuf, 0, strlen(tbuf), time) == 0;
+        *flag = (int)str2num(buff, 31, 1);
+        n = (int)str2num(buff, 32, 3);
+        if (n < 0) return -1; // Expect a non-negative number.
+        if ((*flag <= 2 || *flag >= 6) && !tsucc) { // Expect a time.
+            trace(2, "rinex obs invalid epoch: epoch='%s'\n", buff);
+            return -1;
         }
     }
     char tstr[40];
-    trace(4,"decode_obsepoch: time=%s flag=%d\n",time2str(*time,tstr,3),*flag);
+    trace(4, "decode_obsepoch: time=%s flag=%d n=%d\n", time2str(*time, tstr, 3), *flag, n);
     return n;
 }
 /* decode observation data ---------------------------------------------------*/
@@ -1005,117 +1027,196 @@ static void set_index(double ver, const char *opt, char tobs[][MAXOBSTYPE][4],
 }
 /* read RINEX observation data body ------------------------------------------*/
 static int readrnxobsb(FILE *fp, const char *opt, double ver, int *tsys,
-                       char tobs[][MAXOBSTYPE][4], int *flag, obsd_t *data,
-                       sta_t *sta)
-{
-    gtime_t time={0};
-    char buff[MAXRNXLEN];
-    int i=0,n=0,nsat=0,sats[MAXOBS]={0},mask;
-    
-    /* set system mask */
-    mask=set_sysmask(opt);
+                       char tobs[][MAXOBSTYPE][4], int *flag, obsd_t *data, sta_t *sta,
+                       gtime_t *eventtime) {
+  // Set system mask.
+  unsigned mask = set_sysmask(opt);
 
-    /* set signal index */
-    // Could hoist set_index into readrnxobs and rnxctr_t if a performance issue.
-    sigind_t index[RNX_NUMSYS]={{0}};
-    set_index(ver, opt, tobs, index);
+  // Set signal index.
+  // Could hoist set_index into readrnxobs and rnxctr_t if a performance issue.
+  sigind_t index[RNX_NUMSYS] = {{0}};
+  set_index(ver, opt, tobs, index);
 
-    /* read record */
-    while (fgets(buff,MAXRNXLEN,fp)) {
-
-        /* decode observation epoch */
-        if (i==0) {
-            if ((nsat=decode_obsepoch(fp,buff,ver,&time,flag,sats))<=0 && (*flag != 5)) {
-                continue;
-            }
-            if (*flag == 5) {
-                data[0].eventime = time;
-                return 0;
-            }
-        }
-        else if ((*flag<=2||*flag==6)&&n<MAXOBS) {
-            data[n].time=time;
-            data[n].sat=(uint8_t)sats[i-1];
-
-            /* decode RINEX observation data */
-            if (decode_obsdata(fp,opt,buff,ver,mask,index,data+n)) n++;
-        }
-        else if (*flag==3||*flag==4) { /* new site or header info follows */
-
-            /* decode RINEX observation data file header */
-            decode_obsh(fp,buff,ver,tsys,tobs,NULL,sta);
-            set_index(ver, opt, tobs, index);
-        }
-        if (++i>nsat) return n;
+  // Read record
+  unsigned i = 0, n = 0, nsat = 0, sats[MAXOBS] = {0};
+  gtime_t time = {0};
+  char buff[MAXRNXLEN];
+  while (1) {
+    // Be resiliant to missing observation lines and resync.
+    int c = fgetc(fp);
+    if (c == EOF) {
+      if (i > 0) {
+        // If data has been decoded then return it.
+        trace(2, "readrnxobsb: unexpected EOF\n");
+        return n;
+      }
+      break;
     }
-    return -1;
+    ungetc(c, fp);
+    if (i > 0 && c == '>') {
+      trace(2, "readrnxobsb: unexpected epoch sync\n");
+      // If data has been decoded then return it.
+      if (n > 0) return n;
+      // Otherwise keep searching.
+      i = n = nsat = 0;
+    }
+    if (fgets(buff, MAXRNXLEN, fp) == NULL) {
+      // EOF should have been caught above, assume some other error.
+      break;
+    }
+    // Decode observation epoch.
+    if (i == 0) {
+      int snsat = decode_obsepoch(fp, buff, ver, &time, flag, sats);
+      if (snsat < 0) return -1;  // Error.
+      nsat = (unsigned)snsat;
+      if (*flag == 5) *eventtime = time;
+    } else if ((*flag <= 2 || *flag == 6) && n < MAXOBS) {
+      data[n].time = time;
+      data[n].sat = (uint8_t)sats[i - 1];
+      // Decode RINEX observation data.
+      if (decode_obsdata(fp, opt, buff, ver, mask, index, data + n)) n++;
+    } else if (*flag == 3 || *flag == 4) {  // New site or header info follows.
+      // Decode RINEX observation data file header.
+      decode_obsh(fp, buff, ver, tsys, tobs, NULL, sta);
+      set_index(ver, opt, tobs, index);
+    }
+    if (++i > nsat) return n;
+  }
+  return -1;
 }
-/* read RINEX observation data -----------------------------------------------*/
-static int readrnxobs(FILE *fp, gtime_t ts, gtime_t te, double tint,
-                      const char *opt, int rcv, double ver, int *tsys,
-                      char tobs[][MAXOBSTYPE][4], obs_t *obs, sta_t *sta)
-{
-    gtime_t eventime={0},time0={0},time1={0};
-    obsd_t *data;
-    uint8_t slips[MAXSAT][MAXCODE]={{0}};
-    int i,n,n1=0,flag=0,stat=0;
-    double dtime1=0;
+// Read RINEX observation data -----------------------------------------------
+// Return: (0: no data, 1: data, -1: error)
+//
+// Events are currently stored in the epoch satellite observation data
+// structures, and only one event per observation epoch is supported. The
+// event is stored in the observation epoch with a time equal to or preceeding
+// the event time, and so the placement of the events needs to be deferred
+// until after the next observation epoch is known. The code queues the events
+// and keeps track of the last set of observation epochs.
+//
+#define MAXEVENTS 11 // Maximum number of queued events.
+static int readrnxobs(FILE *fp, gtime_t ts, gtime_t te, double tint, const char *opt, unsigned rcv,
+                      double ver, int *tsys, char tobs[][MAXOBSTYPE][4], obs_t *obs,
+                      sta_t *sta) {
+  trace(4, "readrnxobs: rcv=%u ver=%.2f tsys=%d\n", rcv, ver, *tsys);
 
-    trace(4,"readrnxobs: rcv=%d ver=%.2f tsys=%d\n",rcv,ver,*tsys);
+  obsd_t *data = (obsd_t *)malloc(sizeof(obsd_t) * MAXOBS);
+  if (data == NULL) return -1;
 
-    if (!obs||rcv>MAXRCV) return 0;
+  gtime_t eventqueue[MAXEVENTS] = {0};    // Queued events.
+  unsigned eventhead = 0, eventtail = 0;  // Head and tail of the queue - first in first out.
+  gtime_t time1 = {0};                    // Time of last observations epoch.
+  unsigned n1 = 0;                        // Number of observations in the last epoch.
 
-    if (!(data=(obsd_t *)malloc(sizeof(obsd_t)*MAXOBS))) return -1;
-
-    /* read RINEX observation data body */
-    while ((n=readrnxobsb(fp,opt,ver,tsys,tobs,&flag,data,sta))>=0&&stat>=0) {
-
-        if (flag == 5) {
-            eventime = data[0].eventime;
-            n = readrnxobsb(fp,opt,ver,tsys,tobs,&flag,data,sta);
-            if (fabs(timediff(data[0].time,time1)-dtime1)>=DTTOL)
-                n = readrnxobsb(fp,opt,ver,tsys,tobs,&flag,data,sta);
-        }
-
-        if (eventime.time==0 || obs->n-n1<=0 || timediff(eventime,time1)>=0) {
-           for (i=0;i<n;i++) data[i].eventime = eventime;
-        }  else {
-           /* add event to previous epoch if delayed */
-            for (i=0;i<n1;i++) obs->data[obs->n-i-1].eventime = eventime;
-            for (i=0;i<n;i++) data[i].eventime=time0;
-        }
-        /* set to zero eventime for the next iteration */
-        eventime.time = 0;
-        eventime.sec = 0;
-
-        for (i=0;i<n;i++) {
-
-            /* UTC -> GPST */
-            if (*tsys==TSYS_UTC) data[i].time=utc2gpst(data[i].time);
-
-            /* save cycle slip */
-            saveslips(slips,data+i);
-        }
-        /* screen data by time */
-        if (n>0&&!screent(data[0].time,ts,te,tint)) continue;
-
-        for (i=0;i<n;i++) {
-
-            /* restore cycle slip */
-            restslips(slips,data+i);
-
-            data[i].rcv=(uint8_t)rcv;
-
-            /* save obs data */
-            if ((stat=addobsdata(obs,data+i))<0) break;
-        }
-        n1=n;dtime1=timediff(data[0].time,time1);time1=data[0].time;
+  // Read RINEX observation data body.
+  uint8_t slips[MAXSAT][MAXCODE] = {{0}};
+  gtime_t time0 = {0}, eventtime = time0;
+  int sn, flag = 0, stat = 0;
+  while ((sn = readrnxobsb(fp, opt, ver, tsys, tobs, &flag, data, sta, &eventtime)) >= 0 &&
+         stat >= 0) {
+    if (flag == 5) {
+      // There are no satellite data observations. Queue the event and continue.
+      unsigned newhead = eventhead + 1;
+      if (newhead >= MAXEVENTS) newhead = 0;
+      if (newhead == eventtail) {
+        // Queue full.
+        char tstr[40];
+        trace(0, "readrnxobs: event queue overflow, event dropped %s\n",
+              time2str(eventtime, tstr, 3));
+      } else {
+        eventqueue[eventhead] = eventtime;
+        eventhead = newhead;
+      }
+      continue;
     }
-    trace(4,"readrnxobs: nobs=%d stat=%d\n",obs->n,stat);
 
-    free(data);
+    unsigned n = (unsigned)sn;
 
-    return stat;
+    if (n > 0) {
+      // Store appropriate queued events with the last observation data set.
+      while (eventtail != eventhead) {
+        gtime_t etime = eventqueue[eventtail];
+        if (timediff(etime, data[0].time) >= 0.0) {
+          // Will be stored with the current or later observation epoch.
+          break;
+        }
+        if (++eventtail >= MAXEVENTS) eventtail = 0;
+        if (time1.time == 0 || n1 == 0) {
+          char tstr[40];
+          trace(0, "readrnxobs: event before any observation data dropped %s\n",
+                time2str(etime, tstr, 3));
+        } else if (timediff(etime, time1) < 0.0) {
+          // Should not happen, but can if events are out of order with observations.
+          char tstr[40];
+          trace(0, "readrnxobs: error event before last observation dropped %s\n",
+                time2str(etime, tstr, 3));
+        } else {
+          // Add the event to previous epoch. Keep the latest event if there
+          // are multiple events.
+          if (obs->data[obs->n - n1].eventime.time != 0) {
+            char tstr[40];
+            trace(0, "readrnxobs: one event per observation epoch is supported, event dropped %s\n",
+                  time2str(obs->data[obs->n - n1].eventime, tstr, 3));
+          }
+          for (unsigned j = 0; j < n1; j++) obs->data[obs->n - j - 1].eventime = etime;
+        }
+      }
+      // Not expecting more events prior to the current observation epoch, move on.
+      n1 = n;
+      time1 = data[0].time;
+    }
+
+    for (unsigned i = 0; i < n; i++) {
+      // UTC -> GPST
+      if (*tsys == TSYS_UTC) data[i].time = utc2gpst(data[i].time);
+
+      // Save cycle slip
+      saveslips(slips, data + i);
+    }
+    // Screen data by time
+    if (n > 0 && !screent(data[0].time, ts, te, tint)) continue;
+
+    for (unsigned i = 0; i < n; i++) {
+      // Restore cycle slip
+      restslips(slips, data + i);
+
+      data[i].rcv = (uint8_t)rcv;
+
+      // Save obs data
+      stat = addobsdata(obs, data + i) ? 1 : -1;
+      if (stat < 0) break;
+    }
+  }
+  trace(4, "readrnxobs: nobs=%u stat=%d\n", obs->n, stat);
+
+  // Store trailing queued events with the last observation epoch.
+  while (eventtail != eventhead) {
+    gtime_t etime = eventqueue[eventtail];
+    if (++eventtail >= MAXEVENTS) eventtail = 0;
+    if (time1.time == 0 || n1 == 0) {
+      char tstr[40];
+      trace(0, "readrnxobs: event before any observation data dropped %s\n",
+            time2str(etime, tstr, 3));
+    } else if (timediff(etime, time1) < -DTTOL) {
+      // Should not happen, but can if events are out of order with observations.
+      char tstr[40];
+      trace(0, "readrnxobs: error event before last observation dropped %s\n",
+            time2str(etime, tstr, 3));
+    } else {
+      // Add the event to previous epoch. Keep the latest event if there are
+      // multiple events.
+      if (obs->data[obs->n - n1].eventime.time != 0) {
+        char tstr[40];
+        trace(0, "readrnxobs: one event per observation epoch is supported, event dropped %s\n",
+              time2str(obs->data[obs->n - n1].eventime, tstr, 3));
+      }
+      for (unsigned j = 0; j < n1; j++) obs->data[obs->n - j - 1].eventime = etime;
+    }
+  }
+
+  free(data);
+
+  return stat;
 }
 /* decode ephemeris ----------------------------------------------------------*/
 static int decode_eph(double ver, int sat, gtime_t toc, const double *data,
@@ -1963,10 +2064,29 @@ extern int input_rnxctr(rnxctr_t *rnx, FILE *fp)
 
     /* read RINEX OBS data */
     if (rnx->type=='O') {
-        if ((n=readrnxobsb(fp,rnx->opt,rnx->ver,&rnx->tsys,rnx->tobs,&flag,
-                           rnx->obs.data,&rnx->sta))<=0) {
-            rnx->obs.n=0;
-            return n<0?-2:0;
+        gtime_t time0 = {0}, eventtime = time0;
+        n = readrnxobsb(fp, rnx->opt, rnx->ver, &rnx->tsys, rnx->tobs, &flag,
+                        rnx->obs.data, &rnx->sta, &eventtime);
+        if (n < 0) {
+            rnx->obs.n = 0;
+            return -2;
+        }
+        if (n == 0) {
+          rnx->obs.n = 0;
+          if (flag == 5) {
+            if (rnx->obs.flag == 5) {
+              char tstr[40];
+              trace(0, "input_rnxctr: one event per observation epoch is supported, event dropped %s\n",
+                    time2str(rnx->obs.data[0].eventime, tstr, 3));
+            }
+            rnx->obs.data[0].eventime = eventtime;
+            rnx->obs.data[0].timevalid = 1;
+            rnx->obs.rcvcount = 1;
+            rnx->obs.tmcount++;
+          }
+          rnx->obs.flag = flag;
+          rnx->obs.n = 0;
+          return 0;
         }
         rnx->time=rnx->obs.data[0].time;
         rnx->obs.n=n;
@@ -2262,11 +2382,11 @@ extern int outrnxobsh(FILE *fp, const rnxopt_t *opt, const nav_t *nav)
         fprintf(fp,"%10.3f%50s%-20s\n",opt->tint,"","INTERVAL");
     }
     time2epoch(opt->tstart,ep);
-    fprintf(fp,"  %04.0f    %02.0f    %02.0f    %02.0f    %02.0f   %010.7f     %-12s%-20s\n",
+    fprintf(fp,"  %04.0f    %02.0f    %02.0f    %02.0f    %02.0f   %10.7f     %-12s%-20s\n",
             ep[0],ep[1],ep[2],ep[3],ep[4],ep[5],tsys,"TIME OF FIRST OBS");
 
     time2epoch(opt->tend,ep);
-    fprintf(fp,"  %04.0f    %02.0f    %02.0f    %02.0f    %02.0f   %010.7f     %-12s%-20s\n",
+    fprintf(fp,"  %04.0f    %02.0f    %02.0f    %02.0f    %02.0f   %10.7f     %-12s%-20s\n",
             ep[0],ep[1],ep[2],ep[3],ep[4],ep[5],tsys,"TIME OF LAST OBS");
 
     if (opt->rnxver>=301) {
@@ -2379,9 +2499,15 @@ static void outrinexevent(FILE *fp, const rnxopt_t *opt, const obsd_t *obs,
         fprintf(fp," %02d %02.0f %02.0f %02.0f %02.0f%11.7f  %d%3d",
                 (int)epe[0]%100,epe[1],epe[2],epe[3],epe[4],epe[5],5,n);
         if (epdiff >= 0) fprintf(fp,"\n");
-    } else { /* ver.3 */
+    } else if (opt->rnxver <= 401) { // Ver 3, 4.00 and 4.01.
         fprintf(fp,"> %04.0f %02.0f %02.0f %02.0f %02.0f%11.7f  %d%3d\n",
                 epe[0],epe[1],epe[2],epe[3],epe[4],epe[5],5,n);
+    } else { // Ver 4.02
+      char sbuf[20];
+      snprintf(sbuf, sizeof(sbuf), "%16.12lf", epe[5]);
+      if (strlen(sbuf) >= 16 && strcmp(sbuf + 11, "00000") == 0) sbuf[11] = '\0';
+      fprintf(fp,"> %04.0f %02.0f %02.0f %02.0f %02.0f%11.11s  %d%3d%21s%5.5s\n",
+              epe[0], epe[1], epe[2], epe[3], epe[4], sbuf, 5, n, "", sbuf + 11);
     }
     if (n) fprintf(fp,"%-60.60s%-20s\n"," Time mark is not valid","COMMENT");
 }
@@ -2436,16 +2562,21 @@ extern int outrnxobsb(FILE *fp, const rnxopt_t *opt, const obsd_t *obs, int n,
         outrinexevent(fp, opt, obs, epdiff);
     }
     if (opt->rnxver<=299) { /* ver.2 */
-        fprintf(fp," %02d %02.0f %02.0f %02.0f %02.0f %010.7f  %d%3d",
+        fprintf(fp," %02d %02.0f %02.0f %02.0f %02.0f %10.7f  %d%3d",
                 (int)ep[0]%100,ep[1],ep[2],ep[3],ep[4],ep[5],0,ns);
         for (i=0;i<ns;i++) {
             if (i>0&&i%12==0) fprintf(fp,"\n%32s","");
             fprintf(fp,"%-3s",sats[i]);
         }
-    }
-    else { /* ver.3 */
-        fprintf(fp,"> %04.0f %02.0f %02.0f %02.0f %02.0f %010.7f  %d%3d%21s\n",
-                ep[0],ep[1],ep[2],ep[3],ep[4],ep[5],0,ns,"");
+    } else if (opt->rnxver <= 401) { // Ver 3, 4.00 and 4.01.
+      fprintf(fp,"> %04.0f %02.0f %02.0f %02.0f %02.0f %10.7f  %d%3d%21s\n",
+              ep[0],ep[1],ep[2],ep[3],ep[4],ep[5],0,ns,"");
+    } else { // Ver 4.02
+      char sbuf[20];
+      snprintf(sbuf, sizeof(sbuf), "%16.12lf", ep[5]);
+      if (strlen(sbuf) >= 16 && strcmp(sbuf + 11, "00000") == 0) sbuf[11] = '\0';
+      fprintf(fp,"> %04.0f %02.0f %02.0f %02.0f %02.0f%11.11s  %d%3d%21s%5.5s\n",
+              ep[0], ep[1], ep[2], ep[3], ep[4], sbuf, 0, ns, "", sbuf + 11);
     }
     for (i=0;i<ns;i++) {
         sys = satsyst(obs[ind[i]].sat, obs[ind[i]].time, NULL);
