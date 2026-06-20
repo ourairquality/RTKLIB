@@ -733,87 +733,76 @@ static int readrnxh(FILE *fp, double *ver, char *type, int *sys, int *tsys,
 static int decode_obsepoch(FILE *fp, char *buff, double ver, gtime_t *time,
                            int *flag, int *sats)
 {
-    int i,j,n;
-    char satid[8]={'\0'};
-
     trace(4,"decode_obsepoch: ver=%.2f\n",ver);
 
-    if (ver<=2.99) { /* ver.2 */
-        /* epoch flag: 3:new site,4:header info,5:external event */
-        *flag=(int)str2num(buff,28,1);
-
-        /* handle external event */
-        if (*flag == 5) {
-            str2time(buff,0,26,time);
-        }
-
-        if ((n=(int)str2num(buff,29,3))<=0) return 0;
-
-        if (3<=*flag&&*flag<=5) return n;
-
-        if (str2time(buff,0,26,time)) {
-            trace(2, "rinex obs invalid epoch: epoch='%26.26s'\n", buff);
-            return 0;
-        }
-        for (i=0,j=32;i<n;i++,j+=3) {
-            if (j>=68) {
-                if (!fgets(buff,MAXRNXLEN,fp)) break;
-                j=32;
+    int n;
+    if (ver <= 2.99) { // Ver. 2
+        // Epoch flag: 3:new site, 4:header info, 5:external event.
+        *flag = (int)str2num(buff, 28, 1);
+        int tsucc = str2time(buff, 0, 26, time) == 0;
+        n = (int)str2num(buff, 29, 3);
+        if (n < 0) return -1; // Expect a non-negative number.
+        if (*flag <= 2 || *flag >= 6) {
+          // Expect a time.
+          if (!tsucc) { // Expect a time.
+            trace(2, "rinex obs invalid epoch: epoch='%s'\n", buff);
+            return -1;
+          }
+          for (int i = 0, j = 32; i < n; i++, j += 3) {
+            if (j >= 68) {
+              if (!fgets(buff, MAXRNXLEN, fp)) break;
+              j = 32;
             }
-            if (i<MAXOBS) {
-                strncpy(satid,buff+j,3);
-                sats[i]=satid2no(satid);
+            if (i < MAXOBS) {
+              char satid[8] = {'\0'};
+              strncpy(satid, buff + j, 3);
+              sats[i] = satid2no(satid);
             }
+          }
         }
     }
-    if (ver <= 4.0199) { // Ver. 3, 4.00 and 4.01.
-        *flag=(int)str2num(buff,31,1);
-
-        /* handle external event */
-        if (*flag == 5) {
-            str2time(buff,1,28,time);
+    else if (ver <= 4.019) { // Ver. 3, 4.00 and 4.01.
+        size_t len = strlen(buff);
+        if (len <= 2 || buff[0] != '>') {
+          trace(2, "rinex obs invalid epoch: epoch='%s'\n", buff);
+          return -1;
         }
-
-        if ((n=(int)str2num(buff,32,3))<=0) return 0;
-
-        if (3<=*flag&&*flag<=5) return n;
-
-        if (buff[0] != '>' || str2time(buff, 2, 27, time)) {
-            trace(2, "rinex obs invalid epoch: epoch='%29.29s'\n", buff);
-            return 0;
+        int tsucc = str2time(buff, 2, 27, time) == 0;
+        *flag = (int)str2num(buff, 31, 1);
+        n = (int)str2num(buff, 32, 3);
+        if (n < 0) return -1; // Expect a non-negative number.
+        if ((*flag <= 2 || *flag >= 6) && !tsucc) { // Expect a time.
+            trace(2, "rinex obs invalid epoch: epoch='%s'\n", buff);
+            return -1;
         }
     }
     else { // Ver 4.02
-        *flag = (int)str2num(buff, 31, 1);
-
-        // Handle external event.
-        if (*flag == 5) str2time(buff, 1, 28, time);
-
-        if ((n = (int)str2num(buff, 32, 3)) <= 0) return 0;
-
-        if (3 <= *flag && *flag <= 5) return n;
-
         size_t len = strlen(buff);
         if (len <= 2 || buff[0] != '>') {
-          trace(2, "rinex obs invalid epoch1: epoch='%34.34s'\n", buff);
-          return 0;
+          trace(2, "rinex obs invalid epoch: epoch='%s'\n", buff);
+          return -1;
         }
+        // Attempt to decode the time which may not be present.
         char tbuf[33];
-        int i;
+        unsigned i;
         for (i = 0; i < 27 && i + 2 < len; i++) tbuf[i] = buff[2 + i];
         tbuf[i] = '\0';
         if (len > 57 && tbuf[26] >= '0' && tbuf[26] <= '9') {
-          // Copy the extended seconds digits.
-          for (int j = 0; j < 5 && 57 + j < len; j++, i++) tbuf[i] = buff[57 + j];
+          // Copy the optional extended seconds digits.
+          for (unsigned j = 0; j < 5 && 57 + j < len; j++, i++) tbuf[i] = buff[57 + j];
           tbuf[i] = '\0';
         }
-        if (str2time(tbuf, 0, strlen(tbuf), time)) {
-          trace(2, "rinex obs invalid epoch2: epoch='%62.62s'\n", buff);
-          return 0;
+        int tsucc = str2time(tbuf, 0, strlen(tbuf), time) == 0;
+        *flag = (int)str2num(buff, 31, 1);
+        n = (int)str2num(buff, 32, 3);
+        if (n < 0) return -1; // Expect a non-negative number.
+        if ((*flag <= 2 || *flag >= 6) && !tsucc) { // Expect a time.
+            trace(2, "rinex obs invalid epoch: epoch='%s'\n", buff);
+            return -1;
         }
     }
     char tstr[40];
-    trace(4,"decode_obsepoch: time=%s flag=%d\n",time2str(*time,tstr,3),*flag);
+    trace(4, "decode_obsepoch: time=%s flag=%d n=%d\n", time2str(*time, tstr, 3), *flag, n);
     return n;
 }
 /* decode observation data ---------------------------------------------------*/
@@ -1051,17 +1040,33 @@ static int readrnxobsb(FILE *fp, const char *opt, double ver, int *tsys,
     set_index(ver, opt, tobs, index);
 
     /* read record */
-    while (fgets(buff,MAXRNXLEN,fp)) {
-
+    while (1) {
+        // Be resiliant to missing observation lines and resync.
+        int c = fgetc(fp);
+        if (c == EOF) {
+          if (n == 0) break;
+          // If data has been decoded then return it.
+          trace(2, "readrnxobsb: unexpected epoch sync: '%s'\n", buff);
+          return n;
+        }
+        ungetc(c, fp);
+        if (i > 0 && c == '>') {
+          trace(2, "readrnxobsb: unexpected epoch sync\n");
+          // If data has been decoded then return it.
+          if (n > 0) return n;
+          // Otherwise keep searching.
+          i = n = nsat = 0;
+        }
+        if (fgets(buff, MAXRNXLEN, fp) == NULL) break;
         /* decode observation epoch */
         if (i==0) {
-            if ((nsat=decode_obsepoch(fp,buff,ver,&time,flag,sats))<=0 && (*flag != 5)) {
-                continue;
-            }
+            nsat = decode_obsepoch(fp, buff, ver, &time, flag, sats);
+            if (nsat < 0) continue;
             if (*flag == 5) {
                 data[0].eventime = time;
                 return 0;
             }
+            if (nsat == 0) continue;
         }
         else if ((*flag<=2||*flag==6)&&n<MAXOBS) {
             data[n].time=time;
@@ -1071,7 +1076,6 @@ static int readrnxobsb(FILE *fp, const char *opt, double ver, int *tsys,
             if (decode_obsdata(fp,opt,buff,ver,mask,index,data+n)) n++;
         }
         else if (*flag==3||*flag==4) { /* new site or header info follows */
-
             /* decode RINEX observation data file header */
             decode_obsh(fp,buff,ver,tsys,tobs,NULL,sta);
             set_index(ver, opt, tobs, index);
@@ -1993,10 +1997,15 @@ extern int input_rnxctr(rnxctr_t *rnx, FILE *fp)
 
     /* read RINEX OBS data */
     if (rnx->type=='O') {
-        if ((n=readrnxobsb(fp,rnx->opt,rnx->ver,&rnx->tsys,rnx->tobs,&flag,
-                           rnx->obs.data,&rnx->sta))<=0) {
-            rnx->obs.n=0;
-            return n<0?-2:0;
+        n = readrnxobsb(fp, rnx->opt, rnx->ver, &rnx->tsys, rnx->tobs, &flag,
+                        rnx->obs.data, &rnx->sta);
+        if (n < 0) {
+            rnx->obs.n = 0;
+            return n < 0 ? -2 : 0;
+        }
+        if (n == 0) {
+            rnx->obs.n = 0;
+            return 0;
         }
         rnx->time=rnx->obs.data[0].time;
         rnx->obs.n=n;
