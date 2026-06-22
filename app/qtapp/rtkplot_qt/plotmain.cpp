@@ -136,7 +136,7 @@ Plot::Plot(QWidget *parent) : QMainWindow(parent), ui(new Ui::Plot)
 
     observationIndex = 0;
     observation = obs0;
-    memset(&navigation, 0, sizeof(navigation));
+    navigation = new nav_t{};
     station = sta0;
     gis = gis0;
     simulatedObservation = 0;
@@ -399,6 +399,8 @@ Plot::~Plot()
     delete lWRangeList;
 
     delete tVdirectorySelector;
+
+    delete navigation;
 }
 // callback on all events ----------------------------------------------------
 bool Plot::eventFilter(QObject *obj, QEvent *event)
