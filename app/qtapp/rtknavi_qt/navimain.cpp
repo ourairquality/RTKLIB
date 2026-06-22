@@ -97,12 +97,12 @@ static int strfmt[MAXSTRRTK];                  /* stream formats */
 
 // show message in message area ---------------------------------------------
 extern "C" {
-    extern int showmsg(const char *, ...)
+    int showmsg(const char *, ...)
     {
         return 0;
     }
-extern void settime(gtime_t) {}
-extern void settspan(gtime_t, gtime_t) {}
+void settime(gtime_t) {}
+void settspan(gtime_t, gtime_t) {}
 }
 
 // constructor --------------------------------------------------------------
