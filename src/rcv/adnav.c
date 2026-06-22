@@ -107,7 +107,7 @@ typedef struct {
 } anpp_t;
 
 /* init/free -----------------------------------------------------------------*/
-extern int init_anpp(raw_t *raw) {
+int init_anpp(raw_t *raw) {
   if (raw->format != STRFMT_ANPP) return 0;
   anpp_t *anpp = calloc(1, sizeof(anpp_t));
   if (!anpp) {
@@ -118,7 +118,7 @@ extern int init_anpp(raw_t *raw) {
   return 1;
 }
 
-extern void free_anpp(raw_t *raw) {
+void free_anpp(raw_t *raw) {
   if (raw->format != STRFMT_ANPP) return;
   if (raw->rcv_data) {
     free(raw->rcv_data);
@@ -567,7 +567,7 @@ static int decode_anpp(raw_t *raw) {
   return 0;
 }
 
-extern int input_anpp(raw_t *raw, uint8_t data) {
+int input_anpp(raw_t *raw, uint8_t data) {
   RTKBOUNDSCHECK(raw->buff, sizeof(raw->buff), raw->nbyte);
   raw->buff[raw->nbyte] = data;
   raw->nbyte++;
@@ -600,7 +600,7 @@ extern int input_anpp(raw_t *raw, uint8_t data) {
   return decode_anpp(raw);
 }
 
-extern int input_anppf(raw_t *raw, FILE *fp) {
+int input_anppf(raw_t *raw, FILE *fp) {
   trace(4, "input_anppf:\n");
 
   for (int i = 0; i < 4096; i++) {

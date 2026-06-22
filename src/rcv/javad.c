@@ -1772,7 +1772,7 @@ static void clearbuff(raw_t *raw)
 *          -GALINAV: select F/NAV for Galileo ephemeris (default: all)
 *          -GALFNAV: select F/NAV for Galileo ephemeris (default: all)
 *-----------------------------------------------------------------------------*/
-extern int input_javad(raw_t *raw, uint8_t data)
+int input_javad(raw_t *raw, uint8_t data)
 {
     int len,stat;
     
@@ -1821,7 +1821,7 @@ static int endfile(raw_t *raw)
 *          FILE   *fp    I      file pointer
 * return : status(-2: end of file, -1...9: same as above)
 *-----------------------------------------------------------------------------*/
-extern int input_javadf(raw_t *raw, FILE *fp)
+int input_javadf(raw_t *raw, FILE *fp)
 {
     int i,data,len,stat;
     

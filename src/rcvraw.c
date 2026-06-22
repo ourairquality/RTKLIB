@@ -297,7 +297,7 @@ static int decode_irn_utc(const uint8_t *buff, double *utc)
 *                                 utc[8]  : A2
 * return : status (1:ok,0:error)
 *-----------------------------------------------------------------------------*/
-extern int decode_irn_nav(const uint8_t *buff, eph_t *eph, double *ion,
+int decode_irn_nav(const uint8_t *buff, eph_t *eph, double *ion,
                           double *utc)
 {
     trace(4,"decode_irn_nav:\n");
@@ -447,7 +447,7 @@ static int decode_gal_inav_utc(const uint8_t *buff, double *utc)
 *                                 utc[4-7]: dt_LS,WN_LSF,DN,dt_LSF
 * return : status (1:ok,0:error)
 *-----------------------------------------------------------------------------*/
-extern int decode_gal_inav(const uint8_t *buff, eph_t *eph, double *ion,
+int decode_gal_inav(const uint8_t *buff, eph_t *eph, double *ion,
                            double *utc)
 {
     trace(4,"decode_gal_inav:\n");
@@ -595,7 +595,7 @@ static int decode_gal_fnav_utc(const uint8_t *buff, double *utc)
 *                                 utc[4-7]: dt_LS,WN_LSF,DN,dt_LSF
 * return : status (1:ok,0:error)
 *-----------------------------------------------------------------------------*/
-extern int decode_gal_fnav(const uint8_t *buff, eph_t *eph, double *ion,
+int decode_gal_fnav(const uint8_t *buff, eph_t *eph, double *ion,
                            double *utc)
 {
     trace(4,"decode_gal_fnav:\n");
@@ -738,7 +738,7 @@ static int decode_bds_d1_utc(const uint8_t *buff, double *utc)
 *                                 utc[4-7]: dt_LS,WN_LSF,DN,dt_LSF
 * return : status (1:ok,0:error)
 *-----------------------------------------------------------------------------*/
-extern int decode_bds_d1(const uint8_t *buff, eph_t *eph, double *ion,
+int decode_bds_d1(const uint8_t *buff, eph_t *eph, double *ion,
                          double *utc)
 {
     trace(4,"decode_bds_d1:\n");
@@ -904,7 +904,7 @@ static int decode_bds_d2_utc(const uint8_t *buff, double *utc)
 *                                 utc[4-7]: dt_LS,WN_LSF,DN,dt_LSF
 * return : status (1:ok,0:error)
 *-----------------------------------------------------------------------------*/
-extern int decode_bds_d2(const uint8_t *buff, eph_t *eph, double *utc)
+int decode_bds_d2(const uint8_t *buff, eph_t *eph, double *utc)
 {
     trace(4,"decode_bds_d2:\n");
     
@@ -921,7 +921,7 @@ extern int decode_bds_d2(const uint8_t *buff, eph_t *eph, double *utc)
 *                                  buff[10]: string bit  5- 1 (0 padded)
 * return : status (1:ok,0:error)
 *-----------------------------------------------------------------------------*/
-extern int test_glostr(const uint8_t *buff)
+int test_glostr(const uint8_t *buff)
 {
     static const uint8_t xor_8bit[256]={ /* xor of 8 bits */
         0,1,1,0,1,0,0,1,1,0,0,1,0,1,1,0,1,0,0,1,0,1,1,0,0,1,1,0,1,0,0,1,
@@ -1061,7 +1061,7 @@ static int decode_glostr_utc(const uint8_t *buff, double *utc)
 * notes  : geph->tof should be set to frame time within 1/2 day before calling
 *          geph->frq is set to 0
 *-----------------------------------------------------------------------------*/
-extern int decode_glostr(const uint8_t *buff, geph_t *geph, double *utc)
+int decode_glostr(const uint8_t *buff, geph_t *geph, double *utc)
 {
     trace(4,"decode_glostr:\n");
     
@@ -1337,7 +1337,7 @@ static int decode_frame_utc(const uint8_t *buff, double *utc)
 * notes  : use CPU time to resolve modulo 1024 ambiguity of the week number
 *          see ref [1]
 *-----------------------------------------------------------------------------*/
-extern int decode_frame(const uint8_t *buff, int sys, eph_t *eph, alm_t *alm,
+int decode_frame(const uint8_t *buff, int sys, eph_t *eph, alm_t *alm,
                         double *ion, double *utc)
 {
     trace(4,"decode_frame:\n");
@@ -1355,7 +1355,7 @@ extern int decode_frame(const uint8_t *buff, int sys, eph_t *eph, alm_t *alm,
 *          int    format I      stream format (STRFMT_???)
 * return : status (1:ok,0:memory allocation error)
 *-----------------------------------------------------------------------------*/
-extern int init_raw(raw_t *raw, int format)
+int init_raw(raw_t *raw, int format)
 {
     gtime_t time0={0};
     obsd_t data0={{0}};
@@ -1455,7 +1455,7 @@ extern int init_raw(raw_t *raw, int format)
 * args   : raw_t  *raw   IO     receiver raw data control struct
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void free_raw(raw_t *raw)
+void free_raw(raw_t *raw)
 {
     trace(3,"free_raw:\n");
     
@@ -1483,7 +1483,7 @@ extern void free_raw(raw_t *raw)
 *                  2: input ephemeris, 3: input sbas message,
 *                  9: input ion/utc parameter)
 *-----------------------------------------------------------------------------*/
-extern int input_raw(raw_t *raw, int format, uint8_t data)
+int input_raw(raw_t *raw, int format, uint8_t data)
 {
     trace(5,"input_raw: format=%d data=0x%02x\n",format,data);
     
@@ -1512,7 +1512,7 @@ extern int input_raw(raw_t *raw, int format, uint8_t data)
 *          FILE   *fp    I      file pointer
 * return : status(-2: end of file/format error, -1...31: same as above)
 *-----------------------------------------------------------------------------*/
-extern int input_rawf(raw_t *raw, int format, FILE *fp)
+int input_rawf(raw_t *raw, int format, FILE *fp)
 {
     trace(4,"input_rawf: format=%d\n",format);
     

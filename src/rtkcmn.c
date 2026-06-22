@@ -483,7 +483,7 @@ static void fatalerr(const char *format, ...)
 * return : none
 * notes  : if malloc() failed in return : none
 *-----------------------------------------------------------------------------*/
-extern void add_fatal(fatalfunc_t *func)
+void add_fatal(fatalfunc_t *func)
 {
     fatalfunc=func;
 }
@@ -498,7 +498,7 @@ extern void add_fatal(fatalfunc_t *func)
 *                               size, this is the index of the last byte to
 *                               be accessed
 *-----------------------------------------------------------------------------*/
-extern void rtkboundscheck(const char *func, int line, const void *buff, size_t size, size_t index) {
+void rtkboundscheck(const char *func, int line, const void *buff, size_t size, size_t index) {
   if (index >= size) {
     fatalerr("rtk out of bound in %s line %d for buffer %p of size %zu at index %zu\n",
              func, line, buff, size, index);
@@ -549,7 +549,7 @@ static int bdsprnsyst(int prn, gtime_t t) {
 
 #else
 static int bdsprnsys(int prn) { return 0; }
-extern int bdsprnsyst(int prn, gtime_t t) { return 0; }
+static int bdsprnsyst(int prn, gtime_t t) { return 0; }
 #endif
 
 /* satellite system+prn/slot number to satellite number ------------------------
@@ -558,7 +558,7 @@ extern int bdsprnsyst(int prn, gtime_t t) { return 0; }
 *          int    prn       I   satellite prn/slot number
 * return : satellite number (0:error)
 *-----------------------------------------------------------------------------*/
-extern int satno(int sys, int prn)
+int satno(int sys, int prn)
 {
     if (prn<=0) return 0;
     switch (sys) {
@@ -604,7 +604,7 @@ extern int satno(int sys, int prn)
 * Note: this uses the default mapping for BDS-2 vs BDS-3. If this
 * distinction is important then use satsyst().
 *-----------------------------------------------------------------------------*/
-extern int satsys(int sat, int *prn)
+int satsys(int sat, int *prn)
 {
     int sys=SYS_NONE;
     if (sat<=0||MAXSAT<sat) sat=0;
@@ -644,7 +644,7 @@ extern int satsys(int sat, int *prn)
 //          int    *prn      IO  satellite prn/slot number (NULL: no output)
 // Return : satellite system (SYS_GPS,SYS_GLO,...)
 //-----------------------------------------------------------------------------
-extern int satsyst(int sat, gtime_t t, int *prn)
+int satsyst(int sat, gtime_t t, int *prn)
 {
     int sys=SYS_NONE;
     if (sat<=0||MAXSAT<sat) sat=0;
@@ -683,7 +683,7 @@ extern int satsyst(int sat, gtime_t t, int *prn)
 * return : satellite number (0: error)
 * notes  : 120-142 and 193-199 are also recognized as sbas and qzss
 *-----------------------------------------------------------------------------*/
-extern int satid2no(const char *id)
+int satid2no(const char *id)
 {
     int sys,prn;
     char code;
@@ -718,7 +718,7 @@ extern int satid2no(const char *id)
 *          char   *id       O   satellite id (Gnn,Rnn,Enn,Jnn,Cnn,Inn or nnn)
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void satno2id(int sat, char id[8])
+void satno2id(int sat, char id[8])
 {
     int prn;
     switch (satsys(sat,&prn)) {
@@ -743,7 +743,7 @@ extern void satno2id(int sat, char id[8])
 *          prcopt_t *opt    I   processing options (NULL: not used)
 * return : status (1:excluded,0:not excluded)
 *-----------------------------------------------------------------------------*/
-extern int satexclude(int sat, gtime_t t, double var, int svh, const prcopt_t *opt)
+int satexclude(int sat, gtime_t t, double var, int svh, const prcopt_t *opt)
 {
     int sys = satsyst(sat, t, NULL);
 
@@ -779,7 +779,7 @@ extern int satexclude(int sat, gtime_t t, double var, int svh, const prcopt_t *o
 *          snrmask_t *mask  I   SNR mask
 * return : status (1:masked,0:unmasked)
 *-----------------------------------------------------------------------------*/
-extern int testsnr(int base, int idx, double el, double snr,
+int testsnr(int base, int idx, double el, double snr,
                    const snrmask_t *mask)
 {
     double minsnr,a;
@@ -802,7 +802,7 @@ extern int testsnr(int base, int idx, double el, double snr,
 *                                 elmask[i]: elevation mask at azimuth i (rad)
 * Return : status (1:masked,0:unmasked)
 *-----------------------------------------------------------------------------*/
-extern int testelmask(const double *azel, const elmask_t *elmask)
+int testelmask(const double *azel, const elmask_t *elmask)
 {
     double az = azel[0] * R2D;
 
@@ -820,7 +820,7 @@ extern int testelmask(const double *azel, const elmask_t *elmask)
 * return : obs code (CODE_???)
 * notes  : obs codes are based on RINEX 3.04
 *-----------------------------------------------------------------------------*/
-extern uint8_t obs2code(const char *obs)
+uint8_t obs2code(const char *obs)
 {
     int i;
 
@@ -836,7 +836,7 @@ extern uint8_t obs2code(const char *obs)
 * return : obs code string ("1C","1P","1P",...)
 * notes  : obs codes are based on RINEX 3.04
 *-----------------------------------------------------------------------------*/
-extern const char *code2obs(uint8_t code)
+const char *code2obs(uint8_t code)
 {
     if (code<=CODE_NONE||MAXCODE<code) return "";
     return obscodes[code];
@@ -848,7 +848,7 @@ extern const char *code2obs(uint8_t code)
 *          uint8_t code     I   obs code (CODE_???)
 * return : frequency index (-1: error)
 *-----------------------------------------------------------------------------*/
-extern int code2idx(int sys, uint8_t code) {
+int code2idx(int sys, uint8_t code) {
   const char *obs = code2obs(code);
   if (obs[0] < '1' || obs[0] > '9') {
     trace(1, "internal error: code2idx called with unexpected code=%d\n", code);
@@ -873,7 +873,7 @@ extern int code2idx(int sys, uint8_t code) {
 *          int    idx       I   frequency index
 * return : band number (0: error)
 *-----------------------------------------------------------------------------*/
-extern int idx2band(int sys, int idx) {
+int idx2band(int sys, int idx) {
   int sysno = sys2no(sys);
   if (sysno == 0 || sysno > 8) {
     trace(1, "internal error: idx2band called with undefined sys=%d\n", sys);
@@ -889,7 +889,7 @@ extern int idx2band(int sys, int idx) {
 // Return a signal frequency band name for the given system and internal
 // frequency index. The band name is intended for presentation. Optionally
 // return the band number and the code priorities.
-extern const char *getcodebandname(int sys, int band)
+const char *getcodebandname(int sys, int band)
 {
   int sysno = sys2no(sys);
   if (sysno == 0 || sysno > 8) {
@@ -931,7 +931,7 @@ extern const char *getcodebandname(int sys, int band)
 //
 // For example, verbose: '-G 1C,2L,2S,5Q -E 1C,5QX,6B -C2 6I -C3 1P,5P,6I -S 1C -I 1C,5Q'
 //
-extern void init_code2idx(const char *sigdef)
+void init_code2idx(const char *sigdef)
 {
   trace(2, "init_code2idx: sigdef='%s'\n", sigdef);
   // Reinitialize the defaults, so that the effect of the signal definition is
@@ -1053,7 +1053,7 @@ extern void init_code2idx(const char *sigdef)
 // If the opt argument is NULL then do not allocate a new index, rather just
 // search for a matching allocation for the given code using the same search
 // strategy but without checking consistency of the code priorities.
-extern int sigindex(obsd_t *data, int sys, int code, const char *opt) {
+int sigindex(obsd_t *data, int sys, int code, const char *opt) {
   // A particular system is expected, to uniquely define the allocation, so
   // try the satellite if no system, or an ambiguous system, is supplied.
   if (sys == 0 || sys == SYS_BDS) {
@@ -1230,7 +1230,7 @@ static double band2freq_IRN(int band)
 // distinction between BDS2 and BDS3 so the 'sys' argument may be SYS_BDS, in
 // contrast to code2idx() which may vary between BDS2 and BDS3 and so can not
 // accept SYS_BDS.
-extern double band2freq(int sys, int band, int fcn)
+double band2freq(int sys, int band, int fcn)
 {
   if (band == 0) return 0.0;
   switch (sys) {
@@ -1255,7 +1255,7 @@ extern double band2freq(int sys, int band, int fcn)
 *
 * As with band2freq() this also accepts SYS_BDS.
 *-----------------------------------------------------------------------------*/
-extern double code2freq(int sys, uint8_t code, int fcn)
+double code2freq(int sys, uint8_t code, int fcn)
 {
     const char *obs = code2obs(code);
     if (obs[0] == '\0') return 0.0;
@@ -1269,7 +1269,7 @@ extern double code2freq(int sys, uint8_t code, int fcn)
 *          nav_t  *nav_t    I   navigation data for GLONASS (NULL: not used)
 * return : carrier frequency (Hz) (0.0: error)
 *-----------------------------------------------------------------------------*/
-extern double sat2freq(int sat, uint8_t code, const nav_t *nav)
+double sat2freq(int sat, uint8_t code, const nav_t *nav)
 {
     int i,fcn=-8,sys,prn;
 
@@ -1296,7 +1296,7 @@ extern double sat2freq(int sat, uint8_t code, const nav_t *nav)
 *          nav_t  *nav_t    I   navigation data for GLONASS (NULL: not used)
 * return : carrier frequency (Hz) (0.0: error)
 *-----------------------------------------------------------------------------*/
-extern double satidx2freq(int sat, int idx, const nav_t *nav)
+double satidx2freq(int sat, int idx, const nav_t *nav)
 {
     int i,fcn=-8,sys,prn;
 
@@ -1326,7 +1326,7 @@ extern double satidx2freq(int sat, int idx, const nav_t *nav)
 *
 * Priorities are also set by the sigdef.
 *-----------------------------------------------------------------------------*/
-extern void setcodepriorities(int sys, int band, const char *pri)
+void setcodepriorities(int sys, int band, const char *pri)
 {
   trace(3,"setcodepri:sys=%d band=%d pri=%s\n", sys, band, pri);
 
@@ -1349,7 +1349,7 @@ extern void setcodepriorities(int sys, int band, const char *pri)
 }
 // Return the code priorities for the given system and frequency index, before
 // variation by receiver specific options.
-extern char *getcodepriorities(int sys, int band)
+char *getcodepriorities(int sys, int band)
 {
   int sysno = sys2no(sys);
   if (sysno == 0 || sysno > 8) {
@@ -1379,7 +1379,7 @@ extern char *getcodepriorities(int sys, int band)
 * band in the options, and then for each priority in the common priorities
 * list.
 *-----------------------------------------------------------------------------*/
-extern int getcodepri(int sys, uint8_t code, const char *opt)
+int getcodepri(int sys, uint8_t code, const char *opt)
 {
   const char *optstr;
   int sysno;
@@ -1420,7 +1420,7 @@ extern int getcodepri(int sys, uint8_t code, const char *opt)
 *          unsigned   len     I   bit length (bits) (len<=32)
 * return : extracted unsigned/signed bits
 *-----------------------------------------------------------------------------*/
-extern uint32_t getbitu(const uint8_t *buff, unsigned pos, unsigned len)
+uint32_t getbitu(const uint8_t *buff, unsigned pos, unsigned len)
 {
   if (len > 32) trace(2, "getbitu: len=%u out of range\n", len);
   uint32_t bits = 0;
@@ -1428,7 +1428,7 @@ extern uint32_t getbitu(const uint8_t *buff, unsigned pos, unsigned len)
       bits = (bits << 1) | ((buff[i / 8] >> (7 - i % 8)) & 1u);
   return bits;
 }
-extern int32_t getbits(const uint8_t *buff, unsigned pos, unsigned len)
+int32_t getbits(const uint8_t *buff, unsigned pos, unsigned len)
 {
   uint32_t bits = getbitu(buff, pos, len);
   if (len == 0) {
@@ -1452,7 +1452,7 @@ extern int32_t getbits(const uint8_t *buff, unsigned pos, unsigned len)
 *          [u]int32_t data  I   unsigned/signed data
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void setbitu(uint8_t *buff, unsigned pos, unsigned len, uint32_t data)
+void setbitu(uint8_t *buff, unsigned pos, unsigned len, uint32_t data)
 {
     if (len==0||32<len) {
         trace(2,"Warning setbitu len %u out of range for data %x\n",len,data);
@@ -1466,7 +1466,7 @@ extern void setbitu(uint8_t *buff, unsigned pos, unsigned len, uint32_t data)
             buff[i/8]&=~(1u<<(7-i%8));
     }
 }
-extern void setbits(uint8_t *buff, unsigned pos, unsigned len, int32_t data)
+void setbits(uint8_t *buff, unsigned pos, unsigned len, int32_t data)
 {
     if (len==0||32<len) {
         trace(2,"Warning setbits len %u out of range for data %x\n",len,data);
@@ -1505,7 +1505,7 @@ extern void setbits(uint8_t *buff, unsigned pos, unsigned len, int32_t data)
 * return : crc-32 parity
 * notes  : see NovAtel OEMV firmware manual 1.7 32-bit CRC
 *-----------------------------------------------------------------------------*/
-extern uint32_t rtk_crc32(const uint8_t *buff, unsigned len)
+uint32_t rtk_crc32(const uint8_t *buff, unsigned len)
 {
     trace(4,"rtk_crc32: len=%u\n",len);
     uint32_t crc=0;
@@ -1527,7 +1527,7 @@ extern uint32_t rtk_crc32(const uint8_t *buff, unsigned len)
 * return : crc-24Q parity
 * notes  : see reference [2] A.4.3.3 Parity
 *-----------------------------------------------------------------------------*/
-extern uint32_t rtk_crc24q(const uint8_t *buff, unsigned len)
+uint32_t rtk_crc24q(const uint8_t *buff, unsigned len)
 {
     trace(4, "rtk_crc24q: len=%u\n",len);
 
@@ -1543,7 +1543,7 @@ extern uint32_t rtk_crc24q(const uint8_t *buff, unsigned len)
 * return : crc-16 parity
 * notes  : see reference [10] A.3.
 *-----------------------------------------------------------------------------*/
-extern uint16_t rtk_crc16(const uint8_t *buff, unsigned len)
+uint16_t rtk_crc16(const uint8_t *buff, unsigned len)
 {
     trace(4, "rtk_crc16: len=%d\n",len);
 
@@ -1561,7 +1561,7 @@ extern uint16_t rtk_crc16(const uint8_t *buff, unsigned len)
 * return : status (1:ok,0:parity error)
 * notes  : see reference [1] 20.3.5.2 user parity algorithm
 *-----------------------------------------------------------------------------*/
-extern int decode_word(uint32_t word, uint8_t *data)
+int decode_word(uint32_t word, uint8_t *data)
 {
     const uint32_t hamming[]={
         0xBB1F3480,0x5D8F9A40,0xAEC7CD00,0x5763E680,0x6BB1F340,0x8B7A89C0
@@ -1587,7 +1587,7 @@ extern int decode_word(uint32_t word, uint8_t *data)
 * args   : int    n,m       I   number of rows and columns of matrix
 * return : matrix pointer (if n<=0 or m<=0, return NULL)
 *-----------------------------------------------------------------------------*/
-extern double *mat(int n, int m)
+double *mat(int n, int m)
 {
     double *p;
 
@@ -1602,7 +1602,7 @@ extern double *mat(int n, int m)
 * args   : int    n,m       I   number of rows and columns of matrix
 * return : matrix pointer (if n<=0 or m<=0, return NULL)
 *-----------------------------------------------------------------------------*/
-extern int *imat(int n, int m)
+int *imat(int n, int m)
 {
     int *p;
 
@@ -1617,7 +1617,7 @@ extern int *imat(int n, int m)
 * args   : int    n,m       I   number of rows and columns of matrix
 * return : matrix pointer (if n<=0 or m<=0, return NULL)
 *-----------------------------------------------------------------------------*/
-extern double *zeros(int n, int m)
+double *zeros(int n, int m)
 {
     double *p;
 
@@ -1636,7 +1636,7 @@ extern double *zeros(int n, int m)
 * args   : int    n         I   number of rows and columns of matrix
 * return : matrix pointer (if n<=0, return NULL)
 *-----------------------------------------------------------------------------*/
-extern double *eye(int n)
+double *eye(int n)
 {
     double *p;
     int i;
@@ -1651,7 +1651,7 @@ extern double *eye(int n)
 *          double *c        O   outer product (a x b) (3 x 1)
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void cross3(const double *a, const double *b, double *c)
+void cross3(const double *a, const double *b, double *c)
 {
     c[0]=a[1]*b[2]-a[2]*b[1];
     c[1]=a[2]*b[0]-a[0]*b[2];
@@ -1663,7 +1663,7 @@ extern void cross3(const double *a, const double *b, double *c)
 *          double *b        O   normalized vector (3 x 1) || b || = 1
 * return : status (1:ok,0:error)
 *-----------------------------------------------------------------------------*/
-extern int normv3(const double *a, double *b)
+int normv3(const double *a, double *b)
 {
     double r;
     if ((r=norm(a,3))<=0.0) return 0;
@@ -1684,7 +1684,7 @@ extern int normv3(const double *a, double *b)
 *          double *C        O matrix C (n x k)
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void matmul(const char *tr, int n, int k, int m,
+void matmul(const char *tr, int n, int k, int m,
                    const double *A, const double *B, double *C)
 {
     int lda=tr[0]=='T'?m:n,ldb=tr[1]=='T'?k:m;
@@ -1696,7 +1696,7 @@ extern void matmul(const char *tr, int n, int k, int m,
 /* multiply matrix (wrapper of blas dgemm) -------------------------------------
 * multiply matrix by matrix (C=C+A*B)
 *-----------------------------------------------------------------------------*/
-extern void matmulp(const char *tr, int n, int k, int m,
+void matmulp(const char *tr, int n, int k, int m,
                     const double *A, const double *B, double *C)
 {
     int lda=tr[0]=='T'?m:n,ldb=tr[1]=='T'?k:m;
@@ -1708,7 +1708,7 @@ extern void matmulp(const char *tr, int n, int k, int m,
 /* multiply matrix (wrapper of blas dgemm) -------------------------------------
 * multiply matrix by matrix (C=C-A*B)
 *-----------------------------------------------------------------------------*/
-extern void matmulm(const char *tr, int n, int k, int m,
+void matmulm(const char *tr, int n, int k, int m,
                     const double *A, const double *B, double *C)
 {
     int lda=tr[0]=='T'?m:n,ldb=tr[1]=='T'?k:m;
@@ -1723,7 +1723,7 @@ extern void matmulm(const char *tr, int n, int k, int m,
 *          int    n         I   size of matrix A
 * return : status (0:ok,0>:error)
 *-----------------------------------------------------------------------------*/
-extern int matinv(double *A, int n)
+int matinv(double *A, int n)
 {
     double *work;
     int info,lwork=n*16,*ipiv=imat(n,1);
@@ -1745,7 +1745,7 @@ extern int matinv(double *A, int n)
 * notes  : matrix stored by column-major order (fortran convention)
 *          X can be same as Y
 *-----------------------------------------------------------------------------*/
-extern int solve(const char *tr, const double *A, const double *Y, int n,
+int solve(const char *tr, const double *A, const double *Y, int n,
                  int m, double *X)
 {
     double *B=mat(n,n);
@@ -1762,7 +1762,7 @@ extern int solve(const char *tr, const double *A, const double *Y, int n,
 #else /* without LAPACK/BLAS or MKL */
 
 /* multiply matrix -----------------------------------------------------------*/
-extern void matmul(const char *tr, int n, int k, int m,
+void matmul(const char *tr, int n, int k, int m,
                    const double *A, const double *B, double *C)
 {
     int f=(tr[0]!='N')*2+(tr[1]!='N');
@@ -1806,7 +1806,7 @@ extern void matmul(const char *tr, int n, int k, int m,
           break;
     }
 }
-extern void matmulp(const char *tr, int n, int k, int m,
+void matmulp(const char *tr, int n, int k, int m,
                     const double *A, const double *B, double *C)
 {
     int f=(tr[0]!='N')*2+(tr[1]!='N');
@@ -1850,7 +1850,7 @@ extern void matmulp(const char *tr, int n, int k, int m,
           break;
     }
 }
-extern void matmulm(const char *tr, int n, int k, int m,
+void matmulm(const char *tr, int n, int k, int m,
                     const double *A, const double *B, double *C)
 {
     int f=(tr[0]!='N')*2+(tr[1]!='N');
@@ -1945,7 +1945,7 @@ static void lubksb(const double *A, int n, const int *indx, double *b)
     }
 }
 /* inverse of matrix ---------------------------------------------------------*/
-extern int matinv(double *A, int n)
+int matinv(double *A, int n)
 {
     double d,*B;
     int i,j,*indx;
@@ -1961,7 +1961,7 @@ extern int matinv(double *A, int n)
     return 0;
 }
 /* solve linear equation -----------------------------------------------------*/
-extern int solve(const char *tr, const double *A, const double *Y, int n,
+int solve(const char *tr, const double *A, const double *Y, int n,
                  int m, double *X)
 {
     double *B=mat(n,n);
@@ -1987,7 +1987,7 @@ extern int solve(const char *tr, const double *A, const double *Y, int n,
 * notes  : for weighted least square, replace A and y by A*w and w*y (w=W^(1/2))
 *          matrix stored by column-major order (fortran convention)
 *-----------------------------------------------------------------------------*/
-extern int lsq(const double *A, const double *y, int n, int m, double *x,
+int lsq(const double *A, const double *y, int n, int m, double *x,
                double *Q)
 {
     double *Ay;
@@ -2019,7 +2019,7 @@ extern int lsq(const double *A, const double *y, int n, int m, double *x,
 *          The x array is not modified on error.
 *          The R input matrix is destructively modified, even on error.
 *-----------------------------------------------------------------------------*/
-extern int filter_(double *x, const double *P, const double *H,
+int filter_(double *x, const double *P, const double *H,
                    const double *v, double *R, int n, int m, double *Pp)
 {
     double *PH=mat(n,m),*K=mat(n,m),*I=eye(n);
@@ -2037,7 +2037,7 @@ extern int filter_(double *x, const double *P, const double *H,
     free(PH); free(K); free(I);
     return info;
 }
-extern int filter(double *x, double *P, const double *H, const double *v,
+int filter(double *x, double *P, const double *H, const double *v,
                   double *R, int n, int m)
 {
     int k,info;
@@ -2075,7 +2075,7 @@ extern int filter(double *x, double *P, const double *H, const double *v,
 * notes  : see reference [4] 5.2
 *          matrix stored by column-major order (fortran convention)
 *-----------------------------------------------------------------------------*/
-extern int smoother(const double *xf, const double *Qf, const double *xb,
+int smoother(const double *xf, const double *Qf, const double *xb,
                     const double *Qb, int n, double *xs, double *Qs)
 {
     double *invQf=mat(n,n),*invQb=mat(n,n),*xx=mat(n,1);
@@ -2103,7 +2103,7 @@ extern int smoother(const double *xf, const double *Qf, const double *xb,
 * return : none
 * notes  : matrix stored by column-major order (fortran convention)
 *-----------------------------------------------------------------------------*/
-extern void matfprint(const double A[], int n, int m, int p, int q, FILE *fp)
+void matfprint(const double A[], int n, int m, int p, int q, FILE *fp)
 {
     int i,j;
 
@@ -2112,12 +2112,12 @@ extern void matfprint(const double A[], int n, int m, int p, int q, FILE *fp)
         fprintf(fp,"\n");
     }
 }
-extern void matprint(const double A[], int n, int m, int p, int q)
+void matprint(const double A[], int n, int m, int p, int q)
 {
     matfprint(A,n,m,p,q,stdout);
 }
 /* set string without tail space ---------------------------------------------*/
-extern void setstr(char *dst, const char *src, int n)
+void setstr(char *dst, const char *src, int n)
 {
     char *p=dst;
     const char *q=src;
@@ -2131,7 +2131,7 @@ extern void setstr(char *dst, const char *src, int n)
 *          int    i,n       I   substring position and width
 * return : converted number (0.0:error)
 *-----------------------------------------------------------------------------*/
-extern double str2num(const char *s, int i, int n)
+double str2num(const char *s, int i, int n)
 {
     char str[256],*p=str;
 
@@ -2155,7 +2155,7 @@ extern double str2num(const char *s, int i, int n)
 *          gtime_t *t       O   gtime_t struct
 * return : status (0:ok,0>:error)
 *-----------------------------------------------------------------------------*/
-extern int str2time(const char *s, size_t i, size_t n, gtime_t *t)
+int str2time(const char *s, size_t i, size_t n, gtime_t *t)
 {
     char str[256];
 
@@ -2175,7 +2175,7 @@ extern int str2time(const char *s, size_t i, size_t n, gtime_t *t)
 * return : gtime_t struct
 * notes  : proper in 1970-2037 or 1970-2099 (64bit time_t)
 *-----------------------------------------------------------------------------*/
-extern gtime_t epoch2time(const double *ep)
+gtime_t epoch2time(const double *ep)
 {
     const int doy[]={1,32,60,91,121,152,182,213,244,274,305,335};
     gtime_t time={0};
@@ -2197,7 +2197,7 @@ extern gtime_t epoch2time(const double *ep)
 * return : none
 * notes  : proper in 1970-2037 or 1970-2099 (64bit time_t)
 *-----------------------------------------------------------------------------*/
-extern void time2epoch(gtime_t t, double *ep)
+void time2epoch(gtime_t t, double *ep)
 {
     const int mday[]={ /* # of days in a month */
         31,28,31,30,31,30,31,31,30,31,30,31,31,28,31,30,31,30,31,31,30,31,30,31,
@@ -2215,7 +2215,7 @@ extern void time2epoch(gtime_t t, double *ep)
     ep[3]=sec/3600; ep[4]=sec%3600/60; ep[5]=sec%60+t.sec;
 }
 /* same as above but output limited to n decimals for formatted output */
-extern void time2epoch_n(gtime_t t, double *ep, int n)
+void time2epoch_n(gtime_t t, double *ep, int n)
 {
     if (n<0) n=0; else if (n>12) n=12;
     if (1.0-t.sec<0.5/pow(10.0,n)) {t.time++; t.sec=0.0;};
@@ -2227,7 +2227,7 @@ extern void time2epoch_n(gtime_t t, double *ep, int n)
 *          double sec       I   time of week in gps time (s)
 * return : gtime_t struct
 *-----------------------------------------------------------------------------*/
-extern gtime_t gpst2time(int week, double sec)
+gtime_t gpst2time(int week, double sec)
 {
     gtime_t t=epoch2time(gpst0);
 
@@ -2242,7 +2242,7 @@ extern gtime_t gpst2time(int week, double sec)
 *          int    *week     IO  week number in gps time (NULL: no output)
 * return : time of week in gps time (s)
 *-----------------------------------------------------------------------------*/
-extern double time2gpst(gtime_t t, int *week)
+double time2gpst(gtime_t t, int *week)
 {
     gtime_t t0=epoch2time(gpst0);
     time_t sec=t.time-t0.time;
@@ -2257,7 +2257,7 @@ extern double time2gpst(gtime_t t, int *week)
 *          double sec       I   time of week in gst (s)
 * return : gtime_t struct
 *-----------------------------------------------------------------------------*/
-extern gtime_t gst2time(int week, double sec)
+gtime_t gst2time(int week, double sec)
 {
     gtime_t t=epoch2time(gst0);
 
@@ -2272,7 +2272,7 @@ extern gtime_t gst2time(int week, double sec)
 *          int    *week     IO  week number in gst (NULL: no output)
 * return : time of week in gst (s)
 *-----------------------------------------------------------------------------*/
-extern double time2gst(gtime_t t, int *week)
+double time2gst(gtime_t t, int *week)
 {
     gtime_t t0=epoch2time(gst0);
     time_t sec=t.time-t0.time;
@@ -2287,7 +2287,7 @@ extern double time2gst(gtime_t t, int *week)
 *          double sec       I   time of week in bdt (s)
 * return : gtime_t struct
 *-----------------------------------------------------------------------------*/
-extern gtime_t bdt2time(int week, double sec)
+gtime_t bdt2time(int week, double sec)
 {
     gtime_t t=epoch2time(bdt0);
 
@@ -2302,7 +2302,7 @@ extern gtime_t bdt2time(int week, double sec)
 *          int    *week     IO  week number in bdt (NULL: no output)
 * return : time of week in bdt (s)
 *-----------------------------------------------------------------------------*/
-extern double time2bdt(gtime_t t, int *week)
+double time2bdt(gtime_t t, int *week)
 {
     gtime_t t0=epoch2time(bdt0);
     time_t sec=t.time-t0.time;
@@ -2318,7 +2318,7 @@ extern double time2bdt(gtime_t t, int *week)
 *-----------------------------------------------------------------------------*/
 static double timeoffset_=0.0;        /* time offset (s) */
 
-extern gtime_t timeget(void)
+gtime_t timeget(void)
 {
     double ep[6]={0};
 #ifdef WIN32
@@ -2356,7 +2356,7 @@ extern gtime_t timeget(void)
 *          the time offset is reflected to only timeget()
 *          not reentrant
 *-----------------------------------------------------------------------------*/
-extern void timeset(gtime_t t)
+void timeset(gtime_t t)
 {
     timeoffset_+=timediff(t,timeget());
 }
@@ -2365,7 +2365,7 @@ extern void timeset(gtime_t t)
 * args   : none
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void timereset(void)
+void timereset(void)
 {
     timeoffset_=0.0;
 }
@@ -2425,7 +2425,7 @@ static int read_leaps_usno(FILE *fp)
 *          (2) The date and time indicate the start UTC time for the UTC-GPST
 *          (3) The date and time should be descending order.
 *-----------------------------------------------------------------------------*/
-extern int read_leaps(const char *file)
+int read_leaps(const char *file)
 {
     FILE *fp;
     int i,n;
@@ -2447,7 +2447,7 @@ extern int read_leaps(const char *file)
 * return : time expressed in utc
 * notes  : ignore slight time offset under 100 ns
 *-----------------------------------------------------------------------------*/
-extern gtime_t gpst2utc(gtime_t t)
+gtime_t gpst2utc(gtime_t t)
 {
     gtime_t tu;
     int i;
@@ -2464,7 +2464,7 @@ extern gtime_t gpst2utc(gtime_t t)
 * return : time expressed in gpstime
 * notes  : ignore slight time offset under 100 ns
 *-----------------------------------------------------------------------------*/
-extern gtime_t utc2gpst(gtime_t t)
+gtime_t utc2gpst(gtime_t t)
 {
     int i;
 
@@ -2481,7 +2481,7 @@ extern gtime_t utc2gpst(gtime_t t)
 *          no leap seconds in BDT
 *          ignore slight time offset under 100 ns
 *-----------------------------------------------------------------------------*/
-extern gtime_t gpst2bdt(gtime_t t)
+gtime_t gpst2bdt(gtime_t t)
 {
     return timeadd(t,-14.0);
 }
@@ -2491,7 +2491,7 @@ extern gtime_t gpst2bdt(gtime_t t)
 * return : time expressed in gpstime
 * notes  : see gpst2bdt()
 *-----------------------------------------------------------------------------*/
-extern gtime_t bdt2gpst(gtime_t t)
+gtime_t bdt2gpst(gtime_t t)
 {
     return timeadd(t,14.0);
 }
@@ -2511,7 +2511,7 @@ static double time2sec(gtime_t time, gtime_t *day)
 *          double ut1_utc   I   UT1-UTC (s)
 * return : gmst (rad)
 *-----------------------------------------------------------------------------*/
-extern double utc2gmst(gtime_t t, double ut1_utc)
+double utc2gmst(gtime_t t, double ut1_utc)
 {
     const double ep2000[]={2000,1,1,12,0,0};
     gtime_t tut,tut0;
@@ -2533,7 +2533,7 @@ extern double utc2gmst(gtime_t t, double ut1_utc)
 *          int    n         I   number of decimals
 * return : time string
 *-----------------------------------------------------------------------------*/
-extern char *time2str(gtime_t t, char s[40], int n)
+char *time2str(gtime_t t, char s[40], int n)
 {
     double ep[6];
 
@@ -2549,7 +2549,7 @@ extern char *time2str(gtime_t t, char s[40], int n)
 * args   : gtime_t t        I   gtime_t struct
 * return : day of year (days)
 *-----------------------------------------------------------------------------*/
-extern double time2doy(gtime_t t)
+double time2doy(gtime_t t)
 {
     double ep[6];
 
@@ -2562,7 +2562,7 @@ extern double time2doy(gtime_t t)
 * args   : int   week       I   not-adjusted gps week number (0-1023)
 * return : adjusted gps week number
 *-----------------------------------------------------------------------------*/
-extern int adjgpsweek(int week)
+int adjgpsweek(int week)
 {
     int w;
     (void)time2gpst(utc2gpst(timeget()),&w);
@@ -2574,7 +2574,7 @@ extern int adjgpsweek(int week)
 * args   : none
 * return : current tick in ms
 *-----------------------------------------------------------------------------*/
-extern uint32_t tickget(void)
+uint32_t tickget(void)
 {
 #ifdef WIN32
     return (uint32_t)timeGetTime();
@@ -2602,7 +2602,7 @@ extern uint32_t tickget(void)
 * args   : int   ms         I   milliseconds to sleep (<0:no sleep)
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void sleepms(int ms)
+void sleepms(int ms)
 {
 #ifdef WIN32
     if (ms<5) Sleep(1); else Sleep(ms);
@@ -2621,7 +2621,7 @@ extern void sleepms(int ms)
 *          int    ndec      I   number of decimals of second
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void deg2dms(double deg, double *dms, int ndec)
+void deg2dms(double deg, double *dms, int ndec)
 {
     double sign=deg<0.0?-1.0:1.0,a=fabs(deg);
     double unit=pow(0.1,ndec);
@@ -2643,7 +2643,7 @@ extern void deg2dms(double deg, double *dms, int ndec)
 * args   : double *dms      I   degree-minute-second {deg,min,sec}
 * return : degree
 *-----------------------------------------------------------------------------*/
-extern double dms2deg(const double *dms)
+double dms2deg(const double *dms)
 {
     double sign=dms[0]<0.0?-1.0:1.0;
     return sign*(fabs(dms[0])+dms[1]/60.0+dms[2]/3600.0);
@@ -2655,7 +2655,7 @@ extern double dms2deg(const double *dms)
 * return : none
 * notes  : WGS84, ellipsoidal height
 *-----------------------------------------------------------------------------*/
-extern void ecef2pos(const double *r, double *pos)
+void ecef2pos(const double *r, double *pos)
 {
     double e2=FE_WGS84*(2.0-FE_WGS84),r2=dot2(r,r),z,zk,v=RE_WGS84,sinp;
 
@@ -2676,7 +2676,7 @@ extern void ecef2pos(const double *r, double *pos)
 * return : none
 * notes  : WGS84, ellipsoidal height
 *-----------------------------------------------------------------------------*/
-extern void pos2ecef(const double *pos, double *r)
+void pos2ecef(const double *pos, double *r)
 {
     double sinp=sin(pos[0]),cosp=cos(pos[0]),sinl=sin(pos[1]),cosl=cos(pos[1]);
     double e2=FE_WGS84*(2.0-FE_WGS84),v=RE_WGS84/sqrt(1.0-e2*sinp*sinp);
@@ -2692,7 +2692,7 @@ extern void pos2ecef(const double *pos, double *r)
 * return : none
 * notes  : matrix stored by column-major order (fortran convention)
 *-----------------------------------------------------------------------------*/
-extern void xyz2enu(const double *pos, double *E)
+void xyz2enu(const double *pos, double *E)
 {
     double sinp=sin(pos[0]),cosp=cos(pos[0]),sinl=sin(pos[1]),cosl=cos(pos[1]);
 
@@ -2707,7 +2707,7 @@ extern void xyz2enu(const double *pos, double *E)
 *          double *e        O   vector in local tangential coordinate {e,n,u}
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void ecef2enu(const double *pos, const double *r, double *e)
+void ecef2enu(const double *pos, const double *r, double *e)
 {
     double E[9];
 
@@ -2721,7 +2721,7 @@ extern void ecef2enu(const double *pos, const double *r, double *e)
 *          double *r        O   vector in ecef coordinate {x,y,z}
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void enu2ecef(const double *pos, const double *e, double *r)
+void enu2ecef(const double *pos, const double *e, double *r)
 {
     double E[9];
 
@@ -2735,7 +2735,7 @@ extern void enu2ecef(const double *pos, const double *e, double *r)
 *          double *Q        O   covariance in local tangential coordinate
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void covenu(const double *pos, const double *P, double *Q)
+void covenu(const double *pos, const double *P, double *Q)
 {
     double E[9],EP[9];
 
@@ -2750,7 +2750,7 @@ extern void covenu(const double *pos, const double *P, double *Q)
 *          double *P        O   covariance in xyz-ecef coordinate
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void covecef(const double *pos, const double *Q, double *P)
+void covecef(const double *pos, const double *Q, double *P)
 {
     double E[9],EQ[9];
 
@@ -2954,7 +2954,7 @@ static void addsatsvn(const satsvn_t *satsvn, satsvns_t *satsvns)
     satsvns->satsvn[satsvns->n++] = *satsvn;
 }
 /* Read SINEX meta data file --------------------------------------------------*/
-extern int readsinex(const char *file, satsvns_t *satsvns) {
+int readsinex(const char *file, satsvns_t *satsvns) {
   trace(3, "readsinex: file=%s\n", file);
 
   FILE *fp = fopen(file, "r");
@@ -3022,7 +3022,7 @@ extern int readsinex(const char *file, satsvns_t *satsvns) {
 
 // Search for a mapping from the SVN (system/num) to satellite number (system/PRN).
 // Return: the satellite number (0: error)
-extern int searchsvnsat(int sys, int svn, const gtime_t time, const satsvns_t *satsvns) {
+int searchsvnsat(int sys, int svn, const gtime_t time, const satsvns_t *satsvns) {
   trace(4, "searchsvnsat: sys=%2d svn=%s\n", sys, svn);
   for (int i = 0; i < satsvns->n; i++) {
     satsvn_t *satsvn = satsvns->satsvn + i;
@@ -3036,7 +3036,7 @@ extern int searchsvnsat(int sys, int svn, const gtime_t time, const satsvns_t *s
 }
 // Search for a mapping from the satellite number (system/PRN) to a SVN number.
 // Return: the satellite prn number (0: error)
-extern int searchsatsvn(int sat, const gtime_t time, const satsvns_t *satsvns) {
+int searchsatsvn(int sat, const gtime_t time, const satsvns_t *satsvns) {
   trace(4, "searchsatsvn: sat=%d\n", sat);
   for (int i = 0; i < satsvns->n; i++) {
     satsvn_t *satsvn = satsvns->satsvn + i;
@@ -3060,7 +3060,7 @@ extern int searchsatsvn(int sat, const gtime_t time, const satsvns_t *satsvns) {
 * note   : see ref [3] chap 5
 *          not thread-safe
 *-----------------------------------------------------------------------------*/
-extern void eci2ecef(gtime_t tutc, const double *erpv, double *U, double *gmst)
+void eci2ecef(gtime_t tutc, const double *erpv, double *U, double *gmst)
 {
     const double ep2000[]={2000,1,1,12,0,0};
     static THREADLOCAL gtime_t tutc_ = {0, 0};
@@ -3319,7 +3319,7 @@ static double antfreq[ANTNFREQ] = {FREQL1,     FREQL2,    FREQL5,    FREQL6,    
                                    FREQE5ab,   FREQ1_GLO, FREQ2_GLO, FREQ3_GLO, FREQ1a_GLO,
                                    FREQ2a_GLO, FREQ1_CMP, FREQ3_CMP, FREQs};
 
-extern double antcode2freq(int code) {
+double antcode2freq(int code) {
   if (code < 0 || code >= ANTNFREQ) return 0.0;
   return antfreq[code];
 }
@@ -3327,7 +3327,7 @@ extern double antcode2freq(int code) {
 static const char *antcodeid[ANTNFREQ] = {"L1", "L2", "L5", "L6", "L7", "L8",
                                           "G1", "G2", "G3", "G4", "G6",
                                           "C2", "C6", "I9"};
-extern const char *antcode2id(int code) {
+const char *antcode2id(int code) {
   if (code < 0 || code >= ANTNFREQ) return "";
   return antcodeid[code];
 }
@@ -3840,7 +3840,7 @@ static int readantex(const char *file, int filter, pcvs_t *pcvs) {
  *          see reference [3]
  *          only support non-azimuth-depedent parameters
  *-----------------------------------------------------------------------------*/
-extern int readpcv(const char *file, int filter, pcvs_t *pcvs) {
+int readpcv(const char *file, int filter, pcvs_t *pcvs) {
   trace(3, "readpcv: file=%s\n", file);
 
   char *ext = strrchr(file, '.');
@@ -3870,7 +3870,7 @@ extern int readpcv(const char *file, int filter, pcvs_t *pcvs) {
  *          pcvs_t *pcvs       I   antenna parameters
  * return : antenna parameter (NULL: no antenna)
  *-----------------------------------------------------------------------------*/
-extern pcv_t *searchpcv(int sat, const char *type, gtime_t time, const satsvns_t *satsvns, const pcvs_t *pcvs) {
+pcv_t *searchpcv(int sat, const char *type, gtime_t time, const satsvns_t *satsvns, const pcvs_t *pcvs) {
   trace(4, "searchpcv: sat=%3d type=%s\n", sat, type);
 
   if (sat) {
@@ -3952,7 +3952,7 @@ extern pcv_t *searchpcv(int sat, const char *type, gtime_t time, const satsvns_t
 *              (AZ{i} <= az (deg) < AZ{i+1}, AZ1 < AZ2 < ... < AZ{n}, n <= 360)
 *          (2) text after % or # is treated as comments
 *-----------------------------------------------------------------------------*/
-extern int readelmask(const char *file, const char *name, elmask_t *elmask) {
+int readelmask(const char *file, const char *name, elmask_t *elmask) {
   trace(3, "readelmask: file=%s name=%s\n", file, name);
 
   elmask->name[0] = '\0';
@@ -4069,7 +4069,7 @@ extern int readelmask(const char *file, const char *name, elmask_t *elmask) {
 *          elmask_t *elmask O   elevation mask pattern.
 * Return : none
 *-----------------------------------------------------------------------------*/
-extern void saveelmask(const char *file, elmask_t *elmask)
+void saveelmask(const char *file, elmask_t *elmask)
 {
   trace(3, "saveelmask: sta=%s file=%s\n", elmask->name, file);
 
@@ -4102,7 +4102,7 @@ extern void saveelmask(const char *file, elmask_t *elmask)
 *                               (all 0 if search error)
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void readpos(const char *file, const char *rcv, double *pos)
+void readpos(const char *file, const char *rcv, double *pos)
 {
     static double poss[2048][3];
     static char stas[2048][16];
@@ -4159,7 +4159,7 @@ static int readblqrecord(FILE *fp, double odisp[2][11][3])
 *          double odisp[2][11][3] O   ocean tide loading parameters
 * return : status (1:ok,0:file open error)
 *-----------------------------------------------------------------------------*/
-extern int readblq(const char *file, const char *sta, double odisp[2][11][3])
+int readblq(const char *file, const char *sta, double odisp[2][11][3])
 {
     FILE *fp;
     char buff[256],staname[17]="",name[17],*p;
@@ -4195,7 +4195,7 @@ extern int readblq(const char *file, const char *sta, double odisp[2][11][3])
 *          erp_t  *erp        O   earth rotation parameters
 * return : number of files read.
 *-----------------------------------------------------------------------------*/
-extern int readerp(const char *file, erp_t *erp) {
+int readerp(const char *file, erp_t *erp) {
   trace(3, "readerp: file=%s\n", file);
 
   char *efiles[MAXEXFILE];
@@ -4316,7 +4316,7 @@ extern int readerp(const char *file, erp_t *erp) {
 *          double *erpv       O   erp values {xp,yp,ut1_utc,lod} (rad,rad,s,s/d)
 * return : status (1:ok,0:error)
 *-----------------------------------------------------------------------------*/
-extern int geterp(const erp_t *erp, gtime_t time, double *erpv)
+int geterp(const erp_t *erp, gtime_t time, double *erpv)
 {
     const double ep[]={2000,1,1,12,0,0};
     double mjd,day,a;
@@ -4490,7 +4490,7 @@ static void uniqseph(nav_t *nav)
 * args   : nav_t *nav    IO     navigation data
 * return : number of epochs
 *-----------------------------------------------------------------------------*/
-extern void uniqnav(nav_t *nav)
+void uniqnav(nav_t *nav)
 {
     trace(3,"uniqnav: neph=%d ngeph=%d nseph=%d\n",nav->n,nav->ng,nav->ns);
 
@@ -4513,7 +4513,7 @@ static int cmpobs(const void *p1, const void *p2)
 * args   : obs_t *obs    IO     observation data
 * return : number of epochs
 *-----------------------------------------------------------------------------*/
-extern int sortobs(obs_t *obs)
+int sortobs(obs_t *obs)
 {
     int i,j,n;
 
@@ -4548,7 +4548,7 @@ extern int sortobs(obs_t *obs)
 *          double  tint  I      time interval (s) (0.0:no screen by tint)
 * return : 1:on condition, 0:not on condition
 *-----------------------------------------------------------------------------*/
-extern int screent(gtime_t time, gtime_t ts, gtime_t te, double tint)
+int screent(gtime_t time, gtime_t ts, gtime_t te, double tint)
 {
     return (tint<=0.0||fmod(time2gpst(time,NULL)+DTTOL,tint)<=DTTOL*2.0)&&
            (ts.time==0||timediff(time,ts)>=-DTTOL)&&
@@ -4560,7 +4560,7 @@ extern int screent(gtime_t time, gtime_t ts, gtime_t te, double tint)
 *          nav_t   nav   O/I    navigation data
 * return : status (1:ok,0:no file)
 *-----------------------------------------------------------------------------*/
-extern int readnav(const char *file, nav_t *nav)
+int readnav(const char *file, nav_t *nav)
 {
     FILE *fp;
     eph_t eph0={0};
@@ -4631,7 +4631,7 @@ extern int readnav(const char *file, nav_t *nav)
     fclose(fp);
     return 1;
 }
-extern int savenav(const char *file, const nav_t *nav)
+int savenav(const char *file, const nav_t *nav)
 {
     FILE *fp;
     char id[8];
@@ -4691,7 +4691,7 @@ extern int savenav(const char *file, const nav_t *nav)
 * args   : obs_t *obs    IO     observation data
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void freeobs(obs_t *obs)
+void freeobs(obs_t *obs)
 {
     free(obs->data); obs->data=NULL; obs->n=obs->nmax=0;
 }
@@ -4705,7 +4705,7 @@ extern void freeobs(obs_t *obs)
 *                                0x40: tec data,          0x80: precise attitude)
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void freenav(nav_t *nav, int opt)
+void freenav(nav_t *nav, int opt)
 {
     if (opt&0x01) {free(nav->eph ); nav->eph =NULL; nav->n =nav->nmax =0;}
     if (opt&0x02) {free(nav->geph); nav->geph=NULL; nav->ng=nav->ngmax=0;}
@@ -4722,7 +4722,7 @@ extern void freenav(nav_t *nav, int opt)
 * args   : char   *cmd      I   command line
 * return : execution status (0:ok,0>:error)
 *-----------------------------------------------------------------------------*/
-extern int execcmd(const char *cmd)
+int execcmd(const char *cmd)
 {
 #ifdef WIN32
     PROCESS_INFORMATION info;
@@ -4755,7 +4755,7 @@ extern int execcmd(const char *cmd)
 * return : number of expanded file paths
 * notes  : the order of expanded files is alphabetical order
 *-----------------------------------------------------------------------------*/
-extern int expath(const char *path, char *paths[], int nmax)
+int expath(const char *path, char *paths[], int nmax)
 {
     int i,j,n=0;
     char tmp[1024];
@@ -4866,7 +4866,7 @@ static int mkdir_r(const char *dir)
 * return : none
 * notes  : recursively.
 *-----------------------------------------------------------------------------*/
-extern void createdir(const char *path)
+void createdir(const char *path)
 {
     char buff[1024],*p;
 
@@ -4923,7 +4923,7 @@ static int repstr(char *str, const char *pat, const char *rep)
 *              %r -> rrrr : rover id
 *              %b -> bbbb : base station id
 *-----------------------------------------------------------------------------*/
-extern int reppath(const char *path, char *rpath, gtime_t time, const char *rov,
+int reppath(const char *path, char *rpath, gtime_t time, const char *rov,
                    const char *base)
 {
     double ep[6],ep0[6]={2000,1,1,0,0,0};
@@ -4979,7 +4979,7 @@ extern int reppath(const char *path, char *rpath, gtime_t time, const char *rov,
 * notes  : see reppath() for replacements of keywords.
 *          minimum interval of time replaced is 900s.
 *-----------------------------------------------------------------------------*/
-extern int reppaths(const char *path, char *rpath[], int nmax, gtime_t ts,
+int reppaths(const char *path, char *rpath[], int nmax, gtime_t ts,
                     gtime_t te, const char *rov, const char *base)
 {
     gtime_t time;
@@ -5012,7 +5012,7 @@ extern int reppaths(const char *path, char *rpath[], int nmax, gtime_t ts,
 * return : geometric distance (m) (0>:error/no satellite position)
 * notes  : distance includes sagnac effect correction
 *-----------------------------------------------------------------------------*/
-extern double geodist(const double *rs, const double *rr, double *e)
+double geodist(const double *rs, const double *rr, double *e)
 {
     double r;
     int i;
@@ -5031,7 +5031,7 @@ extern double geodist(const double *rs, const double *rr, double *e)
 *                               (0.0<=azel[0]<2*pi,-pi/2<=azel[1]<=pi/2)
 * return : elevation angle (rad)
 *-----------------------------------------------------------------------------*/
-extern double satazel(const double *pos, const double *e, double *azel)
+double satazel(const double *pos, const double *e, double *azel)
 {
     double az=0.0,el=PI/2.0,enu[3];
 
@@ -5055,7 +5055,7 @@ extern double satazel(const double *pos, const double *e, double *azel)
 *-----------------------------------------------------------------------------*/
 #define SQRT(x)     ((x)<0.0||(x)!=(x)?0.0:sqrt(x))
 
-extern void dops(int ns, const double *azel, double elmin, double *dop)
+void dops(int ns, const double *azel, double elmin, double *dop)
 {
     double H[4*MAXSAT],Q[16],cosel,sinel;
     int i,n;
@@ -5088,7 +5088,7 @@ extern void dops(int ns, const double *azel, double elmin, double *dop)
 *          double *azel     I   azimuth/elevation angle {az,el} (rad)
 * return : ionospheric delay (L1) (m)
 *-----------------------------------------------------------------------------*/
-extern double ionmodel(gtime_t t, const double *ion, const double *pos,
+double ionmodel(gtime_t t, const double *ion, const double *pos,
                        const double *azel)
 {
     const double ion_default[]={ /* 2004/1/1 */
@@ -5138,7 +5138,7 @@ extern double ionmodel(gtime_t t, const double *ion, const double *pos,
  *          int opt          I   mapping function option
  * Return : ionospheric mapping function
  *----------------------------------------------------------------------------*/
-extern double ionmapf(const double *pos, const double *azel, double re, double hion, int opt) {
+double ionmapf(const double *pos, const double *azel, double re, double hion, int opt) {
   if (opt == 1) {
     // Single layer mapping function. The same as returned by ionppp().
     if (pos[2] / 1000.0 >= hion) return 0.0;
@@ -5176,7 +5176,7 @@ extern double ionmapf(const double *pos, const double *azel, double re, double h
 *          fixing bug on ref [2] A.4.4.10.1 A-22,23
 *          For other mapping functions, see ionmapf().
 *-----------------------------------------------------------------------------*/
-extern double ionppp(const double *pos, const double *azel, double re,
+double ionppp(const double *pos, const double *azel, double re,
                      double hion, double *posp)
 {
     // Guard.
@@ -5210,7 +5210,7 @@ extern double ionppp(const double *pos, const double *azel, double re,
     return 1.0/sqrt(1.0-rp*rp);
 }
 /* select iono-free linear combination (L1/L2 or L1/L5) ----------------------*/
-extern int seliflc(int optnf,int sys)
+int seliflc(int optnf,int sys)
 {
     /* use L1/L5 for GPS,GAL,BDS if L5 is enabled */
     //return((optnf==2||sys==SYS_GLO)?1:2);
@@ -5225,7 +5225,7 @@ extern int seliflc(int optnf,int sys)
 *          double humi      I   relative humidity
 * Return : tropospheric delay (m)
 *----------------------------------------------------------------------------*/
-extern double tropmodel(gtime_t time, const double *pos, const double *azel, double humi) {
+double tropmodel(gtime_t time, const double *pos, const double *azel, double humi) {
   const double temp0 = 15.0; // Temperature at sea level
 
   if (pos[2] < -100.0 || 1E4 < pos[2] || azel[1] <= 0) return 0.0;
@@ -5321,7 +5321,7 @@ static double nmf(gtime_t time, const double pos[], const double azel[],
 *          paper is obtained from:
 *          ftp://web.haystack.edu/pub/aen/nmf/NMF_JGR.pdf
 *-----------------------------------------------------------------------------*/
-extern double tropmapf(gtime_t time, const double pos[], const double azel[],
+double tropmapf(gtime_t time, const double pos[], const double azel[],
                        double *mapfw)
 {
 #ifdef IERS_MODEL
@@ -5485,7 +5485,7 @@ static int antpcoidx(const pcv_t *pcv, double freq, double *freq1, double *freq2
  *
  * Note: this applies the PCV when available, and for the PCO only see antpco().
  *-----------------------------------------------------------------------------*/
-extern double antpcv(const pcv_t *pcv, const double *azel, double freq) {
+double antpcv(const pcv_t *pcv, const double *azel, double freq) {
   trace(4, "antpcv: azel=%6.1f %4.1f\n", azel[0] * R2D, azel[1] * R2D);
 
   double freq1, freq2;
@@ -5606,7 +5606,7 @@ extern double antpcv(const pcv_t *pcv, const double *azel, double freq) {
  * may wish to apply the PCO first and then call antpcv(), particularly if the
  * antenna delta can be large.
  *-----------------------------------------------------------------------------*/
-extern double antmodel(const pcv_t *pcv, const double *del, const double *azel, int opt, double freq) {
+double antmodel(const pcv_t *pcv, const double *del, const double *azel, int opt, double freq) {
   trace(4, "antmodel: azel=%6.1f %4.1f opt=%d\n", azel[0] * R2D, azel[1] * R2D, opt);
 
   double pco[3];
@@ -5636,7 +5636,7 @@ extern double antmodel(const pcv_t *pcv, const double *del, const double *azel, 
  * Note this applies the PCV only, for the PCO see antpco().
  * Most satellites have only NOAZI entries, and only these are supported here.
  *-----------------------------------------------------------------------------*/
-extern double antmodel_s(const pcv_t *pcv, double nadir, double freq) {
+double antmodel_s(const pcv_t *pcv, double nadir, double freq) {
   trace(4, "antmodel_s: sys=%d svn=%d nadir=%6.1f\n", pcv->satsys, pcv->svn, nadir * R2D);
 
   if (pcv->satsys == 0) {
@@ -5663,7 +5663,7 @@ extern double antmodel_s(const pcv_t *pcv, double nadir, double freq) {
 }
 // Returns the antenna PCO
 // For a receiver this is enu, for a satellite xyz.
-extern void antpco(const pcv_t *pcv, double freq, double pco[3]) {
+void antpco(const pcv_t *pcv, double freq, double pco[3]) {
   double freq1, freq2;
   int idx2, idx = antpcoidx(pcv, freq, &freq1, &freq2, &idx2);
   if (idx < 0) {
@@ -5690,7 +5690,7 @@ extern void antpco(const pcv_t *pcv, double freq, double pco[3]) {
 }
 
 // Copy the pcv structure and the var[] data.
-extern void copy_pcv(pcv_t *dst, const pcv_t *src) {
+void copy_pcv(pcv_t *dst, const pcv_t *src) {
   memcpy(dst, src, sizeof(pcv_t));
   for (int i = 0; i < ANTNFREQ; i++) {
     if (dst->zen_len[i] > 0 && dst->azi_len[i] > 0) {
@@ -5707,7 +5707,7 @@ extern void copy_pcv(pcv_t *dst, const pcv_t *src) {
   }
 }
 // Free all pcv var[] data.
-extern void free_pcv(pcv_t *pcv) {
+void free_pcv(pcv_t *pcv) {
   for (int i = 0; i < ANTNFREQ; i++) {
     free(pcv->var[i]);
     pcv->init[i] &= ~(PCV_NOAZI | PCV_PHV);
@@ -5843,7 +5843,7 @@ static void moonpos_eci(gtime_t tutc, const double *erpv, double *rmoon) {
  *          double *gmst     O   GMST (rad)
  * Return : none
  *----------------------------------------------------------------------------*/
-extern void sunmoonpos(gtime_t tutc, const double *erpv, double *rsun, double *rmoon,
+void sunmoonpos(gtime_t tutc, const double *erpv, double *rsun, double *rmoon,
                        double *gmst) {
   char tstr[40];
   trace(4, "sunmoonpos: tutc=%s\n", time2str(tutc, tstr, 3));
@@ -5875,7 +5875,7 @@ extern void sunmoonpos(gtime_t tutc, const double *erpv, double *rsun, double *r
 * note   : creates uncompressed file in temporary directory
 *          gzip, tar and crx2rnx commands have to be installed in commands path
 *-----------------------------------------------------------------------------*/
-extern int rtk_uncompress(const char *file, char *uncfile)
+int rtk_uncompress(const char *file, char *uncfile)
 {
     int stat=0;
     char *p,cmd[64+2048]="",tmpfile[1024]="",buff[1024],*fname,*dir="";
@@ -5946,7 +5946,7 @@ extern int rtk_uncompress(const char *file, char *uncfile)
     return stat;
 }
 /* station position from file ------------------------------------------------*/
-extern int getstapos(const char *file, const char *name, double *r)
+int getstapos(const char *file, const char *name, double *r)
 {
     trace(3, "getstapos: file=%s name=%s\n", file, name);
 
@@ -6058,8 +6058,8 @@ extern int getstapos(const char *file, const char *name, double *r)
 }
 /* dummy application functions for shared library ----------------------------*/
 #if defined(WIN_DLL) || defined(DLL)
-extern int showmsg(const char *format,...) {return 0;}
-extern void settspan(gtime_t ts, gtime_t te) {}
-extern void settime(gtime_t time) {}
+int showmsg(const char *format,...) {return 0;}
+void settspan(gtime_t ts, gtime_t te) {}
+void settime(gtime_t time) {}
 #endif
 
