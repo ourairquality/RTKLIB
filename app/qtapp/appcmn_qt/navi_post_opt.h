@@ -37,9 +37,12 @@ public:
     filopt_t fileOptions;
 
     // RTKNavi options
-    int serverCycle, serverBufferSize, solutionBufferSize, navSelect, savedSolutions;
+    int serverCycle, serverTolerance;
+    int serverBufferSize, solutionBufferSize, navSelect, savedSolutions;
     int nmeaCycle, timeoutTime, reconnectTime;
     int monitorPort, fileSwapMargin, panelStacking;
+    QString tlsSvrCertFile, tlsSvrKeyFile, tlsSvrCAFile, tlsSvrCADir;
+    QString tlsCliCertFile, tlsCliKeyFile, tlsCliCAFile, tlsCliCADir;
     QString proxyAddress;
     QFont panelFont, positionFont;
     QColor panelFontColor, positionFontColor;
@@ -53,6 +56,8 @@ protected:
     bool fillExcludedSatellites(prcopt_t *prcopt, const QString &excludedSatellites);
 
     char proxyaddr[1024];  // proxy address stores in naviopts
+    char tlssvrcertfile[1024], tlssvrkeyfile[1024], tlssvrcafile[1024], tlssvrcadir[1024];
+    char tlsclicertfile[1024], tlsclikeyfile[1024], tlsclicafile[1024], tlsclicadir[1024];
     opt_t *naviopts;
     snrmask_t snrmask;
     int current_roverPositionType, current_referencePositionType;
@@ -93,6 +98,20 @@ protected slots:
     void viewBLQFile();
     void selectElmaskFile();
     void viewElmaskFile();
+    void selectTLSSvrCertFile();
+    void viewTLSSvrCertFile();
+    void selectTLSSvrKeyFile();
+    void viewTLSSvrKeyFile();
+    void selectTLSSvrCAFile();
+    void viewTLSSvrCAFile();
+    void selectTLSSvrCADir();
+    void selectTLSCliCertFile();
+    void viewTLSCliCertFile();
+    void selectTLSCliKeyFile();
+    void viewTLSCliKeyFile();
+    void selectTLSCliCAFile();
+    void viewTLSCliCAFile();
+    void selectTLSCliCADir();
     void showSnrMaskDialog();
     void checkLineEditValidator();
 

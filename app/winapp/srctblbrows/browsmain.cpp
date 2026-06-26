@@ -22,8 +22,6 @@ TMainForm *MainForm;
 #define MAXLINE			1024				// max line size (byte)
 #define ADDRESS_WIDTH   184                 // width of Address (px)
 
-static char buff[MAXSRCTBL];				// source table buffer
-
 //---------------------------------------------------------------------------
 static double str2dbl(AnsiString str)
 {
@@ -32,13 +30,12 @@ static double str2dbl(AnsiString str)
 	return val;
 }
 /* get source table -------------------------------------------------------*/
+// Note the caller is expected to free the returned source table.
 static char *getsrctbl(const char *path)
 {
 	static int lock=0;
 	AnsiString s;
 	stream_t str;
-	char *p=buff,msg[MAXSTRMSG]="";
-	int ns,stat;
 	uint32_t tick=tickget();
 	
 	if (lock) return NULL; else lock=1;
@@ -49,24 +46,31 @@ static char *getsrctbl(const char *path)
 		MainForm->ShowMsg("stream open error");
 		return NULL;
 	}
+    char *srctbl = (char *)malloc(MAXSRCTBL);
+    if (srctbl == NULL) {
+      strclose(&str);
+      return NULL;
+    }
 	MainForm->ShowMsg("connecting...");
-	
-	while(p<buff+MAXSRCTBL-1) {
-		ns=strread(&str,(uint8_t *)p,buff+MAXSRCTBL-p-1);
-        p+=ns; *p='\0';
+    
+    size_t pi = 0;
+    while (pi + 1 < MAXSRCTBL) {
+        size_t ns = strread(&str, (uint8_t *)srctbl, MAXSRCTBL, pi, MAXSRCTBL - pi - 1);
+        pi += ns; srctbl[pi] = '\0';
 		Sleep(NTRIP_CYCLE);
-		stat=strstat(&str,msg);
+        char msg[MAXSTRMSG]="";
+		int stat=strstat(&str,msg,sizeof(msg));
 	    MainForm->ShowMsg(msg);
-		if (stat<=0) break;
-        if (strstr(buff,ENDSRCTBL)) break;
+        if (strstr(srctbl,ENDSRCTBL)) break;
 		if ((int)(tickget()-tick)>NTRIP_TIMEOUT) {
 			MainForm->ShowMsg("response timeout");
 			break;
 		}
+		if (stat<=0) break;
 	}
 	strclose(&str);
 	lock=0;
-	return buff;
+	return srctbl;
 }
 //---------------------------------------------------------------------------
 __fastcall TMainForm::TMainForm(TComponent* Owner)
@@ -395,7 +399,7 @@ void __fastcall TMainForm::UpdateCaster(void)
 		Address->AddItem(item[1]+":"+item[2],NULL);
 	}
 	if (Address->Items->Count>1) Address->Text=Address->Items->Strings[1];
-
+    free(srctbl);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::UpdateTable(void)
@@ -408,6 +412,7 @@ void __fastcall TMainForm::UpdateTable(void)
 
 	if ((srctbl=getsrctbl(addr))) {
 		SrcTable=srctbl;
+        free(srctbl);
 		AddrCaster=Address->Text;
 	}
 	ShowTable();

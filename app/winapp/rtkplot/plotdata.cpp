@@ -1039,12 +1039,20 @@ void __fastcall TPlot::Connect(void)
     trace(3,"Connect\n");
     
     if (ConnectState) return;
-    
+
+    // Initialize the TLS certificates.
+    strinittls(TLSSvrCertFile.c_str(), TLSSvrKeyFile.c_str(), TLSSvrCAFile.c_str(), TLSSvrCADir.c_str(), 0,
+               TLSCliCertFile.c_str(), TLSCliKeyFile.c_str(), TLSCliCAFile.c_str(), TLSCliCADir.c_str(), 0);
+
     for (i=0;i<2;i++) {
         if      (RtStream[i]==STR_NONE    ) continue;
         else if (RtStream[i]==STR_SERIAL  ) path=StrPaths[i][0].c_str();
-        else if (RtStream[i]==STR_FILE    ) path=StrPaths[i][2].c_str();
-        else if (RtStream[i]<=STR_NTRIPCLI) path=StrPaths[i][1].c_str();
+        else if (RtStream[i]==STR_TCPCLI  ) path=StrPaths[i][1].c_str();
+        else if (RtStream[i]==STR_TCPSVR  ) path=StrPaths[i][2].c_str();
+        else if (RtStream[i]==STR_NTRIPCLI) path=StrPaths[i][3].c_str();
+        else if (RtStream[i]==STR_NTRIPCAS) path=StrPaths[i][4].c_str();
+        else if (RtStream[i]==STR_UDPSVR  ) path=StrPaths[i][5].c_str();
+        else if (RtStream[i]==STR_FILE    ) path=StrPaths[i][6].c_str();
         else continue;
         
         if (RtStream[i]==STR_FILE||!SolData[i].cyclic||SolData[i].nmax!=RtBuffSize+1) {
@@ -1068,7 +1076,7 @@ void __fastcall TPlot::Connect(void)
         
         if (StrCmdEna[i][0]) {
             cmd=StrCmds[i][0].c_str();
-            strwrite(Stream+i,(uint8_t *)cmd,strlen(cmd));
+            strwrite(Stream+i,(uint8_t *)cmd,strlen(cmd),0,strlen(cmd));
         }
         ConnectState=1;
     }
@@ -1107,7 +1115,7 @@ void __fastcall TPlot::Disconnect(void)
     for (i=0;i<2;i++) {
         if (StrCmdEna[i][1]) {
             cmd=StrCmds[i][1].c_str();
-            strwrite(Stream+i,(uint8_t *)cmd,strlen(cmd));
+            strwrite(Stream+i,(uint8_t *)cmd,strlen(cmd),0,strlen(cmd));
         }
         strclose(Stream+i);
     }
@@ -1308,14 +1316,36 @@ void __fastcall TPlot::ConnectPath(const char *path, int ch)
     RtStream[ch]=STR_NONE;
     
     if (!(p=strstr(path,"://"))) return;
-    if      (!strncmp(path,"serial",6)) RtStream[ch]=STR_SERIAL;
-    else if (!strncmp(path,"tcpsvr",6)) RtStream[ch]=STR_TCPSVR;
-    else if (!strncmp(path,"tcpcli",6)) RtStream[ch]=STR_TCPCLI;
-    else if (!strncmp(path,"ntrip", 5)) RtStream[ch]=STR_NTRIPCLI;
-    else if (!strncmp(path,"file",  4)) RtStream[ch]=STR_FILE;
+    if      (!strncmp(path,"serial",6)) {
+      RtStream[ch]=STR_SERIAL;
+      StrPaths[ch][0]=p+3;
+    }
+    else if (!strncmp(path,"tcpcli",6)) {
+      RtStream[ch]=STR_TCPCLI;
+      StrPaths[ch][1]=p+3;
+    }
+    else if (!strncmp(path,"tcpsvr",6)) {
+      RtStream[ch]=STR_TCPSVR;
+      StrPaths[ch][2]=p+3;
+    }
+    else if (!strncmp(path,"ntripcli", 8)) {
+      RtStream[ch]=STR_NTRIPCLI;
+      StrPaths[ch][3]=p+3;
+    }
+    else if (!strncmp(path,"ntripcas", 8)) {
+      RtStream[ch]=STR_NTRIPCAS;
+      StrPaths[ch][4]=p+3;
+    }
+    else if (!strncmp(path,"udpsvr", 6)) {
+      RtStream[ch]=STR_UDPSVR;
+      StrPaths[ch][5]=p+3;
+    }
+    else if (!strncmp(path,"file",  4)) {
+      RtStream[ch]=STR_FILE;
+      StrPaths[ch][6]=p+3;
+    }
     else return;
     
-    StrPaths[ch][1]=p+3;
     RtFormat[ch]=SOLF_LLH;
     RtTimeForm=0;
     RtDegForm =0;

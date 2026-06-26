@@ -38,7 +38,42 @@ __published:
 	TComboBox *SolFormat2;
 	TLabel *Label9;
 	TLabel *Label10;
-	void __fastcall BtnOpt1Click(TObject *Sender);
+
+	TOpenDialog *OpenDialog;
+	TLabel *Label60;
+	TLabel *Label61;
+	TLabel *Label62;
+	TLabel *Label63;
+	TLabel *Label64;
+	TLabel *Label65;
+	TLabel *Label66;
+	TLabel *Label67;
+    TEdit *TLSSvrCertFile;
+    TEdit *TLSSvrKeyFile;
+    TEdit *TLSSvrCAFile;
+    TEdit *TLSSvrCADir;
+    TEdit *TLSCliCertFile;
+    TEdit *TLSCliKeyFile;
+    TEdit *TLSCliCAFile;
+    TEdit *TLSCliCADir;
+    TButton *BtnTLSSvrCertFile;
+    TButton *BtnTLSSvrKeyFile;
+    TButton *BtnTLSSvrCAFile;
+    TButton *BtnTLSSvrCADir;
+    TButton *BtnTLSCliCertFile;
+    TButton *BtnTLSCliKeyFile;
+    TButton *BtnTLSCliCAFile;
+    TButton *BtnTLSCliCADir;
+    void __fastcall BtnTLSSvrCertFileClick(TObject *Sender);
+    void __fastcall BtnTLSSvrKeyFileClick(TObject *Sender);
+    void __fastcall BtnTLSSvrCAFileClick(TObject *Sender);
+    void __fastcall BtnTLSSvrCADirClick(TObject *Sender);
+    void __fastcall BtnTLSCliCertFileClick(TObject *Sender);
+    void __fastcall BtnTLSCliKeyFileClick(TObject *Sender);
+    void __fastcall BtnTLSCliCAFileClick(TObject *Sender);
+    void __fastcall BtnTLSCliCADirClick(TObject *Sender);
+
+    void __fastcall BtnOpt1Click(TObject *Sender);
 	void __fastcall BtnOkClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnCmd1Click(TObject *Sender);
@@ -49,19 +84,21 @@ __published:
 	void __fastcall SolFormat2Change(TObject *Sender);
 	void __fastcall SelStream2Change(TObject *Sender);
 private:
-	void __fastcall SerialOpt1(int opt);
-	void __fastcall SerialOpt2(int opt);
-	void __fastcall TcpOpt1(int opt);
-	void __fastcall TcpOpt2(int opt);
-	void __fastcall FileOpt1(int opt);
-	void __fastcall FileOpt2(int opt);
+    void __fastcall SerialOpt1(int opt, unsigned i);
+	void __fastcall SerialOpt2(int opt, unsigned i);
+	void __fastcall TcpOpt1(int opt, unsigned i);
+    void __fastcall TcpOpt2(int opt, unsigned i);
+	void __fastcall FileOpt1(int opt, unsigned i);
+	void __fastcall FileOpt2(int opt, unsigned i);
 	void __fastcall UpdateEnable(void);
 public:
 	int Stream1,Stream2,Format1,Format2,CmdEna1[2],CmdEna2[2];
 	int TimeForm,DegForm,TimeOutTime,ReConnTime;
-	AnsiString Path,Paths1[4],Paths2[4];
+	AnsiString Path,Paths1[7],Paths2[7];
 	AnsiString TcpHistory[MAXHIST];
 	AnsiString Cmds1[2],Cmds2[2],FieldSep;
+    AnsiString TLSSvrCertFileF, TLSSvrKeyFileF, TLSSvrCAFileF, TLSSvrCADirectory;
+    AnsiString TLSCliCertFileF, TLSCliKeyFileF, TLSCliCAFileF, TLSCliCADirectory;
 	__fastcall TConnectDialog(TComponent* Owner);
 };
 //---------------------------------------------------------------------------

@@ -119,7 +119,8 @@ int __fastcall TMainForm::ExecCmd(AnsiString cmd, int show)
 __fastcall TMainForm::TMainForm(TComponent* Owner)
     : TForm(Owner)
 {
-    SvrCycle=SvrBuffSize=0;
+    SvrCycle=SvrTolerance=0;
+    SvrBuffSize=0;
     SolBuffSize=1000;
     for (int i=0;i<MAXSTRRTK;i++) {
         StreamC[i]=Stream[i]=0;
@@ -241,7 +242,7 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
     Timer->Enabled=false;
     if (OpenPort>0) {
         // send disconnect message
-        strwrite(&monistr,(uint8_t *)MSG_DISCONN,strlen(MSG_DISCONN));
+        strwrite(&monistr,(uint8_t *)MSG_DISCONN,strlen(MSG_DISCONN),0,strlen(MSG_DISCONN));
         
         strclose(&monistr);
     }
@@ -530,6 +531,7 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     OptDialog->LocalDirectory=LocalDirectory;
     
     OptDialog->SvrCycle   =SvrCycle;
+    OptDialog->SvrTolerance=SvrTolerance;
     OptDialog->TimeoutTime=TimeoutTime;
     OptDialog->ReconTime  =ReconTime;
     OptDialog->NmeaCycle  =NmeaCycle;
@@ -545,6 +547,15 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     OptDialog->MoniPort   =MoniPort;
     OptDialog->PanelStack =PanelStack;
     
+    OptDialog->TLSSvrCertFileF = TLSSvrCertFile;
+    OptDialog->TLSSvrKeyFileF = TLSSvrKeyFile;
+    OptDialog->TLSSvrCAFileF = TLSSvrCAFile;
+    OptDialog->TLSSvrCADirectory = TLSSvrCADir;
+    OptDialog->TLSCliCertFileF = TLSCliCertFile;
+    OptDialog->TLSCliKeyFileF = TLSCliKeyFile;
+    OptDialog->TLSCliCAFileF = TLSCliCAFile;
+    OptDialog->TLSCliCADirectory = TLSCliCADir;
+
     for (i=0;i<3;i++) {
         OptDialog->RovAntDel[i]=RovAntDel[i];
         OptDialog->RefAntDel[i]=RefAntDel[i];
@@ -586,6 +597,7 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     LocalDirectory=OptDialog->LocalDirectory;
     
     SvrCycle   =OptDialog->SvrCycle;
+    SvrTolerance=OptDialog->SvrTolerance;
     TimeoutTime=OptDialog->TimeoutTime;
     ReconTime  =OptDialog->ReconTime;
     NmeaCycle  =OptDialog->NmeaCycle;
@@ -603,6 +615,16 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     PanelFont->Assign(OptDialog->PanelFont);
     PosFont->Assign(OptDialog->PosFont);
     UpdateFont();
+
+    TLSSvrCertFile = OptDialog->TLSSvrCertFileF;
+    TLSSvrKeyFile = OptDialog->TLSSvrKeyFileF;
+    TLSSvrCAFile = OptDialog->TLSSvrCAFileF;
+    TLSSvrCADir = OptDialog->TLSSvrCADirectory;
+    TLSCliCertFile = OptDialog->TLSCliCertFileF;
+    TLSCliKeyFile = OptDialog->TLSCliKeyFileF;
+    TLSCliCAFile = OptDialog->TLSCliCAFileF;
+    TLSCliCADir = OptDialog->TLSCliCADirectory;
+
     if (panelstack==0&&PanelStack==1) {
         Panel21->Width=170;
         Panel22->Width=170;
@@ -626,7 +648,7 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
     
     // send disconnect message
     if (OpenPort>0) {
-        strwrite(&monistr,(uint8_t *)MSG_DISCONN,strlen(MSG_DISCONN));
+        strwrite(&monistr,(uint8_t *)MSG_DISCONN,strlen(MSG_DISCONN),0,strlen(MSG_DISCONN));
         
         strclose(&monistr);
     }
@@ -640,6 +662,14 @@ void __fastcall TMainForm::BtnInputStrClick(TObject *Sender)
     
     trace(3,"BtnInputStrClick\n");
     
+    // Initialize the TLS certificates.
+    strinittls(TLSSvrCertFile.c_str(), TLSSvrKeyFile.c_str(),
+               TLSSvrCAFile.c_str(), TLSSvrCADir.c_str(),
+               0,
+               TLSCliCertFile.c_str(), TLSCliKeyFile.c_str(),
+               TLSCliCAFile.c_str(), TLSCliCADir.c_str(),
+               0);
+
     for (i=0;i<RTKSVRNIN;i++) {
         InputStrDialog->StreamC[i]=StreamC[i];
         InputStrDialog->Stream [i]=Stream [i];
@@ -766,13 +796,21 @@ int __fastcall TMainForm::ConfOverwrite(const char *path)
 void __fastcall TMainForm::BtnOutputStrClick(TObject *Sender)
 {
     int otype[]={
-        STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSVR,STR_NTRIPCAS,STR_FILE
+        STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSRC,STR_NTRIPCAS,STR_FILE
     };
     int i,j,str,update[RTKSVRNSOL]={0};
     char *path;
     
     trace(3,"BtnOutputStrClick\n");
     
+    // Initialize the TLS certificates.
+    strinittls(TLSSvrCertFile.c_str(), TLSSvrKeyFile.c_str(),
+               TLSSvrCAFile.c_str(), TLSSvrCADir.c_str(),
+               0,
+               TLSCliCertFile.c_str(), TLSCliKeyFile.c_str(),
+               TLSCliCAFile.c_str(), TLSCliCADir.c_str(),
+               0);
+
     for (i=RTKSVRNIN*2;i<MAXSTRRTK;i++) {
         OutputStrDialog->StreamC[i-RTKSVRNIN*2]=StreamC[i];
         OutputStrDialog->Stream [i-RTKSVRNIN*2]=Stream[i];
@@ -834,13 +872,21 @@ void __fastcall TMainForm::BtnOutputStrClick(TObject *Sender)
 void __fastcall TMainForm::BtnLogStrClick(TObject *Sender)
 {
     int otype[]={
-        STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSVR,STR_NTRIPCAS,STR_FILE
+        STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSRC,STR_NTRIPCAS,STR_FILE
     };
     int i,j,str,update[RTKSVRNIN]={0};
     char *path;
     
     trace(3,"BtnLogStrClick\n");
     
+    // Initialize the TLS certificates.
+    strinittls(TLSSvrCertFile.c_str(), TLSSvrKeyFile.c_str(),
+               TLSSvrCAFile.c_str(), TLSSvrCADir.c_str(),
+               0,
+               TLSCliCertFile.c_str(), TLSCliKeyFile.c_str(),
+               TLSCliCAFile.c_str(), TLSCliCADir.c_str(),
+               0);
+
     for (i=RTKSVRNIN;i<RTKSVRNIN*2;i++) {
         LogStrDialog->StreamC[i-RTKSVRNIN]=StreamC[i];
         LogStrDialog->Stream [i-RTKSVRNIN]=Stream [i];
@@ -1195,7 +1241,7 @@ void __fastcall TMainForm::SvrStart(void)
         STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPCLI,STR_FILE,STR_FTP,STR_HTTP
     };
     int otype[]={
-        STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSVR,STR_NTRIPCAS,STR_FILE
+        STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSRC,STR_NTRIPCAS,STR_FILE
     };
     int i,strs[MAXSTRRTK]={0},sat,ex,stropt[8]={0};
     char *paths[8],*cmds[RTKSVRNIN]={0},*cmds_periodic[RTKSVRNIN]={0},*rcvopts[RTKSVRNIN]={0};
@@ -1456,8 +1502,18 @@ void __fastcall TMainForm::SvrStart(void)
       }
     }
 
+    // Initialize the TLS certificates.
+    strinittls(TLSSvrCertFile.c_str(), TLSSvrKeyFile.c_str(),
+               TLSSvrCAFile.c_str(), TLSSvrCADir.c_str(),
+               0,
+               TLSCliCertFile.c_str(), TLSCliKeyFile.c_str(),
+               TLSCliCAFile.c_str(), TLSCliCADir.c_str(),
+               0);
+
     // start rtk server
-    if (!rtksvrstart(&rtksvr,SvrCycle,SvrBuffSize,strs,(const char **)paths,Format,
+    if (!rtksvrstart(&rtksvr, SvrCycle > 0 ? (unsigned)SvrCycle : 0,
+                     SvrTolerance > 0 ? (unsigned)SvrTolerance : 0,
+                     SvrBuffSize,strs,(const char **)paths,Format,
                      NavSelect,(const char **)cmds,(const char **)cmds_periodic,
                      (const char **)rcvopts,NmeaCycle,NmeaReq,nmeapos,&PrcOpt,
                      solopt,&monistr,errmsg)) {
@@ -1588,7 +1644,7 @@ void __fastcall TMainForm::TimerTimer(TObject *Sender)
     // keep alive for monitor port
     if (!(TimerCycle%(KACYCLE/Timer->Interval))&&OpenPort) {
         buff[0]='\r';
-        strwrite(&monistr,buff,1);
+        strwrite(&monistr,buff,sizeof(buff),0,1);
     }
 }
 // update time-system -------------------------------------------------------
@@ -1789,7 +1845,7 @@ void __fastcall TMainForm::UpdateStr(void)
     
     trace(4,"UpdateStr\n");
     
-    rtksvrsstat(&rtksvr,sstat,msg);
+    rtksvrsstat(&rtksvr,sstat,msg,sizeof(msg));
     for (i=0;i<MAXSTRRTK;i++) {
         ind[i]->Color=color[sstat[i]+1];
         if (sstat[i]) {
@@ -2718,6 +2774,7 @@ void __fastcall TMainForm::LoadOpt(void)
     PrcOpt.posopt[5]=ini->ReadInteger("prcopt", "posopt6",         0);
     PrcOpt.maxaveep =ini->ReadInteger("prcopt", "maxaveep",        1);
     PrcOpt.initrst  =ini->ReadInteger("prcopt", "initrst",         1);
+    PrcOpt.intpref  =ini->ReadInteger("prcopt", "intpref",         0);
 
     BaselineC       =ini->ReadInteger("prcopt", "baselinec",       0);
     Baseline[0]     =ini->ReadFloat  ("prcopt", "baseline1",     0.0);
@@ -2763,6 +2820,7 @@ void __fastcall TMainForm::LoadOpt(void)
     LocalDirectory  =ini->ReadString ("setting","localdirectory","C:\\Temp");
     
     SvrCycle        =ini->ReadInteger("setting","svrcycle",       10);
+    SvrTolerance    =ini->ReadInteger("setting","svrtol",          0);
     TimeoutTime     =ini->ReadInteger("setting","timeouttime", 10000);
     ReconTime       =ini->ReadInteger("setting","recontime",   10000);
     NmeaCycle       =ini->ReadInteger("setting","nmeacycle",    5000);
@@ -2824,7 +2882,16 @@ void __fastcall TMainForm::LoadOpt(void)
     BLMode4         =ini->ReadInteger("setting","blmode4",         0);
     MarkerName      =ini->ReadString ("setting","markername",     "");
     MarkerComment   =ini->ReadString ("setting","markercomment",  "");
-    
+
+    TLSSvrCertFile = ini->ReadString("settings", "tlssvrcertfile", "");
+    TLSSvrKeyFile = ini->ReadString("settings", "tlssvrkeyfile", "");
+    TLSSvrCAFile = ini->ReadString("settings", "tlssvrcafile", "");
+    TLSSvrCADir = ini->ReadString("settings", "tlssvrcadir", "");
+    TLSCliCertFile = ini->ReadString("settings", "tlsclicertfile", "");
+    TLSCliKeyFile = ini->ReadString("settings", "tlsclikeyfile", "");
+    TLSCliCAFile = ini->ReadString("settings", "tlsclicafile", "");
+    TLSCliCADir = ini->ReadString("settings", "tlsclicadir", "");
+
     for (i=0;i<3;i++) {
         RovAntDel[i]=ini->ReadFloat("setting",s.sprintf("rovantdel_%d",i),0.0);
         RefAntDel[i]=ini->ReadFloat("setting",s.sprintf("refantdel_%d",i),0.0);
@@ -3000,6 +3067,7 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteInteger("prcopt", "posopt6",    PrcOpt.posopt[5]   );
     ini->WriteInteger("prcopt", "maxaveep",   PrcOpt.maxaveep    );
     ini->WriteInteger("prcopt", "initrst",    PrcOpt.initrst     );
+    ini->WriteInteger("prcopt", "intpref",    PrcOpt.intpref     );
     
     ini->WriteFloat  ("prcopt", "baselinec",  BaselineC          );
     ini->WriteFloat  ("prcopt", "baseline1",  Baseline[0]        );
@@ -3044,6 +3112,7 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteString ("setting","localdirectory",LocalDirectory  );
     
     ini->WriteInteger("setting","svrcycle",   SvrCycle           );
+    ini->WriteInteger("setting","svrtol",     SvrTolerance       );
     ini->WriteInteger("setting","timeouttime",TimeoutTime        );
     ini->WriteInteger("setting","recontime",  ReconTime          );
     ini->WriteInteger("setting","nmeacycle",  NmeaCycle          );
@@ -3126,6 +3195,15 @@ void __fastcall TMainForm::SaveOpt(void)
     ini->WriteInteger("setting","posfontcolor",(int)PosFont->Color);
     ini->WriteInteger("setting","posfontbold",  PosFont->Style.Contains(fsBold));
     ini->WriteInteger("setting","posfontitalic",PosFont->Style.Contains(fsItalic));
+
+    ini->WriteString("settings", "tlssvrcertfile", TLSSvrCertFile);
+    ini->WriteString("settings", "tlssvrkeyfile", TLSSvrKeyFile);
+    ini->WriteString("settings", "tlssvrcafile", TLSSvrCAFile);
+    ini->WriteString("settings", "tlssvrcadir", TLSSvrCADir);
+    ini->WriteString("settings", "tlsclicertfile", TLSCliCertFile);
+    ini->WriteString("settings", "tlsclikeyfile", TLSCliKeyFile);
+    ini->WriteString("settings", "tlsclicafile", TLSCliCAFile);
+    ini->WriteString("settings", "tlsclicadir", TLSCliCADir);
 
     ini->WriteInteger("viewer","color1",  (int)TTextViewer::Color1);
     ini->WriteInteger("viewer","color2",  (int)TTextViewer::Color2);

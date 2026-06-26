@@ -32,6 +32,7 @@ static int strfmt[MAXSTRRTK]={          /* stream formats */
     STRFMT_RTCM3,STRFMT_RTCM3,STRFMT_RTCM3,STRFMT_RTCM3,0,0,0,0,SOLF_LLH,SOLF_NMEA,SOLF_NMEA
 };
 static int svrcycle     =10;            /* server cycle (ms) */
+static int svrtolerance =0;             // Server processing delay tolerance (ms)
 static int timeout      =10000;         /* timeout time (ms) */
 static int reconnect    =10000;         /* reconnect interval (ms) */
 static int nmeacycle    =5000;          /* nmea request cycle (ms) */
@@ -42,11 +43,20 @@ static int nmeareq      =0;             /* nmea request type (0:off,1:lat/lon,2:
 static double nmeapos[] ={0,0};         /* nmea position (lat/lon) (deg) */
 static char proxyaddr[MAXSTR]="";       /* proxy address */
 
+static char tlssvrcertfile[MAXSTR];     // TLS server certificate file.
+static char tlssvrkeyfile[MAXSTR];      // TLS server certificate private key file.
+static char tlssvrcafile[MAXSTR];       // TLS server CA file.
+static char tlssvrcadir[MAXSTR];        // TLS server CA directory.
+static char tlsclicertfile[MAXSTR];     // TLS client certificate file.
+static char tlsclikeyfile[MAXSTR];      // TLS client certificate private key file.
+static char tlsclicafile[MAXSTR];       // TLS client CA file.
+static char tlsclicadir[MAXSTR];        // TLS client CA directory.
+
 #define TIMOPT  "0:gpst,1:utc,2:jst,3:tow"
 #define CONOPT  "0:dms,1:deg,2:xyz,3:enu,4:pyl"
 #define FLGOPT  "0:off,1:std+2:age/ratio/ns"
-#define ISTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,6:ntripcli,7:ftp,8:http"
-#define OSTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,5:ntripsvr,9:ntripcas"
+#define ISTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,6:ntripcli,7:ftp,8:http,9:ntripcas"
+#define OSTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,5:ntripsrc,9:ntripcas,16:udpcli"
 #define FMTOPT  "0:rtcm2,1:rtcm3,2:oem4,4:ubx,5:swift,6:hemis,7:skytraq,8:javad,9:nvs,10:binex,11:rt17,12:sbf,14:unicore,15:rinex,16:sp3,17:clk"
 #define NMEOPT  "0:off,1:latlon,2:single"
 #define SOLOPT  "0:llh,1:xyz,2:enu,3:nmea,4:stat"
@@ -87,6 +97,7 @@ static opt_t rcvopts[]={
     {"outstr3-format",  3,  (void *)&strfmt [RTKSVRNIN*2 + 2], SOLOPT},
     
     {"misc-svrcycle",   0,  (void *)&svrcycle,           "ms"   },
+    {"misc-svrtol",     0,  (void *)&svrtolerance,       "ms"   },
     {"misc-timeout",    0,  (void *)&timeout,            "ms"   },
     {"misc-reconnect",  0,  (void *)&reconnect,          "ms"   },
     {"misc-nmeacycle",  0,  (void *)&nmeacycle,          "ms"   },
@@ -94,6 +105,14 @@ static opt_t rcvopts[]={
     {"misc-navmsgsel",  3,  (void *)&navmsgsel,          MSGOPT },
     {"misc-proxyaddr",  2,  (void *)proxyaddr,           ""     },
     {"misc-fswapmargin",0,  (void *)&fswapmargin,        "s"    },
+    {"misc-tlssvrcert",  2, (void *)tlssvrcertfile,      ""     },
+    {"misc-tlssvrkey",   2, (void *)tlssvrkeyfile,       ""     },
+    {"misc-tlssvrcafile", 2, (void *)tlssvrcafile,       ""     },
+    {"misc-tlssvrcadir", 2, (void *)tlssvrcadir,         ""     },
+    {"misc-tlsclicert",  2, (void *)tlsclicertfile,      ""     },
+    {"misc-tlsclikey",   2, (void *)tlsclikeyfile,       ""     },
+    {"misc-tlsclicafile", 2, (void *)tlsclicafile,       ""     },
+    {"misc-tlsclicadir", 2, (void *)tlsclicadir,         ""     },
     
     {"",0,NULL,""}
 };
@@ -456,6 +475,62 @@ void __fastcall TOptDialog::DgpsCorrLChange(TObject *Sender)
 	UpdateEnable();
 }
 //---------------------------------------------------------------------------
+void __fastcall TOptDialog::BtnTLSSvrCertFileClick(TObject *Sender) {
+  OpenDialog->Title = "TLS Server Certificate File";
+  OpenDialog->FilterIndex = 9;
+  if (!OpenDialog->Execute()) return;
+  TLSSvrCertFile->Text = OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TOptDialog::BtnTLSSvrKeyFileClick(TObject *Sender) {
+  OpenDialog->Title = "TLS Server Private Key File";
+  OpenDialog->FilterIndex = 10;
+  if (!OpenDialog->Execute()) return;
+  TLSSvrKeyFile->Text = OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TOptDialog::BtnTLSSvrCAFileClick(TObject *Sender) {
+  OpenDialog->Title = "TLS Server CA File";
+  OpenDialog->FilterIndex = 9;
+  if (!OpenDialog->Execute()) return;
+  TLSSvrCAFile->Text = OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TOptDialog::BtnTLSSvrCADirClick(TObject *Sender) {
+  UnicodeString dir = TLSSvrCADir->Text;
+  TSelectDirExtOpts opt = TSelectDirExtOpts() << sdNewUI << sdNewFolder;
+  if (!SelectDirectory(L"TLS Server CA Directory", L"", dir, opt)) return;
+  TLSSvrCADir->Text = dir;
+}
+//---------------------------------------------------------------------------
+void __fastcall TOptDialog::BtnTLSCliCertFileClick(TObject *Sender) {
+  OpenDialog->Title = "TLS Client Certificate File";
+  OpenDialog->FilterIndex = 9;
+  if (!OpenDialog->Execute()) return;
+  TLSCliCertFile->Text = OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TOptDialog::BtnTLSCliKeyFileClick(TObject *Sender) {
+  OpenDialog->Title = "TLS Client Private Key File";
+  OpenDialog->FilterIndex = 10;
+  if (!OpenDialog->Execute()) return;
+  TLSCliKeyFile->Text = OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TOptDialog::BtnTLSCliCAFileClick(TObject *Sender) {
+  OpenDialog->Title = "TLS Client CA File";
+  OpenDialog->FilterIndex = 9;
+  if (!OpenDialog->Execute()) return;
+  TLSCliCAFile->Text = OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TOptDialog::BtnTLSCliCADirClick(TObject *Sender) {
+  UnicodeString dir = TLSCliCADir->Text;
+  TSelectDirExtOpts opt = TSelectDirExtOpts() << sdNewUI << sdNewFolder;
+  if (!SelectDirectory(L"TLS Client CA Directory", L"", dir, opt)) return;
+  TLSCliCADir->Text = dir;
+}
+//---------------------------------------------------------------------------
 void __fastcall TOptDialog::GetOpt(void)
 {
 	TEdit *editu[]={RovPos1,RovPos2,RovPos3};
@@ -514,6 +589,7 @@ void __fastcall TOptDialog::GetOpt(void)
 	PosOpt4		 ->Checked  =PrcOpt.posopt[3];
 	PosOpt5		 ->Checked  =PrcOpt.posopt[4];
 	PosOpt6		 ->Checked  =PrcOpt.posopt[5];
+	IntpRefObs	 ->ItemIndex	=PrcOpt.intpref;
 	
 	SolFormat	 ->ItemIndex=SolOpt.posf;
 	TimeFormat	 ->ItemIndex=SolOpt.timef==0?0:SolOpt.times+1;
@@ -588,7 +664,17 @@ void __fastcall TOptDialog::GetOpt(void)
 	LocalDir	 ->Text     =LocalDirectory;
 	ReadAntList();
 	
-	SvrCycleE	 ->Text     =s.sprintf("%d",SvrCycle);
+	TLSSvrCertFile	 ->Text     =TLSSvrCertFileF;
+	TLSSvrKeyFile	 ->Text     =TLSSvrKeyFileF;
+	TLSSvrCAFile	 ->Text     =TLSSvrCAFileF;
+	TLSSvrCADir	 ->Text     =TLSSvrCADirectory;
+	TLSCliCertFile	 ->Text     =TLSCliCertFileF;
+	TLSCliKeyFile	 ->Text     =TLSCliKeyFileF;
+	TLSCliCAFile	 ->Text     =TLSCliCAFileF;
+	TLSCliCADir	 ->Text     =TLSCliCADirectory;
+
+        SvrCycleE	 ->Text     =s.sprintf("%d",SvrCycle);
+        SvrToleranceE	 ->Text     =s.sprintf("%d",SvrTolerance);
 	TimeoutTimeE ->Text     =s.sprintf("%d",TimeoutTime);
 	ReconTimeE   ->Text     =s.sprintf("%d",ReconTime);
 	NmeaCycleE   ->Text     =s.sprintf("%d",NmeaCycle);
@@ -602,7 +688,7 @@ void __fastcall TOptDialog::GetOpt(void)
 	MoniPortE    ->Text     =s.sprintf("%d",MoniPort);
 	SolBuffSizeE ->Text     =s.sprintf("%d",SolBuffSize);
 	PanelStackE  ->ItemIndex=PanelStack;
-	
+
 	FontLabel1->Font->Assign(PanelFont);
 	FontLabel1->Caption=FontLabel1->Font->Name+s.sprintf(" %dpt",FontLabel1->Font->Size);
 	FontLabel2->Font->Assign(PosFont);
@@ -670,6 +756,7 @@ void __fastcall TOptDialog::SetOpt(void)
 	PrcOpt.posopt[3] =PosOpt4   ->Checked;
 	PrcOpt.posopt[4] =PosOpt5   ->Checked;
 	PrcOpt.posopt[5] =PosOpt6   ->Checked;
+	PrcOpt.intpref	 =IntpRefObs->ItemIndex;
 	
 	SolOpt.posf      =SolFormat   ->ItemIndex;
 	SolOpt.timef     =TimeFormat->ItemIndex==0?0:1;
@@ -744,7 +831,17 @@ void __fastcall TOptDialog::SetOpt(void)
 	ElmaskFileF      =ElmaskFile  ->Text;
 	LocalDirectory   =LocalDir    ->Text;
 	
+        TLSSvrCertFileF  = TLSSvrCertFile->Text;
+        TLSSvrKeyFileF   = TLSSvrKeyFile->Text;
+        TLSSvrCAFileF    = TLSSvrCAFile->Text;
+        TLSSvrCADirectory = TLSSvrCADir->Text;
+        TLSCliCertFileF  = TLSCliCertFile->Text;
+        TLSCliKeyFileF   = TLSCliKeyFile->Text;
+        TLSCliCAFileF    = TLSCliCAFile->Text;
+        TLSCliCADirectory = TLSCliCADir->Text;
+
 	SvrCycle	     =SvrCycleE   ->Text.ToInt();
+	SvrTolerance	     =SvrToleranceE->Text.ToInt();
 	TimeoutTime      =TimeoutTimeE->Text.ToInt();
 	ReconTime        =ReconTimeE  ->Text.ToInt();
 	NmeaCycle	     =NmeaCycleE  ->Text.ToInt();
@@ -766,7 +863,7 @@ void __fastcall TOptDialog::SetOpt(void)
 void __fastcall TOptDialog::LoadOpt(AnsiString file)
 {
     int itype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPCLI,STR_FILE,STR_FTP,STR_HTTP};
-    int otype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSVR,STR_NTRIPCAS,STR_FILE};
+    int otype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSRC,STR_NTRIPCAS,STR_FILE};
     int num_itype=7,num_otype=6;
 	TEdit *editu[]={RovPos1,RovPos2,RovPos3};
 	TEdit *editr[]={RefPos1,RefPos2,RefPos3};
@@ -874,6 +971,7 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	BaselineLen	 ->Text			=s.sprintf("%.3f",prcopt.baseline[0]);
 	BaselineSig	 ->Text			=s.sprintf("%.3f",prcopt.baseline[1]);
 	BaselineConst->Checked		=prcopt.baseline[0]>0.0;
+	IntpRefObs->ItemIndex	    =prcopt.intpref;
 	
 	SolFormat	 ->ItemIndex	=solopt.posf;
 	TimeFormat	 ->ItemIndex	=solopt.timef==0?0:solopt.times+1;
@@ -957,7 +1055,16 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 	ElmaskFile ->Text			=filopt.elmask;
 	LocalDir   ->Text			=filopt.tempdir;
 
+        // Copy in.
 	ProxyAddrE ->Text                       =proxyaddr;
+	TLSSvrCertFile->Text                    =tlssvrcertfile;
+        TLSSvrKeyFile->Text                     =tlssvrkeyfile;
+        TLSSvrCAFile->Text                      =tlssvrcafile;
+        TLSSvrCADir->Text                       =tlssvrcadir;
+	TLSCliCertFile->Text                    =tlsclicertfile;
+        TLSCliKeyFile->Text                     =tlsclikeyfile;
+        TLSCliCAFile->Text                      =tlsclicafile;
+        TLSCliCADir->Text                       =tlsclicadir;
 
 	ReadAntList();
 	UpdateEnable();
@@ -965,7 +1072,6 @@ void __fastcall TOptDialog::LoadOpt(AnsiString file)
 //---j------------------------------------------------------------------------
 void __fastcall TOptDialog::SaveOpt(AnsiString file)
 {
-	AnsiString ProxyAddrE_Text=ProxyAddrE->Text;
 	AnsiString ExSatsE_Text=ExSatsE->Text;
 	AnsiString FieldSep_Text=FieldSep->Text;
 	AnsiString SigDef_Text=SigDef->Text;
@@ -982,7 +1088,7 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 	AnsiString ElmaskFile_Text=ElmaskFile->Text;
 	AnsiString LocalDir_Text=LocalDir->Text;
     int itype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPCLI,STR_FILE,STR_FTP,STR_HTTP};
-    int otype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSVR,STR_NTRIPCAS,STR_FILE};
+    int otype[]={STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSRC,STR_NTRIPCAS,STR_FILE};
 	TEdit *editu[]={RovPos1,RovPos2,RovPos3};
 	TEdit *editr[]={RefPos1,RefPos2,RefPos3};
 	char buff[1024],*p,*q,id[32],comment[256],s[40];
@@ -1025,7 +1131,7 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 				strcpy(strpath[i],buff);
 			}
 		}
-		else if (strtype[i]==STR_NTRIPSVR) {
+		else if (strtype[i]==STR_NTRIPSRC) {
 			strcpy(buff,MainForm->Paths[i][1].c_str());
 			if ((p=strchr(buff,':'))&&strchr(p+1,'@')) {
 				strcpy(strpath[i],p);
@@ -1059,14 +1165,34 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 	nmeapos[1]=MainForm->NmeaPos[1];
 
 	svrcycle    =SvrCycleE   ->Text.ToInt();
+	svrtolerance=SvrToleranceE->Text.ToInt();
 	timeout     =TimeoutTimeE->Text.ToInt();
 	reconnect   =ReconTimeE  ->Text.ToInt();
 	nmeacycle   =NmeaCycleE  ->Text.ToInt();
 	buffsize    =SvrBuffSizeE->Text.ToInt();
 	navmsgsel   =NavSelectS  ->ItemIndex;
-	strcpy(proxyaddr,ProxyAddrE_Text.c_str());
 	fswapmargin =FileSwapMarginE->Text.ToInt();
 	prcopt.sbassatsel=SbasSatE->Text.ToInt();
+
+        // Copy out.
+	AnsiString ProxyAddrE_Text = ProxyAddrE->Text;
+	snprintf(proxyaddr, sizeof(proxyaddr), "%s", ProxyAddrE_Text.c_str());
+	AnsiString TLSSvrCertFile_Text = TLSSvrCertFile->Text;
+	snprintf(tlssvrcertfile, sizeof(tlssvrcertfile), "%s", TLSSvrCertFile_Text.c_str());
+	AnsiString TLSSvrKeyFile_Text = TLSSvrKeyFile->Text;
+	snprintf(tlssvrkeyfile, sizeof(tlssvrkeyfile), "%s", TLSSvrKeyFile_Text.c_str());
+	AnsiString TLSSvrCAFile_Text = TLSSvrCAFile->Text;
+	snprintf(tlssvrcafile, sizeof(tlssvrcafile), "%s", TLSSvrCAFile_Text.c_str());
+	AnsiString TLSSvrCADir_Text = TLSSvrCADir->Text;
+	snprintf(tlssvrcadir, sizeof(tlssvrcadir), "%s", TLSSvrCADir_Text.c_str());
+        AnsiString TLSCliCertFile_Text = TLSCliCertFile->Text;
+	snprintf(tlsclicertfile, sizeof(tlsclicertfile), "%s", TLSCliCertFile_Text.c_str());
+	AnsiString TLSCliKeyFile_Text = TLSCliKeyFile->Text;
+	snprintf(tlsclikeyfile, sizeof(tlsclikeyfile), "%s", TLSCliKeyFile_Text.c_str());
+	AnsiString TLSCliCAFile_Text = TLSCliCAFile->Text;
+	snprintf(tlsclicafile, sizeof(tlsclicafile), "%s", TLSCliCAFile_Text.c_str());
+	AnsiString TLSCliCADir_Text = TLSCliCADir->Text;
+	snprintf(tlsclicadir, sizeof(tlsclicadir), "%s", TLSCliCADir_Text.c_str());
 
 	prcopt.mode		=PosMode	 ->ItemIndex;
 	prcopt.nf		=Freq		 ->ItemIndex+1;
@@ -1133,6 +1259,7 @@ void __fastcall TOptDialog::SaveOpt(AnsiString file)
 		prcopt.baseline[0]=str2dbl(BaselineLen->Text);
 		prcopt.baseline[1]=str2dbl(BaselineSig->Text);
 	}
+	prcopt.intpref	=IntpRefObs->ItemIndex;
 	solopt.posf		=SolFormat	->ItemIndex;
 	solopt.timef	=TimeFormat	->ItemIndex==0?0:1;
 	solopt.times	=TimeFormat	->ItemIndex==0?TIMES_GPST:(TimeFormat->ItemIndex-1);
@@ -1269,6 +1396,8 @@ void __fastcall TOptDialog::UpdateEnable(void)
 	BaselineConst  ->Enabled=PosMode->ItemIndex==PMODE_MOVEB;
 	BaselineLen    ->Enabled=BaselineConst->Checked&&PosMode->ItemIndex==PMODE_MOVEB;
 	BaselineSig    ->Enabled=BaselineConst->Checked&&PosMode->ItemIndex==PMODE_MOVEB;
+	IntpRefObs     ->Enabled=rel;
+    SvrToleranceE  ->Enabled=rel;
 	
 	OutputHead     ->Enabled=SolFormat->ItemIndex<3;
 	OutputOpt      ->Enabled=SolFormat->ItemIndex<3;
@@ -1420,6 +1549,3 @@ void __fastcall TOptDialog::RovAntClick(TObject *Sender)
 {
 	UpdateEnable();
 }
-//---------------------------------------------------------------------------
-
-

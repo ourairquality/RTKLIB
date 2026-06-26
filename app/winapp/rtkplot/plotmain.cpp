@@ -12,7 +12,9 @@
 //                       serial://port[:brate[:bsize[:parity[:stopb[:fctr]]]]]
 //                       tcpsvr://:port
 //                       tcpcli://addr[:port]
-//                       ntrip://[user[:passwd]@]addr[:port][/mntpnt]
+//                       ntripcli://[user[:passwd]@]addr[:port][/mntpnt]
+//                       ntripcas://[user[:passwd]@]addr[:port][/mntpnt]::T=2 (source)
+//                       udpsvr://addr:port
 //                       file://path
 //           -p1 path  connect port 1 to path 
 //           -p2 path  connect port 2 to path 
@@ -578,7 +580,7 @@ void __fastcall TPlot::MenuPortClick(TObject *Sender)
     ConnectDialog->FieldSep=RtFieldSep;
     ConnectDialog->TimeOutTime=RtTimeOutTime;
     ConnectDialog->ReConnTime =RtReConnTime;
-    for (i=0;i< 3;i++) {
+    for (i=0;i< 7;i++) {
         ConnectDialog->Paths1[i]=StrPaths[0][i];
         ConnectDialog->Paths2[i]=StrPaths[1][i];
     }
@@ -588,6 +590,14 @@ void __fastcall TPlot::MenuPortClick(TObject *Sender)
         ConnectDialog->CmdEna1[i]=StrCmdEna[0][i];
         ConnectDialog->CmdEna2[i]=StrCmdEna[1][i];
     }
+    ConnectDialog->TLSSvrCertFileF = TLSSvrCertFile;
+    ConnectDialog->TLSSvrKeyFileF = TLSSvrKeyFile;
+    ConnectDialog->TLSSvrCAFileF = TLSSvrCAFile;
+    ConnectDialog->TLSSvrCADirectory = TLSSvrCADir;
+    ConnectDialog->TLSCliCertFileF = TLSCliCertFile;
+    ConnectDialog->TLSCliKeyFileF = TLSCliKeyFile;
+    ConnectDialog->TLSCliCAFileF = TLSCliCAFile;
+    ConnectDialog->TLSCliCADirectory = TLSCliCADir;
     for (i=0;i<10;i++) ConnectDialog->TcpHistory [i]=StrHistory [i];
     
     if (ConnectDialog->ShowModal()!=mrOk) return;
@@ -601,7 +611,7 @@ void __fastcall TPlot::MenuPortClick(TObject *Sender)
     RtFieldSep=ConnectDialog->FieldSep;
     RtTimeOutTime=ConnectDialog->TimeOutTime;
     RtReConnTime =ConnectDialog->ReConnTime;
-    for (i=0;i< 3;i++) {
+    for (i=0;i< 7;i++) {
         StrPaths[0][i]=ConnectDialog->Paths1[i];
         StrPaths[1][i]=ConnectDialog->Paths2[i];
     }
@@ -611,6 +621,14 @@ void __fastcall TPlot::MenuPortClick(TObject *Sender)
         StrCmdEna[0][i]=ConnectDialog->CmdEna1[i];
         StrCmdEna[1][i]=ConnectDialog->CmdEna2[i];
     }
+    TLSSvrCertFile = ConnectDialog->TLSSvrCertFileF;
+    TLSSvrKeyFile = ConnectDialog->TLSSvrKeyFileF;
+    TLSSvrCAFile = ConnectDialog->TLSSvrCAFileF;
+    TLSSvrCADir = ConnectDialog->TLSSvrCADirectory;
+    TLSCliCertFile = ConnectDialog->TLSCliCertFileF;
+    TLSCliKeyFile = ConnectDialog->TLSCliKeyFileF;
+    TLSCliCAFile = ConnectDialog->TLSCliCAFileF;
+    TLSCliCADir = ConnectDialog->TLSCliCADirectory;
     for (i=0;i<10;i++) StrHistory [i]=ConnectDialog->TcpHistory [i];
 }
 // callback on menu-reload --------------------------------------------------
@@ -1857,9 +1875,10 @@ void __fastcall TPlot::TimerTimer(TObject *Sender)
     const gtime_t ts={0};
     gtime_t time={0};
     double tint=TimeEna[2]?TimeInt:0.0,pos[3],ep[6];
-    int i,j,n,inb,inr,cycle,nmsg[2]={0},stat,istat;
+    int i;
+    int cycle,nmsg[2]={0},stat,istat;
     int sel=!BtnSol1->Down&&BtnSol2->Down?1:0;
-    char msg[MAXSTRMSG]="",tstr[40];
+    char tstr[40];
     
     trace(4,"TimeTimer\n");
     
@@ -1875,15 +1894,19 @@ void __fastcall TPlot::TimerTimer(TObject *Sender)
             opt.timef=RtTimeForm>=1;
             opt.degf =RtDegForm;
             strcpy(opt.sep,RtFieldSep.c_str());
+            size_t inb;
+            unsigned inr;
             strsum(Stream+i,&inb,&inr,NULL,NULL);
-            stat=strstat(Stream+i,msg);
+            char msg[MAXSTRMSG]="";
+            stat=strstat(Stream+i,msg,sizeof(msg));
             strstatus[i]->Color=color[stat<3?stat+1:3];
             if (*msg&&strcmp(msg,"localhost")) {
                 connectmsg+=s.sprintf("(%d) %s ",i+1,msg);
             }
-            while ((n=strread(Stream+i,buff,sizeof(buff)))>0) {
+            size_t n;
+            while ((n=strread(Stream+i,buff,sizeof(buff),0,sizeof(buff)))>0) {
                 
-                for (j=0;j<n;j++) {
+                for (size_t j=0;j<n;j++) {
                     istat=inputsol(buff[j],ts,ts,tint,SOLQ_NONE,&opt,SolData+i);
                     if (istat==0) continue;
                     if (istat<0) { // disconnect received
@@ -1932,7 +1955,7 @@ void __fastcall TPlot::TimerTimer(TObject *Sender)
     }
     else if (TimeSyncOut) { // time sync
         time.time = 0;
-        while (strread(&StrTimeSync, (uint8_t *)StrBuff+NStrBuff, 1)) {
+        while (strread(&StrTimeSync, (uint8_t *)StrBuff+NStrBuff, sizeof(StrBuff), NStrBuff, 1) > 0) {
             if (++NStrBuff >= 1023) {
                 NStrBuff = 0;
                 continue;
@@ -2796,10 +2819,18 @@ void __fastcall TPlot::LoadOpt(void)
         StrCmdEna[0][i]=ini->ReadInteger("str",s.sprintf("strcmdena1_%d", i), 0);
         StrCmdEna[1][i]=ini->ReadInteger("str",s.sprintf("strcmdena2_%d", i), 0);
     }
-    for (int i=0;i<3;i++) {
+    for (int i=0;i<7;i++) {
         StrPaths[0][i]=ini->ReadString ("str",s.sprintf("strpath1_%d",   i),"");
         StrPaths[1][i]=ini->ReadString ("str",s.sprintf("strpath2_%d",   i),"");
     }
+    TLSSvrCertFile = ini->ReadString("file", "tlssvrcertfile", "");
+    TLSSvrKeyFile = ini->ReadString("file", "tlssvrkeyfile", "");
+    TLSSvrCAFile = ini->ReadString("file", "tlssvrcafile", "");
+    TLSSvrCADir = ini->ReadString("file", "tlssvrcadir", "");
+    TLSCliCertFile = ini->ReadString("file", "tlsclicertfile", "");
+    TLSCliKeyFile = ini->ReadString("file", "tlsclikeyfile", "");
+    TLSCliCAFile = ini->ReadString("file", "tlsclicafile", "");
+    TLSCliCADir = ini->ReadString("file", "tlsclicadir", "");
     for (int i=0;i<10;i++) {
         StrHistory [i]=ini->ReadString ("str",s.sprintf("strhistry_%d",  i),"");
     }
@@ -2954,10 +2985,18 @@ void __fastcall TPlot::SaveOpt(void)
         ini->WriteInteger("str",s.sprintf("strcmdena1_%d", i),StrCmdEna[0][i]);
         ini->WriteInteger("str",s.sprintf("strcmdena2_%d", i),StrCmdEna[1][i]);
     }
-    for (int i=0;i<3;i++) {
+    for (int i=0;i<7;i++) {
         ini->WriteString ("str",s.sprintf("strpath1_%d",   i),StrPaths[0][i]);
         ini->WriteString ("str",s.sprintf("strpath2_%d",   i),StrPaths[1][i]);
     }
+    ini->WriteString("file", "tlssvrcertfile", TLSSvrCertFile);
+    ini->WriteString("file", "tlssvrkeyfile", TLSSvrKeyFile);
+    ini->WriteString("file", "tlssvrcafile", TLSSvrCAFile);
+    ini->WriteString("file", "tlssvrcadir", TLSSvrCADir);
+    ini->WriteString("file", "tlsclicertfile", TLSCliCertFile);
+    ini->WriteString("file", "tlsclikeyfile", TLSCliKeyFile);
+    ini->WriteString("file", "tlsclicafile", TLSCliCAFile);
+    ini->WriteString("file", "tlsclicadir", TLSCliCADir);
     for (int i=0;i<12;i++) {
         ini->WriteString ("str",s.sprintf("strhistry_%d",  i),StrHistory [i]);
     }

@@ -568,7 +568,7 @@ public:
     // connection settings
     int RtStream[2];
     AnsiString RtPath1,RtPath2;
-    AnsiString StrPaths[2][3];
+    AnsiString StrPaths[2][7];
     AnsiString StrCmds[2][2];
     int StrCmdEna[2][2];
     int RtFormat[2];
@@ -578,6 +578,9 @@ public:
     AnsiString RtFieldSep;
     int RtTimeOutTime;
     int RtReConnTime;
+    AnsiString TLSSvrCertFile, TLSSvrKeyFile, TLSSvrCAFile, TLSSvrCADir;
+    AnsiString TLSCliCertFile, TLSCliKeyFile, TLSCliCAFile, TLSCliCADir;
+
     double ElMaskData[361];
     elmask_t elevationMask;
     

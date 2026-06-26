@@ -7,9 +7,9 @@ SRC    = ../../../../src
 #CTARGET= -mfpu=neon -mfloat-abi=softfp -ffast-math
 CTARGET=
 
-OPTION = -DENAGLO -DENAGAL -DENAQZS -DENACMP -DENAIRN -DTRACE -DNFREQ=6 -DNEXOBS=3 -DSVR_REUSEADDR
+OPTION = -DENAGLO -DENAGAL -DENAQZS -DENACMP -DENAIRN -DTRACE -DNFREQ=6 -DNEXOBS=3 -DSVR_REUSEADDR -DRTKLIB_OPENSSL
 CFLAGS = -std=c99 -Wall -O3 -pedantic -Wno-unused-but-set-variable -I$(SRC) $(OPTION) $(CTARGET) -g
-LDLIBS  = -lm -lpthread
+LDLIBS  = -lm -lpthread -lssl -lcrypto
 
 all        : str2str
 str2str    : str2str.o stream.o rtkcmn.o trace.o solution.o sbas.o geoid.o

@@ -236,7 +236,7 @@
            </item>
            <item>
             <property name="text">
-             <string>NTRIP Server</string>
+             <string>NTRIP Source</string>
             </property>
            </item>
            <item>
@@ -355,7 +355,7 @@
            </item>
            <item>
             <property name="text">
-             <string>NTRIP Server</string>
+             <string>NTRIP Source</string>
             </property>
            </item>
            <item>
@@ -499,7 +499,7 @@
            </item>
            <item>
             <property name="text">
-             <string>NTRIP Server</string>
+             <string>NTRIP Source</string>
             </property>
            </item>
            <item>
@@ -556,7 +556,7 @@
            </item>
            <item>
             <property name="text">
-             <string>NTRIP Server</string>
+             <string>NTRIP Source</string>
             </property>
            </item>
            <item>
@@ -862,6 +862,11 @@
            </item>
            <item>
             <property name="text">
+             <string>NTRIP Caster Source</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
              <string>UDP Server</string>
             </property>
            </item>
@@ -961,7 +966,7 @@
            </item>
            <item>
             <property name="text">
-             <string>NTRIP Server</string>
+             <string>NTRIP Source</string>
             </property>
            </item>
            <item>
@@ -1129,7 +1134,7 @@
            </item>
            <item>
             <property name="text">
-             <string>NTRIP Server</string>
+             <string>NTRIP Source</string>
             </property>
            </item>
            <item>

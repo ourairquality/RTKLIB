@@ -1,4 +1,4 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{AE35571B-56E7-4D62-B782-3A1F44084EC5}</ProjectGuid>
         <ProjectType>CppConsoleApplication</ProjectType>
@@ -69,7 +69,7 @@
         <SanitizedProjectName>_str2str</SanitizedProjectName>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
-        <IncludePath>..\;..\..\..\..\src\rcv\;..\..\..\..\src\;$(IncludePath)</IncludePath>
+        <IncludePath>..\;..\..\..\..\src\rcv\;..\..\..\..\src\;C:\Program files\OpenSSL-Win64\include;$(IncludePath)</IncludePath>
         <Manifest_File>None</Manifest_File>
         <VerInfo_Locale>1041</VerInfo_Locale>
         <PackageImports>vclx.bpi;vcl.bpi;rtl.bpi;dbrtl.bpi;vcldb.bpi;dbxcds.bpi;dbexpress.bpi;xmlrtl.bpi;vclie.bpi;inet.bpi;inetdbbde.bpi;inetdbxpress.bpi;dsnap.bpi;adortl.bpi;soaprtl.bpi;bdertl.bpi;vcldbx.bpi;$(PackageImports)</PackageImports>
@@ -83,11 +83,11 @@
         <BCC_IncludePath>..\..\..\..\src;..\..\..\..\src\rcv;$(BDS)\include;$(BCC_IncludePath)</BCC_IncludePath>
         <DCC_UnitSearchPath>..\..\..\..\src\rcv;..\;..\..\..\..\src;..\..\str2str;$(BDS)\lib;$(BDS)\lib\obj;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_ResourcePath>..\..\..\..\src\rcv;..\;..\..\..\..\src;..\..\str2str;$(DCC_ResourcePath)</DCC_ResourcePath>
-        <ILINK_LibraryPath>..\..\..\..\src\rcv\;..\..\..\..\src\;..\..\str2str;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+        <ILINK_LibraryPath>..\..\..\..\src\rcv\;..\..\..\..\src\;..\..\str2str;..\..\..\..\lib\;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <TASM_Defines>_RTLDLL;_NO_VCL;WIN32;ENAGLO;TRACE;ENAQZS;ENAGAL;NFREQ=6;NEXOBS=3;SVR_REUSEADDR;$(TASM_Defines)</TASM_Defines>
         <BRCC_Defines>_RTLDLL;_NO_VCL;WIN32;ENAGLO;TRACE;ENAQZS;ENAGAL;NFREQ=6;NEXOBS=3;SVR_REUSEADDR;$(BRCC_Defines)</BRCC_Defines>
-        <BCC_Defines>_RTLDLL;WIN32;TRACE;ENAGLO;ENAQZS;ENAGAL;ENACMP;NFREQ=6;NEXOBS=3;SVR_REUSEADDR;$(BCC_Defines)</BCC_Defines>
+        <BCC_Defines>_RTLDLL;WIN32;TRACE;ENAGLO;ENAQZS;ENAGAL;ENACMP;NFREQ=6;NEXOBS=3;SVR_REUSEADDR;RTKLIB_OPENSSL;$(BCC_Defines)</BCC_Defines>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <OutputExt>exe</OutputExt>
@@ -166,6 +166,14 @@
             <BuildOrder>8</BuildOrder>
             <BuildOrder>3</BuildOrder>
         </CppCompile>
+        <LibFiles Include="..\..\..\..\lib\libcrypto.a" Condition="'$(Platform)'=='Win64' Or '$(Platform)'=='Win64x'">
+            <BuildOrder>30</BuildOrder>
+            <IgnorePath>true</IgnorePath>
+        </LibFiles>
+        <LibFiles Include="..\..\..\..\lib\libssl.a" Condition="'$(Platform)'=='Win64' Or '$(Platform)'=='Win64x'">
+            <BuildOrder>29</BuildOrder>
+            <IgnorePath>true</IgnorePath>
+        </LibFiles>
         <CppCompile Include="..\..\..\..\src\geoid.c">
             <BuildOrder>7</BuildOrder>
             <BuildOrder>14</BuildOrder>
@@ -444,6 +452,18 @@
                 </DeployFile>
                 <DeployFile Condition="'$(DynamicRTL)'=='true' And '$(Multithreaded)'=='true'" LocalName="$(BDS)\bin\cc32c290mt.dll" Class="DependencyModule">
                     <Platform Name="Win32">
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\..\..\lib\libcrypto.a" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win64">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\..\..\lib\libssl.a" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win64">
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

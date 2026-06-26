@@ -301,6 +301,7 @@ typedef SSIZE_T ssize_t;
 #define RTKSVRNSOL  3                   // Number of RTK server output streams.
 #endif
 #define MAXSTRRTK   (RTKSVRNIN * 2 + RTKSVRNSOL) // Max number of stream in RTK server.
+#define MAXSTRSVR   16                  // Max number of streams in stream server.
 #define MAXSBSMSG   32                  /* max number of SBAS msg in RTK server */
 #define MAXSOLLEN   512                 /* max line length of solution message */
 #define MAXSOLMSG   32768               /* max length of solution messages */
@@ -497,7 +498,7 @@ typedef SSIZE_T ssize_t;
 #define STR_FILE     2                  /* stream type: file */
 #define STR_TCPSVR   3                  /* stream type: TCP server */
 #define STR_TCPCLI   4                  /* stream type: TCP client */
-#define STR_NTRIPSVR 5                  /* stream type: NTRIP server */
+#define STR_NTRIPSRC 5                  /* stream type: NTRIP source */
 #define STR_NTRIPCLI 6                  /* stream type: NTRIP client */
 #define STR_FTP      7                  /* stream type: ftp */
 #define STR_HTTP     8                  /* stream type: http */
@@ -1366,15 +1367,17 @@ typedef struct {        /* receiver raw data control type */
 } raw_t;
 
 typedef struct {        /* stream type */
-    int type;           /* type (STR_???) */
-    int mode;           /* mode (STR_MODE_?) */
+    unsigned type;      /* type (STR_???) */
+    unsigned mode;      /* mode (STR_MODE_?) */
     int state;          /* state (-1:error,0:close,1:open) */
-    uint32_t inb,inr;   /* input bytes/rate */
-    uint32_t outb,outr; /* output bytes/rate */
+    size_t inb;         // Input bytes.
+    uint32_t inr;       // Input rate.
+    size_t outb;        // Output bytes.
+    uint32_t outr;      // Output bytes/rate.
     uint32_t tick_i;    /* input tick tick */
     uint32_t tick_o;    /* output tick */
     uint32_t tact;      /* active tick */
-    uint32_t inbt,outbt; /* input/output bytes at tick */
+    size_t inbt,outbt;  // Input/output bytes at tick.
     rtklib_lock_t lock; /* lock flag */
     void *port;         /* type dependent port control struct */
     char path[MAXSTRPATH]; /* stream path */
@@ -1385,39 +1388,40 @@ typedef struct {        /* stream converter type */
     int itype,otype;    /* input and output stream type */
     uint32_t tick[32];  /* cycle tick of output message */
     int ephsat[32];     /* satellites of output ephemeris */
-    int stasel;         /* station info selection (0:remote,1:local) */
+    unsigned stasel;    /* station info selection (0:remote,1:local) */
     rtcm_t rtcm;        /* rtcm input data buffer */
     raw_t raw;          /* raw  input data buffer */
     rtcm_t out;         /* rtcm output data buffer */
 } strconv_t;
 
 typedef struct {        /* stream server type */
-    int state;          /* server state (0:stop,1:running) */
-    int cycle;          /* server cycle (ms) */
-    int buffsize;       /* input/monitor buffer size (bytes) */
-    int nmeacycle;      /* NMEA request cycle (ms) (0:no) */
-    int relayback;      /* relay back of output streams (0:no) */
-    int nstr;           /* number of streams (1 input + (nstr-1) outputs */
-    int npb;            /* data length in peek buffer (bytes) */
-    char cmds_periodic[16][MAXRCVCMD]; /* periodic commands */
+    unsigned state;     // Server state (0:stop,1:running).
+    unsigned cycle;     // Server cycle (ms).
+    unsigned buffsize;  // Input/monitor buffer size (bytes).
+    unsigned nmeacycle; // NMEA request cycle (ms) (0:no).
+    unsigned relayback; // Relay back of output streams (0:no).
+    unsigned nstr;      // Number of streams (1 input + (nstr-1) outputs.
+    size_t npb;         // Data length in peek buffer (bytes).
+    char cmds_periodic[MAXSTRSVR][MAXRCVCMD]; /* periodic commands */
     double nmeapos[3];  /* NMEA request position (ecef) (m) */
     uint8_t *buff;      /* input buffers */
     uint8_t *pbuf;      /* peek buffer */
-    uint32_t tick;      /* start tick */
-    stream_t stream[16]; /* input/output streams */
-    stream_t strlog[16]; /* return log streams */
-    strconv_t *conv[16]; /* stream converter */
+    uint32_t tick;      // start tick, for run time.
+    stream_t stream[MAXSTRSVR]; /* input/output streams */
+    stream_t strlog[MAXSTRSVR]; /* return log streams */
+    strconv_t *conv[MAXSTRSVR]; /* stream converter */
     rtklib_thread_t thread; /* server thread */
     rtklib_lock_t lock; /* lock flag */
 } strsvr_t;
 
 typedef struct {        /* RTK server type */
     int state;          /* server state (0:stop,1:running) */
-    int cycle;          /* processing cycle (ms) */
-    int nmeacycle;      /* NMEA request cycle (ms) (0:no req) */
+    unsigned cycle;     // Processing cycle (ms)
+    unsigned tolerance; // Processing delay tolerance (ms)
+    unsigned nmeacycle; // NMEA request cycle (ms) (0:no req).
     int nmeareq;        /* NMEA request (0:no,1:nmeapos,2:single sol) */
     double nmeapos[3];  /* NMEA request position (ecef) (m) */
-    int buffsize;       /* input buffer size (bytes) */
+    size_t buffsize;    /* input buffer size (bytes) */
     int format[RTKSVRNIN]; /* input format {rov,base,corr} */
     solopt_t solopt[RTKSVRNSOL]; /* output solution options {sol1,sol2,sol3} */
     int navsel;         /* ephemeris select (0:all,1:rover,2:base,3:corr) */
@@ -1437,11 +1441,12 @@ typedef struct {        /* RTK server type */
     gtime_t ftime[RTKSVRNIN];  /* download time {rov,base,corr} */
     char files[RTKSVRNIN][MAXSTRPATH]; /* download paths {rov,base,corr} */
     obs_t obs[RTKSVRNIN][MAXOBSBUF]; /* observation data {rov,base,corr} */
+    uint32_t obstick[RTKSVRNIN][MAXOBSBUF]; // Obs recv tick time. {rov,base,corr}.
     nav_t nav;          /* navigation data */
     sbsmsg_t sbsmsg[MAXSBSMSG]; /* SBAS message buffer */
     stream_t stream[MAXSTRRTK]; /* streams {rov,base,corr1,corr2,logr,logb,logc1,logc2,sol1,sol2,sol3} */
     stream_t *moni;     /* monitor stream */
-    uint32_t tick;      /* start tick */
+    uint32_t tick;      // Start tick. For the run time.
     rtklib_thread_t thread; /* server thread */
     int cputime;        /* CPU time (ms) for a processing cycle */
     int prcout;         /* missing observation data count */
@@ -2078,24 +2083,36 @@ EXPORT void setsysopts(const prcopt_t *popt, const solopt_t *sopt,
 
 /* stream data input and output functions ------------------------------------*/
 EXPORT void strinitcom(void);
+EXPORT void strinittls(const char *svrcertfile, const char *svrkeyfile,
+                       const char *svrcafile, const char *svrcadir, unsigned svrverify,
+                       const char *clicertfile, const char *clikeyfile,
+                       const char *clicafile, const char *clicadir, unsigned cliverify);
 EXPORT void strinit  (stream_t *stream);
 EXPORT void strlock  (stream_t *stream);
 EXPORT void strunlock(stream_t *stream);
-EXPORT int  stropen  (stream_t *stream, int type, int mode, const char *path);
+EXPORT int stropen(stream_t *stream, unsigned type, unsigned mode, const char *path);
 EXPORT void strclose (stream_t *stream);
-EXPORT int  strread  (stream_t *stream, uint8_t *buff, int n);
-EXPORT int  strwrite (stream_t *stream, const uint8_t *buff, int n);
-EXPORT void strsync  (stream_t *stream1, stream_t *stream2);
-EXPORT int  strstat  (stream_t *stream, char *msg);
-EXPORT int  strstatx (stream_t *stream, char *msg);
-EXPORT void strsum   (stream_t *stream, int *inb, int *inr, int *outb, int *outr);
+EXPORT size_t strread(stream_t *stream, uint8_t *buff, size_t size, size_t start, size_t n);
+EXPORT size_t strwrite(stream_t *stream, const uint8_t *buff, size_t size, size_t start, size_t n);
+EXPORT void strwant(stream_t *stream, unsigned op, void *wantset);
+EXPORT void *strwantalloc(void);
+EXPORT void strwantfree(void *);
+EXPORT void strwantinit(void *wantset);
+EXPORT int strwantwait(void *wantset, unsigned ms);
+EXPORT void strsync(stream_t *stream1, stream_t *stream2);
+EXPORT int strstat(stream_t *stream, char *msg, size_t msize);
+EXPORT int strstatx(stream_t *stream, char *msg, size_t msize);
+EXPORT void strsum(stream_t *stream, size_t *inb, unsigned *inr, size_t *outb, unsigned *outr);
 EXPORT void strsetopt(const int *opt);
 EXPORT gtime_t strgettime(stream_t *stream);
 EXPORT void strsendnmea(stream_t *stream, const sol_t *sol);
 EXPORT void strsendcmd(stream_t *stream, const char *cmd);
-EXPORT void strsettimeout(stream_t *stream, int toinact, int tirecon);
+EXPORT void strsettimeout(stream_t *stream, unsigned toinact, int tirecon);
 EXPORT void strsetdir(const char *dir);
 EXPORT void strsetproxy(const char *addr);
+EXPORT void strsetntripver(unsigned ver);
+EXPORT void strurlescape(const char *src, size_t start, size_t n, char *dst, size_t dsize);
+EXPORT void strurlunescape(const char *src, size_t start, size_t n, char *dst, size_t dsize);
 
 /* integer ambiguity resolution ----------------------------------------------*/
 EXPORT int lambda(int n, int m, const double *a, const double *Q, double *F,
@@ -2133,21 +2150,21 @@ EXPORT int postpos(gtime_t ts, gtime_t te, double ti, double tu,
 EXPORT int getstapos(const char *file, const char *name, double *r);
 
 /* stream server functions ---------------------------------------------------*/
-EXPORT void strsvrinit (strsvr_t *svr, int nout);
-EXPORT int  strsvrstart(strsvr_t *svr, int *opts, int *strs, const char **paths,
-                        const char **logs, strconv_t **conv, const char **cmds,
-                        const char **cmds_periodic, const double *nmeapos);
+EXPORT void strsvrinit (strsvr_t *svr, unsigned nout);
+EXPORT unsigned strsvrstart(strsvr_t *svr, const int *opts, const unsigned *strs, const char **paths,
+                            const char **logs, strconv_t **conv, const char **cmds,
+                            const char **cmds_periodic, const double *nmeapos);
 EXPORT void strsvrstop (strsvr_t *svr, const char **cmds);
-EXPORT void strsvrstat (strsvr_t *svr, int *stat, int *log_stat, int *byte,
-                        int *bps, char *msg);
+EXPORT void strsvrstat (strsvr_t *svr, int *stat, int *log_stat, size_t *byte,
+                        unsigned *bps, char *msg, size_t msize);
 EXPORT strconv_t *strconvnew(int itype, int otype, const char *msgs, int staid,
-                             int stasel, const char *opt);
+                             unsigned stasel, const char *opt);
 EXPORT void strconvfree(strconv_t *conv);
 
 /* rtk server functions ------------------------------------------------------*/
 EXPORT int  rtksvrinit  (rtksvr_t *svr);
 EXPORT void rtksvrfree  (rtksvr_t *svr);
-EXPORT int  rtksvrstart (rtksvr_t *svr, int cycle, int buffsize, int *strs,
+EXPORT int  rtksvrstart (rtksvr_t *svr, unsigned cycle, unsigned tolerance, int buffsize, int *strs,
                          const char **paths, int *formats, int navsel, const char **cmds,
                          const char **cmds_periodic, const char **rcvopts, int nmeacycle,
                          int nmeareq, const double *nmeapos, prcopt_t *prcopt,
@@ -2160,7 +2177,7 @@ EXPORT void rtksvrlock  (rtksvr_t *svr);
 EXPORT void rtksvrunlock(rtksvr_t *svr);
 EXPORT int  rtksvrostat (rtksvr_t *svr, int type, gtime_t *time, int sat[MAXSAT],
                          double *az, double *el, double snr[MAXSAT][NFREQ], int vsat[MAXSAT][NFREQ]);
-EXPORT void rtksvrsstat (rtksvr_t *svr, int *sstat, char *msg);
+EXPORT void rtksvrsstat (rtksvr_t *svr, int *sstat, char *msg, size_t msize);
 EXPORT int  rtksvrmark(rtksvr_t *svr, const char *name, const char *comment);
 
 /* downloader functions ------------------------------------------------------*/

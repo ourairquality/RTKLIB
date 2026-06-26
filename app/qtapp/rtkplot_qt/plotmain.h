@@ -409,7 +409,7 @@ protected:
     // connection settings
     int rtStream[2];
     QString rtPath1, rtPath2;
-    QString streamPaths[2][3];
+    QString streamPaths[2][7];
     QString streamCommands[2][2];
     int streamCommandEnabled[2][2];
     int rtFormat[2];
@@ -420,6 +420,8 @@ protected:
     int rtTimeoutTime;
     int rtReconnectTime;
     elmask_t elevationMask;
+    QString rtTLSSvrCertFile, rtTLSSvrKeyFile, rtTLSSvrCAFile, rtTLSSvrCADir;
+    QString rtTLSCliCertFile, rtTLSCliKeyFile, rtTLSCliCAFile, rtTLSCliCADir;
     
     // time options
     int timeEnabled[3];

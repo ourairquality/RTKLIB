@@ -17,7 +17,9 @@ CUIs:
 1) Build executables with app/consapp/rtklib_consapp.groupproj project file 
 2) Install executables to ../RTKLIB/bin by runnning app/consapp/install_consapp.bat
 
-
+WINDOWS SSL Support
+1) Install OpenSSL 'winget install OpenSSL' and then Visual Studio cmake should recognise OpenSSL and include support when building RTKLIB.
+2) For Embarcadero GUI and CLI, copy the libssl-4-x64.dll and libcrypto-4-x64.dll to the rtklib/lib/ directory and at the RAD Studio command prompt convert these .a library files using 'mkexp libssl.a libssl-4-x64.dll' and 'mkexp libcrypto.a libcrypto-4-x64.dll'. The installed code will need to be able to find these dll libraries.
 
 WINDOWS/LINUX CLI & GUI (except for Embarcadero GUI) using CMake
 

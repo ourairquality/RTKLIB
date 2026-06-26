@@ -185,6 +185,7 @@ void __fastcall TInputStrDialog::BtnStr1Click(TObject *Sender)
 		case 1: TcpOpt(0,1); break;
 		case 2: TcpOpt(0,0); break;
 		case 3: TcpOpt(0,3); break;
+        case 4: TcpOpt(0,5); break; // Ntrip caster source.
 	}
 }
 //---------------------------------------------------------------------------
@@ -195,8 +196,9 @@ void __fastcall TInputStrDialog::BtnStr2Click(TObject *Sender)
 		case 1: TcpOpt(1,1); break;
 		case 2: TcpOpt(1,0); break;
 		case 3: TcpOpt(1,3); break;
-		case 5: FtpOpt(1,0); break;
-		case 6: FtpOpt(1,1); break;
+		case 4: TcpOpt(1,5); break; // Ntrip caster source.
+		case 6: FtpOpt(1,0); break;
+		case 7: FtpOpt(1,1); break;
 	}
 }
 //---------------------------------------------------------------------------
@@ -207,8 +209,9 @@ void __fastcall TInputStrDialog::BtnStr3Click(TObject *Sender)
 		case 1: TcpOpt(2,1); break;
 		case 2: TcpOpt(2,0); break;
 		case 3: TcpOpt(2,3); break;
-		case 5: FtpOpt(2,0); break;
-		case 6: FtpOpt(2,1); break;
+		case 4: TcpOpt(2,5); break; // Ntrip caster source.
+		case 6: FtpOpt(2,0); break;
+		case 7: FtpOpt(2,1); break;
 	}
 }
 //---------------------------------------------------------------------------
@@ -219,8 +222,9 @@ void __fastcall TInputStrDialog::BtnStr4Click(TObject *Sender)
 		case 1: TcpOpt(3,1); break;
 		case 2: TcpOpt(3,0); break;
 		case 3: TcpOpt(3,3); break;
-		case 5: FtpOpt(3,0); break;
-		case 6: FtpOpt(3,1); break;
+		case 4: TcpOpt(3,5); break; // Ntrip caster source.
+		case 6: FtpOpt(3,0); break;
+		case 7: FtpOpt(3,1); break;
 	}
 }
 //---------------------------------------------------------------------------
@@ -435,14 +439,14 @@ void __fastcall TInputStrDialog::UpdateEnable(void)
 	Stream2   ->Enabled=StreamC2->Checked;
 	Stream3   ->Enabled=StreamC3->Checked;
 	Stream4   ->Enabled=StreamC4->Checked;
-	BtnStr1   ->Enabled=StreamC1->Checked&&Stream1->ItemIndex!=4;
-	BtnStr2   ->Enabled=StreamC2->Checked&&Stream2->ItemIndex!=4;
-	BtnStr3   ->Enabled=StreamC3->Checked&&Stream3->ItemIndex!=4;
-	BtnStr4   ->Enabled=StreamC4->Checked&&Stream4->ItemIndex!=4;
-	BtnCmd1   ->Enabled=StreamC1->Checked&&Stream1->ItemIndex!=4;
-	BtnCmd2   ->Enabled=StreamC2->Checked&&Stream2->ItemIndex!=4;
-	BtnCmd3   ->Enabled=StreamC3->Checked&&Stream3->ItemIndex!=4;
-	BtnCmd4   ->Enabled=StreamC4->Checked&&Stream4->ItemIndex!=4;
+	BtnStr1   ->Enabled=StreamC1->Checked&&Stream1->ItemIndex!=5;
+	BtnStr2   ->Enabled=StreamC2->Checked&&Stream2->ItemIndex!=5;
+	BtnStr3   ->Enabled=StreamC3->Checked&&Stream3->ItemIndex!=5;
+	BtnStr4   ->Enabled=StreamC4->Checked&&Stream4->ItemIndex!=5;
+	BtnCmd1   ->Enabled=StreamC1->Checked&&Stream1->ItemIndex!=5;
+	BtnCmd2   ->Enabled=StreamC2->Checked&&Stream2->ItemIndex!=5;
+	BtnCmd3   ->Enabled=StreamC3->Checked&&Stream3->ItemIndex!=5;
+	BtnCmd4   ->Enabled=StreamC4->Checked&&Stream4->ItemIndex!=5;
 	Format1   ->Enabled=StreamC1->Checked;
 	Format2   ->Enabled=StreamC2->Checked;
 	Format3   ->Enabled=StreamC3->Checked;
@@ -465,14 +469,14 @@ void __fastcall TInputStrDialog::UpdateEnable(void)
 	LabelKm   ->Enabled=ena2&&NmeaReqL->ItemIndex==3;
 	
 	LabelF1   ->Enabled=ena1;
-	FilePath1 ->Enabled=StreamC1->Checked&&Stream1->ItemIndex==4;
-	FilePath2 ->Enabled=StreamC2->Checked&&Stream2->ItemIndex==4;
-	FilePath3 ->Enabled=StreamC3->Checked&&Stream3->ItemIndex==4;
-	FilePath4 ->Enabled=StreamC4->Checked&&Stream4->ItemIndex==4;
-	BtnFile1  ->Enabled=StreamC1->Checked&&Stream1->ItemIndex==4;
-	BtnFile2  ->Enabled=StreamC2->Checked&&Stream2->ItemIndex==4;
-	BtnFile3  ->Enabled=StreamC3->Checked&&Stream3->ItemIndex==4;
-	BtnFile4  ->Enabled=StreamC4->Checked&&Stream4->ItemIndex==4;
+	FilePath1 ->Enabled=StreamC1->Checked&&Stream1->ItemIndex==5;
+	FilePath2 ->Enabled=StreamC2->Checked&&Stream2->ItemIndex==5;
+	FilePath3 ->Enabled=StreamC3->Checked&&Stream3->ItemIndex==5;
+	FilePath4 ->Enabled=StreamC4->Checked&&Stream4->ItemIndex==5;
+	BtnFile1  ->Enabled=StreamC1->Checked&&Stream1->ItemIndex==5;
+	BtnFile2  ->Enabled=StreamC2->Checked&&Stream2->ItemIndex==5;
+	BtnFile3  ->Enabled=StreamC3->Checked&&Stream3->ItemIndex==5;
+	BtnFile4  ->Enabled=StreamC4->Checked&&Stream4->ItemIndex==5;
 	TimeTagC  ->Enabled=ena1;
 	TimeStartE->Enabled=ena1&&TimeTagC->Checked;
 	TimeSpeedL->Enabled=ena1&&TimeTagC->Checked;

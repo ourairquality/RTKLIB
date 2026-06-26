@@ -13,7 +13,9 @@
 //                       serial://port[:brate[:bsize[:parity[:stopb[:fctr]]]]]
 //                       tcpsvr://:port
 //                       tcpcli://addr[:port]
-//                       ntrip://[user[:passwd]@]addr[:port][/mntpnt]
+//                       ntripcli://[user[:passwd]@]addr[:port][/mntpnt]
+//                       ntripcas://[user[:passwd]@]addr[:port][/mntpnt]::T=2 (source)
+//                       udpsvr://addr:port
 //                       file://path
 //           -p1 path  connect port 1 to path
 //           -p2 path  connect port 2 to path
@@ -833,7 +835,7 @@ void Plot::showConnectionSettingsDialog()
     connectDialog->setTimeoutTime(rtTimeoutTime);
     connectDialog->setReconnectTime(rtReconnectTime);
     for (int i = 0; i < 2; i++)
-        for (int j = 0; j < 3; j++)
+        for (int j = 0; j < 7; j++)
             connectDialog->setPath(i, j, streamPaths[i][j]);
 
     for (int i = 0; i < 2; i++)
@@ -842,6 +844,14 @@ void Plot::showConnectionSettingsDialog()
             connectDialog->setCommandsEnabled(i,j, streamCommandEnabled[i][j]);
     }
     for (int i = 0; i < 10; i++) connectDialog->setHistory(i, streamHistory[i]);
+    connectDialog->setTLSSvrCertFile(rtTLSSvrCertFile);
+    connectDialog->setTLSSvrKeyFile(rtTLSSvrKeyFile);
+    connectDialog->setTLSSvrCAFile(rtTLSSvrCAFile);
+    connectDialog->setTLSSvrCADir(rtTLSSvrCADir);
+    connectDialog->setTLSCliCertFile(rtTLSCliCertFile);
+    connectDialog->setTLSCliKeyFile(rtTLSCliKeyFile);
+    connectDialog->setTLSCliCAFile(rtTLSCliCAFile);
+    connectDialog->setTLSCliCADir(rtTLSCliCADir);
 
     connectDialog->exec();
     if (connectDialog->result() != QDialog::Accepted) return;
@@ -856,7 +866,7 @@ void Plot::showConnectionSettingsDialog()
     rtTimeoutTime = connectDialog->getTimeoutTime();
     rtReconnectTime = connectDialog->getReconnectTime();
     for (int i = 0; i < 2; i++)
-        for (int j = 0; j < 3; j++) {
+        for (int j = 0; j < 7; j++) {
             streamPaths[i][j] = connectDialog->getPath(i, j);
     }
     for (int i = 0; i < 2; i++)
@@ -865,6 +875,14 @@ void Plot::showConnectionSettingsDialog()
             streamCommandEnabled[i][j] = connectDialog->getCommandsEnabled(i, j);
     }
     for (int i = 0; i < 10; i++) streamHistory[i] = connectDialog->getHistory(i);
+    rtTLSSvrCertFile = connectDialog->getTLSSvrCertFile();
+    rtTLSSvrKeyFile = connectDialog->getTLSSvrKeyFile();
+    rtTLSSvrCAFile = connectDialog->getTLSSvrCAFile();
+    rtTLSSvrCADir = connectDialog->getTLSSvrCADir();
+    rtTLSCliCertFile = connectDialog->getTLSCliCertFile();
+    rtTLSCliKeyFile = connectDialog->getTLSCliKeyFile();
+    rtTLSCliCAFile = connectDialog->getTLSCliCAFile();
+    rtTLSCliCADir = connectDialog->getTLSCliCADir();
 }
 // callback on menu-time-span/interval --------------------------------------
 void Plot::showStartEndTimeDialog()
@@ -1915,9 +1933,9 @@ void Plot::timerTimer()
     const gtime_t ts = {0, 0};
     gtime_t time = {0, 0};
     double tint = timeEnabled[2] ? timeInterval : 0.0, pos[3], ep[6];
-    int i, j, n, inb, inr, cycle, nmsg[2] = {0}, stat, istat;
+    int i;
+    int cycle, nmsg[2] = {0}, stat, istat;
     int sel = !ui->btnSolution1->isChecked() && ui->btnSolution2->isChecked() ? 1 : 0;
-    char msg[MAXSTRMSG] = "";
 
     trace(4, "timerTimer\n");
 
@@ -1928,13 +1946,17 @@ void Plot::timerTimer()
             solopt.timef = rtTimeFormat >= 1;
             solopt.degf = rtDegFormat;
             strncpy(solopt.sep, qPrintable(rtFieldSeperator), 63);
+            size_t inb;
+            unsigned inr;
             strsum(stream + streamNo, &inb, &inr, NULL, NULL);
-            stat = strstat(stream + streamNo, msg);
+            char msg[MAXSTRMSG] = "";
+            stat = strstat(stream + streamNo, msg, sizeof(msg));
             setWidgetTextColor(lblStreamStatus[streamNo], color[stat < 3 ? stat + 1 : 3]);
             if (*msg && strcmp(msg, "localhost"))
                 connectmsg += QStringLiteral("(%1) %2 ").arg(streamNo + 1).arg(msg);
-            while ((n = strread(stream + streamNo, buff, sizeof(buff))) > 0) {
-                for (j = 0; j < n; j++) {
+            size_t n;
+            while ((n = strread(stream + streamNo, buff, sizeof(buff), 0, sizeof(buff))) > 0) {
+                for (size_t j = 0; j < n; j++) {
                     istat = inputsol(buff[j], ts, ts, tint, SOLQ_NONE, &solopt, solutionData + streamNo);
                     if (istat == 0) continue;
                     if (istat < 0) { // disconnect received
@@ -1978,7 +2000,7 @@ void Plot::timerTimer()
         }
     } else if (plotOptDialog->getTimeSyncOut()) { // time sync
         time.time = 0;
-        while (strread(&streamTimeSync, (uint8_t *)streamBuffer + nStreamBuffer, 1)) {
+        while (strread(&streamTimeSync, (uint8_t *)streamBuffer, sizeof(streamBuffer), nStreamBuffer, 1) > 0) {
             if (++nStreamBuffer >= 1023) {
                 nStreamBuffer = 0;
                 continue;
@@ -2739,6 +2761,15 @@ void Plot::loadOptions()
     rtTimeoutTime = settings.value("plot/rttimeouttime", 0).toInt();
     rtReconnectTime = settings.value("plot/rtreconntime", 10000).toInt();
 
+    rtTLSSvrCertFile = settings.value("tls/tlssvrcertfile", "").toString();
+    rtTLSSvrKeyFile = settings.value("tls/tlssvrkeyfile", "").toString();
+    rtTLSSvrCAFile = settings.value("tls/tlssvrcafile", "").toString();
+    rtTLSSvrCADir = settings.value("tls/tlssvrcadir", "").toString();
+    rtTLSCliCertFile = settings.value("tls/tlsclicertfile", "").toString();
+    rtTLSCliKeyFile = settings.value("tls/tlsclikeyfile", "").toString();
+    rtTLSCliCAFile = settings.value("tls/tlsclicafile", "").toString();
+    rtTLSCliCADir = settings.value("tls/tlsclicadir", "").toString();
+
     ui->menuBrowse->setChecked(settings.value("solbrows/show", 0).toBool());
     ui->browseSplitter->restoreState(settings.value("solbrows/split1", 100).toByteArray());
     directory = settings.value("solbrows/dir",  "C:\\").toString();
@@ -2749,7 +2780,7 @@ void Plot::loadOptions()
         streamCommandEnabled[0][i] = settings.value(QString("str/strcmdena1_%1").arg(i), 0).toInt();
         streamCommandEnabled[1][i] = settings.value(QString("str/strcmdena2_%1").arg(i), 0).toInt();
     }
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 7; i++) {
         streamPaths[0][i] = settings.value(QString("str/strpath1_%1").arg(i), "").toString();
         streamPaths[1][i] = settings.value(QString("str/strpath2_%1").arg(i), "").toString();
     }
@@ -2792,6 +2823,15 @@ void Plot::saveOption()
     settings.setValue("plot/rttimeouttime", rtTimeoutTime);
     settings.setValue("plot/rtreconntime", rtReconnectTime);
 
+    settings.setValue("tls/tlssvrcertfile", rtTLSSvrCertFile);
+    settings.setValue("tls/tlssvrkeyfile", rtTLSSvrKeyFile);
+    settings.setValue("tls/tlssvrcafile", rtTLSSvrCAFile);
+    settings.setValue("tls/tlssvrcadir", rtTLSSvrCADir);
+    settings.setValue("tls/tlsclicertfile", rtTLSCliCertFile);
+    settings.setValue("tls/tlsclikeyfile", rtTLSCliKeyFile);
+    settings.setValue("tls/tlsclicafile", rtTLSCliCAFile);
+    settings.setValue("tls/tlsclicadir", rtTLSCliCADir);
+
     settings.setValue("solbrows/dir", fileSelDialog->getDirectory());
     settings.setValue("solbrows/split1", ui->browseSplitter->saveState());
     settings.setValue("solbrows/show", ui->menuBrowse->isChecked());
@@ -2802,7 +2842,7 @@ void Plot::saveOption()
         settings.setValue(QString("str/strcmdena1_%1").arg(i), streamCommandEnabled[0][i]);
         settings.setValue(QString("str/strcmdena2_%1").arg(i), streamCommandEnabled[1][i]);
     }
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 7; i++) {
         settings.setValue(QString("str/strpath1_%1").arg(i), streamPaths[0][i]);
         settings.setValue(QString("str/strpath2_%1").arg(i), streamPaths[1][i]);
     }

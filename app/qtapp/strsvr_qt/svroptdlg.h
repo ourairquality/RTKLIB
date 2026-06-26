@@ -20,6 +20,14 @@ public slots:
     void positionSelect();
     void localDirectorySelect();
     void logFileSelect();
+    void tlsSvrCertFileSelect();
+    void tlsSvrKeyFileSelect();
+    void tlsSvrCAFileSelect();
+    void tlsSvrCADirSelect();
+    void tlsCliCertFileSelect();
+    void tlsCliKeyFileSelect();
+    void tlsCliCAFileSelect();
+    void tlsCliCADirSelect();
 
 protected:
     void showEvent(QShowEvent*);
@@ -32,6 +40,8 @@ private:
 public:
     QString stationPositionFile, exeDirectory, localDirectory, proxyAddress;
     QString antennaType, receiverType, logFile;
+    QString tlsSvrCertFile, tlsSvrKeyFile, tlsSvrCAFile, tlsSvrCADir;
+    QString tlsCliCertFile, tlsCliKeyFile, tlsCliCAFile, tlsCliCADir;
     int serverOptions[6], traceLevel, nmeaRequest, fileSwapMargin, stationId, stationSelect, relayBack;
     int progressBarRange;
     double antennaPosition[3], antennaOffsets[3];

@@ -4,7 +4,7 @@ object SvrOptDialog: TSvrOptDialog
   BorderIcons = []
   BorderStyle = bsDialog
   Caption = 'Options'
-  ClientHeight = 328
+  ClientHeight = 496
   ClientWidth = 435
   Color = clWhite
   Font.Charset = DEFAULT_CHARSET
@@ -18,42 +18,42 @@ object SvrOptDialog: TSvrOptDialog
   PixelsPerInch = 96
   TextHeight = 13
   object Label15: TLabel
-    Left = 9
+    Left = 6
     Top = 275
     Width = 36
     Height = 13
     Caption = 'Log File'
   end
   object Label10: TLabel
-    Left = 9
+    Left = 6
     Top = 254
     Width = 90
     Height = 13
     Caption = 'HTTP/NTRIP Proxy'
   end
   object Label4: TLabel
-    Left = 9
+    Left = 6
     Top = 232
     Width = 90
     Height = 13
     Caption = 'FTP/HTTP Local Dir'
   end
   object Label1: TLabel
-    Left = 9
+    Left = 6
     Top = 10
     Width = 90
     Height = 13
     Caption = 'Buffer Size (bytes)'
   end
   object Label2: TLabel
-    Left = 9
+    Left = 6
     Top = 32
     Width = 88
     Height = 13
     Caption = 'Server Cycle  (ms)'
   end
   object Label3: TLabel
-    Left = 9
+    Left = 6
     Top = 54
     Width = 104
     Height = 13
@@ -74,7 +74,7 @@ object SvrOptDialog: TSvrOptDialog
     Caption = 'Output Log Level'
   end
   object Label8: TLabel
-    Left = 9
+    Left = 6
     Top = 144
     Width = 71
     Height = 13
@@ -88,28 +88,28 @@ object SvrOptDialog: TSvrOptDialog
     Caption = 'File Swap Margin (s)'
   end
   object Label5: TLabel
-    Left = 9
+    Left = 6
     Top = 76
     Width = 119
     Height = 13
     Caption = 'Reconnect Interval  (ms)'
   end
   object Label11: TLabel
-    Left = 9
+    Left = 6
     Top = 166
     Width = 81
     Height = 13
     Caption = 'Offset E/N/U (m)'
   end
   object Label12: TLabel
-    Left = 9
+    Left = 6
     Top = 188
     Width = 64
     Height = 13
     Caption = 'Antenna Info'
   end
   object Label13: TLabel
-    Left = 9
+    Left = 6
     Top = 210
     Width = 65
     Height = 13
@@ -123,30 +123,11 @@ object SvrOptDialog: TSvrOptDialog
     Caption = 'Relay Messages'
   end
   object Label17: TLabel
-    Left = 9
+    Left = 6
     Top = 98
     Width = 118
     Height = 13
     Caption = 'Progress Bar Range (KB)'
-  end
-  object BtnOk: TButton
-    Left = 233
-    Top = 296
-    Width = 95
-    Height = 29
-    Caption = '&OK'
-    ModalResult = 1
-    TabOrder = 0
-    OnClick = BtnOkClick
-  end
-  object BtnCancel: TButton
-    Left = 331
-    Top = 296
-    Width = 95
-    Height = 29
-    Caption = '&Cancel'
-    ModalResult = 2
-    TabOrder = 1
   end
   object SvrBuffSize: TEdit
     Left = 131
@@ -262,9 +243,9 @@ object SvrOptDialog: TSvrOptDialog
     OnClick = NmeaReqTClick
   end
   object LocalDir: TEdit
-    Left = 108
+    Left = 125
     Top = 228
-    Width = 292
+    Width = 275
     Height = 21
     TabOrder = 24
   end
@@ -292,9 +273,9 @@ object SvrOptDialog: TSvrOptDialog
     Text = '30'
   end
   object ProxyAddr: TEdit
-    Left = 108
+    Left = 125
     Top = 250
-    Width = 317
+    Width = 300
     Height = 21
     TabOrder = 26
   end
@@ -308,7 +289,7 @@ object SvrOptDialog: TSvrOptDialog
   object RcvInfo: TEdit
     Left = 108
     Top = 206
-    Width = 317
+    Width = 316
     Height = 21
     TabOrder = 23
   end
@@ -345,7 +326,7 @@ object SvrOptDialog: TSvrOptDialog
     Text = '1234'
   end
   object StaInfoSel: TCheckBox
-    Left = 9
+    Left = 6
     Top = 119
     Width = 77
     Height = 17
@@ -354,9 +335,9 @@ object SvrOptDialog: TSvrOptDialog
     OnClick = StaInfoSelClick
   end
   object LogFileF: TEdit
-    Left = 108
+    Left = 125
     Top = 272
-    Width = 292
+    Width = 250
     Height = 21
     TabOrder = 27
   end
@@ -399,8 +380,261 @@ object SvrOptDialog: TSvrOptDialog
     TabOrder = 6
     Text = '2000'
   end
+  object Label60: TLabel
+    Left = 6
+    Top = 296
+    Width = 36
+    Height = 13
+    Caption = 'TLS server certificate'
+  end
+  object TLSSvrCertFile: TEdit
+    Left = 125
+    Top = 293
+    Width = 275
+    Height = 21
+    TabOrder = 29
+  end
+  object BtnTLSSvrCertFile: TButton
+    Left = 401
+    Top = 293
+    Width = 25
+    Height = 21
+    Caption = '...'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -9
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 30
+    OnClick = BtnTLSSvrCertFileClick
+  end
+  object Label61: TLabel
+    Left = 6
+    Top = 317
+    Width = 36
+    Height = 13
+    Caption = 'TLS server private key'
+  end
+  object TLSSvrKeyFile: TEdit
+    Left = 125
+    Top = 314
+    Width = 275
+    Height = 21
+    TabOrder = 31
+  end
+  object BtnTLSSvrKeyFile: TButton
+    Left = 401
+    Top = 314
+    Width = 25
+    Height = 21
+    Caption = '...'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -9
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 32
+    OnClick = BtnTLSSvrKeyFileClick
+  end
+  object Label62: TLabel
+    Left = 6
+    Top = 338
+    Width = 36
+    Height = 13
+    Caption = 'TLS server CA file'
+  end
+  object TLSSvrCAFile: TEdit
+    Left = 125
+    Top = 335
+    Width = 275
+    Height = 21
+    TabOrder = 33
+  end
+  object BtnTLSSvrCAFile: TButton
+    Left = 401
+    Top = 335
+    Width = 25
+    Height = 21
+    Caption = '...'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -9
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 34
+    OnClick = BtnTLSSvrCAFileClick
+  end
+  object Label63: TLabel
+    Left = 6
+    Top = 359
+    Width = 36
+    Height = 13
+    Caption = 'TLS server CA directory'
+  end
+  object TLSSvrCADir: TEdit
+    Left = 125
+    Top = 356
+    Width = 275
+    Height = 21
+    TabOrder = 35
+  end
+  object BtnTLSSvrCADir: TButton
+    Left = 401
+    Top = 356
+    Width = 25
+    Height = 21
+    Caption = '...'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -9
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 36
+    OnClick = BtnTLSSvrCADirClick
+  end
+  object Label64: TLabel
+    Left = 6
+    Top = 380
+    Width = 36
+    Height = 13
+    Caption = 'TLS client certificate'
+  end
+  object TLSCliCertFile: TEdit
+    Left = 125
+    Top = 377
+    Width = 275
+    Height = 21
+    TabOrder = 37
+  end
+  object BtnTLSCliCertFile: TButton
+    Left = 401
+    Top = 377
+    Width = 25
+    Height = 21
+    Caption = '...'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -9
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 38
+    OnClick = BtnTLSCliCertFileClick
+  end
+  object Label65: TLabel
+    Left = 6
+    Top = 401
+    Width = 36
+    Height = 13
+    Caption = 'TLS client private key'
+  end
+  object TLSCliKeyFile: TEdit
+    Left = 125
+    Top = 398
+    Width = 275
+    Height = 21
+    TabOrder = 39
+  end
+  object BtnTLSCliKeyFile: TButton
+    Left = 401
+    Top = 398
+    Width = 25
+    Height = 21
+    Caption = '...'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -9
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 40
+    OnClick = BtnTLSCliKeyFileClick
+  end
+  object Label66: TLabel
+    Left = 6
+    Top = 422
+    Width = 36
+    Height = 13
+    Caption = 'TLS client CA file'
+  end
+  object TLSCliCAFile: TEdit
+    Left = 125
+    Top = 419
+    Width = 275
+    Height = 21
+    TabOrder = 41
+  end
+  object BtnTLSCliCAFile: TButton
+    Left = 401
+    Top = 419
+    Width = 25
+    Height = 21
+    Caption = '...'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -9
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 42
+    OnClick = BtnTLSCliCAFileClick
+  end
+  object Label67: TLabel
+    Left = 6
+    Top = 443
+    Width = 36
+    Height = 13
+    Caption = 'TLS client CA directory'
+  end
+  object TLSCliCADir: TEdit
+    Left = 125
+    Top = 440
+    Width = 275
+    Height = 21
+    TabOrder = 43
+  end
+  object BtnTLSCliCADir: TButton
+    Left = 401
+    Top = 440
+    Width = 25
+    Height = 21
+    Caption = '...'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -9
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 44
+    OnClick = BtnTLSCliCADirClick
+  end
+  object BtnOk: TButton
+    Left = 233
+    Top = 464
+    Width = 95
+    Height = 29
+    Caption = '&OK'
+    ModalResult = 1
+    TabOrder = 0
+    OnClick = BtnOkClick
+  end
+  object BtnCancel: TButton
+    Left = 331
+    Top = 464
+    Width = 95
+    Height = 29
+    Caption = '&Cancel'
+    ModalResult = 2
+    TabOrder = 1
+  end
   object OpenDialog: TOpenDialog
-    Filter = 'All (*.*)|*.*'
+    Filter = 'All (*.*)|*.*|' +
+      'TLS Certificate File (*.crt *.cer *.pem)|*.crt;*.cer;*.pem|' +
+      'TLS Private Key File (*.key *.pem)|*.key;*.pem|'
     Left = 38
     Top = 210
   end

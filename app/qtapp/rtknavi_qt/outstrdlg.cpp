@@ -110,7 +110,7 @@ void OutputStrDialog::showStream1Options()
         case 0: showSerialOptions(0, 0); break;
         case 1: showTcpOptions(0, TcpOptDialog::OPT_TCP_CLIENT); break;
         case 2: showTcpOptions(0, TcpOptDialog::OPT_TCP_SERVER); break;
-        case 3: showTcpOptions(0, TcpOptDialog::OPT_NTRIP_SERVER); break;
+        case 3: showTcpOptions(0, TcpOptDialog::OPT_NTRIP_SOURCE); break;
         case 4: showTcpOptions(0, TcpOptDialog::OPT_NTRIP_CASTER_CLIENT); break;
     }
 }
@@ -121,7 +121,7 @@ void OutputStrDialog::showStream2Options()
         case 0: showSerialOptions(1, 0); break;
         case 1: showTcpOptions(1, TcpOptDialog::OPT_TCP_CLIENT); break;
         case 2: showTcpOptions(1, TcpOptDialog::OPT_TCP_SERVER); break;
-        case 3: showTcpOptions(1, TcpOptDialog::OPT_NTRIP_SERVER); break;
+        case 3: showTcpOptions(1, TcpOptDialog::OPT_NTRIP_SOURCE); break;
         case 4: showTcpOptions(1, TcpOptDialog::OPT_NTRIP_CASTER_CLIENT); break;
     }
 }
@@ -132,7 +132,7 @@ void OutputStrDialog::showStream3Options()
         case 0: showSerialOptions(1, 0); break;
         case 1: showTcpOptions(2, TcpOptDialog::OPT_TCP_CLIENT); break;
         case 2: showTcpOptions(2, TcpOptDialog::OPT_TCP_SERVER); break;
-        case 3: showTcpOptions(2, TcpOptDialog::OPT_NTRIP_SERVER); break;
+        case 3: showTcpOptions(2, TcpOptDialog::OPT_NTRIP_SOURCE); break;
         case 4: showTcpOptions(2, TcpOptDialog::OPT_NTRIP_CASTER_CLIENT); break;
     }
 }

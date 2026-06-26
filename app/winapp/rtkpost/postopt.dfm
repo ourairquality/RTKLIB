@@ -767,6 +767,27 @@ object OptDialog: TOptDialog
         TabOrder = 28
         Text = '0.01'
       end
+      object Label41: TLabel
+        Left = 24
+        Top = 337
+        Width = 189
+        Height = 13
+        Caption = 'Time Interpolation of Base Station Data'
+      end
+      object IntpRefObs: TComboBox
+        Left = 248
+        Top = 334
+        Width = 152
+        Height = 21
+        Style = csDropDownList
+        ItemIndex = 0
+        TabOrder = 0
+        Text = 'OFF'
+        OnChange = FreqChange
+        Items.Strings = (
+          'OFF'
+          'ON')
+      end
     end
     object TabSheet3: TTabSheet
       Caption = 'O&utput'
@@ -2034,27 +2055,6 @@ object OptDialog: TOptDialog
     object TabSheet6: TTabSheet
       Caption = '&Misc'
       ImageIndex = 6
-      object Label41: TLabel
-        Left = 24
-        Top = 8
-        Width = 189
-        Height = 13
-        Caption = 'Time Interpolation of Base Station Data'
-      end
-      object IntpRefObs: TComboBox
-        Left = 248
-        Top = 4
-        Width = 152
-        Height = 21
-        Style = csDropDownList
-        ItemIndex = 0
-        TabOrder = 0
-        Text = 'OFF'
-        OnChange = FreqChange
-        Items.Strings = (
-          'OFF'
-          'ON')
-      end
       object Label42: TLabel
         Left = 24
         Top = 30

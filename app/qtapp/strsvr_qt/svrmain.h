@@ -68,9 +68,10 @@ private:
     void serialOptions(int index, int path);
     void tcpClientOptions(int index, int path);
     void tcpServerOptions(int index, int path);
-    void ntripServerOptions(int index, int path);
+    void ntripSourceOptions(int index, int path);
     void ntripClientOptions(int index, int path);
     void ntripCasterOptions(int index, int path);
+    void ntripCasterSourceOptions(int index, int path);
     void udpClientOptions(int index, int path);
     void udpServerOptions(int index, int path);
     void fileOptions(int index, int path);

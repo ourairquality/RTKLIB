@@ -169,6 +169,14 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
 	SvrOptDialog->AntType=AntType;
 	SvrOptDialog->RcvType=RcvType;
 	SvrOptDialog->LogFile=LogFile;
+        SvrOptDialog->TLSSvrCertFileF = TLSSvrCertFile;
+        SvrOptDialog->TLSSvrKeyFileF = TLSSvrKeyFile;
+        SvrOptDialog->TLSSvrCAFileF = TLSSvrCAFile;
+        SvrOptDialog->TLSSvrCADirectory = TLSSvrCADir;
+        SvrOptDialog->TLSCliCertFileF = TLSCliCertFile;
+        SvrOptDialog->TLSCliKeyFileF = TLSCliKeyFile;
+        SvrOptDialog->TLSCliCAFileF = TLSCliCAFile;
+        SvrOptDialog->TLSCliCADirectory = TLSCliCADir;
 	
 	if (SvrOptDialog->ShowModal()!=mrOk) return;
 	
@@ -189,17 +197,34 @@ void __fastcall TMainForm::BtnOptClick(TObject *Sender)
 	AntType=SvrOptDialog->AntType;
 	RcvType=SvrOptDialog->RcvType;
 	LogFile=SvrOptDialog->LogFile;
+        TLSSvrCertFile = SvrOptDialog->TLSSvrCertFileF;
+        TLSSvrKeyFile = SvrOptDialog->TLSSvrKeyFileF;
+        TLSSvrCAFile = SvrOptDialog->TLSSvrCAFileF;
+        TLSSvrCADir = SvrOptDialog->TLSSvrCADirectory;
+        TLSCliCertFile = SvrOptDialog->TLSCliCertFileF;
+        TLSCliKeyFile = SvrOptDialog->TLSCliKeyFileF;
+        TLSCliCAFile = SvrOptDialog->TLSCliCAFileF;
+        TLSCliCADir = SvrOptDialog->TLSCliCADirectory;
+
+        // Initialize the TLS certificates.
+        strinittls(TLSSvrCertFile.c_str(), TLSSvrKeyFile.c_str(),
+                   TLSSvrCAFile.c_str(), TLSSvrCADir.c_str(),
+                   0,
+                   TLSCliCertFile.c_str(), TLSCliKeyFile.c_str(),
+                   TLSCliCAFile.c_str(), TLSCliCADir.c_str(),
+                   0);
 }
 // callback on button-input-opt ---------------------------------------------
 void __fastcall TMainForm::BtnInputClick(TObject *Sender)
 {
 	switch (Input->ItemIndex) {
 		case 0: SerialOpt  (0,0); break;
-		case 1: TcpCliOpt  (0,1); break;
-		case 2: TcpSvrOpt  (0,2); break;
-		case 3: NtripCliOpt(0,3); break;
-		case 4: UdpSvrOpt  (0,4); break;
-		case 5: FileOpt    (0,5); break;
+        case 1: TcpCliOpt  (0,1); break;
+        case 2: TcpSvrOpt  (0,2); break;
+        case 3: NtripCliOpt(0,3); break; // Ntrip Client
+        case 4: NtripCasSrcOpt(0,4); break; // Ntrip Caster Source
+		case 5: UdpSvrOpt  (0,5); break;
+		case 6: FileOpt    (0,6); break;
 	}
 }
 // callback on button-cmd ---------------------------------------------------
@@ -255,8 +280,8 @@ void __fastcall TMainForm::BtnOutputClick(TObject *Sender)
 		case 1: SerialOpt  (i+1,0); break;
 		case 2: TcpCliOpt  (i+1,1); break;
 		case 3: TcpSvrOpt  (i+1,2); break; 
-		case 4: NtripSvrOpt(i+1,3); break;
-		case 5: NtripCasOpt(i+1,4); break;
+		case 4: NtripSrcOpt(i+1,3); break;
+        case 5: NtripCasOpt(i+1,4); break; // Ntrip Caster Client
 		case 6: UdpCliOpt  (i+1,5); break;
 		case 7: FileOpt    (i+1,6); break;
 	}
@@ -362,11 +387,13 @@ void __fastcall TMainForm::Timer1Timer(TObject *Sender)
 	TPanel *e3[]={IndLog,IndLog1,IndLog2,IndLog3,IndLog4,IndLog5,IndLog6};
 	AnsiString s;
 	gtime_t time=utc2gpst(timeget());
-	int stat[MAXSTR]={0},byte[MAXSTR]={0},bps[MAXSTR]={0},log_stat[MAXSTR]={0};
+	int stat[MAXSTR]={0},log_stat[MAXSTR]={0};
 	char msg[MAXSTRMSG*MAXSTR]="",s1[256],s2[256];
 	double ctime,t[4],pos,range;
 	
-	strsvrstat(&strsvr,stat,log_stat,byte,bps,msg);
+    size_t byte[MAXSTR] = {0};
+    unsigned bps[MAXSTR] = {0};
+    strsvrstat(&strsvr,stat,log_stat,byte,bps,msg,sizeof(msg));
 	for (int i=0;i<MAXSTR;i++) {
 		num2cnum(byte[i],s1);
 		num2cnum(bps[i],s2);
@@ -409,14 +436,15 @@ void __fastcall TMainForm::SvrStart(void)
 	strconv_t *conv[MAXSTR-1]={0};
 	static char str1[MAXSTR][1024],str2[MAXSTR][1024];
 	int itype[]={
-		STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPCLI,STR_UDPSVR,STR_FILE,
-		STR_FTP,STR_HTTP
+                STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPCLI,STR_NTRIPCAS,
+                STR_UDPSVR,STR_FILE,STR_FTP,STR_HTTP
 	};
 	int otype[]={
-		STR_NONE,STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSVR,STR_NTRIPCAS,
+		STR_NONE,STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSRC,STR_NTRIPCAS,
 		STR_UDPCLI,STR_FILE
 	};
-	int strs[MAXSTR]={0},opt[8]={0},n;
+	unsigned strs[MAXSTR]={0};
+	int opt[8]={0},n;
 	char *paths[MAXSTR],*logs[MAXSTR],*cmds[MAXSTR]={0},*cmds_periodic[MAXSTR]={0};
 	char filepath[1024],buff[1024],*p;
 	const char *ant[3]={"","",""},*rcv[3]={"","",""};
@@ -432,19 +460,21 @@ void __fastcall TMainForm::SvrStart(void)
 	}
 	strs[0]=itype[type[0]->ItemIndex];
 	strcpy(paths[0],Paths[0][type[0]->ItemIndex].c_str());
-	strcpy(logs[0],type[0]->ItemIndex>5||!PathEna[0]?"":PathLog[0].c_str());
+        // Don't bother logging for a file input stream.
+	strcpy(logs[0], !PathEna[0] || type[0]->ItemIndex > 5 ? "":PathLog[0].c_str());
 	
 	for (int i=1;i<MAXSTR;i++) {
 	    strs[i]=otype[type[i]->ItemIndex];
-	    strcpy(paths[i],!type[i]->ItemIndex?"":Paths[i][type[i]->ItemIndex-1].c_str());
-	    strcpy(logs[i],!PathEna[i]?"":PathLog[i].c_str());
+	    strcpy(paths[i],type[i]->ItemIndex == 0 ?"":Paths[i][type[i]->ItemIndex-1].c_str());
+            // No input to log from a UDP output or file output stream.
+	    strcpy(logs[i], (!PathEna[i] || type[i]->ItemIndex == 0 || type[i]->ItemIndex > 5) ?"":PathLog[i].c_str());
     }
 	for (int i=0;i<MAXSTR;i++) {
 		if (strs[i]==STR_SERIAL) {
 			if (CmdEna[i][0]) cmds[i]=MainForm->Cmds[i][0].c_str();
 			if (CmdEna[i][2]) cmds_periodic[i]=MainForm->Cmds[i][2].c_str();
 		}
-		else if (strs[i]==STR_TCPCLI||strs[i]==STR_NTRIPCLI) {
+		else if (strs[i]==STR_TCPCLI || strs[i]==STR_TCPSVR || strs[i]==STR_NTRIPCLI || strs[i]==STR_NTRIPCAS) {
 			if (CmdEnaTcp[i][0]) cmds[i]=MainForm->CmdsTcp[i][0].c_str();
 			if (CmdEnaTcp[i][2]) cmds_periodic[i]=MainForm->CmdsTcp[i][2].c_str();
 		}
@@ -480,7 +510,6 @@ void __fastcall TMainForm::SvrStart(void)
 	strsetproxy(ProxyAddress.c_str());
 	
 	for (int i=0;i<MAXSTR-1;i++) { // for each out stream
-		if (Input->ItemIndex==2||Input->ItemIndex==4) continue;
 		if (!ConvEna[i]) continue;
 		if (!(conv[i]=strconvnew(ConvInp[i],ConvOut[i],ConvMsg[i].c_str(),
 								 StaId,StaSel,ConvOpt[i].c_str()))) continue;
@@ -497,6 +526,15 @@ void __fastcall TMainForm::SvrStart(void)
 		matcpy(conv[i]->out.sta.pos,AntPos,3,1);
 		matcpy(conv[i]->out.sta.del,AntOff,3,1);
 	}
+
+        // Initialize the TLS certificates.
+        strinittls(TLSSvrCertFile.c_str(), TLSSvrKeyFile.c_str(),
+                   TLSSvrCAFile.c_str(), TLSSvrCADir.c_str(),
+                   0,
+                   TLSCliCertFile.c_str(), TLSCliKeyFile.c_str(),
+                   TLSCliCAFile.c_str(), TLSCliCADir.c_str(),
+                   0);
+
 	// stream server start
 	if (!strsvrstart(&strsvr,opt,strs,(const char **)paths,(const char **)logs,conv,(const char **)cmds,(const char **)cmds_periodic,AntPos)) {
 		return;
@@ -517,11 +555,11 @@ void __fastcall TMainForm::SvrStop(void)
 {
 	TComboBox *type[]={Input,Output1,Output2,Output3,Output4,Output5,Output6};
 	int itype[]={
-		STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPCLI,STR_UDPSVR,STR_FILE,
+		STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPCLI,STR_NTRIPCAS,STR_UDPSVR,STR_FILE,
 		STR_FTP,STR_HTTP
 	};
 	int otype[]={
-		STR_NONE,STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSVR,STR_NTRIPCAS,
+		STR_NONE,STR_SERIAL,STR_TCPCLI,STR_TCPSVR,STR_NTRIPSRC,STR_NTRIPCAS,
 		STR_UDPCLI,STR_FILE
 	};
 	char *cmds[MAXSTR]={0};
@@ -535,7 +573,7 @@ void __fastcall TMainForm::SvrStop(void)
 		if (strs[i]==STR_SERIAL) {
 			if (CmdEna[i][1]) cmds[i]=MainForm->Cmds[i][1].c_str();
 		}
-		else if (strs[i]==STR_TCPCLI||strs[i]==STR_NTRIPCLI) {
+		else if (strs[i]==STR_TCPCLI || strs[i]==STR_TCPSVR || strs[i]==STR_NTRIPCLI || strs[i]==STR_NTRIPSRC || strs[i]==STR_NTRIPCAS) {
 			if (CmdEnaTcp[i][1]) cmds[i]=MainForm->CmdsTcp[i][1].c_str();
 		}
 	}
@@ -561,47 +599,50 @@ void __fastcall TMainForm::SvrStop(void)
 void __fastcall TMainForm::Timer2Timer(TObject *Sender)
 {
 	const char *types[]={
-		"None","Serial","File","TCP Server","TCP Client","Ntrip Server",
+		"None","Serial","File","TCP Server","TCP Client","Ntrip Source",
 		"Ntrip Client","FTP","HTTP","Ntrip Cast","UDP Server","UDP Client"
 	};
 	const char *modes[]={"-","R","W","R/W"};
 	const char *states[]={"ERR","-","WAIT","CONN"};
-	stream_t *str;
-	char *msg, *p;
-	int i,len,inb,inr,outb,outr;
 	
 	if (StrMonDialog->StrFmt) {
 		rtklib_lock(&strsvr.lock);
-		len=strsvr.npb;
-		if (len>0&&(msg=(char *)malloc(len))) {
+		int len=strsvr.npb;
+        char *msg = NULL;
+		if (len>0) {
+          msg=(char *)malloc(len);
+          if (msg != NULL) {
 			memcpy(msg,strsvr.pbuf,len);
 			strsvr.npb=0;
-		}
+          }
+        }
 		rtklib_unlock(&strsvr.lock);
 		if (len<=0||!msg) return;
 		StrMonDialog->AddMsg((uint8_t *)msg,len);
 		free(msg);
 	}
 	else {
-		if (!(msg=(char *)malloc(16000))) return;
-		
-		for (i=0,p=msg;i<MAXSTR;i++) {
-			p+=sprintf(p,"[STREAM %d]\n",i);
-			strsum(strsvr.stream+i,&inb,&inr,&outb,&outr);
-			strstatx(strsvr.stream+i,p);
-			p+=strlen(p);
-			if (inb>0) {
-				p+=sprintf(p,"	inb		= %d\n",inb);
-				p+=sprintf(p,"	inr		= %d\n",inr);
-			}
-			if (outb>0) {
-				p+=sprintf(p,"	outb	= %d\n",outb);
-				p+=sprintf(p,"	outr	= %d\n",outr);
-			}
-		}
-		StrMonDialog->AddMsg((uint8_t *)msg,strlen(msg));
-		
-		free(msg);
+#define MSG_SIZE 16000
+      char *msg = (char *)malloc(MSG_SIZE);
+      if (msg == NULL) return;
+      msg[0] = '\0';
+      for (unsigned i = 0; i < MAXSTR; i++) {
+        rscatprintf((char *)msg, MSG_SIZE, "[STREAM %d]\n", i);
+        size_t inb, outb;
+        unsigned inr, outr;
+        strsum(strsvr.stream + i, &inb, &inr, &outb, &outr);
+        strstatx(strsvr.stream + i, (char *)msg, MSG_SIZE);
+        if (inb > 0) {
+          rscatprintf((char *)msg, MSG_SIZE, "  inb     = %u\n", inb);
+          rscatprintf((char *)msg, MSG_SIZE, "  inr     = %u\n", inr);
+        }
+        if (outb > 0) {
+          rscatprintf((char *)msg, MSG_SIZE, "  outb    = %u\n", outb);
+          rscatprintf((char *)msg, MSG_SIZE, "  outr    = %u\n", outr);
+        }
+      }
+      StrMonDialog->AddMsg((uint8_t *)msg, strlen((char *)msg));
+      free(msg);
 	}
 }
 // set serial options -------------------------------------------------------
@@ -631,10 +672,10 @@ void __fastcall TMainForm::TcpCliOpt(int index, int path)
 	for (int i=0;i<MAXHIST;i++) TcpHistory[i]=TcpOptDialog->History[i];
 }
 // set ntrip server options -------------------------------------------------
-void __fastcall TMainForm::NtripSvrOpt(int index, int path)
+void __fastcall TMainForm::NtripSrcOpt(int index, int path)
 {
 	TcpOptDialog->Path=Paths[index][path];
-	TcpOptDialog->Opt=2;
+	TcpOptDialog->Opt=2; // Ntrip source.
 	for (int i=0;i<MAXHIST;i++) TcpOptDialog->History[i]=TcpHistory[i];
 	if (TcpOptDialog->ShowModal()!=mrOk) return;
 	Paths[index][path]=TcpOptDialog->Path;
@@ -644,7 +685,7 @@ void __fastcall TMainForm::NtripSvrOpt(int index, int path)
 void __fastcall TMainForm::NtripCliOpt(int index, int path)
 {
 	TcpOptDialog->Path=Paths[index][path];
-	TcpOptDialog->Opt=3;
+	TcpOptDialog->Opt=3; // Ntrip client.
 	for (int i=0;i<MAXHIST;i++) TcpOptDialog->History[i]=TcpHistory[i];
 	if (TcpOptDialog->ShowModal()!=mrOk) return;
 	Paths[index][path]=TcpOptDialog->Path;
@@ -654,7 +695,15 @@ void __fastcall TMainForm::NtripCliOpt(int index, int path)
 void __fastcall TMainForm::NtripCasOpt(int index, int path)
 {
 	TcpOptDialog->Path=Paths[index][path];
-	TcpOptDialog->Opt=4;
+	TcpOptDialog->Opt=4; // Ntrip caster.
+	if (TcpOptDialog->ShowModal()!=mrOk) return;
+	Paths[index][path]=TcpOptDialog->Path;
+}
+// set ntrip caster source options ------------------------------------------
+void __fastcall TMainForm::NtripCasSrcOpt(int index, int path)
+{
+	TcpOptDialog->Path=Paths[index][path];
+	TcpOptDialog->Opt=5; // Ntrip caster source.
 	if (TcpOptDialog->ShowModal()!=mrOk) return;
 	Paths[index][path]=TcpOptDialog->Path;
 }
@@ -697,16 +746,22 @@ void __fastcall TMainForm::UpdateEnable(void)
 	TButton *btn3[]={BtnConv1,BtnConv2,BtnConv3,BtnConv4,BtnConv5,BtnConv6};
 	TButton *btn4[]={BtnLog1,BtnLog2,BtnLog3,BtnLog4,BtnLog5,BtnLog6};
 	
-	BtnCmd->Enabled=Input->ItemIndex<2||Input->ItemIndex==3;
+        // Only send commands to streams established at startup: serial, TCP client, NTRIP client.
+	BtnCmd->Enabled = Input->ItemIndex == 0 || Input->ItemIndex == 1 || Input->ItemIndex == 3;
+        // Don't both with logging from a file input stream.
 	BtnLog->Enabled=Input->ItemIndex<6;
 	for (int i=0;i<MAXSTR-1;i++) {
 	    label1[i]->Font->Color=type[i]->ItemIndex>0?clBlack:clGray;
 	    label2[i]->Font->Color=type[i]->ItemIndex>0?clBlack:clGray;
 	    label3[i]->Font->Color=type[i]->ItemIndex>0?clBlack:clGray;
 	    btn1[i]->Enabled=type[i]->ItemIndex>0;
-	    btn2[i]->Enabled=btn1[i]->Enabled&&(type[i]->ItemIndex==1||type[i]->ItemIndex==2);
-	    btn3[i]->Enabled=btn1[i]->Enabled&&Input->ItemIndex!=2&&Input->ItemIndex!=4;
-	    btn4[i]->Enabled=btn1[i]->Enabled&&(type[i]->ItemIndex==1||type[i]->ItemIndex==2);
+        // Assume that out out startup commands are useful output streams and
+        // so only useful for streams connected at startup: serial and TCP
+        // client, and NTRIP source.
+        btn2[i]->Enabled=btn1[i]->Enabled&&(type[i]->ItemIndex==1||type[i]->ItemIndex==2||type[i]->ItemIndex==4);
+        btn3[i]->Enabled = btn1[i]->Enabled && Input->ItemIndex > 0;
+        // No input to log from a UDP output or file output stream.
+        btn4[i]->Enabled=btn1[i]->Enabled&&(type[i]->ItemIndex>0&&type[i]->ItemIndex<6);
     }
 }
 // set task-tray icon -------------------------------------------------------
@@ -785,10 +840,26 @@ void __fastcall TMainForm::LoadOpt(void)
 	LocalDirectory=ini->ReadString("dirs",	"localdirectory","");
 	ProxyAddress  =ini->ReadString("dirs",	"proxyaddress",  "");
 	LogFile		  =ini->ReadString("file",	"logfile",		 "");
+        TLSSvrCertFile = ini->ReadString("file", "tlssvrcertfile", "");
+        TLSSvrKeyFile = ini->ReadString("file", "tlssvrkeyfile", "");
+        TLSSvrCAFile = ini->ReadString("file", "tlssvrcafile", "");
+        TLSSvrCADir = ini->ReadString("file", "tlssvrcadir", "");
+        TLSCliCertFile = ini->ReadString("file", "tlsclicertfile", "");
+        TLSCliKeyFile = ini->ReadString("file", "tlsclikeyfile", "");
+        TLSCliCAFile = ini->ReadString("file", "tlsclicafile", "");
+        TLSCliCADir = ini->ReadString("file", "tlsclicadir", "");
 	Height        =ini->ReadInteger("window","height",      271);
 	delete ini;
 	
 	UpdateEnable();
+
+        // Initialize the TLS certificates.
+        strinittls(TLSSvrCertFile.c_str(), TLSSvrKeyFile.c_str(),
+                   TLSSvrCAFile.c_str(), TLSSvrCADir.c_str(),
+                   0,
+                   TLSCliCertFile.c_str(), TLSCliKeyFile.c_str(),
+                   TLSCliCAFile.c_str(), TLSCliCADir.c_str(),
+                   0);
 }
 // save options--------------------------------------------------------------
 void __fastcall TMainForm::SaveOpt(void)
@@ -857,6 +928,14 @@ void __fastcall TMainForm::SaveOpt(void)
 	ini->WriteString("dirs"  ,"localdirectory",LocalDirectory);
 	ini->WriteString("dirs"  ,"proxyaddress"  ,ProxyAddress  );
 	ini->WriteString("file",  "logfile"		  ,LogFile		 );
+        ini->WriteString("file", "tlssvrcertfile", TLSSvrCertFile);
+        ini->WriteString("file", "tlssvrkeyfile", TLSSvrKeyFile);
+        ini->WriteString("file", "tlssvrcafile", TLSSvrCAFile);
+        ini->WriteString("file", "tlssvrcadir", TLSSvrCADir);
+        ini->WriteString("file", "tlsclicertfile", TLSCliCertFile);
+        ini->WriteString("file", "tlsclikeyfile", TLSCliKeyFile);
+        ini->WriteString("file", "tlsclicafile", TLSCliCAFile);
+        ini->WriteString("file", "tlsclicadir", TLSCliCADir);
 	ini->WriteInteger("window","height"		  ,Height		 );
 	delete ini;
 }

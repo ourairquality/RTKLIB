@@ -473,6 +473,11 @@
         </item>
         <item>
          <property name="text">
+          <string>NTRIP Caster Source</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>File</string>
          </property>
         </item>
@@ -585,6 +590,11 @@
         <item>
          <property name="text">
           <string>NTRIP Client</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>NTRIP Caster Source</string>
          </property>
         </item>
         <item>
@@ -718,6 +728,11 @@
         </item>
         <item>
          <property name="text">
+          <string>NTRIP Caster Source</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>File</string>
          </property>
         </item>
@@ -756,6 +771,11 @@
         <item>
          <property name="text">
           <string>NTRIP Client</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>NTRIP Caster Source</string>
          </property>
         </item>
         <item>

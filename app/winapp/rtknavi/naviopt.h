@@ -105,7 +105,7 @@ __published:
 	TEdit *RovPos1;
 	TEdit *RovPos2;
 	TEdit *RovPos3;
-	TButton *BtnRovPos;
+    TButton *BtnRovPos;
 	TCheckBox *RovAntPcv;
 	TComboBox *RovAnt;
 	TComboBox *RovPosTypeP;
@@ -139,9 +139,9 @@ __published:
 	TEdit *DCBFile;
 	TEdit *SatPcvFile;
 	TButton *BtnSatPcvFile;
-	TTabSheet *TabSheet8;
 	TLabel *Label19;
 	TEdit *SvrCycleE;
+	TEdit *SvrToleranceE;
 	TEdit *SvrBuffSizeE;
 	TLabel *Label40;
 	TButton *BtnFont2;
@@ -266,7 +266,43 @@ __published:
 	TLabel *Label54;
 	TLabel *Label55;
 	TLabel *Label56;
-	void __fastcall BtnOkClick(TObject *Sender);
+	TComboBox *IntpRefObs;
+
+	TTabSheet *TabSheet8;
+	TLabel *Label60;
+	TLabel *Label61;
+	TLabel *Label62;
+	TLabel *Label63;
+	TLabel *Label64;
+	TLabel *Label65;
+	TLabel *Label66;
+	TLabel *Label67;
+    TEdit *TLSSvrCertFile;
+    TEdit *TLSSvrKeyFile;
+    TEdit *TLSSvrCAFile;
+    TEdit *TLSSvrCADir;
+    TEdit *TLSCliCertFile;
+    TEdit *TLSCliKeyFile;
+    TEdit *TLSCliCAFile;
+    TEdit *TLSCliCADir;
+    TButton *BtnTLSSvrCertFile;
+    TButton *BtnTLSSvrKeyFile;
+    TButton *BtnTLSSvrCAFile;
+    TButton *BtnTLSSvrCADir;
+    TButton *BtnTLSCliCertFile;
+    TButton *BtnTLSCliKeyFile;
+    TButton *BtnTLSCliCAFile;
+    TButton *BtnTLSCliCADir;
+    void __fastcall BtnTLSSvrCertFileClick(TObject *Sender);
+    void __fastcall BtnTLSSvrKeyFileClick(TObject *Sender);
+    void __fastcall BtnTLSSvrCAFileClick(TObject *Sender);
+    void __fastcall BtnTLSSvrCADirClick(TObject *Sender);
+    void __fastcall BtnTLSCliCertFileClick(TObject *Sender);
+    void __fastcall BtnTLSCliKeyFileClick(TObject *Sender);
+    void __fastcall BtnTLSCliCAFileClick(TObject *Sender);
+    void __fastcall BtnTLSCliCADirClick(TObject *Sender);
+
+    void __fastcall BtnOkClick(TObject *Sender);
 	void __fastcall RovAntPcvClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnAntPcvFileClick(TObject *Sender);
@@ -327,7 +363,7 @@ public:
 	prcopt_t PrcOpt;
 	solopt_t SolOpt;
 	TFont *PanelFont,*PosFont;
-	int SvrCycle,SvrBuffSize,SolBuffSize,NavSelect,SavedSol;
+    int SvrCycle,SvrTolerance,SvrBuffSize,SolBuffSize,NavSelect,SavedSol;
 	int NmeaReq,NmeaCycle,TimeoutTime,ReconTime,DgpsCorr,SbasCorr;
 	int RovPosTypeF,RefPosTypeF,RovAntPcvF,RefAntPcvF,BaselineC;
 	int MoniPort,FileSwapMargin,PanelStack;
@@ -339,6 +375,8 @@ public:
 	double RovAntDel[3],RefAntDel[3],RovPos[3],RefPos[3];
 	double Baseline[2],NmeaIntv[2];
 	__fastcall TOptDialog(TComponent* Owner);
+    AnsiString TLSSvrCertFileF, TLSSvrKeyFileF, TLSSvrCAFileF, TLSSvrCADirectory;
+    AnsiString TLSCliCertFileF, TLSCliKeyFileF, TLSCliCAFileF, TLSCliCADirectory;
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TOptDialog *OptDialog;

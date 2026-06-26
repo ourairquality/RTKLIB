@@ -428,6 +428,7 @@ void __fastcall TOptDialog::GetOpt(void)
 	BaselineLen	 ->Text			=s.sprintf("%.3f",MainForm->BaseLine[0]);
 	BaselineSig	 ->Text			=s.sprintf("%.3f",MainForm->BaseLine[1]);
 	BaselineConst->Checked		=MainForm->BaseLineConst;
+	IntpRefObs	 ->ItemIndex	=MainForm->IntpRefObs;
 	
 	SolFormat	 ->ItemIndex	=MainForm->SolFormat;
 	TimeFormat	 ->ItemIndex	=MainForm->TimeFormat;
@@ -484,7 +485,6 @@ void __fastcall TOptDialog::GetOpt(void)
 	RnxOpts2	 ->Text			=MainForm->RnxOpts2;
 	PPPOpts		 ->Text			=MainForm->PPPOpts;
 	
-	IntpRefObs	 ->ItemIndex	=MainForm->IntpRefObs;
 	SbasSat		 ->Text			=s.sprintf("%d",MainForm->SbasSat);
 	SatPcvFile   ->Text			=MainForm->SatPcvFile;
 	SatMetaFile	 ->Text			=MainForm->SatMetaFile;
@@ -571,6 +571,7 @@ void __fastcall TOptDialog::SetOpt(void)
 	MainForm->BaseLine[0]  	=str2dbl(BaselineLen->Text);
 	MainForm->BaseLine[1]  	=str2dbl(BaselineSig->Text);
 	MainForm->BaseLineConst	=BaselineConst->Checked;
+	MainForm->IntpRefObs  =IntpRefObs	->ItemIndex;
 	
 	MainForm->SolFormat   	=SolFormat  ->ItemIndex;
 	MainForm->TimeFormat  	=TimeFormat ->ItemIndex;
@@ -626,7 +627,6 @@ void __fastcall TOptDialog::SetOpt(void)
 	MainForm->RnxOpts2	  =RnxOpts2		->Text;
 	MainForm->PPPOpts	  =PPPOpts		->Text;
 	
-	MainForm->IntpRefObs  =IntpRefObs	->ItemIndex;
 	MainForm->SbasSat     =SbasSat		->Text.ToInt();
 	MainForm->AntPcvFile  =AntPcvFile	->Text;
 	MainForm->SatPcvFile  =SatPcvFile	->Text;
@@ -1058,6 +1058,7 @@ void __fastcall TOptDialog::UpdateEnable(void)
 	BaselineConst  ->Enabled=rel;
 	BaselineLen    ->Enabled=BaselineConst->Checked;
 	BaselineSig    ->Enabled=BaselineConst->Checked;
+	IntpRefObs     ->Enabled=rel;
 	
 	OutputHead     ->Enabled=SolFormat->ItemIndex<3;
 	OutputOpt      ->Enabled=SolFormat->ItemIndex<3;

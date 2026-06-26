@@ -1265,7 +1265,34 @@
          </item>
         </widget>
        </item>
-      </layout>
+        <item row="22" column="0">
+          <widget class="QLabel" name="lblInterpolationBaseStation">
+            <property name="text">
+              <string>Time Interpolation of Base Station Data</string>
+            </property>
+            <property name="buddy">
+              <cstring>cBIntputReferenceObservation</cstring>
+            </property>
+          </widget>
+        </item>
+        <item row="22" column="1" colspan="2">
+          <widget class="QComboBox" name="cBIntputReferenceObservation">
+            <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select ON to enable time interpolation of base station data (option: &lt;span style=&quot; font-style:italic;&quot;&gt;misc-timeinterp&lt;/span&gt;). &lt;/p&gt;&lt;p&gt;&lt;br/&gt;If selecting ON, the base station data are linearly interpolated to the rover epoch and DD (double- difference) is made with them. If not checked, nearest epoch of base station data is used for DD. This is only useful if the processing of the rover observations can be delayed until subsequent base observations are received.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <item>
+              <property name="text">
+                <string>OFF</string>
+              </property>
+            </item>
+            <item>
+              <property name="text">
+                <string>ON</string>
+              </property>
+            </item>
+          </widget>
+        </item>
+     </layout>
      </widget>
      <widget class="QWidget" name="tabOutput">
       <property name="toolTip">
@@ -2799,7 +2826,7 @@
        <string>&amp;Misc</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_7">
-        <item row="10" column="5">
+       <item row="11" column="5">
         <widget class="QSpinBox" name="sBMonitorPort">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set monitor port number. &lt;/p&gt;&lt;p&gt;The monitor port is TCP server port to connect from outside or by RTKPLOT for real-time solution monitor. If multiple instances of RTKNAVI are generated, the following numbers are used automatically. If 0 is set, the monitor port is not used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -2809,7 +2836,7 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="5">
+       <item row="2" column="4">
         <widget class="QSpinBox" name="sBServerBufferSize">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the input message buffer size in bytes (option: &lt;span style=&quot; font-style:italic;&quot;&gt;misc-svrcycle&lt;/span&gt;).&lt;/p&gt;&lt;p&gt;Usually set it to 32768 or more.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -2822,7 +2849,7 @@
          </property>
         </widget>
        </item>
-       <item row="7" column="5">
+       <item row="8" column="5">
         <widget class="QSpinBox" name="sBSavedSolution">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the internal log buffer size (epochs).  &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -2848,7 +2875,20 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="4">
+       <item row="1" column="5">
+        <widget class="QSpinBox" name="sBServerTolerance">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the processing delay tolerance in ms (option: &lt;span style=&quot; font-style:italic;&quot;&gt;misc-svrtol&lt;/span&gt;). &lt;/p&gt;&lt;p&gt;Usually set to 0 ms for real time, or 5+ seconds where a processing delay is tolerable for a better result.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="maximum">
+          <number>30000</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="4">
         <widget class="QSpinBox" name="sBNmeaCycle">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the NMEA GPGGA transmission cycle (ms) to NRTK server (option &lt;span style=&quot; font-style:italic;&quot;&gt;misc-nmeacycle&lt;/span&gt;).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -2864,7 +2904,7 @@
          </property>
         </widget>
        </item>
-       <item row="10" column="4">
+       <item row="11" column="4">
         <widget class="QSpinBox" name="sBSbasSatellite">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If SBAS DGPS correction enabled, input SBAS satellite PRN number to be used (option &lt;span style=&quot; font-style:italic;&quot;&gt;misc-sbasatsel&lt;/span&gt;). &lt;/p&gt;&lt;p&gt;If you input 0, all available SBAS satellites are used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -2874,7 +2914,7 @@
          </property>
         </widget>
        </item>
-       <item row="7" column="4">
+       <item row="8" column="4">
         <widget class="QSpinBox" name="sBSolutionBufferSize">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the internal solution buffer size (epochs) (option &lt;span style=&quot; font-style:italic;&quot;&gt;misc-buffersize&lt;/span&gt;).  &lt;/p&gt;&lt;p&gt;To increase the length of the receiver trajectory on &amp;quot;RTK Map&amp;quot;, increase the solution buffer size.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -2887,7 +2927,7 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="5">
+       <item row="4" column="5">
         <widget class="QSpinBox" name="sBReconnectTime">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the re-connect interval (ms) for TCP client and NTRIP client connections (option &lt;span style=&quot; font-style:italic;&quot;&gt;misc-reconnect&lt;/span&gt;). &lt;/p&gt;&lt;p&gt;If the timeout time expired without server response, RTKNAVI retries to connect to server after waiting for the re-connect interval.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -2900,7 +2940,7 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="5">
+       <item row="6" column="5">
         <widget class="QSpinBox" name="sBFileSwapMargin">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If output or log file swap enabled, set the overlapped periods (s) between the previous and the new output files. If you set it to 0, the periods of these files are not overlapped. &lt;/p&gt;&lt;p&gt;This feature is to avoid the missing of transient data by the output file swapping.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -2913,7 +2953,7 @@
          </property>
         </widget>
        </item>
-       <item row="12" column="5">
+       <item row="13" column="5">
         <widget class="QPushButton" name="btnFontPanel">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select the font of the panel display in the main window.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -2923,7 +2963,7 @@
          </property>
         </widget>
        </item>
-       <item row="8" column="4" colspan="2">
+       <item row="9" column="4" colspan="2">
         <widget class="QComboBox" name="cBNavSelect">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select navigation messages to be used (option &lt;span style=&quot; font-style:italic;&quot;&gt;misc-navmsgsel&lt;/span&gt;).&lt;/p&gt;&lt;p&gt;- All: In any of the input streams&lt;/p&gt;&lt;p&gt;- Rover: In the rover receiver stream&lt;/p&gt;&lt;p&gt;- Base Station: In the base station receiver stream&lt;/p&gt;&lt;p&gt;- Correction: In the correction stream&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -2950,7 +2990,7 @@
          </item>
         </widget>
        </item>
-       <item row="14" column="0">
+       <item row="15" column="0">
         <widget class="QLabel" name="Label43">
          <property name="text">
           <string>Layout</string>
@@ -2960,7 +3000,7 @@
          </property>
         </widget>
        </item>
-       <item row="12" column="0">
+       <item row="13" column="0">
         <widget class="QLabel" name="Label46_2">
          <property name="palette">
           <palette>
@@ -3007,7 +3047,7 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="4">
+       <item row="4" column="4">
         <widget class="QSpinBox" name="sBTimeoutTime">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the timeout (ms) interval for TCP client and NTRIP client connections (option &lt;span style=&quot; font-style:italic;&quot;&gt;misc-timeout&lt;/span&gt;).&lt;/p&gt;&lt;p&gt;If the timeout time expired without server response, RTKNAVI retries to connect to server after waiting for the reconnect interval.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -3020,7 +3060,7 @@
          </property>
         </widget>
        </item>
-       <item row="13" column="0">
+       <item row="14" column="0">
         <widget class="QLabel" name="Label47_2">
          <property name="palette">
           <palette>
@@ -3067,7 +3107,7 @@
          </property>
         </widget>
        </item>
-       <item row="13" column="5">
+       <item row="14" column="5">
         <widget class="QPushButton" name="btnFontSolution">
          <property name="toolTip">
           <string>Select the font of the solution display in the main window.</string>
@@ -3077,13 +3117,13 @@
          </property>
         </widget>
        </item>
-       <item row="12" column="4">
+       <item row="13" column="4">
         <widget class="QLabel" name="fontLabelPanel"/>
        </item>
-       <item row="13" column="4">
+       <item row="14" column="4">
         <widget class="QLabel" name="fontLabelSolution"/>
        </item>
-       <item row="14" column="4" colspan="2">
+       <item row="15" column="4" colspan="2">
         <widget class="QComboBox" name="cBPanelStack">
          <property name="toolTip">
           <string>Select the layout direction for the panels in the main window</string>
@@ -3100,14 +3140,14 @@
          </item>
         </widget>
        </item>
-       <item row="11" column="4" colspan="2">
+       <item row="12" column="4" colspan="2">
         <widget class="QLineEdit" name="lEProxyAddress">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set HTTP/NTRIP proxy server address and port number as &amp;lt;address&amp;gt;:&amp;lt;port&amp;gt; form to connect&lt;/p&gt;&lt;p&gt;the NTRIP Caster via a HTTP-Proxy server (option &lt;span style=&quot; font-style:italic;&quot;&gt;misc-proxyaddr&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="0">
+       <item row="4" column="0">
         <widget class="QLabel" name="Label44">
          <property name="text">
           <string>Timeout / Reconnect Interval</string>
@@ -3120,14 +3160,24 @@
        <item row="1" column="0">
         <widget class="QLabel" name="Label19">
          <property name="text">
-          <string>Process Cycle / Buffer Size</string>
+          <string>Process Cycle / Delay Tolerance</string>
          </property>
          <property name="buddy">
           <cstring>sBServerCycle</cstring>
          </property>
         </widget>
        </item>
-       <item row="5" column="0">
+       <item row="2" column="0">
+        <widget class="QLabel" name="Label52">
+         <property name="text">
+          <string>Buffer Size</string>
+         </property>
+         <property name="buddy">
+          <cstring>sBServerCycle</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
         <widget class="QLabel" name="Label46">
          <property name="text">
           <string>NMEA Cycle / File Swap Margin</string>
@@ -3137,7 +3187,7 @@
          </property>
         </widget>
        </item>
-       <item row="7" column="0">
+       <item row="8" column="0">
         <widget class="QLabel" name="Label41">
          <property name="text">
           <string>Solution Buffer/ Log Size</string>
@@ -3147,7 +3197,7 @@
          </property>
         </widget>
        </item>
-       <item row="8" column="0">
+       <item row="9" column="0">
         <widget class="QLabel" name="Label42">
          <property name="text">
           <string>Navigation Message Selection</string>
@@ -3157,7 +3207,7 @@
          </property>
         </widget>
        </item>
-       <item row="10" column="0">
+       <item row="11" column="0">
         <widget class="QLabel" name="Label5">
          <property name="text">
           <string>SBAS Sat Selection (0: all) / Monitor Port</string>
@@ -3167,7 +3217,7 @@
          </property>
         </widget>
        </item>
-       <item row="11" column="0">
+       <item row="12" column="0">
         <widget class="QLabel" name="Label45">
          <property name="text">
           <string>HTTP / NTRIP Proxy</string>
@@ -3177,7 +3227,7 @@
          </property>
         </widget>
        </item>
-       <item row="16" column="0">
+       <item row="17" column="0">
         <widget class="QLabel" name="Label49">
          <property name="text">
           <string>Signal definitions</string>
@@ -3187,7 +3237,7 @@
          </property>
         </widget>
        </item>
-       <item row="16" column="3">
+       <item row="17" column="3">
         <widget class="QPushButton" name="btnSigFreqs">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -3209,7 +3259,7 @@
          </property>
         </widget>
        </item>
-       <item row="16" column="4" colspan="2">
+       <item row="17" column="4" colspan="2">
         <widget class="QLineEdit" name="lESigDef">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Define the frequency code to index mapping and the respective code priorities. Format: '-[system][band 1..9][priorities...][band 1..9][priorities...]...' (option: &lt;span style=&quot; font-style:italic;&quot;&gt;pos1-sigdef&lt;/span&gt;)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -3219,40 +3269,13 @@
          </property>
         </widget>
        </item>
-      </layout>
+     </layout>
      </widget>
      <widget class="QWidget" name="tabMiscPost">
       <attribute name="title">
        <string>&amp;Misc</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_15">
-       <item row="0" column="0" colspan="4">
-        <widget class="QLabel" name="lblInterpolationBaseStation">
-         <property name="text">
-          <string>Time Interpolation of Base Station Data</string>
-         </property>
-         <property name="buddy">
-          <cstring>cBIntputReferenceObservation</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="4">
-        <widget class="QComboBox" name="cBIntputReferenceObservation">
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select ON to enable time interpolation of base station data (option: &lt;span style=&quot; font-style:italic;&quot;&gt;misc-timeinterp&lt;/span&gt;). &lt;/p&gt;&lt;p&gt;&lt;br/&gt;If selecting ON, the base station data are linearly interpolated to the rover epoch and DD (double- difference) is made with them. If not checked, nearest epoch of base station data is used for DD.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <item>
-          <property name="text">
-           <string>OFF</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>ON</string>
-          </property>
-         </item>
-        </widget>
-       </item>
        <item row="2" column="0" colspan="4">
         <widget class="QLabel" name="lblDGPSCorrection">
          <property name="text">
@@ -3528,7 +3551,153 @@
        </item>
       </layout>
      </widget>
-    </widget>
+     <widget class="QWidget" name="tabTLS">
+      <property name="toolTip">
+       <string/>
+      </property>
+      <attribute name="title">
+       <string>&amp;TLS</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_16">
+       <item row="1" column="0">
+        <widget class="QLabel" name="lblTLSSvrCertFile">
+         <property name="text">
+          <string>TLS server certificate</string>
+         </property>
+         <property name="buddy">
+          <cstring>lETLSSvrCertFile</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="4" colspan="2">
+        <widget class="QLineEdit" name="lETLSSvrCertFile">
+         <property name="toolTip">
+          <string>TLS server certificate</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="lblTLSSvrKeyFile">
+         <property name="text">
+          <string>TLS server private key</string>
+         </property>
+         <property name="buddy">
+          <cstring>lETLSSvrKeyFile</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="4" colspan="2">
+        <widget class="QLineEdit" name="lETLSSvrKeyFile">
+         <property name="toolTip">
+          <string>TLS server private key</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="lblTLSSvrCAFile">
+         <property name="text">
+          <string>TLS server CA file</string>
+         </property>
+         <property name="buddy">
+          <cstring>lETLSSvrCAFile</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="4" colspan="2">
+        <widget class="QLineEdit" name="lETLSSvrCAFile">
+         <property name="toolTip">
+          <string>TLS server CA file</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="lblTLSSvrCADir">
+         <property name="text">
+          <string>TLS server CA directory</string>
+         </property>
+         <property name="buddy">
+          <cstring>lETLSSvrCADir</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="4" colspan="2">
+        <widget class="QLineEdit" name="lETLSSvrCADir">
+         <property name="toolTip">
+          <string>TLS server CA directory</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="lblTLSCliCertFile">
+         <property name="text">
+          <string>TLS client certificate</string>
+         </property>
+         <property name="buddy">
+          <cstring>lETLSCliCertFile</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="4" colspan="2">
+        <widget class="QLineEdit" name="lETLSCliCertFile">
+         <property name="toolTip">
+          <string>TLS client certificate</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="lblTLSCliKeyFile">
+         <property name="text">
+          <string>TLS client private key</string>
+         </property>
+         <property name="buddy">
+          <cstring>lETLSCliKeyFile</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="4" colspan="2">
+        <widget class="QLineEdit" name="lETLSCliKeyFile">
+         <property name="toolTip">
+          <string>TLS client private key</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="lblTLSCliCAFile">
+         <property name="text">
+          <string>TLS client CA file</string>
+         </property>
+         <property name="buddy">
+          <cstring>lETLSCliCAFile</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="4" colspan="2">
+        <widget class="QLineEdit" name="lETLSCliCAFile">
+         <property name="toolTip">
+          <string>TLS client CA file</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="0">
+        <widget class="QLabel" name="lblTLSCliCADir">
+         <property name="text">
+          <string>TLS client CA directory</string>
+         </property>
+         <property name="buddy">
+          <cstring>lETLSCliCADir</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="4" colspan="2">
+        <widget class="QLineEdit" name="lETLSCliCADir">
+         <property name="toolTip">
+          <string>TLS client CA directory</string>
+         </property>
+        </widget>
+       </item>
+     </layout>
+     </widget>
+   </widget>
    </item>
    <item>
     <widget class="QWidget" name="widget" native="true">
@@ -3708,6 +3877,14 @@
   <tabstop>lEEOPFile</tabstop>
   <tabstop>lEBLQFile</tabstop>
   <tabstop>lEElmaskFile</tabstop>
+  <tabstop>lETLSSvrCertFile</tabstop>
+  <tabstop>lETLSSvrKeyFile</tabstop>
+  <tabstop>lETLSSvrCAFile</tabstop>
+  <tabstop>lETLSSvrCADir</tabstop>
+  <tabstop>lETLSCliCertFile</tabstop>
+  <tabstop>lETLSCliKeyFile</tabstop>
+  <tabstop>lETLSCliCAFile</tabstop>
+  <tabstop>lETLSCliCADir</tabstop>
   <tabstop>lEIonosphereFile</tabstop>
   <tabstop>lELocalDirectory</tabstop>
   <tabstop>sBServerCycle</tabstop>

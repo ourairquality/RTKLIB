@@ -1725,7 +1725,7 @@ void MonitorDialog::showStream()
     const QString inch[] = {tr("Input Rover"), tr("Input Base")};
     const QString logch[] = {tr("Log Rover"), tr("Log Base")};
     const QString type[] = {
-        tr("-"), tr("Serial"), tr("File"), tr("TCP Server"), tr("TCP Client"), tr("NTRIP Server"),
+        tr("-"), tr("Serial"), tr("File"), tr("TCP Server"), tr("TCP Client"), tr("NTRIP Source"),
         tr("NTRIP Client"), tr("FTP"), tr("HTTP"), tr("NTRIP Caster"), tr("UDP Server"),
         tr("UDP Client"), tr("")
 	};

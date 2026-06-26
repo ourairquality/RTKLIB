@@ -59,6 +59,14 @@ void __fastcall TSvrOptDialog::FormShow(TObject *Sender)
 	AntOff2->Text=s.sprintf("%.4f",AntOff[1]);
 	AntOff3->Text=s.sprintf("%.4f",AntOff[2]);
 	LogFileF->Text=LogFile;
+	TLSSvrCertFile->Text = TLSSvrCertFileF;
+	TLSSvrKeyFile->Text = TLSSvrKeyFileF;
+	TLSSvrCAFile->Text = TLSSvrCAFileF;
+	TLSSvrCADir->Text = TLSSvrCADirectory;
+	TLSCliCertFile->Text = TLSCliCertFileF;
+	TLSCliKeyFile->Text = TLSCliKeyFileF;
+	TLSCliCAFile->Text = TLSCliCAFileF;
+	TLSCliCADir->Text = TLSCliCADirectory;
 	UpdateEnable();
 }
 //---------------------------------------------------------------------------
@@ -95,6 +103,14 @@ void __fastcall TSvrOptDialog::BtnOkClick(TObject *Sender)
 	AntOff[1]=str2dbl(AntOff2->Text);
 	AntOff[2]=str2dbl(AntOff3->Text);
 	LogFile=LogFileF->Text;
+        TLSSvrCertFileF = TLSSvrCertFile->Text;
+        TLSSvrKeyFileF = TLSSvrKeyFile->Text;
+        TLSSvrCAFileF = TLSSvrCAFile->Text;
+        TLSSvrCADirectory = TLSSvrCADir->Text;
+        TLSCliCertFileF = TLSCliCertFile->Text;
+        TLSCliKeyFileF = TLSCliKeyFile->Text;
+        TLSCliCAFileF = TLSCliCAFile->Text;
+        TLSCliCADirectory = TLSCliCADir->Text;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSvrOptDialog::BtnPosClick(TObject *Sender)
@@ -158,6 +174,62 @@ void __fastcall TSvrOptDialog::BtnLogFileClick(TObject *Sender)
 	OpenDialog->FileName=LogFileF->Text;
 	if (!OpenDialog->Execute()) return;
 	LogFileF->Text=OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSvrOptDialog::BtnTLSSvrCertFileClick(TObject *Sender) {
+  OpenDialog->Title = "TLS Server Certificate File";
+  OpenDialog->FilterIndex = 2;
+  if (!OpenDialog->Execute()) return;
+  TLSSvrCertFile->Text = OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSvrOptDialog::BtnTLSSvrKeyFileClick(TObject *Sender) {
+  OpenDialog->Title = "TLS Server Private Key File";
+  OpenDialog->FilterIndex = 3;
+  if (!OpenDialog->Execute()) return;
+  TLSSvrKeyFile->Text = OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSvrOptDialog::BtnTLSSvrCAFileClick(TObject *Sender) {
+  OpenDialog->Title = "TLS Server CA File";
+  OpenDialog->FilterIndex = 2;
+  if (!OpenDialog->Execute()) return;
+  TLSSvrCAFile->Text = OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSvrOptDialog::BtnTLSSvrCADirClick(TObject *Sender) {
+  UnicodeString dir = TLSSvrCADir->Text;
+  TSelectDirExtOpts opt = TSelectDirExtOpts() << sdNewUI << sdNewFolder;
+  if (!SelectDirectory(L"TLS Server CA Directory", L"", dir, opt)) return;
+  TLSSvrCADir->Text = dir;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSvrOptDialog::BtnTLSCliCertFileClick(TObject *Sender) {
+  OpenDialog->Title = "TLS Client Certificate File";
+  OpenDialog->FilterIndex = 2;
+  if (!OpenDialog->Execute()) return;
+  TLSCliCertFile->Text = OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSvrOptDialog::BtnTLSCliKeyFileClick(TObject *Sender) {
+  OpenDialog->Title = "TLS Client Private Key File";
+  OpenDialog->FilterIndex = 3;
+  if (!OpenDialog->Execute()) return;
+  TLSCliKeyFile->Text = OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSvrOptDialog::BtnTLSCliCAFileClick(TObject *Sender) {
+  OpenDialog->Title = "TLS Client CA File";
+  OpenDialog->FilterIndex = 2;
+  if (!OpenDialog->Execute()) return;
+  TLSCliCAFile->Text = OpenDialog->FileName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSvrOptDialog::BtnTLSCliCADirClick(TObject *Sender) {
+  UnicodeString dir = TLSCliCADir->Text;
+  TSelectDirExtOpts opt = TSelectDirExtOpts() << sdNewUI << sdNewFolder;
+  if (!SelectDirectory(L"TLS Client CA Directory", L"", dir, opt)) return;
+  TLSCliCADir->Text = dir;
 }
 //---------------------------------------------------------------------------
 

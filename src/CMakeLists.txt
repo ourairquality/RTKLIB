@@ -42,6 +42,14 @@ list(APPEND DIR_SRCS ${DIR_SRCS_RTKLIB} ${DIR_SRCS_RTKLIB_RCV})
 add_library(rtklib SHARED ${DIR_SRCS} rtklib.h)
 set_property(TARGET rtklib PROPERTY C_STANDARD 99)
 
+find_package(OpenSSL REQUIRED)
+if(OpenSSL_FOUND)
+    add_definitions(-DRTKLIB_OPENSSL)
+    target_link_libraries(rtklib OpenSSL::SSL OpenSSL::Crypto)
+    if(WIN32)
+      target_link_libraries(rtklib crypt32)
+    endif()
+endif()
 
 target_include_directories(rtklib
     PUBLIC ${PROJECT_SOURCE_DIR}/include

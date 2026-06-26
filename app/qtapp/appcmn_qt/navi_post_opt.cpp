@@ -32,6 +32,7 @@
 #define POSFONTSIZE 10
 #define DEFAULTPORT 52001               // default monitor port number
 
+#define SWTOPT  "0:off,1:on"
 #define MSGOPT  "0:all,1:rover,2:base,3:corr"
 
 //---------------------------------------------------------------------------
@@ -164,7 +165,8 @@ OptDialog::OptDialog(QWidget *parent, int opts)
 
     appOptions = nullptr;
 
-    serverCycle = serverBufferSize = 0;
+    serverCycle = serverTolerance = 0;
+    serverBufferSize = 0;
     solutionBufferSize = 1000;
     panelStacking = 0;
 
@@ -176,12 +178,21 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     serverBufferSize = 32768;        /* input buffer size (bytes) */
     navSelect = 0;                   /* navigation mesaage select */
     proxyaddr[0] = '\0';             /* proxy address */
+    tlssvrcertfile[0] = '\0';        // TLS server certificate file.
+    tlssvrkeyfile[0] = '\0';         // TLS server certificate private key file.
+    tlssvrcafile[0] = '\0';          // TLS server CA file.
+    tlssvrcadir[0] = '\0';           // TLS server CA directory.
+    tlsclicertfile[0] = '\0';        // TLS client certificate file.
+    tlsclikeyfile[0] = '\0';         // TLS client certificate private key file.
+    tlsclicafile[0] = '\0';          // TLS client CA file.
+    tlsclicadir[0] = '\0';           // TLS client CA directory.
 
     current_roverPositionType = -1;
     current_referencePositionType = -1;
 
     static opt_t _naviopt[] = {
         { "misc-svrcycle",    0, (void *)&serverCycle,      "ms"    },
+        { "misc-svrtol",      0, (void *)&serverTolerance,  "ms"    },
         { "misc-timeout",     0, (void *)&timeoutTime,      "ms"    },
         { "misc-reconnect",   0, (void *)&reconnectTime,    "ms"    },
         { "misc-nmeacycle",   0, (void *)&nmeaCycle,        "ms"    },
@@ -189,6 +200,14 @@ OptDialog::OptDialog(QWidget *parent, int opts)
         { "misc-navmsgsel",   3, (void *)&navSelect,        MSGOPT  },
         { "misc-proxyaddr",   2, (void *)proxyaddr,         ""      },
         { "misc-fswapmargin", 0, (void *)&fileSwapMargin,   "s"     },
+        { "misc-tlssvrcert",  2, (void *)tlssvrcertfile,    ""      },
+        { "misc-tlssvrkey",   2, (void *)tlssvrkeyfile,     ""      },
+        { "misc-tlssvrcafile", 2, (void *)tlssvrcafile,     ""      },
+        { "misc-tlssvrcadir", 2, (void *)tlssvrcadir,       ""      },
+        { "misc-tlsclicert",  2, (void *)tlsclicertfile,    ""      },
+        { "misc-tlsclikey",   2, (void *)tlsclikeyfile,     ""      },
+        { "misc-tlsclicafile", 2, (void *)tlsclicafile,     ""      },
+        { "misc-tlsclicadir", 2, (void *)tlsclicadir,       ""      },
         { "",		      0, NULL,		            ""      }
     };
     this->naviopts = _naviopt;
@@ -219,6 +238,14 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     ui->lEEOPFile->setCompleter(new QCompleter(fileModel, this));
     ui->lEBLQFile->setCompleter(new QCompleter(fileModel, this));
     ui->lEElmaskFile->setCompleter(new QCompleter(fileModel, this));
+    ui->lETLSSvrCertFile->setCompleter(new QCompleter(fileModel, this));
+    ui->lETLSSvrKeyFile->setCompleter(new QCompleter(fileModel, this));
+    ui->lETLSSvrCAFile->setCompleter(new QCompleter(fileModel, this));
+    ui->lETLSSvrCADir->setCompleter(new QCompleter(fileModel, this));
+    ui->lETLSCliCertFile->setCompleter(new QCompleter(fileModel, this));
+    ui->lETLSCliKeyFile->setCompleter(new QCompleter(fileModel, this));
+    ui->lETLSCliCAFile->setCompleter(new QCompleter(fileModel, this));
+    ui->lETLSCliCADir->setCompleter(new QCompleter(fileModel, this));
 
     QCompleter *dirCompleter = new QCompleter(this);
     QFileSystemModel *dirModel = new QFileSystemModel(dirCompleter);
@@ -297,6 +324,56 @@ OptDialog::OptDialog(QWidget *parent, int opts)
     QAction *acIonosphereFileSelect = ui->lEIonosphereFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
     acIonosphereFileSelect->setToolTip(tr("Select File"));
 
+    // TLS server certificate file line edit actions.
+    QAction *acTLSSvrCertFileSelect = ui->lETLSSvrCertFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSSvrCertFileSelect->setToolTip(tr("Select File"));
+    QAction *acTLSSvrCertFileView = ui->lETLSSvrCertFile->addAction(QIcon(":/buttons/doc"), QLineEdit::TrailingPosition);
+    acTLSSvrCertFileView->setToolTip(tr("View File"));
+    acTLSSvrCertFileView->setEnabled(false);
+
+    // TLS server key file line edit actions.
+    QAction *acTLSSvrKeyFileSelect = ui->lETLSSvrKeyFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSSvrKeyFileSelect->setToolTip(tr("Select File"));
+    QAction *acTLSSvrKeyFileView = ui->lETLSSvrKeyFile->addAction(QIcon(":/buttons/doc"), QLineEdit::TrailingPosition);
+    acTLSSvrKeyFileView->setToolTip(tr("View File"));
+    acTLSSvrKeyFileView->setEnabled(false);
+
+    // TLS server CA file line edit actions.
+    QAction *acTLSSvrCAFileSelect = ui->lETLSSvrCAFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSSvrCAFileSelect->setToolTip(tr("Select File"));
+    QAction *acTLSSvrCAFileView = ui->lETLSSvrCAFile->addAction(QIcon(":/buttons/doc"), QLineEdit::TrailingPosition);
+    acTLSSvrCAFileView->setToolTip(tr("View File"));
+    acTLSSvrCAFileView->setEnabled(false);
+
+    // TLS server CA directory actions.
+    QAction *acTLSSvrCADirSelect = ui->lETLSSvrCADir->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSSvrCADirSelect->setToolTip(tr("Select Directory"));
+
+    // TLS client certificate file line edit actions.
+    QAction *acTLSCliCertFileSelect = ui->lETLSCliCertFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSCliCertFileSelect->setToolTip(tr("Select File"));
+    QAction *acTLSCliCertFileView = ui->lETLSCliCertFile->addAction(QIcon(":/buttons/doc"), QLineEdit::TrailingPosition);
+    acTLSCliCertFileView->setToolTip(tr("View File"));
+    acTLSCliCertFileView->setEnabled(false);
+
+    // TLS client key file line edit actions.
+    QAction *acTLSCliKeyFileSelect = ui->lETLSCliKeyFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSCliKeyFileSelect->setToolTip(tr("Select File"));
+    QAction *acTLSCliKeyFileView = ui->lETLSCliKeyFile->addAction(QIcon(":/buttons/doc"), QLineEdit::TrailingPosition);
+    acTLSCliKeyFileView->setToolTip(tr("View File"));
+    acTLSCliKeyFileView->setEnabled(false);
+
+    // TLS client CA file line edit actions.
+    QAction *acTLSCliCAFileSelect = ui->lETLSCliCAFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSCliCAFileSelect->setToolTip(tr("Select File"));
+    QAction *acTLSCliCAFileView = ui->lETLSCliCAFile->addAction(QIcon(":/buttons/doc"), QLineEdit::TrailingPosition);
+    acTLSCliCAFileView->setToolTip(tr("View File"));
+    acTLSCliCAFileView->setEnabled(false);
+
+    // TLS client CA directory actions.
+    QAction *acTLSCliCADirSelect = ui->lETLSCliCADir->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSCliCADirSelect->setToolTip(tr("Select Directory"));
+
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &OptDialog::accept);
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &OptDialog::reject);
     connect(ui->btnLoad, &QPushButton::clicked, this, &OptDialog::loadSettings);
@@ -332,6 +409,35 @@ OptDialog::OptDialog(QWidget *parent, int opts)
             {acElmaskFileView->setEnabled(QFile::exists(ui->lEElmaskFile->text()));});
     connect(acStationPositionFileSelect, &QAction::triggered, this, &OptDialog::selectStationPositionFile);
     connect(acStationPositionFileView, &QAction::triggered, this, &OptDialog::viewStationPositionFile);
+
+    connect(acTLSSvrCertFileSelect, &QAction::triggered, this, &OptDialog::selectTLSSvrCertFile);
+    connect(acTLSSvrCertFileView, &QAction::triggered, this, &OptDialog::viewTLSSvrCertFile);
+    connect(ui->lETLSSvrCertFile, &QLineEdit::textChanged, this, [acTLSSvrCertFileView, this]()
+            {acTLSSvrCertFileView->setEnabled(QFile::exists(ui->lETLSSvrCertFile->text()));});
+    connect(acTLSSvrKeyFileSelect, &QAction::triggered, this, &OptDialog::selectTLSSvrKeyFile);
+    connect(acTLSSvrKeyFileView, &QAction::triggered, this, &OptDialog::viewTLSSvrKeyFile);
+    connect(ui->lETLSSvrKeyFile, &QLineEdit::textChanged, this, [acTLSSvrKeyFileView, this]()
+            {acTLSSvrKeyFileView->setEnabled(QFile::exists(ui->lETLSSvrKeyFile->text()));});
+    connect(acTLSSvrCAFileSelect, &QAction::triggered, this, &OptDialog::selectTLSSvrCAFile);
+    connect(acTLSSvrCAFileView, &QAction::triggered, this, &OptDialog::viewTLSSvrCAFile);
+    connect(ui->lETLSSvrCAFile, &QLineEdit::textChanged, this, [acTLSSvrCAFileView, this]()
+            {acTLSSvrCAFileView->setEnabled(QFile::exists(ui->lETLSSvrCAFile->text()));});
+    connect(acTLSSvrCADirSelect, &QAction::triggered, this, &OptDialog::selectTLSSvrCADir);
+
+    connect(acTLSCliCertFileSelect, &QAction::triggered, this, &OptDialog::selectTLSCliCertFile);
+    connect(acTLSCliCertFileView, &QAction::triggered, this, &OptDialog::viewTLSCliCertFile);
+    connect(ui->lETLSCliCertFile, &QLineEdit::textChanged, this, [acTLSCliCertFileView, this]()
+            {acTLSCliCertFileView->setEnabled(QFile::exists(ui->lETLSCliCertFile->text()));});
+    connect(acTLSCliKeyFileSelect, &QAction::triggered, this, &OptDialog::selectTLSCliKeyFile);
+    connect(acTLSCliKeyFileView, &QAction::triggered, this, &OptDialog::viewTLSCliKeyFile);
+    connect(ui->lETLSCliKeyFile, &QLineEdit::textChanged, this, [acTLSCliKeyFileView, this]()
+            {acTLSCliKeyFileView->setEnabled(QFile::exists(ui->lETLSCliKeyFile->text()));});
+    connect(acTLSCliCAFileSelect, &QAction::triggered, this, &OptDialog::selectTLSCliCAFile);
+    connect(acTLSCliCAFileView, &QAction::triggered, this, &OptDialog::viewTLSCliCAFile);
+    connect(ui->lETLSCliCAFile, &QLineEdit::textChanged, this, [acTLSCliCAFileView, this]()
+            {acTLSCliCAFileView->setEnabled(QFile::exists(ui->lETLSCliCAFile->text()));});
+    connect(acTLSCliCADirSelect, &QAction::triggered, this, &OptDialog::selectTLSCliCADir);
+
     connect(ui->lEStationPositionFile, &QLineEdit::textChanged, this, [acStationPositionFileView, this]()
             {acStationPositionFileView->setEnabled(QFile::exists(ui->lEStationPositionFile->text()));});
     connect(ui->btnReferencePosition, &QPushButton::clicked, this, &OptDialog::selectReferencePosition);
@@ -693,6 +799,112 @@ void OptDialog::viewElmaskFile()
     textViewer->show();
 }
 //---------------------------------------------------------------------------
+void OptDialog::selectTLSSvrCertFile()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("TLS Server Certificate File"), ui->lETLSSvrCertFile->text(), tr("TLS Server Certificate File (*.crt *.cer *.pem);;All (*.*)"));
+    if (!filename.isEmpty())
+        ui->lETLSSvrCertFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void OptDialog::viewTLSSvrCertFile()
+{
+    QString certFilename = ui->lETLSSvrCertFile->text();
+    if (certFilename.isEmpty()) return;
+    textViewer->read(certFilename);
+    textViewer->show();
+}
+//---------------------------------------------------------------------------
+void OptDialog::selectTLSSvrKeyFile()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("TLS Server Private Key File"), ui->lETLSSvrKeyFile->text(), tr("TLS Server Private Key File (*.key *.pem);;All (*.*)"));
+    if (!filename.isEmpty())
+        ui->lETLSSvrKeyFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void OptDialog::viewTLSSvrKeyFile()
+{
+    QString KeyFilename = ui->lETLSSvrKeyFile->text();
+    if (KeyFilename.isEmpty()) return;
+    textViewer->read(KeyFilename);
+    textViewer->show();
+}
+//---------------------------------------------------------------------------
+void OptDialog::selectTLSSvrCAFile()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("TLS Server CA File"), ui->lETLSSvrCAFile->text(), tr("TLS Server CA File (*.crt *.cer *.pem);;All (*.*)"));
+    if (!filename.isEmpty())
+        ui->lETLSSvrCAFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void OptDialog::viewTLSSvrCAFile()
+{
+    QString CAFilename = ui->lETLSSvrCAFile->text();
+    if (CAFilename.isEmpty()) return;
+    textViewer->read(CAFilename);
+    textViewer->show();
+}
+//---------------------------------------------------------------------------
+void OptDialog::selectTLSSvrCADir()
+{
+    QString dir = ui->lETLSSvrCADir->text();
+    dir = QFileDialog::getExistingDirectory(this, tr("TLS Server CA Directory"), dir);
+    if (!dir.isEmpty())
+        ui->lETLSSvrCADir->setText(QDir::toNativeSeparators(dir));
+}
+//---------------------------------------------------------------------------
+void OptDialog::selectTLSCliCertFile()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("TLS Client Certificate File"), ui->lETLSCliCertFile->text(), tr("TLS Client Certificate File (*.crt *.cer *.pem);;All (*.*)"));
+    if (!filename.isEmpty())
+        ui->lETLSCliCertFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void OptDialog::viewTLSCliCertFile()
+{
+    QString certFilename = ui->lETLSCliCertFile->text();
+    if (certFilename.isEmpty()) return;
+    textViewer->read(certFilename);
+    textViewer->show();
+}
+//---------------------------------------------------------------------------
+void OptDialog::selectTLSCliKeyFile()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("TLS Client Private Key File"), ui->lETLSCliKeyFile->text(), tr("TLS Client Private Key File (*.key *.pem);;All (*.*)"));
+    if (!filename.isEmpty())
+        ui->lETLSCliKeyFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void OptDialog::viewTLSCliKeyFile()
+{
+    QString KeyFilename = ui->lETLSCliKeyFile->text();
+    if (KeyFilename.isEmpty()) return;
+    textViewer->read(KeyFilename);
+    textViewer->show();
+}
+//---------------------------------------------------------------------------
+void OptDialog::selectTLSCliCAFile()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("TLS Client CA File"), ui->lETLSCliCAFile->text(), tr("TLS Client CA File (*.crt *.cer *.pem);;All (*.*)"));
+    if (!filename.isEmpty())
+        ui->lETLSCliCAFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void OptDialog::viewTLSCliCAFile()
+{
+    QString CAFilename = ui->lETLSCliCAFile->text();
+    if (CAFilename.isEmpty()) return;
+    textViewer->read(CAFilename);
+    textViewer->show();
+}
+//---------------------------------------------------------------------------
+void OptDialog::selectTLSCliCADir()
+{
+    QString dir = ui->lETLSCliCADir->text();
+    dir = QFileDialog::getExistingDirectory(this, tr("TLS Client CA Directory"), dir);
+    if (!dir.isEmpty())
+        ui->lETLSCliCADir->setText(QDir::toNativeSeparators(dir));
+}
+//---------------------------------------------------------------------------
 void OptDialog::selectLocalDirectory()
 {
     QString dir = ui->lELocalDirectory->text();
@@ -967,6 +1179,7 @@ void OptDialog::updateOptions()
 
     if (options == NaviOptions) {
         serverCycle = ui->sBServerCycle->value();
+        serverTolerance = ui->sBServerTolerance->value();
         timeoutTime = ui->sBTimeoutTime->value();
         reconnectTime = ui->sBReconnectTime->value();
         nmeaCycle = ui->sBNmeaCycle->value();
@@ -975,7 +1188,14 @@ void OptDialog::updateOptions()
         solutionBufferSize = ui->sBSolutionBufferSize->value();
         savedSolutions = ui->sBSavedSolution->value();
         navSelect = ui->cBNavSelect->currentIndex();
-
+        tlsSvrCertFile = ui->lETLSSvrCertFile->text();
+        tlsSvrKeyFile = ui->lETLSSvrKeyFile->text();
+        tlsSvrCAFile = ui->lETLSSvrCAFile->text();
+        tlsSvrCADir = ui->lETLSSvrCADir->text();
+        tlsCliCertFile = ui->lETLSCliCertFile->text();
+        tlsCliKeyFile = ui->lETLSCliKeyFile->text();
+        tlsCliCAFile = ui->lETLSCliCAFile->text();
+        tlsCliCADir = ui->lETLSCliCADir->text();
         proxyAddress = ui->lEProxyAddress->text();
         monitorPort = ui->sBMonitorPort->value();
         panelStacking = ui->cBPanelStack->currentIndex();
@@ -992,19 +1212,26 @@ void OptDialog::updateUi(const prcopt_t &prcopt, const solopt_t &solopt, const f
     QLineEdit *editu[] = {ui->lERoverPosition1, ui->lERoverPosition2, ui->lERoverPosition3};
     QLineEdit *editr[] = {ui->lEReferencePosition1, ui->lEReferencePosition2, ui->lEReferencePosition3};
 
-    proxyAddress = proxyaddr;
-
     ui->lERovName->setText(prcopt.name[0]);
     ui->lERefName->setText(prcopt.name[1]);
 
     if (options == NaviOptions) {
         ui->sBServerCycle->setValue(serverCycle);
+        ui->sBServerTolerance->setValue(serverTolerance);
         ui->sBTimeoutTime->setValue(timeoutTime);
         ui->sBReconnectTime->setValue(reconnectTime);
         ui->sBNmeaCycle->setValue(nmeaCycle);
         ui->sBServerBufferSize->setValue(serverBufferSize);
         ui->cBNavSelect->setCurrentIndex(navSelect);
-        ui->lEProxyAddress->setText(proxyaddr);
+        ui->lETLSSvrCertFile->setText(tlsSvrCertFile);
+        ui->lETLSSvrKeyFile->setText(tlsSvrKeyFile);
+        ui->lETLSSvrCAFile->setText(tlsSvrCAFile);
+        ui->lETLSSvrCADir->setText(tlsSvrCADir);
+        ui->lETLSCliCertFile->setText(tlsCliCertFile);
+        ui->lETLSCliKeyFile->setText(tlsCliKeyFile);
+        ui->lETLSCliCAFile->setText(tlsCliCAFile);
+        ui->lETLSCliCADir->setText(tlsCliCADir);
+        ui->lEProxyAddress->setText(proxyAddress);
         ui->sBFileSwapMargin->setValue(fileSwapMargin);
     }
 
@@ -1045,8 +1272,8 @@ void OptDialog::updateUi(const prcopt_t &prcopt, const solopt_t &solopt, const f
     ui->cBTideCorrection->setCurrentIndex(prcopt.tidecorr & 7);
     ui->sBNumIteration->setValue(prcopt.niter);
     //prcopt.codesmooth
+    ui->cBIntputReferenceObservation->setCurrentIndex(prcopt.intpref);
     if (options == PostOptions) {
-        ui->cBIntputReferenceObservation->setCurrentIndex(prcopt.intpref);
         ui->sBSbasSat->setValue(prcopt.sbassatsel);
         ui->cBRoverPositionType->setCurrentIndex(prcopt.rovpos == POSOPT_POS_LLH ? 0 : prcopt.rovpos == POSOPT_POS_XYZ ? 2 : prcopt.rovpos + 1);
         ui->cBReferencePositionType->setCurrentIndex(prcopt.refpos == POSOPT_POS_LLH ? 0 : prcopt.refpos == POSOPT_POS_XYZ ? 2 : prcopt.refpos + 1);
@@ -1195,6 +1422,17 @@ void OptDialog::load(const QString &file)
     if (!loadopts(qPrintable(file), naviopts)) return;
     getsysopts(&prcopt, &solopt, &filopt);
 
+    // Copy in.
+    proxyAddress = proxyaddr;
+    tlsSvrCertFile = tlssvrcertfile;
+    tlsSvrKeyFile = tlssvrkeyfile;
+    tlsSvrCAFile = tlssvrcafile;
+    tlsSvrCADir = tlssvrcadir;
+    tlsCliCertFile = tlsclicertfile;
+    tlsCliKeyFile = tlsclikeyfile;
+    tlsCliCAFile = tlsclicafile;
+    tlsCliCADir = tlsclicadir;
+
     updateUi(prcopt, solopt, filopt);
 }
 //---------------------------------------------------------------------------
@@ -1211,11 +1449,20 @@ void OptDialog::save(const QString &file)
 
     if (options == NaviOptions) {
         serverCycle = ui->sBServerCycle->value();
+        serverTolerance = ui->sBServerTolerance->value();
         timeoutTime = ui->sBTimeoutTime->value();
         reconnectTime = ui->sBReconnectTime->value();
         nmeaCycle = ui->sBNmeaCycle->value();
         serverBufferSize = ui->sBServerBufferSize->value();
         navSelect = ui->cBNavSelect->currentIndex();
+        tlsSvrCertFile = ui->lETLSSvrCertFile->text();
+        tlsSvrKeyFile = ui->lETLSSvrKeyFile->text();
+        tlsSvrCAFile = ui->lETLSSvrCAFile->text();
+        tlsSvrCADir = ui->lETLSSvrCADir->text();
+        tlsCliCertFile = ui->lETLSCliCertFile->text();
+        tlsCliKeyFile = ui->lETLSCliKeyFile->text();
+        tlsCliCAFile = ui->lETLSCliCAFile->text();
+        tlsCliCADir = ui->lETLSCliCADir->text();
         proxyAddress = ui->lEProxyAddress->text();
         fileSwapMargin = ui->sBFileSwapMargin->value();
     }
@@ -1396,7 +1643,16 @@ void OptDialog::save(const QString &file)
     if (appOptions && !saveopts(qPrintable(file), "a", "", appOptions)) return;
 
     if (options == NaviOptions) {
+        // Copy out.
         strncpy(proxyaddr, qPrintable(proxyAddress), 1023);
+        strncpy(tlssvrcertfile, qPrintable(tlsSvrCertFile), 1023);
+        strncpy(tlssvrkeyfile, qPrintable(tlsSvrKeyFile), 1023);
+        strncpy(tlssvrcafile, qPrintable(tlsSvrCAFile), 1023);
+        strncpy(tlssvrcadir, qPrintable(tlsSvrCADir), 1023);
+        strncpy(tlsclicertfile, qPrintable(tlsCliCertFile), 1023);
+        strncpy(tlsclikeyfile, qPrintable(tlsCliKeyFile), 1023);
+        strncpy(tlsclicafile, qPrintable(tlsCliCAFile), 1023);
+        strncpy(tlsclicadir, qPrintable(tlsCliCADir), 1023);
         saveopts(qPrintable(file), "a", "", naviopts);
     }
 }
@@ -1569,6 +1825,7 @@ void OptDialog::saveOptions(QSettings &settings)
 
     if (options == NaviOptions) {
         settings.setValue("setting/svrcycle", ui->sBServerCycle->value());
+        settings.setValue("setting/svrtol", ui->sBServerTolerance->value());
         settings.setValue("setting/timeouttime", ui->sBTimeoutTime->value());
         settings.setValue("setting/recontime", ui->sBReconnectTime->value());
         settings.setValue("setting/nmeacycle", ui->sBNmeaCycle->value());
@@ -1577,6 +1834,14 @@ void OptDialog::saveOptions(QSettings &settings)
         settings.setValue("setting/savedsol", ui->sBSavedSolution->value());
         settings.setValue("setting/navselect", ui->cBNavSelect->currentIndex());
 
+        settings.setValue("setting/tlssvrcertfile", ui->lETLSSvrCertFile->text());
+        settings.setValue("setting/tlssvrkeyfile", ui->lETLSSvrKeyFile->text());
+        settings.setValue("setting/tlssvrcafile", ui->lETLSSvrCAFile->text());
+        settings.setValue("setting/tlssvrcadir", ui->lETLSSvrCADir->text());
+        settings.setValue("setting/tlsclicertfile", ui->lETLSCliCertFile->text());
+        settings.setValue("setting/tlsclikeyfile", ui->lETLSCliKeyFile->text());
+        settings.setValue("setting/tlsclicafile", ui->lETLSCliCAFile->text());
+        settings.setValue("setting/tlsclicadir", ui->lETLSCliCADir->text());
         settings.setValue("setting/proxyaddr", ui->lEProxyAddress->text());
         settings.setValue("setting/moniport", ui->sBMonitorPort->value());
         settings.setValue("setting/panelstack", ui->cBPanelStack->currentIndex());
@@ -1658,8 +1923,8 @@ void OptDialog::loadOptions(QSettings &settings)
     ui->cBTideCorrection->setCurrentIndex(settings.value("prcopt/tidecorr", 0).toInt() & 7);
     ui->sBNumIteration->setValue(settings.value("prcopt/niter", 1).toInt());
     // processingOptions.codesmooth = settings.value("prcopt/codesmooth", 0).toInt();
+    ui->cBIntputReferenceObservation->setCurrentIndex(settings.value("prcopt/intpref", 0).toInt());
     if (options == PostOptions) {
-        ui->cBIntputReferenceObservation->setCurrentIndex(settings.value("prcopt/intpref", 0).toInt());
         // sbassatsel
         ui->sBSbasSat->setValue(settings.value("setting/sbassat", 0).toInt());
     } else if (options == NaviOptions) {
@@ -1787,6 +2052,7 @@ void OptDialog::loadOptions(QSettings &settings)
 
     if (options == NaviOptions) {
         ui->sBServerCycle->setValue(settings.value("setting/svrcycle", 10).toInt());
+        ui->sBServerTolerance->setValue(settings.value("setting/svrtol", 0).toInt());
         ui->sBTimeoutTime->setValue(settings.value("setting/timeouttime", 10000).toInt());
         ui->sBReconnectTime->setValue(settings.value("setting/recontime", 10000).toInt());
         ui->sBNmeaCycle->setValue(settings.value("setting/nmeacycle", 5000).toInt());
@@ -1795,6 +2061,14 @@ void OptDialog::loadOptions(QSettings &settings)
         ui->sBSolutionBufferSize->setValue(settings.value("setting/solbuffsize", 1000).toInt());
         ui->sBSavedSolution->setValue(settings.value("setting/savedsol", 100).toInt());
         ui->cBNavSelect->setCurrentIndex(settings.value("setting/navselect", 0).toInt());
+        ui->lETLSSvrCertFile->setText(settings.value("setting/tlssvrcertfile", "").toString());
+        ui->lETLSSvrKeyFile->setText(settings.value("setting/tlssvrkeyfile", "").toString());
+        ui->lETLSSvrCAFile->setText(settings.value("setting/tlssvrcafile", "").toString());
+        ui->lETLSSvrCADir->setText(settings.value("setting/tlssvrcadir", "").toString());
+        ui->lETLSCliCertFile->setText(settings.value("setting/tlsclicertfile", "").toString());
+        ui->lETLSCliKeyFile->setText(settings.value("setting/tlsclikeyfile", "").toString());
+        ui->lETLSCliCAFile->setText(settings.value("setting/tlsclicafile", "").toString());
+        ui->lETLSCliCADir->setText(settings.value("setting/tlsclicadir", "").toString());
         ui->lEProxyAddress->setText(settings.value("setting/proxyaddr", "").toString());
         ui->sBMonitorPort->setValue(settings.value("setting/moniport", DEFAULTPORT).toInt());
         ui->cBPanelStack->setCurrentIndex(settings.value("setting/panelstack", 0).toInt());
@@ -1896,6 +2170,9 @@ void OptDialog::updateEnable()
     ui->sBBaselineLen->setEnabled(ui->cBBaselineConstrain->isChecked() && ui->cBPositionMode->currentIndex() == PMODE_MOVEB);
     ui->sBBaselineSig->setEnabled(ui->cBBaselineConstrain->isChecked() && ui->cBPositionMode->currentIndex() == PMODE_MOVEB);
     ui->cBRoverPositionType->setEnabled(ui->cBPositionMode->currentIndex() == PMODE_FIXED || ui->cBPositionMode->currentIndex() == PMODE_PPP_FIXED);
+    ui->lblInterpolationBaseStation->setEnabled(rel);
+    ui->cBIntputReferenceObservation->setEnabled(rel);
+    ui->sBServerTolerance->setEnabled(rel);
     setComboBoxItemEnabled(ui->cBRoverPositionType, 3, false);
     setComboBoxItemEnabled(ui->cBRoverPositionType, 5, options == PostOptions);
     setComboBoxItemEnabled(ui->cBRoverPositionType, 6, options == NaviOptions);
@@ -1972,6 +2249,7 @@ void OptDialog::updateEnable()
 
         ui->tWOptions->setTabVisible(6, true);
         ui->tWOptions->setTabVisible(7, false);
+        ui->tWOptions->setTabVisible(8, true);
     } else if (options == PostOptions) {
         ui->lEIonosphereFile->setVisible(true);
         ui->lblIonosphereFile->setVisible(true);
@@ -1980,6 +2258,7 @@ void OptDialog::updateEnable()
 
         ui->tWOptions->setTabVisible(6, false);
         ui->tWOptions->setTabVisible(7, true);
+        ui->tWOptions->setTabVisible(8, false);
     }
 }
 //---------------------------------------------------------------------------

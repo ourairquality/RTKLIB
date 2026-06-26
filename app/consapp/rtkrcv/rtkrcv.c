@@ -96,12 +96,24 @@ static char strpath[MAXSTRRTK][MAXSTR]; /* stream paths */
 static int strfmt[RTKSVRNIN];           /* Input stream formats */
 static int ostrfmt[RTKSVRNSOL];         /* Output stream formats */
 static char rcvopt[RTKSVRNIN][256];     /* Receiver options */
-static int svrcycle     =10;            /* server cycle (ms) */
+static int svrcycle = 10;               // Server cycle (ms)
+static int svrtol = 0;                  // Server processing delay tolerance (ms)
 static int timeout      =10000;         /* timeout time (ms) */
 static int reconnect    =10000;         /* reconnect interval (ms) */
 static int nmeacycle    =5000;          /* nmea request cycle (ms) */
 static int buffsize     =32768;         /* input buffer size (bytes) */
 static int navmsgsel    =0;             /* navigation message select */
+static char tlssvrcertfile[1024] = "";  // TLS server certificate file.
+static char tlssvrkeyfile[1024] = "";   // TLS server certificate key file.
+static char tlssvrcafile[1024] = "";    // TLS server CA file.
+static char tlssvrcadir[1024] = "";     // TLS server CA directory.
+static int tlssvrverify = 0;            // TLS server verify peer.
+static char tlsclicertfile[1024] = "";  // TLS client certificate file.
+static char tlsclikeyfile[1024] = "";   // TLS client certificate key file.
+static char tlsclicafile[1024] = "";    // TLS client CA file.
+static char tlsclicadir[1024] = "";     // TLS client CA directory.
+static int tlscliverify  = 1;           // TLS client verify peer.
+static unsigned ntripver = 1;           // Default NTRIP client version.
 static char proxyaddr[256]="";          /* http/ntrip proxy */
 static int nmeareq      =0;             /* nmea request type (0:off,1:lat/lon,2:single) */
 static double nmeapos[] ={0,0,0,0};     /* nmea position (lat/lon/height) (deg,m) */
@@ -171,25 +183,27 @@ static const char *pathopts[]={         /* path options help */
     "stream path formats",
     "serial   : port[:bit_rate[:byte[:parity(n|o|e)[:stopb[:fctr(off|on)[#port]]]]]]]",
     "file     : path[::T[::+offset][::xspeed]]",
-    "tcpsvr   : :port",
-    "tcpcli   : addr:port",
-    "ntripsvr : [passwd@]addr:port/mntpnt[:str]",
-    "ntripcli : user:passwd@addr:port/mntpnt",
-    "ntripcas : user:passwd@:[port]/mpoint[:srctbl]",
+    "tcpsvr   : :port[::S][::V={0|1}]",
+    "tcpcli   : addr:port[::S][::V={0|1}]",
+    "ntripsrc : [passwd@]addr:port/mntpnt[:str][::S][::N={1|2}][::V={0|1}]",
+    "ntripcli : user:passwd@addr:port/mntpnt[::S][::N={1|2}][::V={0|1}]",
+    "ntripcas : user:passwd@:[port]/mpoint[:srctbl][::N={0|1|2}][T={0|1|2}][::S|::A][::V={0|1}]",
     "ftp      : user:passwd@addr/path[::T=poff,tint,off,rint]",
     "http     : addr/path[::T=poff,tint,off,rint]",
     ""
 };
 /* receiver options table ----------------------------------------------------*/
+#define SWTOPT  "0:off,1:on"
 #define TIMOPT  "0:gpst,1:utc,2:jst,3:tow"
 #define CONOPT  "0:dms,1:deg,2:xyz,3:enu,4:pyl"
 #define FLGOPT  "0:off,1:std+2:age/ratio/ns"
-#define ISTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,6:ntripcli,7:ftp,8:http"
-#define OSTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,5:ntripsvr,9:ntripcas,11:udpcli"
+#define ISTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,6:ntripcli,7:ftp,8:http,9:ntripcas"
+#define OSTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,5:ntripsrc,9:ntripcas,11:udpcli"
 #define FMTOPT  "0:rtcm2,1:rtcm3,2:oem4,4:ubx,5:swift,6:hemis,7:skytraq,8:javad,9:nvs,10:binex,11:rt17,12:sbf,14:unicore,15:rinex,16:sp3,17:clk"
 #define NMEOPT  "0:off,1:latlon,2:single"
 #define SOLOPT  "0:llh,1:xyz,2:enu,3:nmea,4:stat"
 #define MSGOPT  "0:all,1:rover,2:base,3:corr"
+#define NTVOPT  "1:1,2:2"
 
 static opt_t rcvopts[]={
     {"console-passwd",  2,  (void *)passwd,              ""     },
@@ -261,6 +275,7 @@ static opt_t rcvopts[]={
 #endif
     
     {"misc-svrcycle",   0,  (void *)&svrcycle,           "ms"   },
+    {"misc-svrtol",     0,  (void *)&svrtol,             "ms"   },
     {"misc-timeout",    0,  (void *)&timeout,            "ms"   },
     {"misc-reconnect",  0,  (void *)&reconnect,          "ms"   },
     {"misc-nmeacycle",  0,  (void *)&nmeacycle,          "ms"   },
@@ -268,6 +283,17 @@ static opt_t rcvopts[]={
     {"misc-navmsgsel",  3,  (void *)&navmsgsel,          MSGOPT },
     {"misc-proxyaddr",  2,  (void *)proxyaddr,           ""     },
     {"misc-fswapmargin",0,  (void *)&fswapmargin,        "s"    },
+    {"misc-tlssvrcert", 2, (void *)tlssvrcertfile,       ""     },
+    {"misc-tlssvrkey",  2, (void *)tlssvrkeyfile,        ""     },
+    {"misc-tlssvrcafile", 2, (void *)tlssvrcafile,       ""     },
+    {"misc-tlssvrcadir", 2, (void *)tlssvrcadir,         ""     },
+    {"misc-tlssvrverify", 3, (void *)&tlssvrverify,      SWTOPT },
+    {"misc-tlsclicert", 2, (void *)tlsclicertfile,       ""     },
+    {"misc-tlsclikey",  2, (void *)tlsclikeyfile,        ""     },
+    {"misc-tlsclicafile", 2, (void *)tlsclicafile,       ""     },
+    {"misc-tlsclicadir", 2, (void *)tlsclicadir,         ""     },
+    {"misc-tlscliverify", 3, (void *)&tlscliverify,      SWTOPT },
+    {"misc-ntripver",   3,  (void *)&ntripver,           NTVOPT },
     
 #ifdef RTKSHELLCMDS
     {"misc-startcmd",   2,  (void *)startcmd,            ""     },
@@ -312,7 +338,7 @@ static void *sendkeepalive(void *arg)
     trace(3,"sendkeepalive: start\n");
     
     while (keepalive) {
-        strwrite(&moni,(uint8_t *)"\r",1);
+        strwrite(&moni, (uint8_t *)"\r", 3, 0, 1);
         sleepms(INTKEEPALIVE);
     }
     trace(3,"sendkeepalive: stop\n");
@@ -340,7 +366,7 @@ static void closemoni(void)
     keepalive=0;
     
     /* send disconnect message */
-    strwrite(&moni,(uint8_t *)MSG_DISCONN,strlen(MSG_DISCONN));
+    strwrite(&moni, (uint8_t *)MSG_DISCONN, strlen(MSG_DISCONN) + 1, 0, strlen(MSG_DISCONN));
     
     /* wait fin from clients */
     sleepms(1000);
@@ -524,11 +550,14 @@ static int startsvr(vt_t *vt)
     for (int i = 0; i < 2; i++) {
       if (strcmp(svr.name[i], "*") == 0) {
         svr.name[i][0] = '\0';
-        if (strtype[i] == STR_NTRIPCLI) {
+        if (strtype[i] == STR_NTRIPCLI || strtype[i] == STR_NTRIPCAS) {
           // Use the ntrip mount point.
           char buff[MAXSTR];
           snprintf(buff, sizeof(buff), "%s", strpath[i]);
-          char *p = strrchr(buff, '@');
+          // Strip any options.
+          char *p;
+          if ((p = strstr(buff, "::"))) *p = '\0';
+          p = strrchr(buff, '@');
           if (!p) p = buff;
           p = strchr(p, '/');
           if (p && p[1] != '\0') {
@@ -591,7 +620,9 @@ static int startsvr(vt_t *vt)
     /* set ftp/http directory and proxy */
     strsetdir(filopt.tempdir);
     strsetproxy(proxyaddr);
-    
+    // Default NTRIP version.
+    strsetntripver(ntripver);
+
 #ifdef RTKSHELLCMDS
     /* execute start command */
     int ret;
@@ -634,9 +665,16 @@ static int startsvr(vt_t *vt)
 
     for (int i = 0; i < MAXSTRRTK; i++) paths[i] = strpath[i];
 
+    // Initialize the TLS certificates.
+    strinittls(tlssvrcertfile, tlssvrkeyfile, tlssvrcafile, tlssvrcadir, tlssvrverify,
+               tlsclicertfile, tlsclikeyfile, tlsclicafile, tlsclicadir, tlscliverify);
+
     /* start rtk server */
-    if (!rtksvrstart(&svr,svrcycle,buffsize,strtype,(const char **)paths,strfmt,navmsgsel,
-                     (const char **)cmds,(const char **)cmds_periodic,(const char **)ropts,nmeacycle,nmeareq,npos,&prcopt,
+    if (!rtksvrstart(&svr, svrcycle > 0 ? (unsigned)svrcycle : 0,
+                     svrtol > 0 ? (unsigned)svrtol : 0,
+                     buffsize,strtype,(const char **)paths,strfmt,navmsgsel,
+                     (const char **)cmds,(const char **)cmds_periodic,
+                     (const char **)ropts,nmeacycle,nmeareq,npos,&prcopt,
                      solopt,&moni,errmsg)) {
         trace(2,"rtk server start error (%s)\n",errmsg);
         vt_printf(vt,"rtk server start error (%s)\n",errmsg);
@@ -1315,7 +1353,7 @@ static void prstream(vt_t *vt)
     const char *inch[]={"input rover","input base"};
     const char *logch[]={"log rover","log base"};
     const char *type[]={
-        "-","serial","file","tcpsvr","tcpcli","ntrips","ntripc","ftp",
+        "-","serial","file","tcpsvr","tcpcli","ntripsrc","ntripcli","ftp",
         "http","ntripcas","udpsvr","udpcli","membuf"
     };
     const char *fmt[]={"rtcm2","rtcm3","oem4","","ubx","swift","hemis","skytreq",
@@ -1334,7 +1372,7 @@ static void prstream(vt_t *vt)
     format[MAXSTRRTK]=SOLF_LLH;
     rtksvrunlock(&svr);
     
-    vt_printf(vt,"\n%s%-12s %-8s %-5s %s %10s %7s %10s %7s %-24s %s%s\n",ESC_BOLD,
+    vt_printf(vt,"\n%s%-12s %-9s %-5s %s %10s %7s %10s %7s %-24s %s%s\n",ESC_BOLD,
               "Stream","Type","Fmt","S","In-byte","In-bps","Out-byte","Out-bps",
               "Path","Message",ESC_RESET);
     for (i=0;i<MAXSTRRTK+1;i++) {
@@ -1345,7 +1383,7 @@ static void prstream(vt_t *vt)
         else if (i < RTKSVRNIN * 2) name = "log corr";
         else if (i < MAXSTRRTK) name = "output sol";
         else name = "monitor";
-        vt_printf(vt,"%-12s %-8s %-5s %s %10d %7d %10d %7d %-24.24s %s\n",
+        vt_printf(vt,"%-12s %-9s %-5s %s %10d %7d %10d %7d %-24.24s %s\n",
             name,type[stream[i].type],i<RTKSVRNIN?fmt[format[i]]:(i>=RTKSVRNIN*2?sol[format[i]]:"-"),
             stream[i].state<0?"E":(stream[i].state?"C":"-"),
             stream[i].inb,stream[i].inr,stream[i].outb,stream[i].outr,

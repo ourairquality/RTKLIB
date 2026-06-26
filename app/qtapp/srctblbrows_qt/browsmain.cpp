@@ -32,8 +32,6 @@
 #define ENDSRCTBL               "ENDSOURCETABLE"        // end marker of table
 #define ADDRESS_WIDTH           184                     // width of Address (px)
 
-static char buff[MAXSRCTBL];                            // source table buffer
-
 MainForm *mainForm;
 
 extern "C" {
@@ -43,11 +41,11 @@ extern "C" {
 }
 
 /* get source table -------------------------------------------------------*/
+// Note the caller is expected to free the returned source table.
 static char *getsrctbl(const QString addr)
 {
     static int lock = 0;
-	stream_t str;
-    char *p = buff, msg[MAXSTRMSG];
+    stream_t str;
     unsigned int tick = tickget();
 
     if (lock) return NULL;
@@ -55,31 +53,41 @@ static char *getsrctbl(const QString addr)
 
     strinit(&str);
 
+    // Disable TLS client peer verification for this app.
+    strinittls(NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0);
+
     if (!stropen(&str, STR_NTRIPCLI, STR_MODE_R, qPrintable(addr))) {
         lock = 0;
         QMetaObject::invokeMethod(mainForm, "showMsg", Qt::QueuedConnection, Q_ARG(QString, qApp->translate("MainForm", "stream open error")));
 		return NULL;
 	}
+    char *srctbl = (char *)malloc(MAXSRCTBL);
+    if (srctbl == NULL) {
+      strclose(&str);
+      return NULL;
+    }
     QMetaObject::invokeMethod(mainForm, "showMsg", Qt::QueuedConnection, Q_ARG(QString, qApp->translate("MainForm", "connecting...")));
 
-    while (p < buff + MAXSRCTBL - 1) {
-        int ns = strread(&str, (uint8_t *)p, (buff + MAXSRCTBL - p - 1));
-        p += ns; *p='\0';
+    size_t pi = 0;
+    while (pi + 1 < MAXSRCTBL) {
+        size_t ns = strread(&str, (uint8_t *)srctbl, MAXSRCTBL, pi, MAXSRCTBL - pi - 1);
+        pi += ns; srctbl[pi] = '\0';
         qApp->processEvents();
-        int stat = strstat(&str, msg);
 
+        char msg[MAXSTRMSG] = "";
+        int stat = strstat(&str, msg, sizeof(msg));
         QMetaObject::invokeMethod(mainForm, "showMsg", Qt::QueuedConnection, Q_ARG(QString, msg));
 
-        if (stat <= 0) break;
-        if (strstr(buff, ENDSRCTBL)) break;
+        if (strstr(srctbl, ENDSRCTBL)) break;
         if ((int)(tickget() - tick) > NTRIP_TIMEOUT) {
             QMetaObject::invokeMethod(mainForm, "showMsg", Qt::QueuedConnection, Q_ARG(QString, qApp->translate("MainForm", "response timeout")));
-			break;
-		}
-	}
-	strclose(&str);
+            break;
+        }
+        if (stat <= 0) break;
+    }
+    strclose(&str);
     lock = 0;
-	return buff;
+    return srctbl;
 }
 //---------------------------------------------------------------------------
 MainForm::MainForm(QWidget *parent)
@@ -448,20 +456,22 @@ void MainForm::getCaster()
 void MainForm::updateCaster()
 {
     QString currentAddress;
-    QString srctbl;
 
     ui->btnList->setEnabled(true);
     ui->actMenuUpdateCaster->setEnabled(true);
 
-    if ((srctbl = casterWatcher.result()).isEmpty()) return;
+    char *srctbl = casterWatcher.result();
+    if (srctbl == NULL) return;
 
+    QString srcTable = srctbl;
+    free(srctbl);
     currentAddress = ui->cBAddress->currentText();
     ui->cBAddress->clear();
     ui->cBAddress->setCurrentText(currentAddress);
     ui->cBAddress->addItem("");
 
     QStringList tokens;
-    QStringList lines = srctbl.split('\n');
+    QStringList lines = srcTable.split('\n');
     foreach(const QString &line, lines) {
         if (!line.contains("CAS")) continue;
 

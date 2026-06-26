@@ -792,6 +792,27 @@ object OptDialog: TOptDialog
         TabOrder = 30
         Text = '0.01'
       end
+      object Label47: TLabel
+        Left = 24
+        Top = 337
+        Width = 189
+        Height = 13
+        Caption = 'Time Interpolation of Base Station Data'
+      end
+      object IntpRefObs: TComboBox
+        Left = 248
+        Top = 334
+        Width = 152
+        Height = 21
+        Style = csDropDownList
+        ItemIndex = 0
+        TabOrder = 0
+        Text = 'OFF'
+        OnChange = FreqChange
+        Items.Strings = (
+          'OFF'
+          'ON')
+      end
     end
     object TabSheet3: TTabSheet
       Caption = 'O&utput'
@@ -2139,66 +2160,73 @@ object OptDialog: TOptDialog
       ImageIndex = 6
       DesignSize = (
         405
-        325)
+        347)
       object Label19: TLabel
         Left = 32
         Top = 7
         Width = 190
         Height = 13
-        Caption = 'Process Cycle (ms) / Buffer Size (bytes)'
+        Caption = 'Process Cycle (ms) / Delay Tolerance (ms)'
+      end
+      object Label70: TLabel
+        Left = 32
+        Top = 29
+        Width = 190
+        Height = 13
+        Caption = 'Buffer Size (bytes)'
       end
       object Label44: TLabel
         Left = 32
-        Top = 29
+        Top = 51
         Width = 164
         Height = 13
         Caption = 'Timeout / Reconnect Interval (ms)'
       end
       object Label46: TLabel
         Left = 32
-        Top = 51
+        Top = 73
         Width = 187
         Height = 13
         Caption = 'NMEA Cycle (ms) / File Swap Margin (s)'
       end
       object Label41: TLabel
         Left = 32
-        Top = 73
+        Top = 95
         Width = 162
         Height = 13
         Caption = 'Solution Buffer/ Log Size (epochs)'
       end
       object Label42: TLabel
         Left = 32
-        Top = 95
+        Top = 117
         Width = 142
         Height = 13
         Caption = 'Navigation Message Selection'
       end
       object Label5: TLabel
         Left = 32
-        Top = 117
+        Top = 139
         Width = 193
         Height = 13
         Caption = 'SBAS Sat Selection (0: all) / Monitor Port'
       end
       object Label45: TLabel
         Left = 32
-        Top = 139
+        Top = 161
         Width = 96
         Height = 13
         Caption = 'HTTP / NTRIP Proxy'
       end
       object Label49: TLabel
         Left = 32
-        Top = 161
+        Top = 183
         Width = 51
         Height = 13
         Caption = 'Panel Font'
       end
       object FontLabel1: TLabel
         Left = 148
-        Top = 161
+        Top = 183
         Width = 200
         Height = 18
         Caption = 'Font Label 1'
@@ -2211,14 +2239,14 @@ object OptDialog: TOptDialog
       end
       object Label40: TLabel
         Left = 32
-        Top = 188
+        Top = 210
         Width = 63
         Height = 13
         Caption = 'Solution Font'
       end
       object FontLabel2: TLabel
         Left = 148
-        Top = 188
+        Top = 210
         Width = 200
         Height = 18
         Caption = 'Font Label 2'
@@ -2231,7 +2259,7 @@ object OptDialog: TOptDialog
       end
       object Label43: TLabel
         Left = 32
-        Top = 215
+        Top = 237
         Width = 62
         Height = 13
         Caption = 'Panel Layout'
@@ -2244,9 +2272,17 @@ object OptDialog: TOptDialog
         TabOrder = 0
         Text = '10'
       end
-      object SvrBuffSizeE: TEdit
+      object SvrToleranceE: TEdit
         Left = 316
         Top = 4
+        Width = 66
+        Height = 21
+        TabOrder = 0
+        Text = '10'
+      end
+      object SvrBuffSizeE: TEdit
+        Left = 248
+        Top = 26
         Width = 66
         Height = 21
         TabOrder = 1
@@ -2254,7 +2290,7 @@ object OptDialog: TOptDialog
       end
       object TimeoutTimeE: TEdit
         Left = 248
-        Top = 26
+        Top = 48
         Width = 66
         Height = 21
         TabOrder = 2
@@ -2262,7 +2298,7 @@ object OptDialog: TOptDialog
       end
       object ReconTimeE: TEdit
         Left = 316
-        Top = 26
+        Top = 48
         Width = 66
         Height = 21
         TabOrder = 3
@@ -2270,7 +2306,7 @@ object OptDialog: TOptDialog
       end
       object NmeaCycleE: TEdit
         Left = 248
-        Top = 48
+        Top = 70
         Width = 66
         Height = 21
         TabOrder = 4
@@ -2278,7 +2314,7 @@ object OptDialog: TOptDialog
       end
       object FileSwapMarginE: TEdit
         Left = 316
-        Top = 48
+        Top = 70
         Width = 66
         Height = 21
         TabOrder = 5
@@ -2286,7 +2322,7 @@ object OptDialog: TOptDialog
       end
       object SolBuffSizeE: TEdit
         Left = 248
-        Top = 70
+        Top = 92
         Width = 66
         Height = 21
         TabOrder = 6
@@ -2294,7 +2330,7 @@ object OptDialog: TOptDialog
       end
       object SavedSolE: TEdit
         Left = 316
-        Top = 70
+        Top = 92
         Width = 66
         Height = 21
         TabOrder = 7
@@ -2302,7 +2338,7 @@ object OptDialog: TOptDialog
       end
       object NavSelectS: TComboBox
         Left = 248
-        Top = 92
+        Top = 114
         Width = 134
         Height = 21
         Style = csDropDownList
@@ -2317,7 +2353,7 @@ object OptDialog: TOptDialog
       end
       object SbasSatE: TEdit
         Left = 248
-        Top = 114
+        Top = 136
         Width = 66
         Height = 21
         TabOrder = 9
@@ -2325,7 +2361,7 @@ object OptDialog: TOptDialog
       end
       object MoniPortE: TEdit
         Left = 316
-        Top = 114
+        Top = 136
         Width = 66
         Height = 21
         TabOrder = 10
@@ -2333,14 +2369,14 @@ object OptDialog: TOptDialog
       end
       object ProxyAddrE: TEdit
         Left = 148
-        Top = 136
+        Top = 158
         Width = 234
         Height = 21
         TabOrder = 11
       end
       object BtnFont1: TButton
         Left = 358
-        Top = 158
+        Top = 180
         Width = 25
         Height = 21
         Caption = '...'
@@ -2355,7 +2391,7 @@ object OptDialog: TOptDialog
       end
       object BtnFont2: TButton
         Left = 358
-        Top = 185
+        Top = 207
         Width = 25
         Height = 21
         Caption = '...'
@@ -2370,7 +2406,7 @@ object OptDialog: TOptDialog
       end
       object PanelStackE: TComboBox
         Left = 248
-        Top = 212
+        Top = 234
         Width = 134
         Height = 21
         Style = csDropDownList
@@ -2383,14 +2419,14 @@ object OptDialog: TOptDialog
       end
       object Label57: TLabel
         Left = 32
-        Top = 237
+        Top = 259
         Width = 96
         Height = 13
         Caption = 'Signal definitions'
       end
       object BtnSigs: TSpeedButton
         Left = 127
-        Top = 234
+        Top = 256
         Width = 18
         Height = 21
         Caption = '?'
@@ -2400,10 +2436,246 @@ object OptDialog: TOptDialog
       end
       object SigDef: TEdit
         Left = 148
-        Top = 234
+        Top = 256
         Width = 234
         Height = 21
         TabOrder = 15
+      end
+    end
+    object TabSheet9: TTabSheet
+      Caption = '&TLS'
+      ImageIndex = 6
+      object Label60: TLabel
+        Left = 6
+        Top = 2
+        Width = 250
+        Height = 13
+        Caption = 'TLS server certificate'
+      end
+      object TLSSvrCertFile: TEdit
+        Left = 2
+        Top = 16
+        Width = 378
+        Height = 21
+        TabOrder = 1
+      end
+      object BtnTLSSvrCertFile: TButton
+        Left = 381
+        Top = 16
+        Width = 21
+        Height = 21
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 2
+        OnClick = BtnTLSSvrCertFileClick
+      end
+      object Label61: TLabel
+        Left = 6
+        Top = 37
+        Width = 72
+        Height = 13
+        Caption = 'TLS server private key'
+      end
+      object TLSSvrKeyFile: TEdit
+        Left = 2
+        Top = 51
+        Width = 378
+        Height = 21
+        TabOrder = 3
+      end
+      object BtnTLSSvrKeyFile: TButton
+        Left = 381
+        Top = 51
+        Width = 21
+        Height = 21
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 4
+        OnClick = BtnTLSSvrKeyFileClick
+      end
+      object Label62: TLabel
+        Left = 6
+        Top = 72
+        Width = 72
+        Height = 13
+        Caption = 'TLS server CA file'
+      end
+      object TLSSvrCAFile: TEdit
+        Left = 2
+        Top = 86
+        Width = 378
+        Height = 21
+        TabOrder = 5
+      end
+      object BtnTLSSvrCAFile: TButton
+        Left = 381
+        Top = 86
+        Width = 21
+        Height = 21
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 6
+        OnClick = BtnTLSSvrCAFileClick
+      end
+      object Label63: TLabel
+        Left = 6
+        Top = 107
+        Width = 65
+        Height = 13
+        Caption = 'TLS server CA directory'
+      end
+      object TLSSvrCADir: TEdit
+        Left = 2
+        Top = 121
+        Width = 378
+        Height = 21
+        TabOrder = 7
+      end
+      object BtnTLSSvrCADir: TButton
+        Left = 381
+        Top = 121
+        Width = 21
+        Height = 21
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 8
+        OnClick = BtnTLSSvrCADirClick
+      end
+      object Label64: TLabel
+        Left = 6
+        Top = 142
+        Width = 250
+        Height = 13
+        Caption = 'TLS client certificate'
+      end
+      object TLSCliCertFile: TEdit
+        Left = 2
+        Top = 156
+        Width = 378
+        Height = 21
+        TabOrder = 9
+      end
+      object BtnTLSCliCertFile: TButton
+        Left = 381
+        Top = 156
+        Width = 21
+        Height = 21
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 10
+        OnClick = BtnTLSCliCertFileClick
+      end
+      object Label65: TLabel
+        Left = 6
+        Top = 177
+        Width = 72
+        Height = 13
+        Caption = 'TLS client private key'
+      end
+      object TLSCliKeyFile: TEdit
+        Left = 2
+        Top = 191
+        Width = 378
+        Height = 21
+        TabOrder = 11
+      end
+      object BtnTLSCliKeyFile: TButton
+        Left = 381
+        Top = 191
+        Width = 21
+        Height = 21
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 12
+        OnClick = BtnTLSCliKeyFileClick
+      end
+      object Label66: TLabel
+        Left = 6
+        Top = 212
+        Width = 72
+        Height = 13
+        Caption = 'TLS client CA file'
+      end
+      object TLSCliCAFile: TEdit
+        Left = 2
+        Top = 226
+        Width = 378
+        Height = 21
+        TabOrder = 13
+      end
+      object BtnTLSCliCAFile: TButton
+        Left = 381
+        Top = 226
+        Width = 21
+        Height = 21
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 14
+        OnClick = BtnTLSCliCAFileClick
+      end
+      object Label67: TLabel
+        Left = 6
+        Top = 247
+        Width = 65
+        Height = 13
+        Caption = 'TLS client CA directory'
+      end
+      object TLSCliCADir: TEdit
+        Left = 2
+        Top = 261
+        Width = 378
+        Height = 21
+        TabOrder = 15
+      end
+      object BtnTLSCliCADir: TButton
+        Left = 381
+        Top = 261
+        Width = 21
+        Height = 21
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 16
+        OnClick = BtnTLSCliCADirClick
       end
     end
   end
@@ -2412,7 +2684,9 @@ object OptDialog: TOptDialog
       'All (*.*)|*.*|PCV File (*.pcv,*.atx)|*.pcv;*.atx|Position File (' +
       '*.pos,*.snx)|*.pos;*.snx|Options File (*.conf)|*.conf|DCB Data F' +
       'ile (*.dcb)|*.dcb|EOP Data File (*.eop,*.erp)|*.eop;*.erp|OTL BL' +
-      'Q File (*.blq)|*.blq|Satellite Meta Data (*.snx)|*.snx'
+      'Q File (*.blq)|*.blq|Satellite Meta Data (*.snx)|*.snx|' +
+      'TLS Certificate File (*.crt *.cer *.pem)|*.crt;*.cer;*.pem|' +
+      'TLS Private Key File (*.key *.pem)|*.key;*.pem|'
     Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     Title = 'Load File'
     Left = 164
