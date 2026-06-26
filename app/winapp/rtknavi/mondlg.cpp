@@ -1587,7 +1587,7 @@ void __fastcall TMonitorDialog::ShowStr(void)
 		"Monitor"
 	};
 	AnsiString type[]={
-		"-","Serial","File","TCP Server","TCP Client","NTRIP Server",
+		"-","Serial","File","TCP Server","TCP Client","NTRIP Source",
 		"NTRIP Client","FTP","HTTP","NTRIP Caster","UDP Server",
 		"UDP Client",""
 	};

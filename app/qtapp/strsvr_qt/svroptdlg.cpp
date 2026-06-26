@@ -33,9 +33,41 @@ SvrOptDialog::SvrOptDialog(QWidget *parent)
     fileModel->setRootPath("");
     fileCompleter->setModel(fileModel);
     ui->lELogFile->setCompleter(fileCompleter);
+    ui->lETLSSvrCertFile->setCompleter(fileCompleter);
+    ui->lETLSSvrKeyFile->setCompleter(fileCompleter);
+    ui->lETLSSvrCAFile->setCompleter(fileCompleter);
+    ui->lETLSSvrCADir->setCompleter(fileCompleter);
+    ui->lETLSCliCertFile->setCompleter(fileCompleter);
+    ui->lETLSCliKeyFile->setCompleter(fileCompleter);
+    ui->lETLSCliCAFile->setCompleter(fileCompleter);
+    ui->lETLSCliCADir->setCompleter(fileCompleter);
 
     QAction *acLogFile = ui->lELogFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
     acLogFile->setToolTip(tr("Select log file"));
+
+    QAction *acTLSSvrCertFile = ui->lETLSSvrCertFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSSvrCertFile->setToolTip(tr("Select TLS server certificate file"));
+
+    QAction *acTLSSvrKeyFile = ui->lETLSSvrKeyFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSSvrKeyFile->setToolTip(tr("Select TLS server certificate private key file"));
+
+    QAction *acTLSSvrCAFile = ui->lETLSSvrCAFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSSvrCAFile->setToolTip(tr("Select TLS server CA file"));
+
+    QAction *acTLSSvrCADir = ui->lETLSSvrCADir->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSSvrCADir->setToolTip(tr("Select TLS server CA directory"));
+
+    QAction *acTLSCliCertFile = ui->lETLSCliCertFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSCliCertFile->setToolTip(tr("Select TLS client certificate file"));
+
+    QAction *acTLSCliKeyFile = ui->lETLSCliKeyFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSCliKeyFile->setToolTip(tr("Select TLS client certificate private key file"));
+
+    QAction *acTLSCliCAFile = ui->lETLSCliCAFile->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSCliCAFile->setToolTip(tr("Select TLS client CA file"));
+
+    QAction *acTLSCliCADir = ui->lETLSCliCADir->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
+    acTLSCliCADir->setToolTip(tr("Select TLS client CA directory"));
 
     QAction *acLocalDir = ui->lELocalDir->addAction(QIcon(":/buttons/folder"), QLineEdit::TrailingPosition);
     acLocalDir->setToolTip(tr("Select local directory"));
@@ -44,6 +76,14 @@ SvrOptDialog::SvrOptDialog(QWidget *parent)
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &SvrOptDialog::reject);
     connect(ui->btnPosition, &QPushButton::clicked, this, &SvrOptDialog::positionSelect);
     connect(acLogFile, &QAction::triggered, this, &SvrOptDialog::logFileSelect);
+    connect(acTLSSvrCertFile, &QAction::triggered, this, &SvrOptDialog::tlsSvrCertFileSelect);
+    connect(acTLSSvrKeyFile, &QAction::triggered, this, &SvrOptDialog::tlsSvrKeyFileSelect);
+    connect(acTLSSvrCAFile, &QAction::triggered, this, &SvrOptDialog::tlsSvrCAFileSelect);
+    connect(acTLSSvrCADir, &QAction::triggered, this, &SvrOptDialog::tlsSvrCADirSelect);
+    connect(acTLSCliCertFile, &QAction::triggered, this, &SvrOptDialog::tlsCliCertFileSelect);
+    connect(acTLSCliKeyFile, &QAction::triggered, this, &SvrOptDialog::tlsCliKeyFileSelect);
+    connect(acTLSCliCAFile, &QAction::triggered, this, &SvrOptDialog::tlsCliCAFileSelect);
+    connect(acTLSCliCADir, &QAction::triggered, this, &SvrOptDialog::tlsCliCADirSelect);
     connect(ui->cBNmeaReq, &QPushButton::clicked, this, &SvrOptDialog::updateEnable);
     connect(acLocalDir, &QAction::triggered, this, &SvrOptDialog::localDirectorySelect);
     connect(ui->cBStationId, &QPushButton::clicked, this, &SvrOptDialog::updateEnable);
@@ -88,6 +128,14 @@ void SvrOptDialog::showEvent(QShowEvent *event)
     ui->sBAntennaOffset2->setValue(antennaOffsets[1]);
     ui->sBAntennaOffset3->setValue(antennaOffsets[2]);
     ui->lELogFile->setText(logFile);
+    ui->lETLSSvrCertFile->setText(tlsSvrCertFile);
+    ui->lETLSSvrKeyFile->setText(tlsSvrKeyFile);
+    ui->lETLSSvrCAFile->setText(tlsSvrCAFile);
+    ui->lETLSSvrCADir->setText(tlsSvrCADir);
+    ui->lETLSCliCertFile->setText(tlsCliCertFile);
+    ui->lETLSCliKeyFile->setText(tlsCliKeyFile);
+    ui->lETLSCliCAFile->setText(tlsCliCAFile);
+    ui->lETLSCliCADir->setText(tlsCliCADir);
 
 	updateEnable();
 }
@@ -116,6 +164,14 @@ void SvrOptDialog::accept()
         for (int i = 0; i < 3; i++) antennaPosition[i] = 0.0;
 
     logFile = ui->lELogFile->text();
+    tlsSvrCertFile = ui->lETLSSvrCertFile->text();
+    tlsSvrKeyFile = ui->lETLSSvrKeyFile->text();
+    tlsSvrCAFile = ui->lETLSSvrCAFile->text();
+    tlsSvrCADir = ui->lETLSSvrCADir->text();
+    tlsCliCertFile = ui->lETLSCliCertFile->text();
+    tlsCliKeyFile = ui->lETLSCliKeyFile->text();
+    tlsCliCAFile = ui->lETLSCliCAFile->text();
+    tlsCliCADir = ui->lETLSCliCADir->text();
     traceLevel = ui->cBTraceLevel->currentIndex();
     nmeaRequest = ui->cBNmeaReq->isChecked();
     localDirectory = ui->lELocalDir->text();
@@ -180,5 +236,63 @@ void SvrOptDialog::logFileSelect()
 {
     QString filename = QFileDialog::getOpenFileName(this, tr("Log File"), ui->lELogFile->text(), tr("All (*.*)"));
     if (!filename.isEmpty()) ui->lELogFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void SvrOptDialog::tlsSvrCertFileSelect()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("TLS Server Certificate File"), ui->lETLSSvrCertFile->text(), tr("(*.crt *.cer *.pem);;All (*.*)"));
+    if (!filename.isEmpty())
+      ui->lETLSSvrCertFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void SvrOptDialog::tlsSvrKeyFileSelect()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("TLS Server Private Key File"), ui->lETLSSvrKeyFile->text(), tr("(*.key *.pem);;All (*.*)"));
+    if (!filename.isEmpty())
+      ui->lETLSSvrKeyFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void SvrOptDialog::tlsSvrCAFileSelect()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("TLS Server CA File"), ui->lETLSSvrCAFile->text(), tr("TLS Server CA File (*.crt *.cer *.pem);;All (*.*)"));
+    if (!filename.isEmpty())
+      ui->lETLSSvrCAFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void SvrOptDialog::tlsSvrCADirSelect()
+{
+    QString dir = ui->lETLSSvrCADir->text();
+    dir = QFileDialog::getExistingDirectory(this, tr("TLS Server CA Directory"), dir);
+    if (!dir.isEmpty())
+      ui->lETLSSvrCADir->setText(QDir::toNativeSeparators(dir));
+}
+//---------------------------------------------------------------------------
+void SvrOptDialog::tlsCliCertFileSelect()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("TLS Client Certificate File"), ui->lETLSCliCertFile->text(), tr("(*.crt *.cer */=.pem);;All (*.*)"));
+    if (!filename.isEmpty())
+      ui->lETLSCliCertFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void SvrOptDialog::tlsCliKeyFileSelect()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("TLS Client Private Key File"), ui->lETLSCliKeyFile->text(), tr("(*.key *.pem);;All (*.*)"));
+    if (!filename.isEmpty())
+      ui->lETLSCliKeyFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void SvrOptDialog::tlsCliCAFileSelect()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("TLS Client CA File"), ui->lETLSCliCAFile->text(), tr("TLS Server CA File (*.crt *.cer *.pem);;All (*.*)"));
+    if (!filename.isEmpty())
+      ui->lETLSCliCAFile->setText(QDir::toNativeSeparators(filename));
+}
+//---------------------------------------------------------------------------
+void SvrOptDialog::tlsCliCADirSelect()
+{
+    QString dir = ui->lETLSCliCADir->text();
+    dir = QFileDialog::getExistingDirectory(this, tr("TLS Client CA Directory"), dir);
+    if (!dir.isEmpty())
+      ui->lETLSCliCADir->setText(QDir::toNativeSeparators(dir));
 }
 //---------------------------------------------------------------------------

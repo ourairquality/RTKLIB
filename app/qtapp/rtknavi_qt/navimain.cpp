@@ -89,8 +89,8 @@ static int strfmt[MAXSTRRTK];                  /* stream formats */
 #define TIMOPT  "0:gpst,1:utc,2:jst,3:tow"
 #define CONOPT  "0:dms,1:deg,2:xyz,3:enu,4:pyl"
 #define FLGOPT  "0:off,1:std+2:age/ratio/ns"
-#define ISTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,6:ntripcli,7:ftp,8:http"
-#define OSTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,5:ntripsvr,9:ntripcas"
+#define ISTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,6:ntripcli,7:ftp,8:http,9:ntripcas"
+#define OSTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,5:ntripsrc,9:ntripcas,16:udpcli"
 #define FMTOPT  "0:rtcm2,1:rtcm3,2:oem4,4:ubx,5:swift,6:hemis,7:skytraq,8:javad,9:nvs,10:binex,11:rt17,12:sbf,14:unicore,15:rinex,16:sp3,17:clk"
 #define NMEOPT  "0:off,1:latlon,2:single"
 #define SOLOPT  "0:llh,1:xyz,2:enu,3:nmea,4:stat"
@@ -372,8 +372,7 @@ void MainWindow::closeEvent(QCloseEvent *)
 
     if (monitorPortOpen > 0) {
         // send disconnect message
-        strwrite(&monistr, (uint8_t *)MSG_DISCONN, strlen(MSG_DISCONN));
-
+        strwrite(&monistr, (uint8_t *)MSG_DISCONN, strlen(MSG_DISCONN), 0, strlen(MSG_DISCONN));
         strclose(&monistr);
     }
     saveOptions();
@@ -530,8 +529,7 @@ void MainWindow::showOptionsDialog()
     if (monitorPort_old != optDialog->monitorPort)  {
         // send disconnect message
         if (monitorPortOpen > 0) {
-            strwrite(&monistr, (uint8_t *)MSG_DISCONN, strlen(MSG_DISCONN));
-
+            strwrite(&monistr, (uint8_t *)MSG_DISCONN, strlen(MSG_DISCONN), 0, strlen(MSG_DISCONN));
             strclose(&monistr);
         }
         // reopen monitor stream
@@ -544,6 +542,14 @@ void MainWindow::showInputStreamDialog()
     int i, j;
 
     trace(3, "showInputStreamDialog\n");
+
+    // Initialize the TLS certificates.
+    strinittls(qPrintable(optDialog->tlsSvrCertFile), qPrintable(optDialog->tlsSvrKeyFile),
+               qPrintable(optDialog->tlsSvrCAFile), qPrintable(optDialog->tlsSvrCADir),
+               0,
+               qPrintable(optDialog->tlsCliCertFile), qPrintable(optDialog->tlsCliKeyFile),
+               qPrintable(optDialog->tlsCliCAFile), qPrintable(optDialog->tlsCliCADir),
+               0);
 
     for (i = 0; i < RTKSVRNIN; i++) {
         inputStrDialog->setStreamEnabled(i, streamEnabled[i]);
@@ -640,7 +646,7 @@ void MainWindow::showInputFileDialog()
 // confirm overwrite --------------------------------------------------------
 int MainWindow::confirmOverwrite(const QString &path)
 {
-    int itype[] = {STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPCLI, STR_FILE, STR_FTP, STR_HTTP};
+    int itype[] = {STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPCLI, STR_NTRIPCAS, STR_FILE, STR_FTP, STR_HTTP};
     int i;
     QString filename, streamFilename;
 
@@ -668,11 +674,19 @@ int MainWindow::confirmOverwrite(const QString &path)
 // callback on button-output-streams ----------------------------------------
 void MainWindow::showOutputStreamDialog()
 {
-    int otype[] = {STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPSVR, STR_NTRIPCAS, STR_FILE};
+    int otype[] = {STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPSRC, STR_NTRIPCAS, STR_FILE};
     int i, j, str, update[RTKSVRNSOL] = { 0 };
     QString path;
 
     trace(3, "showOutputStreamDialog\n");
+
+    // Initialize the TLS certificates.
+    strinittls(qPrintable(optDialog->tlsSvrCertFile), qPrintable(optDialog->tlsSvrKeyFile),
+               qPrintable(optDialog->tlsSvrCAFile), qPrintable(optDialog->tlsSvrCADir),
+               0,
+               qPrintable(optDialog->tlsCliCertFile), qPrintable(optDialog->tlsCliKeyFile),
+               qPrintable(optDialog->tlsCliCAFile), qPrintable(optDialog->tlsCliCADir),
+               0);
 
     for (i = RTKSVRNIN * 2; i < MAXSTRRTK; i++) {
         outputStrDialog->setStreamEnabled(i - RTKSVRNIN * 2, streamEnabled[i]);
@@ -737,15 +751,23 @@ void MainWindow::showOutputStreamDialog()
 // callback on button-log-streams -------------------------------------------
 void MainWindow::showLogStreamDialog()
 {
-    int otype[] = {STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPSVR, STR_NTRIPCAS, STR_FILE};
+    int otype[] = {STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPSRC, STR_NTRIPCAS, STR_FILE};
     int i, j, str, update[RTKSVRNIN] = {0};
     QString path;
 
     trace(3, "showLogStreamDialog\n");
 
+    // Initialize the TLS certificates.
+    strinittls(qPrintable(optDialog->tlsSvrCertFile), qPrintable(optDialog->tlsSvrKeyFile),
+               qPrintable(optDialog->tlsSvrCAFile), qPrintable(optDialog->tlsSvrCADir),
+               0,
+               qPrintable(optDialog->tlsCliCertFile), qPrintable(optDialog->tlsCliKeyFile),
+               qPrintable(optDialog->tlsCliCAFile), qPrintable(optDialog->tlsCliCADir),
+               0);
+
     for (i = RTKSVRNIN; i < RTKSVRNIN * 2; i++) {
         logStrDialog->setStreamEnabled(i - RTKSVRNIN, streamEnabled[i]);
-        logStrDialog->setStreamType(i - RTKSVRNIN, streamType [i]);
+        logStrDialog->setStreamType(i - RTKSVRNIN, streamType[i]);
         for (j = 0; j < 4; j++)
             logStrDialog->setPath(i - RTKSVRNIN, j, paths[i][j]);
     }
@@ -1043,8 +1065,8 @@ void MainWindow::serverStart()
 {
     solopt_t solopt[RTKSVRNSOL];
     double pos[3], nmeapos[3];
-    int itype[] = {STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPCLI, STR_FILE, STR_FTP, STR_HTTP};
-    int otype[] = {STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPSVR, STR_NTRIPCAS, STR_FILE};
+    int itype[] = {STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPCLI, STR_NTRIPCAS, STR_FILE, STR_FTP, STR_HTTP};
+    int otype[] = {STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPSRC, STR_NTRIPCAS, STR_FILE};
     int i, j, streamTypes[MAXSTRRTK] = {0}, stropt[8] = {0};
     char *serverPaths[MAXSTRRTK], *cmds[RTKSVRNIN] = {0}, *cmds_periodic[RTKSVRNIN] = {0}, *rcvopts[RTKSVRNIN] = {0};
     char errmsg[20148];
@@ -1101,9 +1123,18 @@ void MainWindow::serverStart()
     free_pcvs(&pcvs);
     free(satsvns.satsvn);
 
-    for (i = 0; i < RTKSVRNIN; i++) streamTypes[i] = streamEnabled[i] ? itype[streamType[i]] : STR_NONE;  // input stream
-    for (i = RTKSVRNIN; i < RTKSVRNIN * 2; i++) streamTypes[i] = streamEnabled[i] ? otype[streamType[i]] : STR_NONE;  // log streams
-    for (i = RTKSVRNIN * 2; i < MAXSTRRTK; i++) streamTypes[i] = streamEnabled[i] ? otype[streamType[i]] : STR_NONE;  // output stream
+    for (i = 0; i < RTKSVRNIN; i++) {
+      // Input stream.
+      streamTypes[i] = streamEnabled[i] ? itype[streamType[i]] : STR_NONE;
+    }
+    for (i = RTKSVRNIN; i < RTKSVRNIN * 2; i++) {
+      // Log streams.
+      streamTypes[i] = streamEnabled[i] ? otype[streamType[i]] : STR_NONE;
+    }
+    for (i = RTKSVRNIN * 2; i < MAXSTRRTK; i++) {
+      // Output stream.
+      streamTypes[i] = streamEnabled[i] ? otype[streamType[i]] : STR_NONE;
+    }
 
     for (i = 0; i < MAXSTRRTK; i++) {
         serverPaths[i] = new char[1024];
@@ -1126,7 +1157,7 @@ void MainWindow::serverStart()
             cmds_periodic[i][0] = '\0';
             if (commandEnabled[i][0]) strncpy(cmds[i], qPrintable(commands[i][0]), 1023);
             if (commandEnabled[i][2]) strncpy(cmds_periodic[i], qPrintable(commands[i][2]), 1023);
-        } else if (streamTypes[i] == STR_TCPCLI || streamTypes[i] == STR_TCPSVR || streamTypes[i] == STR_NTRIPCLI) {
+        } else if (streamTypes[i] == STR_TCPCLI || streamTypes[i] == STR_TCPSVR || streamTypes[i] == STR_NTRIPCLI || streamTypes[i] == STR_NTRIPCAS) {
             cmds[i] = new char[1024];
             cmds[i][0] = '\0';
             cmds_periodic[i] = new char[1024];
@@ -1170,7 +1201,7 @@ void MainWindow::serverStart()
     for (int i = 0; i < 2; i++) {
       if (strcmp(rtksvr->name[i], "*") == 0) {
         rtksvr->name[i][0] = '\0';
-        if (streamTypes[i] == STR_NTRIPCLI) {
+        if (streamTypes[i] == STR_NTRIPCLI || streamTypes[i] == STR_NTRIPCAS) {
           // Use the ntrip mount point.
           char buff[MAXSTR];
           snprintf(buff, sizeof(buff), "%s", qPrintable(paths[i][1]));
@@ -1252,8 +1283,18 @@ void MainWindow::serverStart()
       }
     }
 
+    // Initialize the TLS certificates.
+    strinittls(qPrintable(optDialog->tlsSvrCertFile), qPrintable(optDialog->tlsSvrKeyFile),
+               qPrintable(optDialog->tlsSvrCAFile), qPrintable(optDialog->tlsSvrCADir),
+               0,
+               qPrintable(optDialog->tlsCliCertFile), qPrintable(optDialog->tlsCliKeyFile),
+               qPrintable(optDialog->tlsCliCAFile), qPrintable(optDialog->tlsCliCADir),
+               0);
+
     // start rtk server
-    if (!rtksvrstart(rtksvr, optDialog->serverCycle, optDialog->serverBufferSize, streamTypes, (const char **)serverPaths, inputFormat, optDialog->navSelect,
+    if (!rtksvrstart(rtksvr, optDialog->serverCycle > 0 ? (unsigned)optDialog->serverCycle : 0,
+                     optDialog->serverTolerance > 0 ? (unsigned)optDialog->serverTolerance : 0,
+                     optDialog->serverBufferSize, streamTypes, (const char **)serverPaths, inputFormat, optDialog->navSelect,
                       (const char **)cmds, (const char **)cmds_periodic, (const char **)rcvopts, optDialog->nmeaCycle, nmeaRequestType, nmeapos,
                      &optDialog->processingOptions, solopt, &monistr, errmsg)) {
 
@@ -1321,7 +1362,7 @@ void MainWindow::serverStop()
             cmds[i] = new char[1024];
             cmds[i][0] = '\0';
             if (commandEnabled[i][1]) strncpy(cmds[i], qPrintable(commands[i][1]), 1023);
-        } else if (streamTypes == STR_TCPCLI || streamTypes == STR_TCPSVR || streamTypes == STR_NTRIPCLI) {
+        } else if (streamTypes == STR_TCPCLI || streamTypes == STR_TCPSVR || streamTypes == STR_NTRIPCLI || streamTypes == STR_NTRIPCAS) {
             cmds[i] = new char[1024];
             cmds[i][0] = '\0';
             if (commandEnableTcp[i][1]) strncpy(cmds[i], qPrintable(commandsTcp[i][1]), 1023);
@@ -1411,7 +1452,7 @@ void MainWindow::updateServer()
     if (!(++timerCycle % (KACYCLE / updateTimer.interval())) && monitorPortOpen) {
         unsigned char buf[1];
         buf[0] = '\r';
-        strwrite(&monistr, buf, 1);
+        strwrite(&monistr, buf, sizeof(buf), 0, 1);
     }
 }
 
@@ -1653,7 +1694,7 @@ void MainWindow::updateStream()
 
     trace(4, "updateStream\n");
 
-    rtksvrsstat(rtksvr, sstat, msg);
+    rtksvrsstat(rtksvr, sstat, msg, sizeof(msg));
     for (i = 0; i < MAXSTRRTK; i++) {
         setWidgetBackgroundColor(ind[i], color[sstat[i]+1]);
         if (sstat[i]) {

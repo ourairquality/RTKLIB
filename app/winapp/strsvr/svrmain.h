@@ -170,6 +170,8 @@ private:
 	AnsiString ProxyAddress,LogFile;
 	AnsiString ConvMsg[MAXSTR-1],ConvOpt[MAXSTR-1],AntType,RcvType;
 	AnsiString PathLog[MAXSTR];
+  AnsiString TLSSvrCertFile, TLSSvrKeyFile, TLSSvrCAFile, TLSSvrCADir;
+  AnsiString TLSCliCertFile, TLSCliKeyFile, TLSCliCAFile, TLSCliCADir;
 	int ConvEna[MAXSTR-1],ConvInp[MAXSTR-1],ConvOut[MAXSTR-1],StaId,StaSel;
 	int TraceLevel,SvrOpt[6],CmdEna[MAXSTR][3],CmdEnaTcp[MAXSTR][3];
 	int NmeaReq,FileSwapMargin,RelayBack,ProgBarRange,PathEna[MAXSTR];
@@ -179,9 +181,10 @@ private:
 	void __fastcall SerialOpt(int index, int path);
 	void __fastcall TcpCliOpt(int index, int path);
 	void __fastcall TcpSvrOpt(int index, int path);
-	void __fastcall NtripSvrOpt(int index, int path);
+	void __fastcall NtripSrcOpt(int index, int path);
 	void __fastcall NtripCliOpt(int index, int path);
 	void __fastcall NtripCasOpt(int index, int path);
+	void __fastcall NtripCasSrcOpt(int index, int path);
 	void __fastcall UdpCliOpt(int index, int path);
 	void __fastcall UdpSvrOpt(int index, int path);
 	void __fastcall FileOpt(int index, int path);

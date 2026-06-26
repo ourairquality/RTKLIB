@@ -257,7 +257,7 @@
         </item>
         <item>
          <property name="text">
-          <string>NTRIP Server</string>
+          <string>NTRIP Source</string>
          </property>
         </item>
         <item>
@@ -347,7 +347,7 @@
         </item>
         <item>
          <property name="text">
-          <string>NTRIP Server</string>
+          <string>NTRIP Source</string>
          </property>
         </item>
         <item>
@@ -437,7 +437,7 @@
         </item>
         <item>
          <property name="text">
-          <string>NTRIP Server</string>
+          <string>NTRIP Source</string>
          </property>
         </item>
         <item>

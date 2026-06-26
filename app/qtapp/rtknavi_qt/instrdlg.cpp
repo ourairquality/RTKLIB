@@ -395,6 +395,7 @@ void InputStrDialog::showStreamOptions1()
         case 1: showTcpOptionsDialog(0, TcpOptDialog::OPT_TCP_CLIENT); break;
         case 2: showTcpOptionsDialog(0, TcpOptDialog::OPT_TCP_SERVER); break;
         case 3: showTcpOptionsDialog(0, TcpOptDialog::OPT_NTRIP_CLIENT); break;
+        case 4: showTcpOptionsDialog(0, TcpOptDialog::OPT_NTRIP_CASTER_SOURCE); break;
 	}
 }
 //---------------------------------------------------------------------------
@@ -405,8 +406,9 @@ void InputStrDialog::showStreamOptions2()
         case 1: showTcpOptionsDialog(1, TcpOptDialog::OPT_TCP_CLIENT); break;
         case 2: showTcpOptionsDialog(1, TcpOptDialog::OPT_TCP_SERVER); break;
         case 3: showTcpOptionsDialog(1, TcpOptDialog::OPT_NTRIP_CLIENT); break;
-        case 5: showFtpOptionsDialog(1, 0); break;
-        case 6: showFtpOptionsDialog(1, 1); break;
+        case 4: showTcpOptionsDialog(1, TcpOptDialog::OPT_NTRIP_CASTER_SOURCE); break;
+        case 6: showFtpOptionsDialog(1, 0); break;
+        case 7: showFtpOptionsDialog(1, 1); break;
 	}
 }
 //---------------------------------------------------------------------------
@@ -417,8 +419,9 @@ void InputStrDialog::showStreamOptions3()
         case 1: showTcpOptionsDialog(2, TcpOptDialog::OPT_TCP_CLIENT); break;
         case 2: showTcpOptionsDialog(2, TcpOptDialog::OPT_TCP_SERVER); break;
         case 3: showTcpOptionsDialog(2, TcpOptDialog::OPT_NTRIP_CLIENT); break;
-        case 5: showFtpOptionsDialog(2, 0); break;
-        case 6: showFtpOptionsDialog(2, 1); break;
+        case 4: showTcpOptionsDialog(2, TcpOptDialog::OPT_NTRIP_CASTER_SOURCE); break;
+        case 6: showFtpOptionsDialog(2, 0); break;
+        case 7: showFtpOptionsDialog(2, 1); break;
 	}
 }
 //---------------------------------------------------------------------------
@@ -429,8 +432,9 @@ void InputStrDialog::showStreamOptions4()
         case 1: showTcpOptionsDialog(3, TcpOptDialog::OPT_TCP_CLIENT); break;
         case 2: showTcpOptionsDialog(3, TcpOptDialog::OPT_TCP_SERVER); break;
         case 3: showTcpOptionsDialog(3, TcpOptDialog::OPT_NTRIP_CLIENT); break;
-        case 5: showFtpOptionsDialog(3, 0); break;
-        case 6: showFtpOptionsDialog(3, 1); break;
+        case 4: showTcpOptionsDialog(3, TcpOptDialog::OPT_NTRIP_CASTER_SOURCE); break;
+        case 6: showFtpOptionsDialog(3, 0); break;
+        case 7: showFtpOptionsDialog(3, 1); break;
 	}
 }
 //---------------------------------------------------------------------------
@@ -595,25 +599,25 @@ void InputStrDialog::showFtpOptionsDialog(int index, int opt)
 //---------------------------------------------------------------------------
 void InputStrDialog::updateEnable()
 {
-    // (cBStream->currentIndex() == 4) -> File stream
-    int enaFile = (ui->cBStreamC1->isChecked() && (ui->cBStream1->currentIndex() == 4)) ||
-                  (ui->cBStreamC2->isChecked() && (ui->cBStream2->currentIndex() == 4)) ||
-                  (ui->cBStreamC3->isChecked() && (ui->cBStream3->currentIndex() == 4)) ||
-                  (ui->cBStreamC4->isChecked() && (ui->cBStream4->currentIndex() == 4));
-    int enaNmea = ui->cBStreamC2->isChecked() && (ui->cBStream2->currentIndex() <= 3);
+    // (cBStream->currentIndex() == 5) -> File stream
+    int enaFile = (ui->cBStreamC1->isChecked() && (ui->cBStream1->currentIndex() == 5)) ||
+                  (ui->cBStreamC2->isChecked() && (ui->cBStream2->currentIndex() == 5)) ||
+                  (ui->cBStreamC3->isChecked() && (ui->cBStream3->currentIndex() == 5)) ||
+                  (ui->cBStreamC4->isChecked() && (ui->cBStream4->currentIndex() == 5));
+    int enaNmea = ui->cBStreamC2->isChecked() && (ui->cBStream2->currentIndex() <= 4);
 
     ui->cBStream1->setEnabled(ui->cBStreamC1->isChecked());
     ui->cBStream2->setEnabled(ui->cBStreamC2->isChecked());
     ui->cBStream3->setEnabled(ui->cBStreamC3->isChecked());
     ui->cBStream4->setEnabled(ui->cBStreamC4->isChecked());
-    ui->btnStream1->setEnabled(ui->cBStreamC1->isChecked() && ui->cBStream1->currentIndex() != 4);
-    ui->btnStream2->setEnabled(ui->cBStreamC2->isChecked() && ui->cBStream2->currentIndex() != 4);
-    ui->btnStream3->setEnabled(ui->cBStreamC3->isChecked() && ui->cBStream3->currentIndex() != 4);
-    ui->btnStream4->setEnabled(ui->cBStreamC4->isChecked() && ui->cBStream4->currentIndex() != 4);
-    ui->btnCmd1->setEnabled(ui->cBStreamC1->isChecked() && ui->cBStream1->currentIndex() != 4);
-    ui->btnCmd2->setEnabled(ui->cBStreamC2->isChecked() && ui->cBStream2->currentIndex() != 4);
-    ui->btnCmd3->setEnabled(ui->cBStreamC3->isChecked() && ui->cBStream3->currentIndex() != 4);
-    ui->btnCmd4->setEnabled(ui->cBStreamC4->isChecked() && ui->cBStream4->currentIndex() != 4);
+    ui->btnStream1->setEnabled(ui->cBStreamC1->isChecked() && ui->cBStream1->currentIndex() != 5);
+    ui->btnStream2->setEnabled(ui->cBStreamC2->isChecked() && ui->cBStream2->currentIndex() != 5);
+    ui->btnStream3->setEnabled(ui->cBStreamC3->isChecked() && ui->cBStream3->currentIndex() != 5);
+    ui->btnStream4->setEnabled(ui->cBStreamC4->isChecked() && ui->cBStream4->currentIndex() != 5);
+    ui->btnCmd1->setEnabled(ui->cBStreamC1->isChecked() && ui->cBStream1->currentIndex() != 5);
+    ui->btnCmd2->setEnabled(ui->cBStreamC2->isChecked() && ui->cBStream2->currentIndex() != 5);
+    ui->btnCmd3->setEnabled(ui->cBStreamC3->isChecked() && ui->cBStream3->currentIndex() != 5);
+    ui->btnCmd4->setEnabled(ui->cBStreamC4->isChecked() && ui->cBStream4->currentIndex() != 5);
     ui->cBFormat1->setEnabled(ui->cBStreamC1->isChecked());
     ui->cBFormat2->setEnabled(ui->cBStreamC2->isChecked());
     ui->cBFormat3->setEnabled(ui->cBStreamC3->isChecked());
@@ -636,10 +640,10 @@ void InputStrDialog::updateEnable()
     ui->sBMaxBaseLine->setEnabled(enaNmea && ui->cBNmeaRequestType->currentIndex() == 3);
 
     ui->lblInputFilePath->setEnabled(enaFile);
-    ui->lEFilePath1->setEnabled(ui->cBStreamC1->isChecked() && ui->cBStream1->currentIndex() == 4);
-    ui->lEFilePath2->setEnabled(ui->cBStreamC2->isChecked() && ui->cBStream2->currentIndex() == 4);
-    ui->lEFilePath3->setEnabled(ui->cBStreamC3->isChecked() && ui->cBStream3->currentIndex() == 4);
-    ui->lEFilePath4->setEnabled(ui->cBStreamC4->isChecked() && ui->cBStream4->currentIndex() == 4);
+    ui->lEFilePath1->setEnabled(ui->cBStreamC1->isChecked() && ui->cBStream1->currentIndex() == 5);
+    ui->lEFilePath2->setEnabled(ui->cBStreamC2->isChecked() && ui->cBStream2->currentIndex() == 5);
+    ui->lEFilePath3->setEnabled(ui->cBStreamC3->isChecked() && ui->cBStream3->currentIndex() == 5);
+    ui->lEFilePath4->setEnabled(ui->cBStreamC4->isChecked() && ui->cBStream4->currentIndex() == 5);
     ui->cBTimeTag->setEnabled(enaFile);
     ui->sBTimeStart->setEnabled(enaFile && ui->cBTimeTag->isChecked());
     ui->cBTimeSpeed->setEnabled(enaFile && ui->cBTimeTag->isChecked());

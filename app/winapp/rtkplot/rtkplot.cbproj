@@ -86,8 +86,8 @@
         <ILINK_LinkwithSQLite>false</ILINK_LinkwithSQLite>
         <ILINK_LinkwithIntebaseTogo>false</ILINK_LinkwithIntebaseTogo>
         <SanitizedProjectName>rtkplot</SanitizedProjectName>
-        <ILINK_LibraryPath>..\..\..\src\;..\..\..\src\rcv\;..\..\src\rcv\;..\..\src\;..\appcmn\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-        <IncludePath>..\..\..\src\;..\..\..\src\rcv\;..\..\src\rcv\;..\appcmn\;..\..\src\;$(IncludePath)</IncludePath>
+        <ILINK_LibraryPath>..\..\..\src\;..\..\..\src\rcv\;..\..\src\rcv\;..\..\src\;..\appcmn\;..\..\..\lib\;;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+        <IncludePath>..\..\..\src\;..\..\..\src\rcv\;..\..\src\rcv\;..\appcmn\;..\..\src\;C:\Program Files\OpenSSL-Win64\include;$(IncludePath)</IncludePath>
         <BCC_waus>false</BCC_waus>
         <BCC_PCHUsage>None</BCC_PCHUsage>
         <BCC_wpar>false</BCC_wpar>
@@ -113,7 +113,7 @@
         <DCC_ResourcePath>..\..\extlex;..\..\qzslex;..\..\src\qzsext;..\appcmn;..\..\src\rcv;..\..\src;..\rtkpost;..\src;C:\Documents and Settings\TTAKA\My Documents\Borland Studio Projects;D:\proj\rtklib_2.1\gui;$(DCC_ResourcePath)</DCC_ResourcePath>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <BCC_IncludePath>$(BDS)\include;..\..\src;..\appcmn;$(BCC_IncludePath)</BCC_IncludePath>
-        <BCC_Defines>WIN32;TRACE;ENAGLO;ENAGAL;ENAQZS;ENACMP;ENAIRN;NFREQ=6;NEXOBS=3;$(BCC_Defines)</BCC_Defines>
+        <BCC_Defines>WIN32;TRACE;ENAGLO;ENAGAL;ENAQZS;ENACMP;ENAIRN;NFREQ=6;NEXOBS=3;RTKLIB_OPENSSL;$(BCC_Defines)</BCC_Defines>
         <UWP_CppLogo44>$(BDS)\bin\Artwork\Windows\UWP\cppreg_UwpDefault_44.png</UWP_CppLogo44>
         <UWP_CppLogo150>$(BDS)\bin\Artwork\Windows\UWP\cppreg_UwpDefault_150.png</UWP_CppLogo150>
         <TASM_Defines>_RTLDLL;WIN32;TRACE;ENAGLO;ENAGAL;ENAQZS;NFREQ=6;$(TASM_Defines)</TASM_Defines>
@@ -493,6 +493,14 @@
         <CppCompile Include="..\..\..\src\trace.c">
             <BuildOrder>59</BuildOrder>
         </CppCompile>
+        <LibFiles Include="..\..\..\lib\libcrypto.a" Condition="'$(Platform)'=='Win64' Or '$(Platform)'=='Win64x'">
+            <BuildOrder>65</BuildOrder>
+            <IgnorePath>true</IgnorePath>
+        </LibFiles>
+        <LibFiles Include="..\..\..\lib\libssl.a" Condition="'$(Platform)'=='Win64' Or '$(Platform)'=='Win64x'">
+            <BuildOrder>64</BuildOrder>
+            <IgnorePath>true</IgnorePath>
+        </LibFiles>
         <FormResources Include="vmapdlg.dfm"/>
         <FormResources Include="..\appcmn\refdlg.dfm"/>
         <FormResources Include="..\appcmn\mntpoptdlg.dfm"/>
@@ -693,6 +701,18 @@
                 </DeployFile>
                 <DeployFile Condition="'$(DynamicRTL)'=='true' And '$(Multithreaded)'=='true'" LocalName="$(BDS)\bin\cc32c290mt.dll" Class="DependencyModule">
                     <Platform Name="Win32">
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\..\lib\libcrypto.a" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win64">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\..\lib\libssl.a" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win64">
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

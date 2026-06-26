@@ -231,8 +231,9 @@ void MainForm::showInputOptions()
         case 1: tcpClientOptions(0, 1); break; // TCP Client
         case 2: tcpServerOptions(0, 2); break; // TCP Server
         case 3: ntripClientOptions(0, 3); break; // Ntrip Client
-        case 4: udpServerOptions(0, 4); break;  // UDP Server
-        case 5: fileOptions(0, 5); break;
+        case 4: ntripCasterSourceOptions(0, 4); break; // Ntrip Caster Source
+        case 5: udpServerOptions(0, 5); break;  // UDP Server
+        case 6: fileOptions(0, 6); break;
     }
 }
 // callback on button-input-cmd ---------------------------------------------
@@ -306,8 +307,8 @@ void MainForm::showStreamOptionsDialog()
         case 1: serialOptions(stream + 1, 0); break;
         case 2: tcpClientOptions(stream + 1, 1); break;
         case 3: tcpServerOptions(stream + 1, 2); break;
-        case 4: ntripServerOptions(stream + 1, 3); break;
-        case 5: ntripCasterOptions(stream + 1, 4); break;
+        case 4: ntripSourceOptions(stream + 1, 3); break;
+        case 5: ntripCasterOptions(stream + 1, 4); break; // Ntrip Caster Client
         case 6: udpClientOptions(stream + 1, 5); break;
         case 7: fileOptions(stream + 1, 6); break;
     }
@@ -394,11 +395,13 @@ void MainForm::updateServerStat()
     QLabel *lblLog[MAXSTR] = {ui->indLog, ui->indLog1, ui->indLog2, ui->indLog3, ui->indLog4, ui->indLog5, ui->indLog6};
     static const QString statusStr[] = {tr("Error"), tr("Closed"), tr("Waiting..."), tr("Connected"), tr("Active")};
     gtime_t time = utc2gpst(timeget());
-    int stat[MAXSTR] = {0}, byte[MAXSTR] = {0}, bps[MAXSTR] = {0}, log_stat[MAXSTR] = {0};
+    int stat[MAXSTR] = {0}, log_stat[MAXSTR] = {0};
     char msg[MAXSTRMSG * MAXSTR] = "";
     double ctime, t[4], pos;
 
-    strsvrstat(&strsvr, stat, log_stat, byte, bps, msg);
+    size_t byte[MAXSTR] = {0};
+    unsigned bps[MAXSTR] = {0};
+    strsvrstat(&strsvr, stat, log_stat, byte, bps, msg, sizeof(msg));
     // update status indicators
     for (int i = 0; i < MAXSTR; i++) {
         lblStatus[i]->setStyleSheet(QStringLiteral("QLabel {background-color: %1;}").arg(color2String(color[stat[i] + 1])));
@@ -442,14 +445,15 @@ void MainForm::startServer()
     strconv_t *conv[MAXSTR - 1] = {0};
     static char str1[MAXSTR][1024], str2[MAXSTR][1024];
     int inputTypes[] = {
-        STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPCLI, STR_UDPSVR,
+        STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPCLI, STR_NTRIPCAS, STR_UDPSVR,
         STR_FILE, STR_FTP, STR_HTTP
     };
     int outputTypes[] = {
-        STR_NONE, STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPSVR, STR_NTRIPCAS,
+        STR_NONE, STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPSRC, STR_NTRIPCAS,
         STR_UDPCLI, STR_FILE
     };
-    int streamTypes[MAXSTR] = {0}, opt[8] = {0};
+    unsigned streamTypes[MAXSTR] = {0};
+    int opt[8] = {0};
     char *pths[MAXSTR], *logs[MAXSTR], *cmds[MAXSTR] = {0}, *cmds_periodic[MAXSTR] = {0};
     char filepath[1024];
     char *p;
@@ -468,12 +472,14 @@ void MainForm::startServer()
     // input stream
     streamTypes[0] = inputTypes[type[0]->currentIndex()];
     strncpy(pths[0], qPrintable(paths[0][type[0]->currentIndex()]), 1023);
-    strncpy(logs[0], type[0]->currentIndex() > 5 || !pathEnabled[0] ? "" : qPrintable(pathLog[0]), 1023);
+    // Don't bother logging for a file input stream.
+    strncpy(logs[0], !pathEnabled[0] || type[0]->currentIndex() > 5 ? "" : qPrintable(pathLog[0]), 1023);
 
     for (int i = 1; i < MAXSTR; i++) {  // all output streams
         streamTypes[i] = outputTypes[type[i]->currentIndex()];
         strncpy(pths[i], type[i]->currentIndex() == 0 ? "" : qPrintable(paths[i][type[i]->currentIndex() - 1]), 1023);
-        strncpy(logs[i], !pathEnabled[i] ? "" : qPrintable(pathLog[i]), 1023);
+        // No input to log from a UDP output or file output stream.
+        strncpy(logs[i], (!pathEnabled[i] || type[i]->currentIndex() == 0 || type[i]->currentIndex() > 5) ? "" : qPrintable(pathLog[i]), 1023);
     }
 
     // get start commands and period commands
@@ -486,7 +492,7 @@ void MainForm::startServer()
             cmds_periodic[i][0] = '\0';
             if (commandsEnabled[i][0]) strncpy(cmds[i], qPrintable(commands[i][0]), 1023);
             if (commandsEnabled[i][2]) strncpy(cmds_periodic[i], qPrintable(commands[i][2]), 1023);
-        } else if (streamTypes[i] == STR_TCPCLI || streamTypes[i] == STR_NTRIPCLI || streamTypes[i] == STR_TCPSVR) {
+        } else if (streamTypes[i] == STR_TCPCLI || streamTypes[i] == STR_TCPSVR || streamTypes[i] == STR_NTRIPCLI || streamTypes[i] == STR_NTRIPCAS) {
             cmds[i] = new char[1024];
             cmds[i][0] = '\0';
             cmds_periodic[i] = new char[1024];
@@ -529,7 +535,6 @@ void MainForm::startServer()
 
     // set up conversion if necessary
     for (int i = 0; i < MAXSTR - 1; i++) { // for each output stream
-        if (ui->cBInput->currentIndex() == 2 || ui->cBInput->currentIndex() == 4) continue;  // TCP/UDP server
         if (!conversionEnabled[i]) continue;
         if (!(conv[i] = strconvnew(conversionInputFormat[i], conversionOutputFormat[i], qPrintable(conversionMessage[i]),
                                    svrOptDialog->stationId, svrOptDialog->stationSelect, qPrintable(conversionOptions[i])))) continue;
@@ -551,6 +556,14 @@ void MainForm::startServer()
         matcpy(conv[i]->out.sta.pos, svrOptDialog->antennaPosition, 3, 1);
         matcpy(conv[i]->out.sta.del, svrOptDialog->antennaOffsets, 3, 1);
     }
+
+    // Initialize the TLS certificates.
+    strinittls(qPrintable(svrOptDialog->tlsSvrCertFile), qPrintable(svrOptDialog->tlsSvrKeyFile),
+               qPrintable(svrOptDialog->tlsSvrCAFile), qPrintable(svrOptDialog->tlsSvrCADir),
+               0,
+               qPrintable(svrOptDialog->tlsCliCertFile), qPrintable(svrOptDialog->tlsCliKeyFile),
+               qPrintable(svrOptDialog->tlsCliCAFile), qPrintable(svrOptDialog->tlsCliCADir),
+               0);
 
     // stream server start (if no error in preparation occurred)
     if (!error && strsvrstart(&strsvr, opt, streamTypes, (const char **)pths, (const char **)logs, conv, (const char **)cmds, (const char **)cmds_periodic, svrOptDialog->antennaPosition)) {
@@ -579,9 +592,9 @@ void MainForm::stopServer()
 {
     char *cmds[MAXSTR];
     QComboBox *type[] = {ui->cBInput, ui->cBOutput1, ui->cBOutput2, ui->cBOutput3, ui->cBOutput4, ui->cBOutput5, ui->cBOutput6};
-    const int inputTypes[] = {STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPCLI, STR_UDPSVR, STR_FILE, STR_FTP, STR_HTTP};
+    const int inputTypes[] = {STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPCLI, STR_NTRIPCAS, STR_UDPSVR, STR_FILE, STR_FTP, STR_HTTP};
     const int outputTypes[] = {
-        STR_NONE, STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPSVR, STR_NTRIPCAS, STR_UDPCLI, STR_FILE
+        STR_NONE, STR_SERIAL, STR_TCPCLI, STR_TCPSVR, STR_NTRIPSRC, STR_NTRIPCAS, STR_UDPCLI, STR_FILE
     };
     int streamTypes[MAXSTR];
 
@@ -596,7 +609,7 @@ void MainForm::stopServer()
         if (streamTypes[i] == STR_SERIAL) {
             cmds[i] = new char[1024];
             if (commandsEnabled[i][1]) strncpy(cmds[i], qPrintable(commands[i][1]), 1023);
-        } else if (streamTypes[i] == STR_TCPCLI || streamTypes[i] == STR_NTRIPCLI || streamTypes[i] == STR_TCPSVR) {
+        } else if (streamTypes[i] == STR_TCPCLI || streamTypes[i] == STR_TCPSVR || streamTypes[i] == STR_NTRIPCLI  || streamTypes[i] == STR_NTRIPSRC || streamTypes[i] == STR_NTRIPCAS) {
             cmds[i] = new char[1024];
             if (commandsEnabledTcp[i][1]) strncpy(cmds[i], qPrintable(commandsTcp[i][1]), 1023);
         }
@@ -625,45 +638,48 @@ void MainForm::stopServer()
 void MainForm::updateStreamMonitor()
 {
     static const QString types[] = {
-        tr("None"), tr("Serial"), tr("File"), tr("TCP Server"), tr("TCP Client"), tr("Ntrip Server"),
+        tr("None"), tr("Serial"), tr("File"), tr("TCP Server"), tr("TCP Client"), tr("Ntrip Source"),
         tr("Ntrip Client"), tr("FTP"), tr("HTTP"), tr("Ntrip Caster"), tr("UDP Server"),
         tr("UDP Client"), tr("Mem Buffer")
     };
-    unsigned char *msg = 0;
-    char *p;
-    int i, len, inb, inr, outb, outr;
-
+ 
     if (strMonDialog->getStreamFormat()) {
         rtklib_lock(&strsvr.lock);
-        len = strsvr.npb;
-        if (len > 0 && (msg = (unsigned char *)malloc(len))) {
-            memcpy(msg, strsvr.pbuf, len);
-            strsvr.npb = 0;
+        int len = strsvr.npb;
+        unsigned char *msg = NULL;
+        if (len > 0) {
+            msg = (unsigned char *)malloc(len);
+            if (msg != NULL) {
+              memcpy(msg, strsvr.pbuf, len);
+              strsvr.npb = 0;
+            }
         }
         rtklib_unlock(&strsvr.lock);
         if (len <= 0 || !msg) return;
         strMonDialog->addMessage(msg, len);
         free(msg);
     } else {
-        if (!(msg = (unsigned char *)malloc(16000))) return;
-
-        for (i = 0, p = (char*)msg; i < MAXSTR; i++) {
-            p += sprintf(p, "[STREAM %d]\n", i);
-            strsum(strsvr.stream + i, &inb, &inr, &outb, &outr);
-            strstatx(strsvr.stream + i, p);
-            p += strlen(p);
-            if (inb > 0) {
-                p += sprintf(p,"  inb     = %d\n", inb);
-                p += sprintf(p,"  inr     = %d\n", inr);
-            }
-            if (outb > 0) {
-                p += sprintf(p,"  outb    = %d\n", outb);
-                p += sprintf(p,"  outr    = %d\n", outr);
-            }
+#define MSG_SIZE 16000
+      unsigned char *msg = (unsigned char *)malloc(MSG_SIZE);
+      if (msg == NULL) return;
+      msg[0] = '\0';
+      for (unsigned i = 0; i < MAXSTR; i++) {
+        rscatprintf((char *)msg, MSG_SIZE, "[STREAM %d]\n", i);
+        size_t inb, outb;
+        unsigned inr, outr;
+        strsum(strsvr.stream + i, &inb, &inr, &outb, &outr);
+        strstatx(strsvr.stream + i, (char *)msg, MSG_SIZE);
+        if (inb > 0) {
+          rscatprintf((char *)msg, MSG_SIZE, "  inb     = %u\n", inb);
+          rscatprintf((char *)msg, MSG_SIZE, "  inr     = %u\n", inr);
         }
-        strMonDialog->addMessage(msg, strlen((char*)msg));
-
-        free(msg);
+        if (outb > 0) {
+          rscatprintf((char *)msg, MSG_SIZE, "  outb    = %u\n", outb);
+          rscatprintf((char *)msg, MSG_SIZE, "  outr    = %u\n", outr);
+        }
+      }
+      strMonDialog->addMessage(msg, strlen((char *)msg));
+      free(msg);
     }
 }
 // set serial options -------------------------------------------------------
@@ -703,9 +719,9 @@ void MainForm::tcpClientOptions(int index, int path)
         tcpHistory[i] = tcpOptDialog->getHistory()[i];
 }
 // set ntrip server options ---------------------------------------------------------
-void MainForm::ntripServerOptions(int index, int path)
+void MainForm::ntripSourceOptions(int index, int path)
 {
-    tcpOptDialog->setOptions(TcpOptDialog::OPT_NTRIP_SERVER);  // 2: Ntrip Server
+    tcpOptDialog->setOptions(TcpOptDialog::OPT_NTRIP_SOURCE);  // 2: Ntrip Source
     tcpOptDialog->setHistory(tcpHistory, MAXHIST);
     tcpOptDialog->setPath(paths[index][path]);
 
@@ -719,7 +735,7 @@ void MainForm::ntripServerOptions(int index, int path)
 // set ntrip client options ---------------------------------------------------------
 void MainForm::ntripClientOptions(int index, int path)
 {
-    tcpOptDialog->setOptions(TcpOptDialog::OPT_NTRIP_CLIENT);  // Ntrip Client
+    tcpOptDialog->setOptions(TcpOptDialog::OPT_NTRIP_CLIENT);  // Ntrip Client.
     tcpOptDialog->setHistory(tcpHistory, MAXHIST);
     tcpOptDialog->setPath(paths[index][path]);
 
@@ -733,7 +749,18 @@ void MainForm::ntripClientOptions(int index, int path)
 // set ntrip caster options ---------------------------------------------------------
 void MainForm::ntripCasterOptions(int index, int path)
 {
-    tcpOptDialog->setOptions(TcpOptDialog::OPT_NTRIP_CASTER_CLIENT);  // Ntrip caster
+    tcpOptDialog->setOptions(TcpOptDialog::OPT_NTRIP_CASTER_CLIENT);  // Ntrip caster.
+    tcpOptDialog->setPath(paths[index][path]);
+
+    tcpOptDialog->exec();
+    if (tcpOptDialog->result() != QDialog::Accepted) return;
+
+    paths[index][path] = tcpOptDialog->getPath();
+}
+// set ntrip caster source options --------------------------------------------------
+void MainForm::ntripCasterSourceOptions(int index, int path)
+{
+    tcpOptDialog->setOptions(TcpOptDialog::OPT_NTRIP_CASTER_SOURCE);  // Ntrip caster source.
     tcpOptDialog->setPath(paths[index][path]);
 
     tcpOptDialog->exec();
@@ -787,16 +814,23 @@ void MainForm::updateEnable()
     QPushButton *btnConv[MAXSTR - 1] = {ui->btnConv1, ui->btnConv2, ui->btnConv3, ui->btnConv4, ui->btnConv5, ui->btnConv6};
     QPushButton *btnLog[MAXSTR - 1] = {ui->btnLog1, ui->btnLog2, ui->btnLog3, ui->btnLog4, ui->btnLog5, ui->btnLog6};
 
-    ui->btnCmd->setEnabled(ui->cBInput->currentIndex() <= 3);
+    // Only send commands to input streams established at startup: serial, TCP client, NTRIP client.
+    ui->btnCmd->setEnabled(ui->cBInput->currentIndex() == 0 || ui->cBInput->currentIndex() == 1 || ui->cBInput->currentIndex() == 3);
+    // Don't both with logging from a file input stream.
+    ui->btnLog->setEnabled(ui->cBInput->currentIndex() < 6);
 
     for (int i = 0; i < MAXSTR - 1; i++) {
         lblOutput[i]->setEnabled(type[i]->currentIndex() > 0);
         lblOutputByte[i]->setEnabled(type[i]->currentIndex() > 0);
         lblOutputBps[i]->setEnabled(type[i]->currentIndex() > 0);
         btnOutput[i]->setEnabled(type[i]->currentIndex() > 0);
-        btnCmd[i]->setEnabled(btnOutput[i]->isEnabled() && (type[i]->currentIndex() == 1 || type[i]->currentIndex() == 2));
-        btnConv[i]->setEnabled(btnOutput[i]->isEnabled() && ui->cBInput->currentIndex() != 2 && ui->cBInput->currentIndex() != 4);
-        btnLog[i]->setEnabled(btnOutput[i]->isEnabled() && (type[i]->currentIndex() == 1 || type[i]->currentIndex() == 2));
+        // Assume that only startup commands are useful for output streams and
+        // so only useful for streams connected at startup: serial and TCP
+        // client, and NTRIP source.
+        btnCmd[i]->setEnabled(btnOutput[i]->isEnabled() && (type[i]->currentIndex() == 1 || type[i]->currentIndex() == 2 || type[i]->currentIndex() == 4));
+        btnConv[i]->setEnabled(btnOutput[i]->isEnabled() && type[i]->currentIndex() > 0);
+        // No input to log from a UDP output or file output stream.
+        btnLog[i]->setEnabled(btnOutput[i]->isEnabled() && type[i]->currentIndex() > 0 && type[i]->currentIndex() < 6);
     }
 }
 // set task-tray icon -------------------------------------------------------
@@ -833,6 +867,14 @@ void MainForm::loadOptions()
     svrOptDialog->localDirectory = settings.value("dirs/localdirectory", "").toString();
     svrOptDialog->proxyAddress = settings.value("dirs/proxyaddress", "").toString();
     svrOptDialog->logFile = settings.value("file/logfile", "").toString();
+    svrOptDialog->tlsSvrCertFile = settings.value("file/tlssvrcertfile", "").toString();
+    svrOptDialog->tlsSvrKeyFile = settings.value("file/tlssvrkeyfile", "").toString();
+    svrOptDialog->tlsSvrCAFile = settings.value("file/tlssvrcafile", "").toString();
+    svrOptDialog->tlsSvrCADir = settings.value("file/tlssvrcadir", "").toString();
+    svrOptDialog->tlsCliCertFile = settings.value("file/tlsclicertfile", "").toString();
+    svrOptDialog->tlsCliKeyFile = settings.value("file/tlsclikeyfile", "").toString();
+    svrOptDialog->tlsCliCAFile = settings.value("file/tlsclicafile", "").toString();
+    svrOptDialog->tlsCliCADir = settings.value("file/tlsclicadir", "").toString();
 
     for (int i = 0; i < 6; i++)
         svrOptDialog->serverOptions[i] = settings.value(QString("set/svropt_%1").arg(i), optdef[i]).toInt();
@@ -852,9 +894,10 @@ void MainForm::loadOptions()
     }
 
     // paths
-    for (int i = 0; i < MAXSTR; i++)
+    for (int i = 0; i < MAXSTR; i++) {
         for (int j = 0; j < 7; j++)
             paths[i][j] = settings.value(QString("path/path_%1_%2").arg(i).arg(j), "").toString();
+    }
 
     for (int i=0;i<MAXSTR;i++) {
         pathLog[i] = settings.value(QString("path/path_log_%1").arg(i), "").toString();
@@ -884,6 +927,14 @@ void MainForm::loadOptions()
         tcpMountpointHistory[i] = settings.value(QString("tcpopt/mntphist%1").arg(i), "").toString();
 
     updateEnable();
+
+    // Initialize the TLS certificates.
+    strinittls(qPrintable(svrOptDialog->tlsSvrCertFile), qPrintable(svrOptDialog->tlsSvrKeyFile),
+               qPrintable(svrOptDialog->tlsSvrCAFile), qPrintable(svrOptDialog->tlsSvrCADir),
+               0,
+               qPrintable(svrOptDialog->tlsCliCertFile), qPrintable(svrOptDialog->tlsCliKeyFile),
+               qPrintable(svrOptDialog->tlsCliCAFile), qPrintable(svrOptDialog->tlsCliCADir),
+               0);
 }
 // save options--------------------------------------------------------------
 void MainForm::saveOptions()
@@ -912,6 +963,14 @@ void MainForm::saveOptions()
     settings.setValue("dirs/localdirectory", svrOptDialog->localDirectory);
     settings.setValue("dirs/proxyaddress", svrOptDialog->proxyAddress);
     settings.setValue("file/logfile",svrOptDialog->logFile);
+    settings.setValue("file/tlssvrcertfile",svrOptDialog->tlsSvrCertFile);
+    settings.setValue("file/tlssvrkeyfile",svrOptDialog->tlsSvrKeyFile);
+    settings.setValue("file/tlssvrcafile",svrOptDialog->tlsSvrCAFile);
+    settings.setValue("file/tlssvrcadir",svrOptDialog->tlsSvrCADir);
+    settings.setValue("file/tlsclicertfile",svrOptDialog->tlsCliCertFile);
+    settings.setValue("file/tlsclikeyfile",svrOptDialog->tlsCliKeyFile);
+    settings.setValue("file/tlsclicafile",svrOptDialog->tlsCliCAFile);
+    settings.setValue("file/tlsclicadir",svrOptDialog->tlsCliCADir);
 
     for (int i = 0; i < 6; i++)
         settings.setValue(QString("set/svropt_%1").arg(i), svrOptDialog->serverOptions[i]);
@@ -942,9 +1001,10 @@ void MainForm::saveOptions()
             settings.setValue(QString("serial/cmdena_%1_%2").arg(i).arg(j), commandsEnabled[i][j]);
             settings.setValue(QString("tcpip/cmdena_%1_%2").arg(i).arg(j), commandsEnabledTcp[i][j]);
         }
-    for (int i = 0; i < MAXSTR; i++)
+    for (int i = 0; i < MAXSTR; i++) {
         for (int j = 0; j < 7; j++)
             settings.setValue(QString("path/path_%1_%2").arg(i).arg(j), paths[i][j]);
+    }
 
     for (int i = 0; i < MAXSTR; i++)
         for (int j = 0; j < 2; j++) {

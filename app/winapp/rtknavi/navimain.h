@@ -245,7 +245,7 @@ public:
 	
 	int TimerCycle,TimerInact;
 	int PanelStack,PanelMode;
-	int SvrCycle,SvrBuffSize,Scale,SolBuffSize,NavSelect,SavedSol;
+        int SvrCycle,SvrTolerance,SvrBuffSize,Scale,SolBuffSize,NavSelect,SavedSol;
 	int NmeaReq,NmeaCycle,InTimeTag,InTime64Bit;
 	int OutTimeTag,OutAppend,LogTimeTag,LogAppend;
 	int TimeoutTime,ReconTime,SbasCorr,DgpsCorr,TideCorr,FileSwapMargin;
@@ -289,7 +289,10 @@ public:
 	int NMapPnt;
 	
 	AnsiString MarkerName,MarkerComment;
-	
+
+  AnsiString TLSSvrCertFile, TLSSvrKeyFile, TLSSvrCAFile, TLSSvrCADir;
+  AnsiString TLSCliCertFile, TLSCliKeyFile, TLSCliCAFile, TLSCliCADir;
+
 	__fastcall TMainForm(TComponent* Owner);
 };
 //---------------------------------------------------------------------------

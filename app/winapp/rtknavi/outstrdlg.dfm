@@ -68,7 +68,7 @@ object OutputStrDialog: TOutputStrDialog
       'Serial'
       'TCP Client'
       'TCP Server'
-      'NTRIP Server'
+      'NTRIP Source'
       'NTRIP Caster'
       'File')
   end
@@ -124,7 +124,7 @@ object OutputStrDialog: TOutputStrDialog
       'Serial'
       'TCP Client'
       'TCP Server'
-      'NTRIP Server'
+      'NTRIP Source'
       'NTRIP Caster'
       'File')
   end
@@ -178,7 +178,7 @@ object OutputStrDialog: TOutputStrDialog
       'Serial'
       'TCP Client'
       'TCP Server'
-      'NTRIP Server'
+      'NTRIP Source'
       'NTRIP Caster'
       'File')
   end

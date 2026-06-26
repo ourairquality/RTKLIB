@@ -155,9 +155,9 @@ object InputStrDialog: TInputStrDialog
     OnClick = BtnOkClick
   end
   object Stream1: TComboBox
-    Left = 120
+    Left = 115
     Top = 18
-    Width = 103
+    Width = 108
     Height = 21
     Style = csDropDownList
     ItemIndex = 0
@@ -169,6 +169,7 @@ object InputStrDialog: TInputStrDialog
       'TCP Client'
       'TCP Server'
       'NTRIP Client'
+      'NTRIP Caster Source'
       'File')
   end
   object BtnStr1: TButton
@@ -187,9 +188,9 @@ object InputStrDialog: TInputStrDialog
     OnClick = BtnStr1Click
   end
   object Stream2: TComboBox
-    Left = 120
+    Left = 115
     Top = 42
-    Width = 103
+    Width = 108
     Height = 21
     Style = csDropDownList
     ItemIndex = 0
@@ -201,6 +202,7 @@ object InputStrDialog: TInputStrDialog
       'TCP Client'
       'TCP Server'
       'NTRIP Client'
+      'NTRIP Caster Source'
       'File')
   end
   object BtnStr2: TButton
@@ -415,9 +417,9 @@ object InputStrDialog: TInputStrDialog
     OnClick = StreamC3Click
   end
   object Stream3: TComboBox
-    Left = 120
+    Left = 115
     Top = 66
-    Width = 103
+    Width = 108
     Height = 21
     Style = csDropDownList
     ItemIndex = 0
@@ -429,6 +431,7 @@ object InputStrDialog: TInputStrDialog
       'TCP Client'
       'TCP Server'
       'NTRIP Client'
+      'NTRIP Caster Source'
       'File'
       'FTP'
       'HTTP')
@@ -504,9 +507,9 @@ object InputStrDialog: TInputStrDialog
     OnClick = StreamC4Click
   end
   object Stream4: TComboBox
-    Left = 120
+    Left = 115
     Top = 90
-    Width = 103
+    Width = 108
     Height = 21
     Style = csDropDownList
     ItemIndex = 0
@@ -518,6 +521,7 @@ object InputStrDialog: TInputStrDialog
       'TCP Client'
       'TCP Server'
       'NTRIP Client'
+      'NTRIP Caster Source'
       'File'
       'FTP'
       'HTTP')

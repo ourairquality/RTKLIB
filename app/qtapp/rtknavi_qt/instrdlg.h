@@ -126,7 +126,6 @@ private:
     QString commands[RTKSVRNIN][3], commandsTcp[RTKSVRNIN][3];
     QString paths[RTKSVRNIN][4];
 
-
     QString receiverOptions[RTKSVRNIN];
     QString history[10];
     int noFormats;

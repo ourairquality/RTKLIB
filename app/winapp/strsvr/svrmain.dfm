@@ -4,12 +4,12 @@ object MainForm: TMainForm
   BorderIcons = []
   Caption = 'STRSVR'
   ClientHeight = 232
-  ClientWidth = 458
+  ClientWidth = 480
   Color = clWhite
   Constraints.MaxHeight = 358
-  Constraints.MaxWidth = 474
+  Constraints.MaxWidth = 496
   Constraints.MinHeight = 188
-  Constraints.MinWidth = 474
+  Constraints.MinWidth = 496
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
@@ -25,7 +25,7 @@ object MainForm: TMainForm
     AlignWithMargins = True
     Left = 1
     Top = 201
-    Width = 456
+    Width = 478
     Height = 30
     Margins.Left = 1
     Margins.Top = 1
@@ -47,7 +47,7 @@ object MainForm: TMainForm
       Margins.Bottom = 1
       Align = alRight
       Caption = 'E&xit'
-      TabOrder = 0
+      TabOrder = 3
       OnClick = BtnExitClick
     end
     object BtnOpt: TBitBtn
@@ -82,7 +82,7 @@ object MainForm: TMainForm
         FF7F7F7F0000007F7F7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
         FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         FF00}
-      TabOrder = 1
+      TabOrder = 2
       OnClick = BtnOptClick
     end
     object BtnStart: TBitBtn
@@ -117,7 +117,7 @@ object MainForm: TMainForm
         FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
         FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         FF00}
-      TabOrder = 2
+      TabOrder = 1
       OnClick = BtnStartClick
     end
     object BtnStop: TBitBtn
@@ -152,7 +152,7 @@ object MainForm: TMainForm
         FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF
         FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         FF00}
-      TabOrder = 3
+      TabOrder = 1
       Visible = False
       OnClick = BtnStopClick
     end
@@ -161,7 +161,7 @@ object MainForm: TMainForm
     AlignWithMargins = True
     Left = 1
     Top = 29
-    Width = 456
+    Width = 472
     Height = 132
     Margins.Left = 1
     Margins.Top = 1
@@ -171,42 +171,84 @@ object MainForm: TMainForm
     BevelInner = bvRaised
     BevelOuter = bvLowered
     TabOrder = 1
+    object Panel11: TPanel
+      Left = 2
+      Top = 2
+      Width = 468
+      Height = 20
+      Align = alTop
+      object Label5: TLabel
+        Left = 35
+        Top = 2
+        Width = 34
+        Height = 13
+        Caption = 'Stream'
+      end
+      object Label3: TLabel
+        Left = 121
+        Top = 2
+        Width = 24
+        Height = 13
+        Caption = 'Type'
+      end
+      object Label4: TLabel
+        Left = 197
+        Top = 2
+        Width = 18
+        Height = 13
+        Caption = 'Opt'
+      end
+      object Label1: TLabel
+        Left = 221
+        Top = 2
+        Width = 21
+        Height = 13
+        Caption = 'Cmd'
+      end
+      object Label2: TLabel
+        Left = 246
+        Top = 2
+        Width = 25
+        Height = 13
+        Caption = 'Conv'
+      end
+      object Label9: TLabel
+        Left = 277
+        Top = 2
+        Width = 17
+        Height = 13
+        Caption = 'Log'
+      end
+      object Label6: TLabel
+        Left = 378
+        Top = 2
+        Width = 27
+        Height = 13
+        Caption = 'Bytes'
+      end
+      object Label7: TLabel
+        Left = 452
+        Top = 2
+        Width = 17
+        Height = 13
+        Caption = 'Bps'
+      end
+    end
     object Panel12: TPanel
       Left = 2
       Top = 22
-      Width = 452
+      Width = 474
       Height = 28
       Align = alTop
-      TabOrder = 0
-      object InputBps: TLabel
-        Left = 378
-        Top = 7
-        Width = 65
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object InputByte: TLabel
-        Left = 292
-        Top = 7
-        Width = 85
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
+      TabOrder = 1
+      object IndInput: TPanel
+        Left = 6
+        Top = 8
+        Width = 12
+        Height = 12
+        BevelInner = bvRaised
+        BevelOuter = bvLowered
+        ParentBackground = False
       end
       object LabelInput: TLabel
         Left = 25
@@ -221,69 +263,61 @@ object MainForm: TMainForm
         Font.Style = []
         ParentFont = False
       end
-      object BtnCmd: TButton
-        Left = 198
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 0
-        OnClick = BtnCmdClick
-      end
-      object BtnInput: TButton
-        Left = 172
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 1
-        OnClick = BtnInputClick
-      end
-      object IndInput: TPanel
-        Left = 6
-        Top = 8
-        Width = 12
-        Height = 12
-        BevelInner = bvRaised
-        BevelOuter = bvLowered
-        ParentBackground = False
-        TabOrder = 2
-      end
       object Input: TComboBox
         Left = 82
         Top = 3
-        Width = 88
+        Width = 110
         Height = 21
         Style = csDropDownList
         DropDownCount = 16
-        TabOrder = 3
+        TabOrder = 1
         OnChange = InputChange
         Items.Strings = (
           'Serial'
           'TCP Client'
           'TCP Server'
           'NTRIP Client'
+          'NTRIP Caster Source'
           'UDP Server'
           'File')
       end
-      object BtnLog: TButton
-        Left = 250
+      object BtnInput: TButton
+        Left = 194
         Top = 2
         Width = 25
         Height = 23
         Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 2
+        OnClick = BtnInputClick
+      end
+      object BtnCmd: TButton
+        Left = 220
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 3
+        OnClick = BtnCmdClick
+      end
+      object BtnConv: TButton
+        Left = 246
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Enabled = False
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
         Font.Height = -9
@@ -291,87 +325,67 @@ object MainForm: TMainForm
         Font.Style = []
         ParentFont = False
         TabOrder = 4
+        OnClick = BtnConvClick
+      end
+      object BtnLog: TButton
+        Left = 272
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 5
         OnClick = BtnLogClick
       end
       object IndLog: TPanel
-        Left = 280
+        Left = 302
         Top = 8
         Width = 8
         Height = 12
         BevelInner = bvRaised
         BevelOuter = bvLowered
         ParentBackground = False
-        TabOrder = 5
       end
-    end
-    object Panel11: TPanel
-      Left = 2
-      Top = 2
-      Width = 452
-      Height = 20
-      Align = alTop
-      TabOrder = 1
-      object Label1: TLabel
-        Left = 199
-        Top = 2
-        Width = 21
+      object InputByte: TLabel
+        Left = 314
+        Top = 7
+        Width = 85
         Height = 13
-        Caption = 'Cmd'
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
       end
-      object Label2: TLabel
-        Left = 225
-        Top = 2
-        Width = 25
+      object InputBps: TLabel
+        Left = 400
+        Top = 7
+        Width = 65
         Height = 13
-        Caption = 'Conv'
-      end
-      object Label3: TLabel
-        Left = 115
-        Top = 2
-        Width = 24
-        Height = 13
-        Caption = 'Type'
-      end
-      object Label4: TLabel
-        Left = 175
-        Top = 2
-        Width = 18
-        Height = 13
-        Caption = 'Opt'
-      end
-      object Label5: TLabel
-        Left = 35
-        Top = 2
-        Width = 34
-        Height = 13
-        Caption = 'Stream'
-      end
-      object Label6: TLabel
-        Left = 350
-        Top = 2
-        Width = 27
-        Height = 13
-        Caption = 'Bytes'
-      end
-      object Label7: TLabel
-        Left = 426
-        Top = 2
-        Width = 17
-        Height = 13
-        Caption = 'Bps'
-      end
-      object Label9: TLabel
-        Left = 263
-        Top = 2
-        Width = 17
-        Height = 13
-        Caption = 'Log'
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
       end
     end
     object Panel13: TPanel
       Left = 2
       Top = 50
-      Width = 452
+      Width = 474
       Height = 28
       Align = alTop
       TabOrder = 2
@@ -388,69 +402,36 @@ object MainForm: TMainForm
         Font.Style = []
         ParentFont = False
       end
-      object Output1Bps: TLabel
-        Left = 378
-        Top = 7
-        Width = 65
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
+      object IndOutput1: TPanel
+        Left = 6
+        Top = 8
+        Width = 12
+        Height = 12
+        BevelInner = bvRaised
+        BevelOuter = bvLowered
+        ParentBackground = False
       end
-      object Output1Byte: TLabel
-        Left = 292
-        Top = 7
-        Width = 85
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object BtnCmd1: TButton
-        Left = 198
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 0
-        OnClick = BtnCmdClick
-      end
-      object BtnConv1: TButton
-        Left = 224
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Enabled = False
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
+      object Output1: TComboBox
+        Left = 82
+        Top = 3
+        Width = 110
+        Height = 21
+        Style = csDropDownList
+        DropDownCount = 16
         TabOrder = 1
-        OnClick = BtnConvClick
+        OnChange = OutputChange
+        Items.Strings = (
+          ''
+          'Serial'
+          'TCP Client'
+          'TCP Server'
+          'NTRIP Source'
+          'NTRIP Caster'
+          'UDP Client'
+          'File')
       end
       object BtnOutput1: TButton
-        Left = 172
+        Left = 194
         Top = 2
         Width = 25
         Height = 23
@@ -464,37 +445,39 @@ object MainForm: TMainForm
         TabOrder = 2
         OnClick = BtnOutputClick
       end
-      object IndOutput1: TPanel
-        Left = 6
-        Top = 8
-        Width = 12
-        Height = 12
-        BevelInner = bvRaised
-        BevelOuter = bvLowered
-        ParentBackground = False
+      object BtnCmd1: TButton
+        Left = 220
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
         TabOrder = 3
+        OnClick = BtnCmdClick
       end
-      object Output1: TComboBox
-        Left = 82
-        Top = 3
-        Width = 88
-        Height = 21
-        Style = csDropDownList
-        DropDownCount = 16
+      object BtnConv1: TButton
+        Left = 246
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
         TabOrder = 4
-        OnChange = OutputChange
-        Items.Strings = (
-          ''
-          'Serial'
-          'TCP Client'
-          'TCP Server'
-          'NTRIP Server'
-          'NTRIP Caster'
-          'UDP Client'
-          'File')
+        OnClick = BtnConvClick
       end
       object BtnLog1: TButton
-        Left = 250
+        Left = 272
         Top = 2
         Width = 25
         Height = 23
@@ -510,53 +493,16 @@ object MainForm: TMainForm
         OnClick = BtnLogClick
       end
       object IndLog1: TPanel
-        Left = 280
+        Left = 302
         Top = 8
         Width = 8
         Height = 12
         BevelInner = bvRaised
         BevelOuter = bvLowered
         ParentBackground = False
-        TabOrder = 6
       end
-    end
-    object Panel14: TPanel
-      Left = 2
-      Top = 78
-      Width = 452
-      Height = 28
-      Align = alTop
-      TabOrder = 3
-      object LabelOutput2: TLabel
-        Left = 24
-        Top = 7
-        Width = 51
-        Height = 13
-        Caption = '(2) Output'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object Output2Bps: TLabel
-        Left = 378
-        Top = 7
-        Width = 65
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object Output2Byte: TLabel
-        Left = 292
+      object Output1Byte: TLabel
+        Left = 314
         Top = 7
         Width = 85
         Height = 13
@@ -570,39 +516,73 @@ object MainForm: TMainForm
         Font.Style = []
         ParentFont = False
       end
-      object BtnCmd2: TButton
-        Left = 198
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
+      object Output1Bps: TLabel
+        Left = 400
+        Top = 7
+        Width = 65
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
         Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
+        Font.Color = clBlack
+        Font.Height = -11
         Font.Name = 'Tahoma'
         Font.Style = []
         ParentFont = False
-        TabOrder = 0
-        OnClick = BtnCmdClick
       end
-      object BtnConv2: TButton
-        Left = 224
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Enabled = False
+    end
+    object Panel14: TPanel
+      Left = 2
+      Top = 78
+      Width = 474
+      Height = 28
+      Align = alTop
+      TabOrder = 3
+      object IndOutput2: TPanel
+        Left = 6
+        Top = 8
+        Width = 12
+        Height = 12
+        BevelInner = bvRaised
+        BevelOuter = bvLowered
+        ParentBackground = False
+        OnClick = BtnOutputClick
+      end
+      object LabelOutput2: TLabel
+        Left = 24
+        Top = 7
+        Width = 51
+        Height = 13
+        Caption = '(2) Output'
         Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
+        Font.Color = clBlack
+        Font.Height = -11
         Font.Name = 'Tahoma'
         Font.Style = []
         ParentFont = False
+      end
+      object Output2: TComboBox
+        Left = 82
+        Top = 3
+        Width = 110
+        Height = 21
+        Style = csDropDownList
+        DropDownCount = 16
         TabOrder = 1
-        OnClick = BtnConvClick
+        OnChange = OutputChange
+        Items.Strings = (
+          ''
+          'Serial'
+          'TCP Client'
+          'TCP Server'
+          'NTRIP Source'
+          'NTRIP Caster'
+          'UDP Client'
+          'File')
       end
       object BtnOutput2: TButton
-        Left = 172
+        Left = 194
         Top = 2
         Width = 25
         Height = 23
@@ -616,38 +596,39 @@ object MainForm: TMainForm
         TabOrder = 2
         OnClick = BtnOutputClick
       end
-      object IndOutput2: TPanel
-        Left = 6
-        Top = 8
-        Width = 12
-        Height = 12
-        BevelInner = bvRaised
-        BevelOuter = bvLowered
-        ParentBackground = False
+      object BtnCmd2: TButton
+        Left = 220
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
         TabOrder = 3
-        OnClick = BtnOutputClick
+        OnClick = BtnCmdClick
       end
-      object Output2: TComboBox
-        Left = 82
-        Top = 3
-        Width = 88
-        Height = 21
-        Style = csDropDownList
-        DropDownCount = 16
+      object BtnConv2: TButton
+        Left = 246
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
         TabOrder = 4
-        OnChange = OutputChange
-        Items.Strings = (
-          ''
-          'Serial'
-          'TCP Client'
-          'TCP Server'
-          'NTRIP Server'
-          'NTRIP Caster'
-          'UDP Client'
-          'File')
+        OnClick = BtnConvClick
       end
       object BtnLog2: TButton
-        Left = 250
+        Left = 272
         Top = 2
         Width = 25
         Height = 23
@@ -663,53 +644,16 @@ object MainForm: TMainForm
         OnClick = BtnLogClick
       end
       object IndLog2: TPanel
-        Left = 280
+        Left = 302
         Top = 8
         Width = 8
         Height = 12
         BevelInner = bvRaised
         BevelOuter = bvLowered
         ParentBackground = False
-        TabOrder = 6
       end
-    end
-    object Panel17: TPanel
-      Left = 2
-      Top = 162
-      Width = 452
-      Height = 28
-      Align = alTop
-      TabOrder = 4
-      object LabelOutput5: TLabel
-        Left = 24
-        Top = 7
-        Width = 51
-        Height = 13
-        Caption = '(5) Output'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object Output5Bps: TLabel
-        Left = 378
-        Top = 7
-        Width = 65
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object Output5Byte: TLabel
-        Left = 292
+      object Output2Byte: TLabel
+        Left = 314
         Top = 7
         Width = 85
         Height = 13
@@ -723,131 +667,8 @@ object MainForm: TMainForm
         Font.Style = []
         ParentFont = False
       end
-      object BtnCmd5: TButton
-        Left = 198
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 0
-        OnClick = BtnCmdClick
-      end
-      object BtnConv5: TButton
-        Left = 224
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Enabled = False
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 1
-        OnClick = BtnConvClick
-      end
-      object BtnOutput5: TButton
-        Left = 172
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 2
-        OnClick = BtnOutputClick
-      end
-      object IndOutput5: TPanel
-        Left = 6
-        Top = 8
-        Width = 12
-        Height = 12
-        BevelInner = bvRaised
-        BevelOuter = bvLowered
-        ParentBackground = False
-        TabOrder = 3
-        OnClick = BtnOutputClick
-      end
-      object Output5: TComboBox
-        Left = 82
-        Top = 3
-        Width = 88
-        Height = 21
-        Style = csDropDownList
-        DropDownCount = 16
-        TabOrder = 4
-        OnChange = OutputChange
-        Items.Strings = (
-          ''
-          'Serial'
-          'TCP Client'
-          'TCP Server'
-          'NTRIP Server'
-          'NTRIP Caster'
-          'UDP Client'
-          'File')
-      end
-      object BtnLog5: TButton
-        Left = 250
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Enabled = False
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 5
-        OnClick = BtnLogClick
-      end
-      object IndLog5: TPanel
-        Left = 280
-        Top = 8
-        Width = 8
-        Height = 12
-        BevelInner = bvRaised
-        BevelOuter = bvLowered
-        ParentBackground = False
-        TabOrder = 6
-      end
-    end
-    object Panel16: TPanel
-      Left = 2
-      Top = 134
-      Width = 452
-      Height = 28
-      Align = alTop
-      TabOrder = 5
-      object LabelOutput4: TLabel
-        Left = 24
-        Top = 7
-        Width = 51
-        Height = 13
-        Caption = '(4) Output'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object Output4Bps: TLabel
-        Left = 378
+      object Output2Bps: TLabel
+        Left = 400
         Top = 7
         Width = 65
         Height = 13
@@ -860,132 +681,25 @@ object MainForm: TMainForm
         Font.Name = 'Tahoma'
         Font.Style = []
         ParentFont = False
-      end
-      object Output4Byte: TLabel
-        Left = 292
-        Top = 7
-        Width = 85
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object BtnCmd4: TButton
-        Left = 198
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 0
-        OnClick = BtnCmdClick
-      end
-      object BtnConv4: TButton
-        Left = 224
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Enabled = False
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 1
-        OnClick = BtnConvClick
-      end
-      object BtnOutput4: TButton
-        Left = 172
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 2
-        OnClick = BtnOutputClick
-      end
-      object IndOutput4: TPanel
-        Left = 6
-        Top = 8
-        Width = 12
-        Height = 12
-        BevelInner = bvRaised
-        BevelOuter = bvLowered
-        ParentBackground = False
-        TabOrder = 3
-        OnClick = BtnOutputClick
-      end
-      object Output4: TComboBox
-        Left = 82
-        Top = 3
-        Width = 88
-        Height = 21
-        Style = csDropDownList
-        DropDownCount = 16
-        TabOrder = 4
-        OnChange = OutputChange
-        Items.Strings = (
-          ''
-          'Serial'
-          'TCP Client'
-          'TCP Server'
-          'NTRIP Server'
-          'NTRIP Caster'
-          'UDP Client'
-          'File')
-      end
-      object BtnLog4: TButton
-        Left = 250
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Enabled = False
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 5
-        OnClick = BtnLogClick
-      end
-      object IndLog4: TPanel
-        Left = 280
-        Top = 8
-        Width = 8
-        Height = 12
-        BevelInner = bvRaised
-        BevelOuter = bvLowered
-        ParentBackground = False
-        TabOrder = 6
       end
     end
     object Panel15: TPanel
       Left = 2
-      Top = 106
-      Width = 452
+      Top = 78
+      Width = 474
       Height = 28
       Align = alTop
-      TabOrder = 6
+      TabOrder = 4
+      object IndOutput3: TPanel
+        Left = 6
+        Top = 8
+        Width = 12
+        Height = 12
+        BevelInner = bvRaised
+        BevelOuter = bvLowered
+        ParentBackground = False
+        OnClick = BtnOutputClick
+      end
       object LabelOutput3: TLabel
         Left = 24
         Top = 7
@@ -999,69 +713,27 @@ object MainForm: TMainForm
         Font.Style = []
         ParentFont = False
       end
-      object Output3Bps: TLabel
-        Left = 378
-        Top = 7
-        Width = 65
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object Output3Byte: TLabel
-        Left = 292
-        Top = 7
-        Width = 85
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object BtnCmd3: TButton
-        Left = 198
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-        TabOrder = 0
-        OnClick = BtnCmdClick
-      end
-      object BtnConv3: TButton
-        Left = 224
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Enabled = False
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
+      object Output3: TComboBox
+        Left = 82
+        Top = 3
+        Width = 110
+        Height = 21
+        Style = csDropDownList
+        DropDownCount = 16
         TabOrder = 1
-        OnClick = BtnConvClick
+        OnChange = OutputChange
+        Items.Strings = (
+          ''
+          'Serial'
+          'TCP Client'
+          'TCP Server'
+          'NTRIP Source'
+          'NTRIP Caster'
+          'UDP Client'
+          'File')
       end
       object BtnOutput3: TButton
-        Left = 172
+        Left = 194
         Top = 2
         Width = 25
         Height = 23
@@ -1075,37 +747,39 @@ object MainForm: TMainForm
         TabOrder = 2
         OnClick = BtnOutputClick
       end
-      object IndOutput3: TPanel
-        Left = 6
-        Top = 8
-        Width = 12
-        Height = 12
-        BevelInner = bvRaised
-        BevelOuter = bvLowered
-        ParentBackground = False
+      object BtnCmd3: TButton
+        Left = 220
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
         TabOrder = 3
+        OnClick = BtnCmdClick
       end
-      object Output3: TComboBox
-        Left = 82
-        Top = 3
-        Width = 88
-        Height = 21
-        Style = csDropDownList
-        DropDownCount = 16
+      object BtnConv3: TButton
+        Left = 246
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
         TabOrder = 4
-        OnChange = OutputChange
-        Items.Strings = (
-          ''
-          'Serial'
-          'TCP Client'
-          'TCP Server'
-          'NTRIP Server'
-          'NTRIP Caster'
-          'UDP Client'
-          'File')
+        OnClick = BtnConvClick
       end
       object BtnLog3: TButton
-        Left = 250
+        Left = 272
         Top = 2
         Width = 25
         Height = 23
@@ -1121,53 +795,16 @@ object MainForm: TMainForm
         OnClick = BtnLogClick
       end
       object IndLog3: TPanel
-        Left = 280
+        Left = 302
         Top = 8
         Width = 8
         Height = 12
         BevelInner = bvRaised
         BevelOuter = bvLowered
         ParentBackground = False
-        TabOrder = 6
       end
-    end
-    object Panel18: TPanel
-      Left = 2
-      Top = 190
-      Width = 452
-      Height = 28
-      Align = alTop
-      TabOrder = 7
-      object LabelOutput6: TLabel
-        Left = 24
-        Top = 7
-        Width = 51
-        Height = 13
-        Caption = '(6) Output'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object Output6Bps: TLabel
-        Left = 378
-        Top = 7
-        Width = 65
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = '0'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object Output6Byte: TLabel
-        Left = 292
+      object Output3Byte: TLabel
+        Left = 314
         Top = 7
         Width = 85
         Height = 13
@@ -1181,39 +818,73 @@ object MainForm: TMainForm
         Font.Style = []
         ParentFont = False
       end
-      object BtnCmd6: TButton
-        Left = 198
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
+      object Output3Bps: TLabel
+        Left = 400
+        Top = 7
+        Width = 65
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
         Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
+        Font.Color = clBlack
+        Font.Height = -11
         Font.Name = 'Tahoma'
         Font.Style = []
         ParentFont = False
-        TabOrder = 0
-        OnClick = BtnCmdClick
       end
-      object BtnConv6: TButton
-        Left = 224
-        Top = 2
-        Width = 25
-        Height = 23
-        Caption = '...'
-        Enabled = False
+    end
+    object Panel16: TPanel
+      Left = 2
+      Top = 78
+      Width = 474
+      Height = 28
+      Align = alTop
+      TabOrder = 5
+      object IndOutput4: TPanel
+        Left = 6
+        Top = 8
+        Width = 12
+        Height = 12
+        BevelInner = bvRaised
+        BevelOuter = bvLowered
+        ParentBackground = False
+        OnClick = BtnOutputClick
+      end
+      object LabelOutput4: TLabel
+        Left = 24
+        Top = 7
+        Width = 51
+        Height = 13
+        Caption = '(4) Output'
         Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -9
+        Font.Color = clBlack
+        Font.Height = -11
         Font.Name = 'Tahoma'
         Font.Style = []
         ParentFont = False
+      end
+      object Output4: TComboBox
+        Left = 82
+        Top = 3
+        Width = 110
+        Height = 21
+        Style = csDropDownList
+        DropDownCount = 16
         TabOrder = 1
-        OnClick = BtnConvClick
+        OnChange = OutputChange
+        Items.Strings = (
+          ''
+          'Serial'
+          'TCP Client'
+          'TCP Server'
+          'NTRIP Source'
+          'NTRIP Caster'
+          'UDP Client'
+          'File')
       end
-      object BtnOutput6: TButton
-        Left = 172
+      object BtnOutput4: TButton
+        Left = 194
         Top = 2
         Width = 25
         Height = 23
@@ -1227,6 +898,251 @@ object MainForm: TMainForm
         TabOrder = 2
         OnClick = BtnOutputClick
       end
+      object BtnCmd4: TButton
+        Left = 220
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 3
+        OnClick = BtnCmdClick
+      end
+      object BtnConv4: TButton
+        Left = 246
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 4
+        OnClick = BtnConvClick
+      end
+      object BtnLog4: TButton
+        Left = 272
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 5
+        OnClick = BtnLogClick
+      end
+      object IndLog4: TPanel
+        Left = 302
+        Top = 8
+        Width = 8
+        Height = 12
+        BevelInner = bvRaised
+        BevelOuter = bvLowered
+        ParentBackground = False
+      end
+      object Output4Byte: TLabel
+        Left = 314
+        Top = 7
+        Width = 85
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+      object Output4Bps: TLabel
+        Left = 400
+        Top = 7
+        Width = 65
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+    end
+    object Panel17: TPanel
+      Left = 2
+      Top = 78
+      Width = 474
+      Height = 28
+      Align = alTop
+      TabOrder = 6
+      object IndOutput5: TPanel
+        Left = 6
+        Top = 8
+        Width = 12
+        Height = 12
+        BevelInner = bvRaised
+        BevelOuter = bvLowered
+        ParentBackground = False
+        OnClick = BtnOutputClick
+      end
+      object LabelOutput5: TLabel
+        Left = 24
+        Top = 7
+        Width = 51
+        Height = 13
+        Caption = '(5) Output'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+      object Output5: TComboBox
+        Left = 82
+        Top = 3
+        Width = 110
+        Height = 21
+        Style = csDropDownList
+        DropDownCount = 16
+        TabOrder = 1
+        OnChange = OutputChange
+        Items.Strings = (
+          ''
+          'Serial'
+          'TCP Client'
+          'TCP Server'
+          'NTRIP Source'
+          'NTRIP Caster'
+          'UDP Client'
+          'File')
+      end
+      object BtnOutput5: TButton
+        Left = 194
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 2
+        OnClick = BtnOutputClick
+      end
+      object BtnCmd5: TButton
+        Left = 220
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 3
+        OnClick = BtnCmdClick
+      end
+      object BtnConv5: TButton
+        Left = 246
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 4
+        OnClick = BtnConvClick
+      end
+      object BtnLog5: TButton
+        Left = 272
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 5
+        OnClick = BtnLogClick
+      end
+      object IndLog5: TPanel
+        Left = 302
+        Top = 8
+        Width = 8
+        Height = 12
+        BevelInner = bvRaised
+        BevelOuter = bvLowered
+        ParentBackground = False
+      end
+      object Output5Byte: TLabel
+        Left = 314
+        Top = 7
+        Width = 85
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+      object Output5Bps: TLabel
+        Left = 400
+        Top = 7
+        Width = 65
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+    end
+    object Panel18: TPanel
+      Left = 2
+      Top = 78
+      Width = 474
+      Height = 28
+      Align = alTop
+      TabOrder = 7
       object IndOutput6: TPanel
         Left = 6
         Top = 8
@@ -1235,30 +1151,88 @@ object MainForm: TMainForm
         BevelInner = bvRaised
         BevelOuter = bvLowered
         ParentBackground = False
-        TabOrder = 3
         OnClick = BtnOutputClick
+      end
+      object LabelOutput6: TLabel
+        Left = 24
+        Top = 7
+        Width = 51
+        Height = 13
+        Caption = '(6) Output'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
       end
       object Output6: TComboBox
         Left = 82
         Top = 3
-        Width = 88
+        Width = 110
         Height = 21
         Style = csDropDownList
         DropDownCount = 16
-        TabOrder = 4
+        TabOrder = 1
         OnChange = OutputChange
         Items.Strings = (
           ''
           'Serial'
           'TCP Client'
           'TCP Server'
-          'NTRIP Server'
+          'NTRIP Source'
           'NTRIP Caster'
           'UDP Client'
           'File')
       end
+      object BtnOutput6: TButton
+        Left = 194
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 2
+        OnClick = BtnOutputClick
+      end
+      object BtnCmd6: TButton
+        Left = 220
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 3
+        OnClick = BtnCmdClick
+      end
+      object BtnConv6: TButton
+        Left = 246
+        Top = 2
+        Width = 25
+        Height = 23
+        Caption = '...'
+        Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -9
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 4
+        OnClick = BtnConvClick
+      end
       object BtnLog6: TButton
-        Left = 250
+        Left = 272
         Top = 2
         Width = 25
         Height = 23
@@ -1274,14 +1248,43 @@ object MainForm: TMainForm
         OnClick = BtnLogClick
       end
       object IndLog6: TPanel
-        Left = 280
+        Left = 302
         Top = 8
         Width = 8
         Height = 12
         BevelInner = bvRaised
         BevelOuter = bvLowered
         ParentBackground = False
-        TabOrder = 6
+      end
+      object Output6Byte: TLabel
+        Left = 314
+        Top = 7
+        Width = 85
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+      object Output6Bps: TLabel
+        Left = 400
+        Top = 7
+        Width = 65
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = '0'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
       end
     end
   end
@@ -1289,7 +1292,7 @@ object MainForm: TMainForm
     AlignWithMargins = True
     Left = 1
     Top = 1
-    Width = 456
+    Width = 478
     Height = 26
     Margins.Left = 1
     Margins.Top = 1
@@ -1344,7 +1347,7 @@ object MainForm: TMainForm
     AlignWithMargins = True
     Left = 1
     Top = 174
-    Width = 456
+    Width = 478
     Height = 25
     Margins.Left = 1
     Margins.Top = 2
@@ -1475,7 +1478,7 @@ object MainForm: TMainForm
     AlignWithMargins = True
     Left = 2
     Top = 164
-    Width = 454
+    Width = 476
     Height = 7
     Margins.Left = 2
     Margins.Top = 2

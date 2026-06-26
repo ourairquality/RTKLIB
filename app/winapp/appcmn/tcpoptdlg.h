@@ -28,14 +28,23 @@ __published:
 	TButton *BtnNtrip;
 	TButton *BtnMountp;
 	TButton *BtnBrows;
+	TLabel *LabelNtripVer;
+	TLabel *LabelEnableTLS;
+	TLabel *LabelTLSVerify;
+	TComboBox *NtripVer;
+	TComboBox *EnableTLS;
+	TComboBox *TLSVerify;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnOkClick(TObject *Sender);
 	void __fastcall BtnNtripClick(TObject *Sender);
 	void __fastcall BtnMountpClick(TObject *Sender);
 	void __fastcall BtnBrowsClick(TObject *Sender);
+	void __fastcall EnableTLSChange(TObject *Sender);
 private:
+        unsigned prevenabletls = 0;
 	int __fastcall ExecCmd(AnsiString cmd, int show);
 	void __fastcall AddHist(TComboBox *list, AnsiString *hist);
+	void __fastcall UpdateEnable(void);
 public:
 	int Opt;
 	AnsiString Path,MntpStr,History[MAXHIST];

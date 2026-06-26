@@ -4,7 +4,7 @@ object TcpOptDialog: TTcpOptDialog
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'TCP Options'
-  ClientHeight = 124
+  ClientHeight = 163
   ClientWidth = 365
   Color = clWhite
   Font.Charset = DEFAULT_CHARSET
@@ -31,78 +31,6 @@ object TcpOptDialog: TTcpOptDialog
     Height = 13
     Caption = 'Port'
   end
-  object LabelUser: TLabel
-    Left = 126
-    Top = 42
-    Width = 36
-    Height = 13
-    Caption = 'User ID'
-  end
-  object LabelPasswd: TLabel
-    Left = 244
-    Top = 42
-    Width = 46
-    Height = 13
-    Caption = 'Password'
-  end
-  object LabelMntPnt: TLabel
-    Left = 8
-    Top = 42
-    Width = 54
-    Height = 13
-    Caption = 'Mountpoint'
-  end
-  object BtnMountp: TButton
-    Left = 6
-    Top = 89
-    Width = 100
-    Height = 29
-    Caption = 'Mountp Options...'
-    TabOrder = 9
-    Visible = False
-    OnClick = BtnMountpClick
-  end
-  object BtnCancel: TButton
-    Left = 273
-    Top = 89
-    Width = 84
-    Height = 29
-    Caption = '&Cancel'
-    ModalResult = 2
-    TabOrder = 0
-  end
-  object BtnOk: TButton
-    Left = 187
-    Top = 89
-    Width = 84
-    Height = 29
-    Caption = '&OK'
-    ModalResult = 1
-    TabOrder = 1
-    OnClick = BtnOkClick
-  end
-  object Port: TEdit
-    Left = 255
-    Top = 17
-    Width = 101
-    Height = 21
-    TabOrder = 3
-  end
-  object User: TEdit
-    Left = 124
-    Top = 56
-    Width = 116
-    Height = 21
-    TabOrder = 5
-  end
-  object Passwd: TEdit
-    Left = 242
-    Top = 56
-    Width = 114
-    Height = 21
-    PasswordChar = '*'
-    TabOrder = 6
-  end
   object Addr: TComboBox
     Left = 6
     Top = 17
@@ -112,33 +40,161 @@ object TcpOptDialog: TTcpOptDialog
     DropDownCount = 16
     TabOrder = 2
   end
-  object MntPnt: TComboBox
+  object Port: TEdit
+    Left = 255
+    Top = 17
+    Width = 101
+    Height = 21
+    TabOrder = 3
+  end
+  object LabelNtripVer: TLabel
+    Left = 8
+    Top = 42
+    Width = 54
+    Height = 13
+    Caption = 'NTRIP Version'
+  end
+  object LabelEnableTLS: TLabel
+    Left = 126
+    Top = 42
+    Width = 36
+    Height = 13
+    Caption = 'TLS Security'
+  end
+  object LabelTLSVerify: TLabel
+    Left = 244
+    Top = 42
+    Width = 46
+    Height = 13
+    Caption = 'Peer Verify'
+  end
+  object NtripVer: TComboBox
     Left = 6
     Top = 56
     Width = 116
     Height = 21
-    AutoComplete = False
-    DropDownCount = 16
+    Style = csDropDownList
+    Items.Strings = (
+      '1'
+      '2')
     TabOrder = 4
   end
-  object BtnNtrip: TButton
-    Left = 92
-    Top = 89
-    Width = 84
-    Height = 29
-    Caption = '&Get Mountp'
+  object EnableTLS: TComboBox
+    Left = 124
+    Top = 56
+    Width = 116
+    Height = 21
+    Style = csDropDownList
+    OnChange = EnableTLSChange
+    Items.Strings = (
+      'None'
+      'Require TLS'
+      'Allow TLS')
+    TabOrder = 5
+  end
+  object TLSVerify: TComboBox
+    Left = 242
+    Top = 56
+    Width = 114
+    Height = 21
+    Style = csDropDownList
+    Items.Strings = (
+      'OFF'
+      'ON')
+    TabOrder = 6
+  end
+  object LabelMntPnt: TLabel
+    Left = 8
+    Top = 81
+    Width = 54
+    Height = 13
+    Caption = 'Mountpoint'
+  end
+  object LabelUser: TLabel
+    Left = 126
+    Top = 81
+    Width = 36
+    Height = 13
+    Caption = 'User ID'
+  end
+  object LabelPasswd: TLabel
+    Left = 244
+    Top = 81
+    Width = 46
+    Height = 13
+    Caption = 'Password'
+  end
+  object MntPnt: TComboBox
+    Left = 6
+    Top = 95
+    Width = 116
+    Height = 21
+    AutoComplete = False
+    DropDownCount = 16
+    TabOrder = 7
+  end
+  object User: TEdit
+    Left = 124
+    Top = 95
+    Width = 116
+    Height = 21
     TabOrder = 8
-    Visible = False
-    OnClick = BtnNtripClick
+  end
+  object Passwd: TEdit
+    Left = 242
+    Top = 95
+    Width = 114
+    Height = 21
+    PasswordChar = '*'
+    TabOrder = 9
   end
   object BtnBrows: TButton
     Left = 6
-    Top = 89
+    Top = 128
     Width = 84
     Height = 29
     Caption = '&Browse...'
-    TabOrder = 7
+    TabOrder = 10
     Visible = False
     OnClick = BtnBrowsClick
+  end
+  object BtnMountp: TButton
+    Left = 6
+    Top = 128
+    Width = 100
+    Height = 29
+    Caption = 'Mountp Options...'
+    TabOrder = 11
+    Visible = False
+    OnClick = BtnMountpClick
+  end
+  object BtnNtrip: TButton
+    Left = 92
+    Top = 128
+    Width = 84
+    Height = 29
+    Caption = '&Get Mountp'
+    TabOrder = 12
+    Visible = False
+    OnClick = BtnNtripClick
+  end
+  object BtnOk: TButton
+    Left = 187
+    Top = 128
+    Width = 84
+    Height = 29
+    Caption = '&OK'
+    ModalResult = 1
+    TabOrder = 1
+    OnClick = BtnOkClick
+  end
+  object BtnCancel: TButton
+    Left = 273
+    Top = 128
+    Width = 84
+    Height = 29
+    Caption = '&Cancel'
+    ModalResult = 2
+    TabOrder = 0
   end
 end

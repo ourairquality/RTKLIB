@@ -1009,7 +1009,6 @@ void Plot::saveSnrMp(const QString &file)
 // connect to external sources ----------------------------------------------
 void Plot::connectStream()
 {
-    char cmd[1024];
     QString path, name[2];
     int i, p,  mode = STR_MODE_R;
 
@@ -1017,11 +1016,19 @@ void Plot::connectStream()
 
     if (connectState) return;
 
+    // Initialize the TLS certificates.
+    strinittls(qPrintable(rtTLSSvrCertFile), qPrintable(rtTLSSvrKeyFile), qPrintable(rtTLSSvrCAFile), qPrintable(rtTLSSvrCADir), 0,
+               qPrintable(rtTLSCliCertFile), qPrintable(rtTLSCliKeyFile), qPrintable(rtTLSCliCAFile), qPrintable(rtTLSCliCADir), 0);
+
     for (i = 0; i < 2; i++) {
         if (rtStream[i] == STR_NONE) continue;
         else if (rtStream[i] == STR_SERIAL) path = streamPaths[i][0];
-        else if (rtStream[i] == STR_FILE) path = streamPaths[i][2];
-        else if (rtStream[i] <= STR_NTRIPCLI) path = streamPaths[i][1];
+        else if (rtStream[i] == STR_TCPCLI) path = streamPaths[i][1];
+        else if (rtStream[i] == STR_TCPSVR) path = streamPaths[i][2];
+        else if (rtStream[i] == STR_NTRIPCLI) path = streamPaths[i][3];
+        else if (rtStream[i] == STR_NTRIPCAS) path = streamPaths[i][4];
+        else if (rtStream[i] == STR_UDPSVR) path = streamPaths[i][5];
+        else if (rtStream[i] == STR_FILE) path = streamPaths[i][6];
         else continue;
 
         if (rtStream[i] == STR_FILE || !solutionData[i].cyclic || solutionData[i].nmax != plotOptDialog->getRtBufferSize() + 1) {
@@ -1045,8 +1052,9 @@ void Plot::connectStream()
         strsettimeout(stream + i, rtTimeoutTime, rtReconnectTime);
 
         if (streamCommandEnabled[i][0]) {
+            char cmd[1024];
             strncpy(cmd, qPrintable(streamCommands[i][0]), 1023);
-            strwrite(stream + i, (uint8_t *)cmd, strlen(cmd));
+            strwrite(stream + i, (uint8_t *)cmd, sizeof(cmd), 0, strlen(cmd));
         }
         connectState = 1;
     }
@@ -1078,7 +1086,6 @@ void Plot::connectStream()
 // disconnect from external sources -----------------------------------------
 void Plot::disconnectStream()
 {
-    char cmd[1024];
     int i;
 
     trace(3, "disconnectStream\n");
@@ -1088,8 +1095,9 @@ void Plot::disconnectStream()
 
     for (i = 0; i < 2; i++) {
         if (streamCommandEnabled[i][1]) {
+            char cmd[1024];
             strncpy(cmd, qPrintable(streamCommands[i][1]), 1023);
-            strwrite(stream + i, (uint8_t *)cmd, strlen(cmd));
+            strwrite(stream + i, (uint8_t *)cmd, sizeof(cmd), 0, strlen(cmd));
         }
         strclose(stream + i);
     }
@@ -1336,14 +1344,36 @@ void Plot::connectPath(const QString &path, int channel)
     rtStream[channel] = STR_NONE;
 
     if (!path.indexOf("://")) return;
-    if (path.indexOf("serial") != -1) rtStream[channel] = STR_SERIAL;
-    else if (path.indexOf("tcpsvr") != -1) rtStream[channel] = STR_TCPSVR;
-    else if (path.indexOf("tcpcli") != -1) rtStream[channel] = STR_TCPCLI;
-    else if (path.indexOf("ntrip") != -1) rtStream[channel] = STR_NTRIPCLI;
-    else if (path.indexOf("file") != -1) rtStream[channel] = STR_FILE;
+    if (path.indexOf("serial") != -1) {
+      rtStream[channel] = STR_SERIAL;
+      streamPaths[channel][0] = path.mid(path.indexOf("://") + 3);
+    }
+    else if (path.indexOf("tcpcli") != -1) {
+      rtStream[channel] = STR_TCPCLI;
+      streamPaths[channel][1] = path.mid(path.indexOf("://") + 3);
+    }
+    else if (path.indexOf("tcpsvr") != -1) {
+      rtStream[channel] = STR_TCPSVR;
+      streamPaths[channel][2] = path.mid(path.indexOf("://") + 3);
+    }
+    else if (path.indexOf("ntripcli") != -1) {
+      rtStream[channel] = STR_NTRIPCLI;
+      streamPaths[channel][3] = path.mid(path.indexOf("://") + 3);
+    }
+    else if (path.indexOf("ntripcas") != -1) {
+      rtStream[channel] = STR_NTRIPCAS;
+      streamPaths[channel][4] = path.mid(path.indexOf("://") + 3);
+    }
+    else if (path.indexOf("udpsvr") != -1) {
+      rtStream[channel] = STR_UDPSVR;
+      streamPaths[channel][5] = path.mid(path.indexOf("://") + 3);
+    }
+    else if (path.indexOf("file") != -1) {
+      rtStream[channel] = STR_FILE;
+      streamPaths[channel][6] = path.mid(path.indexOf("://") + 3);
+    }
     else return;
 
-    streamPaths[channel][1] = path.mid(path.indexOf("://") + 3);
     rtFormat[channel] = SOLF_LLH;
     rtTimeFormat = 0;
     rtDegFormat = 0;

@@ -8,7 +8,7 @@ QMAKE_LIBDIR += ../../../lib
 QMAKE_LIBDIR += $${ROOT_DIRECTORY}/lib
 QMAKE_LIBDIR += $${ROOT_DIRECTORY}/src
 
-LIBS += -L$${ROOT_DIRECTORY}/lib/ -lRTKLib
+LIBS += -L$${ROOT_DIRECTORY}/lib/ -lRTKLib -lssl -lcrypto
 
 IERS_MODEL {
     LIBS += -liers -lgfortran

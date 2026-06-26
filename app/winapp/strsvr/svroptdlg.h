@@ -57,6 +57,40 @@ __published:
 	TComboBox *RelayMsg;
 	TEdit *ProgBarR;
 	TLabel *Label17;
+
+	TLabel *Label60;
+	TLabel *Label61;
+	TLabel *Label62;
+	TLabel *Label63;
+	TLabel *Label64;
+	TLabel *Label65;
+	TLabel *Label66;
+	TLabel *Label67;
+    TEdit *TLSSvrCertFile;
+    TEdit *TLSSvrKeyFile;
+    TEdit *TLSSvrCAFile;
+    TEdit *TLSSvrCADir;
+    TEdit *TLSCliCertFile;
+    TEdit *TLSCliKeyFile;
+    TEdit *TLSCliCAFile;
+    TEdit *TLSCliCADir;
+    TButton *BtnTLSSvrCertFile;
+    TButton *BtnTLSSvrKeyFile;
+    TButton *BtnTLSSvrCAFile;
+    TButton *BtnTLSSvrCADir;
+    TButton *BtnTLSCliCertFile;
+    TButton *BtnTLSCliKeyFile;
+    TButton *BtnTLSCliCAFile;
+    TButton *BtnTLSCliCADir;
+    void __fastcall BtnTLSSvrCertFileClick(TObject *Sender);
+    void __fastcall BtnTLSSvrKeyFileClick(TObject *Sender);
+    void __fastcall BtnTLSSvrCAFileClick(TObject *Sender);
+    void __fastcall BtnTLSSvrCADirClick(TObject *Sender);
+    void __fastcall BtnTLSCliCertFileClick(TObject *Sender);
+    void __fastcall BtnTLSCliKeyFileClick(TObject *Sender);
+    void __fastcall BtnTLSCliCAFileClick(TObject *Sender);
+    void __fastcall BtnTLSCliCADirClick(TObject *Sender);
+
 	void __fastcall BtnOkClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall BtnPosClick(TObject *Sender);
@@ -72,6 +106,8 @@ public:
 	int SvrOpt[6],TraceLevel,NmeaReq,FileSwapMargin,StaId,StaSel,RelayBack;
 	int ProgBarRange;
 	double AntPos[3],AntOff[3];
+  AnsiString TLSSvrCertFileF, TLSSvrKeyFileF, TLSSvrCAFileF, TLSSvrCADirectory;
+  AnsiString TLSCliCertFileF, TLSCliKeyFileF, TLSCliCAFileF, TLSCliCADirectory;
 	__fastcall TSvrOptDialog(TComponent* Owner);
 };
 //---------------------------------------------------------------------------

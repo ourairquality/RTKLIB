@@ -3,12 +3,12 @@
 BINDIR = /usr/local/bin
 SRC    = ../../../../src
 
-CTARGET= -DTRACE -DENAGLO -DENAQZS -DENACMP -DENAGAL -DENAIRN -DNFREQ=6 -DNEXOBS=3 -DSVR_REUSEADDR -DRTKSVRNIN=5 -DRTKSVRNSOL=6 -DSUNPOS_SOFA -DMOONPOS_SOFA
+CTARGET= -DTRACE -DENAGLO -DENAQZS -DENACMP -DENAGAL -DENAIRN -DNFREQ=6 -DNEXOBS=3 -DSVR_REUSEADDR -DRTKSVRNIN=5 -DRTKSVRNSOL=6 -DSUNPOS_SOFA -DMOONPOS_SOFA -DRTKLIB_OPENSSL
 #CTARGET= -DENAGLO -DENAQZS -DENACMP -DENAGAL -DENAIRN -DNFREQ=6 -DIERS_MODEL -DSVR_REUSEADDR
 
 CFLAGS = -std=c99 -Wall -O3 -pedantic -Wno-unused-but-set-variable -I$(SRC) -I.. -DTRACE $(CTARGET) -g
 #LDLIBS  = ../../../lib/iers/gcc/iers.a -lm -lrt -lpthread
-LDLIBS = -lm -lpthread
+LDLIBS = -lm -lpthread -lssl -lcrypto
 
 all        : rtkrcv
 rtkrcv     : rtkrcv.o vt.o rtkcmn.o trace.o rtksvr.o rtkpos.o geoid.o solution.o lambda.o

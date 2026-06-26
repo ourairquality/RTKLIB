@@ -101,7 +101,7 @@ object LogStrDialog: TLogStrDialog
       'Serial'
       'TCP Client'
       'TCP Server'
-      'NTRIP Server'
+      'NTRIP Source'
       'NTRIP Caster'
       'File')
   end
@@ -119,7 +119,7 @@ object LogStrDialog: TLogStrDialog
       'Serial'
       'TCP Client'
       'TCP Server'
-      'NTRIP Server'
+      'NTRIP Source'
       'NTRIP Caster'
       'File')
   end
@@ -246,7 +246,7 @@ object LogStrDialog: TLogStrDialog
       'Serial'
       'TCP Client'
       'TCP Server'
-      'NTRIP Server'
+      'NTRIP Source'
       'NTRIP Caster'
       'File')
   end
@@ -310,7 +310,7 @@ object LogStrDialog: TLogStrDialog
       'Serial'
       'TCP Client'
       'TCP Server'
-      'NTRIP Server'
+      'NTRIP Source'
       'NTRIP Caster'
       'File')
   end
