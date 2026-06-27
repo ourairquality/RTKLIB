@@ -196,7 +196,7 @@ typedef struct tcpsvr_tag { /* tcp server type */
 typedef struct {            /* tcp cilent type */
     tcp_t svr;              /* tcp server control */
     int toinact;            /* inactive timeout (ms) (0:no timeout) */
-    int tirecon;            /* reconnect interval (ms) (0:no reconnect) */
+    int tirecon;            /* reconnect interval (ms) (-1:no reconnect) */
 } tcpcli_t;
 
 typedef struct {            /* serial control type */
@@ -1750,9 +1750,10 @@ static int rspntrip_c(ntrip_t *ntrip, char *msg)
         ntrip->nb=0;
         ntrip->buff[0]='\0';
         ntrip->state=0;
-        /* increase subsequent disconnect time to avoid too many reconnect requests */
-        if (ntrip->tcp->tirecon>300000) ntrip->tcp->tirecon=ntrip->tcp->tirecon*5/4;
-
+        // Increase subsequent disconnect time up to 300 seconds to avoid too many
+        // reconnect requests, but not if zero or less than zero.
+        if (ntrip->tcp->tirecon > 0 && ntrip->tcp->tirecon < 300000)
+          ntrip->tcp->tirecon = ntrip->tcp->tirecon * 5 / 4;
         discontcp(&ntrip->tcp->svr,ntrip->tcp->tirecon);
     }
     else if ((p=strstr((char *)ntrip->buff,NTRIP_RSP_HTTP))) { /* http response */
@@ -3172,7 +3173,7 @@ void strsetopt(const int *opt)
 * set timeout time
 * args   : stream_t *stream I   stream (STR_TCPCLI,STR_NTRIPCLI,STR_NTRIPSVR)
 *          int     toinact  I   inactive timeout (ms) (0: no timeout)
-*          int     tirecon  I   reconnect interval (ms) (0: no reconnect)
+*          int     tirecon  I   reconnect interval (ms) (-1: no reconnect)
 * return : none
 *-----------------------------------------------------------------------------*/
 void strsettimeout(stream_t *stream, int toinact, int tirecon)
