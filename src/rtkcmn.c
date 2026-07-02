@@ -2110,15 +2110,198 @@ void matprint(const double A[], int n, int m, int p, int q)
 {
     matfprint(A,n,m,p,q,stdout);
 }
-/* set string without tail space ---------------------------------------------*/
-void setstr(char *dst, const char *src, int n)
-{
-    char *p=dst;
-    const char *q=src;
-    while (*q&&q<src+n) *p++=*q++;
-    *p--='\0';
-    while (p>=dst&&(*p==' '||*p=='\r'||*p=='\n'||*p=='\t')) *p--='\0';
+
+//----------------------------------------------------------------------------
+// Safe string operations. Variants of standard C functions that pass in the
+// string size and check the bounds. Function names prefixed with 'rs'.
+
+// Copies a nul terminated source string into the destination, checking that the
+// destination is large enough.
+void rsstrcpy(char *dst, size_t dsize, const char *src) {
+  size_t len = strlen(src);
+  if (len + 1 > dsize) {
+    fatalerr("rtkstrcpy: destination size %zd too small for source length %zd\n", dsize, len);
+  }
+  memcpy(dst, src, len);
+  dst[len] = '\0';
 }
+
+// Copy a nul terminated source string, starting at index 'start', into the
+// destination, checking that the destination is large enough. If the start is
+// greater than the source string length then an error is generated.
+//
+// The destination is nul terminated, and an error is generated if there is
+// not enough room in the destination buffer for the source sub-string and a
+// nul termination.
+//
+void rssubstrcpy(char *dst, size_t dsize, const char *src, size_t start) {
+  size_t end = strlen(src);
+  if (start > end) {
+    fatalerr("rssubstrcpy: source start %zd < source end %zd in '%s'\n", start, end, src);
+  }
+  size_t len = end - start;
+  if (len + 1 > dsize) {
+    fatalerr("rssubstrcpy: destination size %zd too small for substring length %zd\n", dsize, len);
+  }
+  memcpy(dst, src + start, len);
+  dst[len] = '\0';
+}
+
+// Copy the source sub-string, starting at index 'start' inclusive and ending
+// at index 'end' exclusive. The end index is expected to be less than or
+// equal to the source string length, and an error is generated if a nul if
+// encountered. The start index is expected to be less than or equal to the
+// end index, otherwise an error is generated.
+//
+// The destination is nul terminated, and an error is generated if there is
+// not enough room in the destination buffer for the source sub-string and a
+// nul termination.
+//
+void rsesubstrcpy(char *dst, size_t dsize, const char *src, size_t start, size_t end) {
+  if (start > end) fatalerr("rsesubstrcpy: source start %zd > end %zd in '%s'\n", start, end, src);
+  // Extra check, that the string did not terminate before the start index.
+  size_t slen = strlen(src);
+  if (start > slen)
+    fatalerr("rsesubstrcpy: source start %zd > source length %zd in '%s'\n", start, slen, src);
+  size_t len = end - start;
+  if (len + 1 > dsize)
+    fatalerr("rsesubstrcpy: destination size %zd too small for substring length %zd\n", dsize,
+             len);
+  for (size_t i = start, j = 0; i < end; i++, j++) {
+    char c = src[i];
+    if (c == '\0') fatalerr("rsesubstrcpy: source end %zd out of range at %zd\n", end, i);
+    dst[j] = src[i];
+  }
+  dst[len] = '\0';
+}
+
+// As for rsesubstrcpy, but trim trailing space. Useful for strings from
+// fixed width formatted fields, such as in RINEX files, or just to trim
+// whitespace. The field width may be beyond the end of the src string.
+void rssetstr(char *dst, size_t dsize, const char *src, size_t start, size_t n) {
+  size_t end = start + n;
+  // Find the trimmed end.
+  size_t tend;
+  for (tend = start; tend < end; tend++) {
+    if (src[tend] == '\0') break;
+  }
+  // Trim trailing spaces.
+  for (; tend > start; tend--) {
+    char cend = src[tend - 1];
+    if (cend != ' ' && cend != '\r' && cend != '\n' && cend != '\t') break;
+  }
+
+  rsesubstrcpy(dst, dsize, src, start, tend);
+}
+
+void rsstrcat(char *dst, size_t dsize, const char *src) {
+  size_t dlen = strlen(dst);
+  size_t slen = strlen(src);
+  if (dlen + slen + 1 > dsize) {
+    fatalerr(
+        "rsstrcat: destination size %zd too small for destination length %zd plus source length "
+        "%zd\n",
+        dsize, dlen, slen);
+  }
+  memcpy(dst + dlen, src, slen);
+  dst[dlen + slen] = '\0';
+}
+
+void rssubstrcat(char *dst, size_t dsize, const char *src, size_t start) {
+  size_t end = strlen(src);
+  if (start > end)
+    fatalerr("rssubstrcat: source start %zd < source end %zd in '%s'\n", start, end, src);
+  size_t dlen = strlen(dst);
+  size_t slen = end - start;
+  if (dlen + slen + 1 > dsize) {
+    fatalerr(
+        "rssubstrcat: destination size %zd too small for destination length %zd plus substring "
+        "length "
+        "%zd\n",
+        dsize, dlen, slen);
+  }
+  memcpy(dst + dlen, src + start, slen);
+  dst[dlen + slen] = '\0';
+}
+
+void rsesubstrcat(char *dst, size_t dsize, const char *src, size_t start, size_t end) {
+  if (start > end) fatalerr("rsesubstrcat: source start %zd > end %zd in '%s'\n", start, end, src);
+  // Extra check, that the string did not terminate before the start index/
+  size_t slen = strlen(src);
+  if (start > slen)
+    fatalerr("rsesubstrcat: source start %zd > source length %zd in '%s'n", start, slen, src);
+  size_t dlen = strlen(dst);
+  size_t len = end - start;
+  if (dlen + len + 1 > dsize) {
+    fatalerr(
+        "rsesubstrcpy: destination size %zd too small for  destination length %zd plus substring "
+        "length %zd\n",
+        dsize, dlen, len);
+  }
+  for (size_t i = start, j = dlen; i < end; i++, j++) {
+    char c = src[i];
+    if (c == '\0') fatalerr("rsesubstrcat: source end %zd out of range at %zd\n", end, i);
+    dst[j] = src[i];
+  }
+  dst[dlen + len] = '\0';
+}
+
+void rssnprintf(char *str, size_t size, const char *format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  int req = vsnprintf(str, size, format, ap);
+  va_end(ap);
+  if (req < 0) fatalerr("rssnprintf: format error in '%s'\n", format);
+  if ((size_t)req >= size)
+    fatalerr("rssnprintf: output needed %d overflows buffer of %zd for format '%s'\n", req, size,
+             format);
+}
+
+void rscatprintf(char *str, size_t size, const char *format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  size_t len = strlen(str);
+  if (len > size) {
+    fatalerr("rscatprintf: buffer full '%s'\n", format);
+    va_end(ap);
+    return;
+  }
+  size_t rem = size - len;
+  int req = vsnprintf(str + len, rem, format, ap);
+  va_end(ap);
+  if (req < 0) fatalerr("rscatprintf: format error in '%s'\n", format);
+  if ((size_t)req >= rem)
+    fatalerr("rscatprintf: output needed %zd overflows buffer of %zd rem %zd for format '%s'\n",
+             req, size, rem, format);
+}
+
+// Variants of standard C library string functions that return an index rather
+// than a pointer. For use were an index is needed directly.
+ssize_t rsstrchr(const char *s, size_t start, int c) {
+  size_t len = strlen(s);
+  if (start > len)
+    fatalerr("strchri start=%zd outside string length %zu for string '%s'\n", start, len, s);
+  const char *p = strchr(s + start, c);
+  if (p) return p - s;
+  return -1;
+}
+ssize_t rsstrrchr(const char *s, size_t start, int c) {
+  size_t len = strlen(s);
+  if (start > len)
+    fatalerr("strrchri start=%zd outside string length %zu for string '%s'\n", start, len, s);
+  const char *p = strrchr(s + start, c);
+  if (p) return p - s;
+  return -1;
+}
+ssize_t rsstrstr(const char *haystack, size_t start, const char *needle) {
+  size_t len = strlen(haystack);
+  if (start > len)
+    fatalerr("strstri start=%zd outside string length %zu for string '%s'\n", start, len, haystack);
+  const char *p = strstr(haystack + start, needle);
+  if (p) return p - haystack;
+  return -1;
+}
+
 /* string to number ------------------------------------------------------------
 * convert substring in string to number
 * args   : char   *s        I   string ("... nnn.nnn ...")
@@ -3173,7 +3356,7 @@ static int readngspcv(const char *file, pcvs_t *pcvs) {
       free(pcv.var[0]);
       free(pcv.var[1]);
       pcv = pcv0;
-      setstr(pcv.type, buff, 61);
+      rssetstr(pcv.type, sizeof(pcv.type), buff, 0, 61);
       pcv.zen1[0] = pcv.zen1[1] = 0;
       pcv.zen2[0] = pcv.zen2[1] = 90;
       pcv.dzen[0] = pcv.dzen[1] = 5;
@@ -3444,8 +3627,8 @@ static int readantex(const char *file, int filter, pcvs_t *pcvs) {
     }
     if (state == 1 && strstr(buff + 60, "TYPE / SERIAL NO")) {
       // ATX 1.4
-      setstr(pcv.type, buff, 20);
-      setstr(pcv.code, buff + 20, 20);
+      rssetstr(pcv.type, sizeof(pcv.type), buff, 0, 20);
+      rssetstr(pcv.code, sizeof(pcv.code), buff, 20, 20);
       if (strlen(pcv.code) == 3) pcv.sat = satid2no(pcv.code);
       if (buff[40] != ' ') {
         pcv.satsys = code2sys(buff[40]);
@@ -3460,14 +3643,14 @@ static int readantex(const char *file, int filter, pcvs_t *pcvs) {
     }
     if (state == 1 && strstr(buff + 60, "TYPE / SN")) {
       // ATX2, receiver
-      setstr(pcv.type, buff, 20);
-      setstr(pcv.code, buff + 20, 20);
+      rssetstr(pcv.type, sizeof(pcv.type), buff, 0, 20);
+      rssetstr(pcv.code, sizeof(pcv.type), buff, 20, 20);
       procp = !(filter & 1);
       continue;
     }
     if (state == 1 && strstr(buff + 60, "TYPE / SVN")) {
       // ATX2, satellite
-      setstr(pcv.type, buff, 20);
+      rssetstr(pcv.type, sizeof(pcv.type), buff, 0, 20);
       pcv.satsys = code2sys(buff[40]);
       if (pcv.satsys == 0) {
         trace(1, "readantex: unexpect SVN sys at line '%s'\n", buff);
@@ -3487,7 +3670,7 @@ static int readantex(const char *file, int filter, pcvs_t *pcvs) {
     if (state == 1 && strstr(buff + 60, "ORIGIN")) {
       // ATX2
       char origin[4];
-      setstr(origin, buff, 3);
+      rssetstr(origin, sizeof(origin), buff, 0, 3);
       // Only the Center Of Mass origin is currently handled.
       if (strcmp(origin, "COM") == 0) {
       } else if (strcmp(origin, "APR") != 0) {
@@ -3991,18 +4174,21 @@ int readelmask(const char *file, const char *name, elmask_t *elmask) {
       }
 
       // Match either the full extended name or the 4 character prefix, giving
-      // priority to a full match.
-      setstr(sname, buff, sizeof(sname) - 1);
+      // priority to a full match. Using rssetstr to trim whitespace.
+      rssetstr(sname, sizeof(sname), buff, 0, strlen(buff));
       ni = 0;
-      for (; sname[ni] && name[ni]; ni++) {
-        if (toupper(sname[ni]) != toupper(name[ni])) break;
-      }
-      // Not exact or prefix match?
-      if (name && name[0] && (sname[ni] != '\0' || name[ni] != '\0')
-          && (ni <= 3 || (sname[ni] != '\0' && name[ni] != '\0') || ni <= posp)) {
-        // Skip data to the next name.
-        state = 1;
-        continue;
+      if (name != NULL && name[0] != '\0') {
+        // Name to match.
+        for (; sname[ni] && name[ni]; ni++) {
+          if (toupper(sname[ni]) != toupper(name[ni])) break;
+        }
+        // Not exact or prefix match?
+        if ((sname[ni] != '\0' || name[ni] != '\0')
+            && (ni <= 3 || (sname[ni] != '\0' && name[ni] != '\0') || ni <= posp)) {
+          // Skip data to the next name.
+          state = 1;
+          continue;
+        }
       }
       posp = ni;
       // Start reading data.
@@ -6023,7 +6209,7 @@ int getstapos(const char *file, const char *name, double *r)
       // The solution sinex site codes are limited to 4 characters
       // and only the 4 character prefix of the 'name' is matched.
       char sname[5];
-      setstr(sname, buff + 14, 4);
+      rssetstr(sname, sizeof(sname), buff, 14, 4);
       int i = 0;
       for (; i < 4 && sname[i] && name[i]; i++) {
         if (toupper(sname[i]) != toupper(name[i])) break;

@@ -64,6 +64,14 @@ extern "C" {
 #define EXPORT
 #endif
 
+// ssize_t
+#ifdef _MSC_VER
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#else
+#include <sys/types.h>
+#endif
+
 #if (__STDC_VERSION__ >= 201710L)
 #define THREADLOCAL _Thread_local
 #elif defined(__GNUC__)
@@ -1612,7 +1620,6 @@ EXPORT void matfprint(const double *A, int n, int m, int p, int q, FILE *fp);
 EXPORT void add_fatal(fatalfunc_t *func);
 
 /* time and string functions -------------------------------------------------*/
-EXPORT void    setstr(char *dst, const char *src, int n);
 EXPORT double  str2num(const char *s, int i, int n);
 EXPORT int     str2time(const char *s, size_t i, size_t n, gtime_t *t);
 EXPORT char    *time2str(gtime_t t, char str[40], int n);
@@ -1625,6 +1632,20 @@ EXPORT gtime_t gst2time(int week, double sec);
 EXPORT double  time2gst(gtime_t t, int *week);
 EXPORT gtime_t bdt2time(int week, double sec);
 EXPORT double  time2bdt(gtime_t t, int *week);
+
+// Safe string operations -----------------------------------------------------
+EXPORT void rsstrcpy(char *dst, size_t dsize, const char *src);
+EXPORT void rssubstrcpy(char *dst, size_t dsize, const char *src, size_t start);
+EXPORT void rsesubstrcpy(char *dst, size_t dsize, const char *src, size_t start, size_t end);
+EXPORT void rsstrcat(char *dst, size_t dsize, const char *src);
+EXPORT void rssubstrcat(char *dst, size_t dsize, const char *src, size_t start);
+EXPORT void rsesubstrcat(char *dst, size_t dsize, const char *src, size_t start, size_t end);
+EXPORT void rssnprintf(char *str, size_t size, const char *format, ...);
+EXPORT void rscatprintf(char *str, size_t size, const char *format, ...);
+EXPORT void rssetstr(char *dst, size_t dsize, const char *src, size_t start, size_t n);
+EXPORT ssize_t rsstrchr(const char *s, size_t start, int c);
+EXPORT ssize_t rsstrrchr(const char *s, size_t start, int c);
+EXPORT ssize_t rsstrstr(const char *haystack, size_t start, const char *needle);
 
 // General bounds check primitive.
 //

@@ -358,31 +358,31 @@ static void decode_obsh(FILE *fp, char *buff, double ver, int *tsys,
     trace(4,"decode_obsh: ver=%.2f\n",ver);
 
     if      (strstr(label,"MARKER NAME"         )) {
-        if (sta) setstr(sta->name,buff,60);
+        if (sta) rssetstr(sta->name, sizeof(sta->name), buff, 0, 60);
     }
     else if (strstr(label,"MARKER NUMBER"       )) { /* opt */
-        if (sta) setstr(sta->markerno,buff,20);
+        if (sta) rssetstr(sta->markerno, sizeof(sta->markerno), buff, 0, 20);
     }
     else if (strstr(label,"MARKER TYPE"         )) { /* ver.3 */
-        if (sta) setstr(sta->markertype,buff,20);
+        if (sta) rssetstr(sta->markertype, sizeof(sta->markertype), buff, 0, 20);
     }
     else if (strstr(label,"OBSERVER / AGENCY"   )) {
         if (sta) {
-            setstr(sta->observer, buff, 20);
-            setstr(sta->agency, buff+20, 40);
+            rssetstr(sta->observer, sizeof(sta->observer), buff, 0, 20);
+            rssetstr(sta->agency, sizeof(sta->agency), buff, 20, 40);
         }
     }
     else if (strstr(label,"REC # / TYPE / VERS" )) {
         if (sta) {
-            setstr(sta->recsno, buff,   20);
-            setstr(sta->rectype,buff+20,20);
-            setstr(sta->recver, buff+40,20);
+            rssetstr(sta->recsno, sizeof(sta->recsno), buff, 0, 20);
+            rssetstr(sta->rectype, sizeof(sta->rectype), buff, 20, 20);
+            rssetstr(sta->recver, sizeof(sta->recver), buff, 40, 20);
         }
     }
     else if (strstr(label,"ANT # / TYPE"        )) {
         if (sta) {
-            setstr(sta->antsno,buff   ,20);
-            setstr(sta->antdes,buff+20,20);
+            rssetstr(sta->antsno, sizeof(sta->antsno), buff, 0, 20);
+            rssetstr(sta->antdes, sizeof(sta->antdes), buff, 20, 20);
         }
     }
     else if (strstr(label,"APPROX POSITION XYZ" )) {
@@ -417,7 +417,7 @@ static void decode_obsh(FILE *fp, char *buff, double ver, int *tsys,
                 if (!fgets(buff,MAXRNXLEN,fp)) break;
                 k=7;
             }
-            if (nt<MAXOBSTYPE-1) setstr(tobs[i][nt++],buff+k,3);
+            if (nt<MAXOBSTYPE-1) rssetstr(tobs[i][nt++], sizeof(tobs[i][0]), buff, k, 3);
         }
         *tobs[i][nt]='\0';
 
@@ -456,7 +456,7 @@ static void decode_obsh(FILE *fp, char *buff, double ver, int *tsys,
             }
             if (nt>=MAXOBSTYPE-1) continue;
             if (ver<=2.9999) {
-                setstr(str,buff+j,2);
+                rssetstr(str, sizeof(str), buff, j, 2);
                 convcode(ver,SYS_GPS,str,tobs[RNX_SYS_GPS][nt]);
                 convcode(ver,SYS_GLO,str,tobs[RNX_SYS_GLO][nt]);
                 convcode(ver,SYS_GAL,str,tobs[RNX_SYS_GAL][nt]);
@@ -1809,7 +1809,6 @@ int readrnxt(const char *file, int rcv, gtime_t ts, gtime_t te,
                     sta_t *sta)
 {
     int i,n,stat=0;
-    const char *p;
     char type=' ',*files[MAXEXFILE]={0};
 
     trace(3,"readrnxt: file=%s rcv=%d\n",file,rcv);
@@ -1833,9 +1832,12 @@ int readrnxt(const char *file, int rcv, gtime_t ts, gtime_t te,
         stat=readrnxfile(files[i],ts,te,tint,opt,0,rcv,&type,obs,nav,sta);
     }
     /* if station name empty, set 4-char name from file head */
-    if (type=='O'&&sta) {
-        if (!(p=strrchr(file,RTKLIB_FILEPATHSEP))) p=file-1;
-        if (!*sta->name) setstr(sta->name,p+1,4);
+    if (type=='O' && sta && sta->name[0] == '\0') {
+      const char *p = strrchr(file, RTKLIB_FILEPATHSEP);
+      if (p)
+        rssetstr(sta->name, sizeof(sta->name), p, 1, 5);
+      else
+        rssetstr(sta->name, sizeof(sta->name), file, 0, 4);
     }
     for (i=0;i<MAXEXFILE;i++) free(files[i]);
 

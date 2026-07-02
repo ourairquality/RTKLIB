@@ -442,11 +442,11 @@ static int readattb(FILE *fp, int index, nav_t *nav) {
     }
     if (state == 2) {
       if (strncmp(buff, " TIME_SYSTEM", 12) == 0) {
-        setstr(tsys, buff + 21, 20);
+        rssetstr(tsys, sizeof(tsys), buff, 21, 20);
         continue;
       }
       if (strncmp(buff, " FRAME_TYPE", 11) == 0) {
-        setstr(frame_type, buff + 21, 20);
+        rssetstr(frame_type, sizeof(frame_type), buff, 21, 20);
         continue;
       }
     }
