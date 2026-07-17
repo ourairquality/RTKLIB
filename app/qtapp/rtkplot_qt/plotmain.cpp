@@ -1441,7 +1441,7 @@ void Plot::mouseReleaseEvent(QMouseEvent *event)
     trace(3, "mouseReleaseEvent: X=%f Y=%f\n", ui->lblDisplay->mapFromGlobal(event->globalPosition()).x(),
           ui->lblDisplay->mapFromGlobal(event->globalPosition()).y());
 #else
-    trace(3, "mouseReleaseEvent: X=%d Y=%d\n", ui->lblDisplay->mapFromGlobal(event->globalPos()).x(),
+    trace(3, "mouseReleaseEvent: X=%f Y=%f\n", ui->lblDisplay->mapFromGlobal(event->globalPos()).x(),
           ui->lblDisplay->mapFromGlobal(event->globalPos()).y());
 #endif
     if (dragState == 0) return;
