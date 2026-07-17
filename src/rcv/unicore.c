@@ -238,7 +238,7 @@ static int decode_track_stat(uint32_t stat, int* sys, int* code, int* plock, int
     case 5: *sys = SYS_QZS; break;
     case 6: *sys = SYS_IRN; break;
     default:
-        trace(2, "unicore unknown system: sys=%d\n", satsys);
+        trace(2, "unicore unknown system: sysno=%d\n", sysno);
         return -1;
     }
     if (!(*code = sig2code(*sys, sigtype, l2c)) || (idx = code2idx(*sys, *code)) < 0) {
