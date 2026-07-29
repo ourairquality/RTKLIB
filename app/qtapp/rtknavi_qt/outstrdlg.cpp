@@ -250,7 +250,7 @@ void OutputStrDialog::setStreamFormat(int stream, int format)
 int OutputStrDialog::getStreamFormat(int stream)
 {
     QComboBox *cBFormat[] = {ui->cBFormat1, ui->cBFormat2, ui->cBFormat3};
-    if ((stream < 0 ) || (stream >= RTKSVRNSOL)) return STRFMT_RTCM2;
+    if ((stream < 0 ) || (stream >= RTKSVRNSOL)) return STRFMT_RTCM3;
 
     return cBFormat[stream]->currentIndex();
 }

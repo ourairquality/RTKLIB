@@ -23,7 +23,7 @@ __fastcall TConvDialog::TConvDialog(TComponent* Owner)
 	for (i=0;i<=MAXRCVFMT;i++) {
 		InFormat->Items->Add(formatstrs[i]);
 	}
-	InFormat->ItemIndex=0;
+	InFormat->ItemIndex=1;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConvDialog::FormShow(TObject *Sender)

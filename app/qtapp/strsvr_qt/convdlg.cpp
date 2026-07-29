@@ -13,7 +13,7 @@ ConvDialog::ConvDialog(QWidget *parent)
 
     for (int i = 0; i <= MAXRCVFMT; i++)
         ui->cBInputFormat->addItem(formatstrs[i]);
-    ui->cBInputFormat->setCurrentIndex(0);
+    ui->cBInputFormat->setCurrentIndex(1);
 
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &ConvDialog::accept);
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &ConvDialog::reject);

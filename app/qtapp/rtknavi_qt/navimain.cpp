@@ -119,7 +119,8 @@ MainWindow::MainWindow(QWidget *parent)
         if (i < RTKSVRNIN) strfmt[i] = STRFMT_RTCM3;
         else if (i >= RTKSVRNIN*2) strfmt[i] = i == RTKSVRNIN*2 ? SOLF_LLH : SOLF_NMEA;
         else strfmt[i] = 0;
-        streamEnabled[i] = streamType[i] = inputFormat[i] = 0;
+        inputFormat[i] = strfmt[i];
+        streamEnabled[i] = streamType[i] = 0;
     }
     for (int i = 0; i < 3; i++)
         commandEnabled[i][0] = commandEnabled[i][1] = commandEnabled[i][2] = 0;
@@ -2403,7 +2404,8 @@ void MainWindow::loadOptions()
         no = strno[i];
         streamEnabled[i] = settings.value(QString("stream/streamc%1").arg(no), 0).toInt();
         streamType[i] = settings.value(QString("stream/stream%1").arg(no), 0).toInt();
-        inputFormat[i] = settings.value(QString("stream/format%1").arg(no), 0).toInt();
+        int fmt = i < RTKSVRNIN ? STRFMT_RTCM3 : (i == RTKSVRNIN * 2 ? SOLF_LLH : (i > RTKSVRNIN * 2 ? SOLF_NMEA : 0));
+        inputFormat[i] = settings.value(QString("stream/format%1").arg(no), fmt).toInt();
         for (j = 0; j < 4; j++)
             paths[i][j] = settings.value(QString("stream/path_%1_%2").arg(no).arg(j), "").toString();
     }

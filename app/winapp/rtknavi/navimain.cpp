@@ -2483,7 +2483,8 @@ void __fastcall TMainForm::LoadOpt(void)
         no=strno[i];
         StreamC[i]=ini->ReadInteger("stream",s.sprintf("streamc%d",no),0);
         Stream [i]=ini->ReadInteger("stream",s.sprintf("stream%d", no),0);
-        Format [i]=ini->ReadInteger("stream",s.sprintf("format%d", no),0);
+        int fmt = i < RTKSVRNIN ? STRFMT_RTCM3 : (i == RTKSVRNIN * 2 ? SOLF_LLH : (i > RTKSVRNIN * 2 ? SOLF_NMEA : 0));
+        Format [i]=ini->ReadInteger("stream",s.sprintf("format%d", no),fmt);
         for (j=0;j<4;j++) {
             Paths[i][j]=ini->ReadString("stream",s.sprintf("path_%d_%d",no,j),"");
         }
