@@ -140,7 +140,7 @@ void InputStrDialog::setStreamFormat(int stream, int format)
 int InputStrDialog::getStreamFormat(int stream)
 {
     QComboBox *cBFormat[] = {ui->cBFormat1, ui->cBFormat2, ui->cBFormat3, ui->cBFormat4};
-    if ((stream < 0 ) || (stream >= RTKSVRNIN)) return STRFMT_RTCM2;  // should never happen
+    if ((stream < 0 ) || (stream >= RTKSVRNIN)) return STRFMT_RTCM3;  // should never happen
     if (stream == 0)
         return cBFormat[stream]->currentIndex();
     else

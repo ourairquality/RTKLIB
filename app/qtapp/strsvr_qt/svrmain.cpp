@@ -845,8 +845,8 @@ void MainForm::loadOptions()
     // format conversion
     for (int i = 0; i < MAXSTR - 1; i++) {
         conversionEnabled[i] = settings.value(QString("conv/ena_%1").arg(i), 0).toInt();
-        conversionInputFormat[i] = settings.value(QString("conv/inp_%1").arg(i), 0).toInt();
-        conversionOutputFormat[i] = settings.value(QString("conv/out_%1").arg(i), 0).toInt();
+        conversionInputFormat[i] = settings.value(QString("conv/inp_%1").arg(i), 1).toInt();
+        conversionOutputFormat[i] = settings.value(QString("conv/out_%1").arg(i), 1).toInt();
         conversionMessage[i] = settings.value(QString("conv/msg_%1").arg(i), "").toString();
         conversionOptions[i] = settings.value(QString("conv/opt_%1").arg(i), "").toString();
     }

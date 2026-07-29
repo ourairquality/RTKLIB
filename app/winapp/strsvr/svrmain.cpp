@@ -749,8 +749,8 @@ void __fastcall TMainForm::LoadOpt(void)
 	}
 	for (int i=0;i<MAXSTR-1;i++) {
 		ConvEna[i]=ini->ReadInteger("conv",s.sprintf("ena_%d",i), 0);
-		ConvInp[i]=ini->ReadInteger("conv",s.sprintf("inp_%d",i), 0);
-		ConvOut[i]=ini->ReadInteger("conv",s.sprintf("out_%d",i), 0);
+		ConvInp[i]=ini->ReadInteger("conv",s.sprintf("inp_%d",i), 1);
+		ConvOut[i]=ini->ReadInteger("conv",s.sprintf("out_%d",i), 1);
 		ConvMsg[i]=ini->ReadString ("conv",s.sprintf("msg_%d",i),"");
 		ConvOpt[i]=ini->ReadString ("conv",s.sprintf("opt_%d",i),"");
 	}
