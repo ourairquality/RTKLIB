@@ -52,6 +52,11 @@ void Console::btnDownClicked()
     ui->textEdit->verticalScrollBar()->setValue(ui->textEdit->verticalScrollBar()->maximum());
 }
 //---------------------------------------------------------------------------
+void Console::setFont(QFont font)
+{
+    ui->textEdit->setFont(font);
+}
+//---------------------------------------------------------------------------
 void Console::addMessage(uint8_t *msg, int n)
 {
     char buff[MAXLEN+16], *p = buff;

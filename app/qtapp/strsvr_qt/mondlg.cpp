@@ -1,6 +1,7 @@
 //---------------------------------------------------------------------------
 #include <ctype.h>
 #include <QScrollBar>
+#include <QFontDatabase>
 
 #include <stdio.h>
 
@@ -18,6 +19,10 @@ StrMonDialog::StrMonDialog(QWidget *parent)
     : QDialog(parent), ui(new Ui::StrMonDialog)
 {
     ui->setupUi(this);
+
+    QFont fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    fixedFont.setPointSize(fixedFont.pointSize() * 0.90);
+    ui->tWConsole->setFont(fixedFont);
 
     connect(ui->btnClose, &QPushButton::clicked, this, &StrMonDialog::accept);
     connect(ui->btnClear, &QPushButton::clicked, this, &StrMonDialog::clearConsole);

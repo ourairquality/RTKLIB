@@ -7,6 +7,7 @@
 #include <QComboBox>
 #include <QPushButton>
 #include <QDialogButtonBox>
+#include <QFontDatabase>
 
 #include "rtklib.h"
 #include "mondlg.h"
@@ -29,6 +30,10 @@ MonitorDialog::MonitorDialog(QWidget *parent, rtksvr_t *server, stream_t* stream
     : QDialog(parent), rtksvr(server), monistr(stream), ui(new Ui::MonitorDialog)
 {
     ui->setupUi(this);
+
+    QFont fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    fixedFont.setPointSize(fixedFont.pointSize() * 0.90);
+    ui->tWConsole->setFont(fixedFont);
 
     fontScale = QFontMetrics(ui->tWConsole->font()).height() * 4;
 

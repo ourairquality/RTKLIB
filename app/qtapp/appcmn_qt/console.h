@@ -16,6 +16,7 @@ class Console : public QDialog
 public:
     explicit Console(QWidget* parent);
     void  addMessage(uint8_t *msg, int n);
+    void  setFont(QFont font);
 
 protected slots:
     void  btnClearClicked();
