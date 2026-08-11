@@ -67,6 +67,7 @@
 #include <QFont>
 #include <QMimeData>
 #include <QTableView>
+#include <QFontDatabase>
 
 #include "rtklib.h"
 #include "plotmain.h"
@@ -1120,6 +1121,9 @@ void Plot::showMonitorConsole1()
     trace(3, "showMonitorConsole1\n");
 
     console1->setWindowTitle(tr("Monitor RT Input 1"));
+    QFont fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    fixedFont.setPointSize(fixedFont.pointSize() * 0.90);
+    console1->setFont(fixedFont);
     console1->show();
 }
 // callback on menu-input-monitor-2 -----------------------------------------
@@ -1128,6 +1132,9 @@ void Plot::showMonitorConsole2()
     trace(3, "showMonitorConsole2\n");
 
     console2->setWindowTitle(tr("Monitor RT Input 2"));
+    QFont fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    fixedFont.setPointSize(fixedFont.pointSize() * 0.90);
+    console2->setFont(fixedFont);
     console2->show();
 }
 // callback on menu-map-view ---------------------------------------
