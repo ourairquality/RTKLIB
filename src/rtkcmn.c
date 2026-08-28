@@ -389,6 +389,19 @@ extern void add_fatal(fatalfunc_t *func)
 {
     fatalfunc=func;
 }
+// Bound check fault handler --------------------------------------------------
+// See the macro RBOUNDSCHECK()
+// Args   : const char *func  I  Name of caller performing check.
+//          unsigned    line  I  Line number.
+//          const void *buff  I  Buffer to check against.
+//          size_t      size  I  Size of the buffer in elements.
+//          size_t      index I  Element index that caused the fault.
+//-----------------------------------------------------------------------------
+void rboundscheckfault(const char *func, unsigned line, const void *buff, size_t size, size_t index) {
+  fatalerr("Out of bounds in %s line %u for buffer %p of size %zu at index %zu\n", func, line,
+           buff, size, index);
+  exit(-9);
+}
 /* satellite system+prn/slot number to satellite number ------------------------
 * convert satellite system+prn/slot number to satellite number
 * args   : int    sys       I   satellite system (SYS_GPS,SYS_GLO,...)
