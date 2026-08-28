@@ -1546,6 +1546,20 @@ EXPORT double  time2gst(gtime_t t, int *week);
 EXPORT gtime_t bdt2time(int week, double sec);
 EXPORT double  time2bdt(gtime_t t, int *week);
 
+// General bounds check primitive.
+//
+// The size and index are intended to be in units of elements rather than
+// bytes, and a fault report will also be in these units. This avoid needing
+// to bother with the element size here. E.g. for a byte size array it will be
+// in units of bytes and for a double arrary it will be in units of double
+// elements.
+#define RBOUNDSCHECK(buff, size, index) if ((size_t)index >= (size_t)size) rboundscheckfault(__func__, __LINE__, buff, size, index);
+#ifdef _MSC_VER
+EXPORT __declspec(noreturn) void rboundscheckfault(const char *func, unsigned line, const void *buff, size_t size, size_t index);
+#else
+EXPORT void rboundscheckfault(const char *func, unsigned line, const void *buff, size_t size, size_t index) __attribute__((noreturn));
+#endif
+
 /* add time --------------------------------------------------------------------
 * add time to gtime_t struct
 * args   : gtime_t t        I   gtime_t struct
