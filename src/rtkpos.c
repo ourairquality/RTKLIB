@@ -1276,9 +1276,21 @@ static int ddres(rtk_t *rtk, const obsd_t *obs, double dt, const double *x,
         for (f=opt->mode>PMODE_DGPS?0:nf;f<nf*2;f++) {
             frq=f%nf;code=f<nf?0:1;
 
+            int i = -1;
+#if !defined(REFMINVAR)
+            // Find reference satellite with highest elevation, set to i.
+            for (j=0;j<ns;j++) {
+                sysi=rtk->ssat[sat[j]-1].sys;
+                if (!test_sys(sysi,m) || sysi==SYS_SBS) continue;
+                if (!validobs(iu[j],ir[j],f,nf,y)) continue;
+                // Skip sat with slip unless no other valid sat.
+                if (i>=0&&rtk->ssat[sat[j]-1].slip[frq]&LLI_SLIP) continue;
+                if (i<0||azel[1+iu[j]*2]>=azel[1+iu[i]*2]) i=j;
+            }
+#else
             /* first choose minimum variance satellite without a slip */
             minvar=0.0;
-            for (i=-1,j=0;j<ns;j++) {
+            for (j=0;j<ns;j++) {
                 sysj=rtk->ssat[sat[j]-1].sys;
 
                 if (!test_sys(sysj,m) || sysj==SYS_SBS) continue;
@@ -1315,6 +1327,7 @@ static int ddres(rtk_t *rtk, const obsd_t *obs, double dt, const double *x,
                     }
                 }
             }
+#endif
             if (i<0) continue;
 
             /* calculate double differences of residuals (code/phase) for each sat */
