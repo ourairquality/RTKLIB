@@ -186,7 +186,6 @@
     <ClCompile Include="..\..\..\..\src\ionex.c" />
     <ClCompile Include="..\..\..\..\src\tides.c" />
     <ClCompile Include="..\..\..\..\src\ephemeris.c" />
-    <ClCompile Include="..\..\..\..\src\sofa.c" />
     <ClCompile Include="..\..\..\..\src\rcv\binex.c" />
     <ClCompile Include="..\..\..\..\src\rcv\novatel.c" />
     <ClCompile Include="..\..\..\..\src\rcv\ublox.c" />

@@ -180,9 +180,6 @@
             <BuildOrder>4</BuildOrder>
             <BuildOrder>2</BuildOrder>
         </CppCompile>
-        <CppCompile Include="..\..\..\..\src\sofa.c">
-            <BuildOrder>7</BuildOrder>
-        </CppCompile>
         <CppCompile Include="..\..\..\..\src\solution.c">
             <BuildOrder>4</BuildOrder>
             <BuildOrder>0</BuildOrder>
